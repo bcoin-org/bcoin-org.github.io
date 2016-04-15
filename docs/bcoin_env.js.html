@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/env.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/env.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * env.js - environment for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License).
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+var utils = require('./utils');
+var assert = utils.assert;
+var fs;
+
+try {
+  fs = require('f' + 's');
+} catch (e) {
+  ;
+}
+
+/**
+ * A BCoin "environment" which is tied to the
+ * network type among other options. It exposes all
+ * constructors for primitives, the blockchain,
+ * mempool, wallet, etc. BCoin is _not_ usable
+ * without an environment.
+ *
+ * @exports Environment
+ * @constructor
+ *
+ * @param {Object|String} options - Options object or network type.
+ * @param {String?} options.network - One of `main`, `testnet`,
+ * `regtest`, `segnet3`, `segnet4`.
+ * @param {String?} options.prefix - Prefix for filesystem (default=~/.bcoin).
+ * @param {String?} options.db - Database backend (default=leveldb).
+ * @param {Boolean?} options.debug - Whether to display debug output.
+ * @param {(String|Boolean)?} options.debugFile - A file to
+ * pipe debug output to.
+ * @param {Boolean?} options.profile - Enable profiler.
+ * @param {Boolean?} options.useWorkers - Enable workers.
+ * @param {Number?} options.maxWorkers - Max size of
+ * the worker pool (default=6).
+ *
+ * @property {Boolean} isBrowser
+ * @property {String} networkType
+ *
+ * @property {Function} bn - Big number constructor
+ * (see {@link https://github.com/indutny/bn.js} for docs).
+ * @property {Object} utils - {@link module:utils}.
+ * @property {Function} locker - {@link Locker} constructor.
+ * @property {Function} reader - {@link BufferReader} constructor.
+ * @property {Function} writer - {@link BufferWriter} constructor.
+ * @property {Object} ec - {@link module:ec}.
+ * @property {Function} lru - {@link LRU} constructor.
+ * @property {Function} bloom - {@link Bloom} constructor.
+ * @property {Function} bst - {@link BST} constructor.
+ * @property {Function} lowlevelup - See {@link LowlevelUp}.
+ *
+ * @property {Object} protocol
+ * @property {Function} protocol.constants - See {@link module:constants}.
+ * @property {Function} protocol.network - See {@link module:network}.
+ * @property {Function} protocol.framer - {@link Framer} constructor.
+ * @property {Function} protocol.parser - {@link Parser} constructor.
+ * @property {Function} profiler - {@link module:profiler}.
+ * @property {Function} ldb - See {@link module:ldb}.
+ * @property {Function} script - {@link Script} constructor.
+ * @property {Function} stack - {@link Stack} constructor.
+ * @property {Function} witness - {@link Witness} constructor.
+ * @property {Function} input - {@link Input} constructor.
+ * @property {Function} output - {@link Output} constructor.
+ * @property {Function} coin - {@link Coin} constructor.
+ * @property {Function} coins - {@link Coins} constructor.
+ * @property {Function} coinview - {@link CoinView} constructor.
+ * @property {Function} tx - {@link TX} constructor.
+ * @property {Function} mtx - {@link MTX} constructor.
+ * @property {Function} txdb - {@link TXDB} constructor.
+ * @property {Function} abstractblock - {@link AbstractBlock} constructor.
+ * @property {Function} compactblock - {@link CompactBlock} constructor.
+ * @property {Function} block - {@link Block} constructor.
+ * @property {Function} merkleblock - {@link MerkleBlock} constructor.
+ * @property {Function} headers - {@link Headers} constructor.
+ * @property {Function} node - {@link Node} constructor.
+ * @property {Function} spvnode - {@link SPVNode} constructor.
+ * @property {Function} fullnode - {@link Fullnode} constructor.
+ * @property {Function} chainblock - {@link ChainBlock} constructor.
+ * @property {Function} chaindb - {@link ChainDB} constructor.
+ * @property {Function} chain - {@link Chain} constructor.
+ * @property {Function} mempool - {@link Mempool} constructor.
+ * @property {Function} keypair - {@link KeyPair} constructor.
+ * @property {Function} hd - {@link HD} constructor.
+ * @property {Function} address - {@link Address} constructor.
+ * @property {Function} wallet - {@link Wallet} constructor.
+ * @property {Function} walletdb - {@link WalletDB} constructor.
+ * @property {Function} provider - {@link Provider} constructor.
+ * @property {Function} peer - {@link Peer} constructor.
+ * @property {Function} pool - {@link Pool} constructor.
+ * @property {Function} miner - {@link Miner} constructor.
+ * @property {Function} minerblock - {@link MinerBlock} constructor.
+ * @property {Object} http
+ * @property {Function} http.client - {@link Client} constructor.
+ * @property {Function} http.http - {@link HTTPServer} constructor.
+ * @property {Function} http.provider - {@link HTTPProvider} constructor.
+ * @property {Function} http.request - See {@link request}.
+ * @property {Function} http.server - {@link NodeServer} constructor.
+ * @property {Object} workers - See {@link module:workers}.
+ */
+
+function Environment(options) {
+  if (!(this instanceof Environment))
+    return new Environment(options);
+
+  if (!options)
+    options = {};
+
+  if (typeof options === 'string')
+    options = { network: options };
+
+  this.options = options;
+
+  this._ensured = false;
+  this._debug = null;
+
+  this.isBrowser =
+    (typeof process !== 'undefined' &amp;&amp; process.browser)
+    || typeof window !== 'undefined';
+
+  this.prefix = process.env.BCOIN_PREFIX
+    || options.prefix
+    || process.env.HOME + '/.bcoin';
+
+  this.db = options.db;
+
+  if (process.env.BCOIN_DB != null)
+    this.db = process.env.BCOIN_DB;
+
+  this.debugLogs = options.debug;
+
+  if (process.env.BCOIN_DEBUG != null)
+    this.debugLogs = +process.env.BCOIN_DEBUG === 1;
+
+  this.debugFile = options.debugFile;
+
+  if (process.env.BCOIN_DEBUGFILE != null) {
+    if (process.env.BCOIN_DEBUGFILE === '0'
+        || process.env.BCOIN_DEBUGFILE === '1') {
+      this.debugFile = +process.env.BCOIN_DEBUGFILE !== 0;
+    } else {
+      this.debugFile = process.env.BCOIN_DEBUGFILE;
+    }
+  }
+
+  if (this.debugFile &amp;&amp; typeof this.debugFile !== 'string')
+    this.debugFile = this.prefix + '/debug.log'
+
+  this.profile = options.profile;
+
+  if (process.env.BCOIN_PROFILE != null)
+    this.profile = +process.env.BCOIN_PROFILE === 1;
+
+  this.useWorkers = options.useWorkers;
+
+  if (process.env.BCOIN_USE_WORKERS != null)
+    this.useWorkers = +process.env.BCOIN_USE_WORKERS === 1;
+
+  this.useWorkers = options.maxWorkers;
+
+  if (process.env.BCOIN_MAX_WORKERS != null)
+    this.maxWorkers = +process.env.BCOIN_MAX_WORKERS;
+
+  this.workerTimeout = options.workerTimeout;
+
+  if (process.env.BCOIN_WORKER_TIMEOUT != null)
+    this.workerTimeout = +process.env.BCOIN_WORKER_TIMEOUT;
+
+  this.networkType = process.env.BCOIN_NETWORK
+    || options.network
+    || 'main';
+
+  this.bn = require('bn.js');
+  this.utils = require('./utils');
+  this.locker = require('./locker');
+  this.reader = require('./reader');
+  this.writer = require('./writer');
+  this.ec = require('./ec');
+  this.lru = require('./lru');
+  this.bloom = require('./bloom');
+  this.bst = require('./bst');
+  this.lowlevelup = require('./lowlevelup');
+
+  this.protocol = require('./protocol')(this);
+  this.profiler = require('./profiler')(this);
+  this.ldb = require('./ldb')(this);
+  this.script = require('./script')(this);
+  this.stack = this.script.stack;
+  this.witness = this.script.witness;
+  this.input = require('./input')(this);
+  this.output = require('./output')(this);
+  this.coin = require('./coin')(this);
+  this.coins = require('./coins')(this);
+  this.coinview = require('./coinview')(this);
+  this.tx = require('./tx')(this);
+  this.transaction = this.tx;
+  this.mtx = require('./mtx')(this);
+  this.mutabletransaction = this.mtx;
+  this.txdb = require('./txdb')(this);
+  this.abstractblock = require('./abstractblock')(this);
+  this.compactblock = require('./compactblock')(this);
+  this.block = require('./block')(this);
+  this.merkleblock = require('./merkleblock')(this);
+  this.headers = require('./headers')(this);
+  this.node = require('./node')(this);
+  this.spvnode = require('./spvnode')(this);
+  this.fullnode = require('./fullnode')(this);
+  this.chainblock = require('./chainblock')(this);
+  this.chaindb = require('./chaindb')(this);
+  this.chain = require('./chain')(this);
+  this.mempool = require('./mempool')(this);
+  this.keypair = require('./keypair')(this);
+  this.hd = require('./hd')(this);
+  this.address = require('./address')(this);
+  this.wallet = require('./wallet')(this);
+  this.walletdb = require('./walletdb')(this);
+  this.provider = this.walletdb.provider;
+  this.peer = require('./peer')(this);
+  this.pool = require('./pool')(this);
+  this.miner = require('./miner')(this);
+  this.minerblock = this.miner.minerblock;
+  this.http = require('./http')(this);
+  this.workers = this.useWorkers &amp;&amp; !this.isBrowser
+    ? require('./work' + 'ers')(this)
+    : null;
+}
+
+/**
+ * Ensure the `prefix`.
+ * @private
+ */
+
+Environment.prototype.ensurePrefix = function ensurePrefix() {
+  if (this.isBrowser)
+    return;
+
+  if (this._ensured)
+    return;
+
+  this._ensured = true;
+
+  try {
+    fs.statSync(this.prefix);
+  } catch (e) {
+    fs.mkdirSync(this.prefix, 488 /* 0750 */);
+  }
+};
+
+/**
+ * Output a debug message.
+ * @example
+ * bcoin.debug('foo: %d', 10);
+ */
+
+Environment.prototype.debug = function debug() {
+  var args = Array.prototype.slice.call(arguments);
+  var msg;
+
+  if (this.isBrowser) {
+    if (this.debugLogs) {
+      msg = typeof args[0] === 'object'
+        ? args[0]
+        : utils.format(args, false).slice(0, -1);
+      console.error(msg);
+    }
+    return;
+  }
+
+  if (this.debugLogs) {
+    msg = utils.format(args, true);
+    process.stderr.write(msg);
+  }
+
+  if (this.debugFile) {
+    if (!this._debug) {
+      this.ensurePrefix();
+      this._debug = fs.createWriteStream(this.debugFile, { flags: 'a' });
+    }
+    msg = utils.format(args, false);
+    this._debug.write(process.pid + ': ' + msg);
+  }
+};
+
+/**
+ * Expose
+ */
+
+module.exports = Environment;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

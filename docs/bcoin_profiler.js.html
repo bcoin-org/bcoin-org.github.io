@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/profiler.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/profiler.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * profiler.js - profiler for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+module.exports = function(bcoin) {
+
+/**
+ * @exports profiler
+ */
+
+var profiler = {};
+
+var utils = require('./utils');
+var assert = utils.assert;
+var fs, profiler;
+
+if (bcoin.profile &amp;&amp; !bcoin.isBrowser) {
+  profiler = require('v8-' + 'profiler');
+  fs = require('f' + 's');
+}
+
+/**
+ * A CPU profile.
+ * @exports Profile
+ * @constructor
+ * @param {String?} name
+ */
+
+function Profile(name) {
+  if (profiler) {
+    name = 'profile-' + (name ? name + '-' : '') + Profile.uid++;
+    bcoin.debug('Starting CPU profile: %s', name);
+    this.profile = profiler.startProfiling(name, true);
+    this.name = name;
+  }
+}
+
+Profile.uid = 0;
+
+/**
+ * Stop profiling.
+ */
+
+Profile.prototype.stopProfiling = function stopProfiling() {
+  if (!profiler)
+    return;
+
+  assert(this.profile);
+
+  return this.profile.stopProfiling();
+};
+
+/**
+ * Free up profile.
+ */
+
+Profile.prototype.del = function del() {
+  if (!profiler)
+    return;
+
+  assert(this.profile);
+
+  return this.profile['delete']();
+};
+
+/**
+ * Save profile as json (.cpuprofile) to `prefix`.
+ * @param {Function} callback
+ */
+
+Profile.prototype.save = function save(callback) {
+  var self = this;
+
+  callback = utils.asyncify(callback);
+
+  if (!profiler)
+    return callback();
+
+  assert(this.profile);
+
+  bcoin.debug('Saving CPU profile: %s', this.name);
+
+  return this.profile['export'](function(err, result) {
+    var file;
+
+    self.profile['delete']();
+    delete self.profile;
+
+    if (err)
+      return callback(err);
+
+    file = bcoin.prefix + '/' + self.name + '.cpuprofile';
+
+    fs.writeFile(file, result, callback);
+  });
+};
+
+/**
+ * Memory Snapshot
+ * @exports Snapshot
+ * @constructor
+ * @param {String?} name
+ */
+
+function Snapshot(name) {
+  if (profiler) {
+    name = 'snapshot-' + (name ? name + '-' : '') + Snapshot.uid++;
+    bcoin.debug('Taking heap snapshot: %s', name);
+    this.snapshot = profiler.takeSnapshot(name);
+    this.name = name;
+  }
+}
+
+Snapshot.uid = 0;
+
+/**
+ * Compare two snapshots.
+ * @param {Snapshot}
+ * @returns {Object}
+ */
+
+Snapshot.prototype.compare = function compare(other) {
+  if (!profiler)
+    return;
+
+  assert(this.snapshot);
+
+  return this.snapshot.compare(other.snapshot);
+};
+
+/**
+ * Get header.
+ * @returns {Object}
+ */
+
+Snapshot.prototype.getHeader = function getHeader() {
+  if (!profiler)
+    return;
+
+  assert(this.snapshot);
+
+  return this.snapshot.getHeader();
+};
+
+/**
+ * Free up snapshot.
+ */
+
+Snapshot.prototype.del = function del() {
+  if (!profiler)
+    return;
+
+  assert(this.snapshot);
+
+  return this.snapshot['delete']();
+};
+
+/**
+ * Save snapshot as json (.heapsnapshot) to `prefix`.
+ * @param {Function} callback
+ */
+
+Snapshot.prototype.save = function save(callback) {
+  var self = this;
+
+  callback = utils.asyncify(callback);
+
+  if (!profiler)
+    return callback();
+
+  assert(this.snapshot);
+
+  bcoin.debug('Saving heap snapshot: %s', this.name);
+
+  return this.snapshot['export'](function(err, result) {
+    var file;
+
+    self.snapshot['delete']();
+    delete self.snapshot;
+
+    if (err)
+      return callback(err);
+
+    file = bcoin.prefix + '/' + self.name + '.heapsnapshot';
+
+    fs.writeFile(file, result, callback);
+  });
+};
+
+/**
+ * Create a new CPU profile and begin profiling.
+ * @param {String?} name
+ * @returns {Profile}
+ */
+
+profiler.startProfiling = function startProfiling(name) {
+  return new Profile(name);
+};
+
+/**
+ * Create a new memory snapshot.
+ * @param {String?} name
+ * @returns {Snapshot}
+ */
+
+profiler.takeSnapshot = function takeSnapshot(name) {
+  return new Snapshot(name);
+};
+
+/**
+ * Take a snapshot and save it to disk.
+ * @param {String?} name
+ * @param {Function?} callback
+ */
+
+profiler.snapshot = function snapshot(name, callback) {
+  var snapshot, mem;
+
+  if (typeof name === 'function') {
+    callback = name;
+    name = null;
+  }
+
+  if (bcoin.debugLogs) {
+    mem = process.memoryUsage();
+    bcoin.debug('Memory: rss=%dmb, js-heap=%d/%dmb native-heap=%dmb',
+      utils.mb(mem.rss),
+      utils.mb(mem.heapUsed),
+      utils.mb(mem.heapTotal),
+      utils.mb(mem.rss - mem.heapTotal));
+  }
+
+  if (!profiler)
+    return callback ? utils.nextTick(callback) : null;
+
+  snapshot = new Snapshot(name);
+  snapshot.save(callback);
+};
+
+return profiler;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

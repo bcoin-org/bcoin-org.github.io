@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/headers.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/headers.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * headers.js - headers object for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+module.exports = function(bcoin) {
+
+var utils = require('./utils');
+
+/**
+ * Represents block headers obtained from the network via `headers`.
+ * @exports Headers
+ * @constructor
+ * @extends AbstractBlock
+ * @param {NakedBlock} data
+ * @property {Number} version - Block version. Note
+ * that BCoin reads versions as unsigned despite
+ * them being signed on the protocol level. This
+ * number will never be negative.
+ * @property {Hash} prevBlock - Previous block hash.
+ * @property {Hash} merkleRoot - Merkle root hash.
+ * @property {Number} ts - Timestamp.
+ * @property {Number} bits
+ * @property {Number} nonce
+ * @property {Number} totalTX - Transaction count.
+ * @property {Number} height - Block height (-1 if not present).
+ * @property {ReversedHash} rhash - Reversed block hash (uint256le).
+ */
+
+function Headers(data) {
+  if (!(this instanceof Headers))
+    return new Headers(data);
+
+  bcoin.abstractblock.call(this, data);
+
+  this.type = 'headers';
+}
+
+utils.inherits(Headers, bcoin.abstractblock);
+
+/**
+ * Serialize the header into a `headers` packet.
+ * @returns {Buffer}
+ */
+
+Headers.prototype.render = function render() {
+  return this.getRaw();
+};
+
+/**
+ * Do non-contextual verification on the headers.
+ * @name verify
+ * @param {Object?} ret - Return object, may be
+ * set with properties `reason` and `score`.
+ * @returns {Boolean}
+ */
+
+Headers.prototype._verify = function _verify() {
+  return this.verifyHeaders();
+};
+
+/**
+ * Get size of the headers.
+ * @returns {Number}
+ */
+
+Headers.prototype.getSize = function getSize() {
+  if (this._size == null)
+    this.getRaw();
+  return this._size;
+};
+
+/**
+ * Get the raw headers serialization.
+ * @returns {Buffer}
+ */
+
+Headers.prototype.getRaw = function getRaw() {
+  if (!this._raw) {
+    this._raw = bcoin.protocol.framer.headers([this]);
+    this._size = this._raw.length;
+  }
+  return this._raw;
+};
+
+/**
+ * Inspect the headers and return a more
+ * user-friendly representation of the data.
+ * @returns {Object}
+ */
+
+Headers.prototype.inspect = function inspect() {
+  var copy = bcoin.headers(this);
+  copy.__proto__ = null;
+  delete copy._raw;
+  copy.hash = this.hash('hex');
+  copy.rhash = this.rhash;
+  copy.date = new Date((copy.ts || 0) * 1000).toISOString();
+  return copy;
+};
+
+/**
+ * Serialize the headers.
+ * @see {Headers#render}
+ * @param {String?} enc - Encoding, can be `'hex'` or null.
+ * @returns {Buffer|String}
+ */
+
+Headers.prototype.toRaw = function toRaw(enc) {
+  var data;
+
+  data = this.render();
+
+  if (enc === 'hex')
+    data = utils.toHex(data);
+
+  return data;
+};
+
+/**
+ * Parse a serialized headers.
+ * @param {Buffer} data
+ * @param {String?} enc - Encoding, can be `'hex'` or null.
+ * @returns {NakedBlock} A "naked" headers object.
+ */
+
+Headers._fromRaw = function _fromRaw(data, enc) {
+  if (enc === 'hex')
+    data = new Buffer(data, 'hex');
+
+  return bcoin.protocol.parser.parseHeaders(data)[0];
+};
+
+/**
+ * Instantiate headers from a serialized Buffer.
+ * @param {Buffer} data
+ * @param {String?} enc - Encoding, can be `'hex'` or null.
+ * @returns {Headers}
+ */
+
+Headers.fromRaw = function fromRaw(data, enc) {
+  return new Headers(Headers._fromRaw(data, enc));
+};
+
+/**
+ * Test an object to see if it is a Headers object.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+Headers.isHeaders = function isHeaders(obj) {
+  return obj &amp;&amp; obj.type === 'headers' &amp;&amp; typeof obj.render === 'function';
+};
+
+/**
+ * Expose
+ */
+
+return Headers;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

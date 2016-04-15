@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/bloom.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/bloom.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * bloom.js - bloom filter for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+var utils = require('./utils');
+
+/**
+ * Bloom Filter
+ * @exports Bloom
+ * @constructor
+ * @param {Number} size - Filter size in bytes.
+ * @param {Number} n - Number of hash functions.
+ * @param {Number} tweak - Seed value.
+ * @property {Buffer} filter
+ * @property {Number} size
+ * @property {Number} n
+ * @property {Number} tweak
+ */
+
+function Bloom(size, n, tweak) {
+  if (!(this instanceof Bloom))
+    return new Bloom(size, n, tweak);
+
+  this.filter = new Buffer(Math.ceil(size / 8));
+  this.size = size;
+  this.n = n;
+  this.tweak = tweak;
+  this.update = null;
+
+  this.reset();
+}
+
+/**
+ * Perform the mumur3 hash on data.
+ * @param {Buffer} val
+ * @param {Number} seed
+ * @returns {Number}
+ */
+
+Bloom.prototype.hash = function hash(val, n) {
+  return murmur(val, sum32(mul32(n, 0xfba4c795), this.tweak)) % this.size;
+};
+
+/**
+ * Reset the filter.
+ */
+
+Bloom.prototype.reset = function reset() {
+  this.filter.fill(0);
+};
+
+/**
+ * Add data to the filter.
+ * @param {Buffer|String}
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ */
+
+Bloom.prototype.add = function add(val, enc) {
+  var i, bit, pos, shift;
+
+  val = utils.toBuffer(val, enc);
+
+  for (i = 0; i &lt; this.n; i++) {
+    bit = this.hash(val, i);
+    pos = 1 &lt;&lt; (bit &amp; 0x1f);
+    shift = bit >> 5;
+    shift *= 4;
+
+    utils.writeU32(this.filter, utils.readU32(this.filter, shift) | pos, shift);
+  }
+};
+
+/**
+ * Test whether data is present in the filter.
+ * @param {Buffer|String} val
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ */
+
+Bloom.prototype.test = function test(val, enc) {
+  var i, bit, pos, shift;
+
+  val = utils.toBuffer(val, enc);
+
+  for (i = 0; i &lt; this.n; i++) {
+    bit = this.hash(val, i);
+    pos = 1 &lt;&lt; (bit &amp; 0x1f);
+    shift = bit >> 5;
+    shift *= 4;
+
+    if ((utils.readU32(this.filter, shift) &amp; pos) === 0)
+      return false;
+  }
+
+  return true;
+};
+
+/**
+ * Return a Buffer representing the filter,
+ * suitable for transmission on the network.
+ * @returns {Buffer}
+ */
+
+Bloom.prototype.toBuffer = function toBuffer() {
+  return this.filter;
+};
+
+function mul32(a, b) {
+  var alo = a &amp; 0xffff;
+  var blo = b &amp; 0xffff;
+  var ahi = a >>> 16;
+  var bhi = b >>> 16;
+  var r, lo, hi;
+
+  lo = alo * blo;
+  hi = (ahi * blo + bhi * alo) &amp; 0xffff;
+
+  hi += lo >>> 16;
+  lo &amp;= 0xffff;
+  r = (hi &lt;&lt; 16) | lo;
+
+  if (r &lt; 0)
+    r += 0x100000000;
+
+  return r;
+}
+
+function sum32(a, b) {
+  var r = (a + b) &amp; 0xffffffff;
+
+  if (r &lt; 0)
+    r += 0x100000000;
+
+  return r;
+}
+
+function rotl32(w, b) {
+  return (w &lt;&lt; b) | (w >>> (32 - b));
+}
+
+function murmur(data, seed) {
+  var c1 = 0xcc9e2d51;
+  var c2 = 0x1b873593;
+  var r1 = 15;
+  var r2 = 13;
+  var m = 5;
+  var n = 0xe6546b64;
+  var hash = seed;
+  var i, w, r, j;
+
+  data = utils.toBuffer(data);
+
+  for (i = 0; i + 4 &lt;= data.length; i += 4) {
+    w = data[i]
+      | (data[i + 1] &lt;&lt; 8)
+      | (data[i + 2] &lt;&lt; 16)
+      | (data[i + 3] &lt;&lt; 24);
+
+    w = mul32(w, c1);
+    w = rotl32(w, r1);
+    w = mul32(w, c2);
+
+    hash ^= w;
+    hash = rotl32(hash, r2);
+    hash = mul32(hash, m);
+    hash = sum32(hash, n);
+  }
+
+  if (i !== data.length) {
+    r = 0;
+    for (j = data.length - 1; j >= i; j--)
+      r = (r &lt;&lt; 8) | data[j];
+
+    r = mul32(r, c1);
+    r = rotl32(r, r1);
+    if (r &lt; 0)
+      r += 0x100000000;
+    r = mul32(r, c2);
+
+    hash ^= r;
+  }
+
+  hash ^= data.length;
+  hash ^= hash >>> 16;
+  hash = mul32(hash, 0x85ebca6b);
+  hash ^= hash >>> 13;
+  hash = mul32(hash, 0xc2b2ae35);
+  hash ^= hash >>> 16;
+
+  if (hash &lt; 0)
+    hash += 0x100000000;
+
+  return hash;
+}
+
+Bloom.hash = murmur;
+
+module.exports = Bloom;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

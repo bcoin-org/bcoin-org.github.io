@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/address.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/address.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * address.js - address object for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+module.exports = function(bcoin) {
+
+var utils = bcoin.utils;
+var assert = utils.assert;
+var network = bcoin.protocol.network;
+var BufferWriter = require('./writer');
+var BufferReader = require('./reader');
+
+/**
+ * Represents a key ring which amounts to an address. Used for {@link Wallet}.
+ * @exports Address
+ * @constructor
+ * @param {Object} options
+ * @param {String?} options.label
+ * @param {Boolean?} options.derived
+ * @param {HDPrivateKey|HDPublicKey} options.key
+ * @param {String?} options.path
+ * @param {Boolean?} options.change
+ * @param {Number?} options.index
+ * @param {String?} options.type - `"pubkeyhash"` or `"multisig"`.
+ * @param {Buffer[]} options.keys - Shared multisig keys.
+ * @param {Number?} options.m - Multisig `m` value.
+ * @param {Number?} options.n - Multisig `n` value.
+ * @param {Boolean?} options.witness - Whether witness programs are enabled.
+ */
+
+function Address(options) {
+  var i;
+
+  if (!(this instanceof Address))
+    return new Address(options);
+
+  if (options instanceof Address)
+    return options;
+
+  if (!options)
+    options = {};
+
+  this.options = options;
+  this.label = options.label || '';
+  this.derived = !!options.derived;
+  this.addressMap = null;
+
+  this.key = options.key || bcoin.keypair(options);
+  this.path = options.path;
+  this.change = !!options.change;
+  this.index = options.index;
+
+  this.type = options.type || 'pubkeyhash';
+  this.keys = [];
+  this.m = options.m || 1;
+  this.n = options.n || 1;
+  this.witness = options.witness || false;
+
+  if (this.n > 1)
+    this.type = 'multisig';
+
+  assert(this.type === 'pubkeyhash' || this.type === 'multisig');
+
+  if (this.m &lt; 1 || this.m > this.n)
+    throw new Error('m ranges between 1 and n');
+
+  this.addKey(this.getPublicKey());
+
+  if (options.keys) {
+    for (i = 0; i &lt; options.keys.length; i++)
+      this.addKey(options.keys[i]);
+  }
+}
+
+/**
+ * Test an object to see if it is an Address.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+Address.isAddress = function isAddress(obj) {
+  return obj
+    &amp;&amp; Array.isArray(obj.keys)
+    &amp;&amp; typeof obj._getAddressMap === 'function';
+};
+
+/**
+ * Return address ID (pubkeyhash address of pubkey).
+ * @returns {Base58Address}
+ */
+
+Address.prototype.getID = function getID() {
+  return this.getKeyAddress();
+};
+
+/**
+ * Add a key to shared keys.
+ * @param {Buffer} key
+ */
+
+Address.prototype.addKey = function addKey(key) {
+  if (utils.indexOf(this.keys, key) !== -1)
+    return;
+
+  this.keys.push(key);
+
+  this.keys = utils.sortKeys(this.keys);
+};
+
+/**
+ * Remove a key from shared keys.
+ * @param {Buffer} key
+ */
+
+Address.prototype.removeKey = function removeKey(key) {
+  var index = utils.indexOf(this.keys, key);
+
+  if (index === -1)
+    return;
+
+  this.keys.splice(index, 1);
+
+  this.keys = utils.sortKeys(this.keys);
+};
+
+/**
+ * Get private key.
+ * @param {String?} enc - `"hex"` or `null`.
+ * @returns {Buffer}
+ */
+
+Address.prototype.getPrivateKey = function getPrivateKey(enc) {
+  return this.key.getPrivateKey(enc);
+};
+
+/**
+ * Get public key.
+ * @param {String?} enc - `"hex"` or `null`.
+ * @returns {Buffer}
+ */
+
+Address.prototype.getPublicKey = function getPublicKey(enc) {
+  return this.key.getPublicKey(enc);
+};
+
+/**
+ * Get redeem script.
+ * @returns {Script}
+ */
+
+Address.prototype.getScript = function getScript() {
+  var redeem;
+
+  if (this.type !== 'multisig')
+    return;
+
+  if (this._script)
+    return this._script;
+
+  assert(this.keys.length === this.n, 'Not all keys have been added.');
+
+  redeem = bcoin.script.createMultisig(this.keys, this.m, this.n);
+
+  if (this.witness) {
+    if (redeem.getSize() > 10000)
+      throw new Error('Redeem script too large (10000 byte limit).');
+  } else {
+    if (redeem.getSize() > 520)
+      throw new Error('Redeem script too large (520 byte limit).');
+  }
+
+  this._script = redeem;
+
+  return this._script;
+};
+
+/**
+ * Get witness program.
+ * @returns {Buffer}
+ */
+
+Address.prototype.getProgram = function getProgram() {
+  var program;
+
+  if (!this.witness)
+    return;
+
+  if (this._program)
+    return this._program;
+
+  if (this.type === 'pubkeyhash') {
+    program = bcoin.script.createWitnessProgram(
+      0, Address.hash160(this.getPublicKey()));
+  } else if (this.type === 'multisig') {
+    program = bcoin.script.createWitnessProgram(
+      0, Address.sha256(this.getScript().encode()));
+  }
+
+  assert(program);
+
+  this._program = program;
+
+  return this._program;
+};
+
+/**
+ * Get address' ripemd160 program scripthash
+ * (for witness programs behind a scripthash).
+ * @returns {Buffer}
+ */
+
+Address.prototype.getProgramHash = function getProgramHash() {
+  if (!this.witness)
+    return;
+
+  if (this._programHash)
+    return this._programHash;
+
+  this._programHash = Address.hash160(this.getProgram().encode());
+
+  return this._programHash;
+};
+
+/**
+ * Get address' scripthash address for witness program.
+ * @returns {Base58Address}
+ */
+
+Address.prototype.getProgramAddress = function getProgramAddress() {
+  if (!this.witness)
+    return;
+
+  if (this._programAddress)
+    return this._programAddress;
+
+  this._programAddress =
+    Address.compileHash(this.getProgramHash(), 'scripthash');
+
+  return this._programAddress;
+};
+
+/**
+ * Get scripthash.
+ * @returns {Buffer}
+ */
+
+Address.prototype.getScriptHash = function getScriptHash() {
+  return this.getScriptHash160();
+};
+
+/**
+ * Get ripemd160 scripthash.
+ * @returns {Buffer}
+ */
+
+Address.prototype.getScriptHash160 = function getScriptHash256() {
+  if (this.type !== 'multisig')
+    return;
+
+  if (this._scriptHash160)
+    return this._scriptHash160;
+
+  this._scriptHash160 = Address.hash160(this.getScript().encode());
+
+  return this._scriptHash160;
+};
+
+/**
+ * Get sha256 scripthash.
+ * @returns {Buffer}
+ */
+
+Address.prototype.getScriptHash256 = function getScriptHash256() {
+  if (this.type !== 'multisig')
+    return;
+
+  if (this._scriptHash256)
+    return this._scriptHash256;
+
+  this._scriptHash256 = Address.sha256(this.getScript().encode());
+
+  return this._scriptHash256;
+};
+
+/**
+ * Get scripthash address.
+ * @returns {Base58Address}
+ */
+
+Address.prototype.getScriptAddress = function getScriptAddress() {
+  if (this.type !== 'multisig')
+    return;
+
+  if (this._scriptAddress)
+    return this._scriptAddress;
+
+  if (this.witness) {
+    this._scriptAddress =
+      Address.compileHash(this.getScriptHash256(), 'witnessscripthash', 0);
+  } else {
+    this._scriptAddress =
+      Address.compileHash(this.getScriptHash160(), 'scripthash');
+  }
+
+  return this._scriptAddress;
+};
+
+/**
+ * Get public key hash.
+ * @returns {Buffer}
+ */
+
+Address.prototype.getKeyHash = function getKeyHash() {
+  if (this._hash)
+    return this._hash;
+
+  this._hash = Address.hash160(this.getPublicKey());
+
+  return this._hash;
+};
+
+/**
+ * Get pubkeyhash address.
+ * @returns {Base58Address}
+ */
+
+Address.prototype.getKeyAddress = function getKeyAddress() {
+  if (this._address)
+    return this._address;
+
+  if (this.witness)
+    this._address = Address.compileHash(this.getKeyHash(), 'witnesspubkeyhash', 0);
+  else
+    this._address = Address.compileHash(this.getKeyHash(), 'pubkeyhash');
+
+  return this._address;
+};
+
+/**
+ * Get hash.
+ * @returns {Buffer}
+ */
+
+Address.prototype.getHash = function getHash() {
+  if (this.type === 'multisig')
+    return this.getScriptHash();
+  return this.getKeyHash();
+};
+
+/**
+ * Get base58 address.
+ * @returns {Base58Address}
+ */
+
+Address.prototype.getAddress = function getAddress() {
+  if (this.type === 'multisig')
+    return this.getScriptAddress();
+  return this.getKeyAddress();
+};
+
+Address.prototype._getAddressMap = function _getAddressMap() {
+  if (this.addressMap)
+    return this.addressMap;
+
+  this.addressMap = {};
+
+  this.addressMap[this.getKeyAddress()] = true;
+
+  if (this.type === 'multisig')
+    this.addressMap[this.getScriptAddress()] = true;
+
+  if (this.witness)
+    this.addressMap[this.getProgramAddress()] = true;
+
+  return this.addressMap;
+};
+
+/**
+ * Check whether transaction input belongs to this address.
+ * @param {TX|Output} tx - Transaction or Output.
+ * @param {Number?} index - Output index.
+ * @returns {Boolean}
+ */
+
+Address.prototype.ownInput = function ownInput(tx, index) {
+  var addressMap = this._getAddressMap();
+
+  if (tx instanceof bcoin.input)
+    return tx.test(addressMap);
+
+  return tx.testInputs(addressMap, index);
+};
+
+/**
+ * Check whether transaction output belongs to this address.
+ * @param {TX|Output} tx - Transaction or Output.
+ * @param {Number?} index - Output index.
+ * @returns {Boolean}
+ */
+
+Address.prototype.ownOutput = function ownOutput(tx, index) {
+  var addressMap = this._getAddressMap();
+
+  if (tx instanceof bcoin.output)
+    return tx.test(addressMap);
+
+  return tx.testOutputs(addressMap, index);
+};
+
+/**
+ * Build input scripts templates for a transaction (does not
+ * sign, only creates signature slots). Only builds scripts
+ * for inputs that are redeemable by this address.
+ * @param {MTX} tx
+ * @param {Number?} index - Index of input. If not present,
+ * it will attempt to sign all redeemable inputs.
+ * @returns {Number} Total number of scripts built.
+ */
+
+Address.prototype.scriptInputs = function scriptInputs(tx, index) {
+  var total = 0;
+  var i, input;
+
+  if (index &amp;&amp; typeof index === 'object')
+    index = tx.inputs.indexOf(index);
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+
+    if (index != null &amp;&amp; index !== i)
+      continue;
+
+    if (!input.coin)
+      continue;
+
+    if (!this.ownOutput(input.coin))
+      continue;
+
+    if (tx.scriptInput(i, this))
+      total++;
+  }
+
+  return total;
+};
+
+/**
+ * Sign inputs for a transaction. Only attempts to sign inputs
+ * that are redeemable by this address.
+ * @param {MTX} tx
+ * @param {Number?} index - Index of input. If not present,
+ * it will attempt to sign all redeemable inputs.
+ * @param {SighashType?} type
+ * @returns {Number} Total number of inputs signed.
+ */
+
+Address.prototype.signInputs = function signInputs(tx, index, type) {
+  var total = 0;
+  var i, input;
+
+  if (index &amp;&amp; typeof index === 'object')
+    index = tx.inputs.indexOf(index);
+
+  if (!this.key.privateKey)
+    return 0;
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+
+    if (index != null &amp;&amp; index !== i)
+      continue;
+
+    if (!input.coin)
+      continue;
+
+    if (!this.ownOutput(input.coin))
+      continue;
+
+    if (tx.signInput(i, this, type))
+      total++;
+  }
+
+  return total;
+};
+
+/**
+ * Build input scripts and sign inputs for a transaction. Only attempts
+ * to build/sign inputs that are redeemable by this address.
+ * @param {MTX} tx
+ * @param {Number?} index - Index of input. If not present,
+ * it will attempt to build and sign all redeemable inputs.
+ * @param {SighashType?} type
+ * @returns {Number} Total number of inputs scripts built and signed.
+ */
+
+Address.prototype.sign = function sign(tx, index, type) {
+  var total = 0;
+  var i, input;
+
+  if (index &amp;&amp; typeof index === 'object')
+    index = tx.inputs.indexOf(index);
+
+  if (!this.key.privateKey)
+    return 0;
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+
+    if (index != null &amp;&amp; index !== i)
+      continue;
+
+    if (!input.coin)
+      continue;
+
+    if (!this.ownOutput(input.coin))
+      continue;
+
+    if (tx.sign(i, this, type))
+      total++;
+  }
+
+  return total;
+};
+
+Address.prototype.__defineGetter__('privateKey', function() {
+  return this.getPrivateKey();
+});
+
+Address.prototype.__defineGetter__('publicKey', function() {
+  return this.getPublicKey();
+});
+
+Address.prototype.__defineGetter__('script', function() {
+  return this.getScript();
+});
+
+Address.prototype.__defineGetter__('scriptHash', function() {
+  return this.getScriptHash();
+});
+
+Address.prototype.__defineGetter__('scriptHash160', function() {
+  return this.getScriptHash160();
+});
+
+Address.prototype.__defineGetter__('scriptHash256', function() {
+  return this.getScriptHash256();
+});
+
+Address.prototype.__defineGetter__('scriptAddress', function() {
+  return this.getScriptAddress();
+});
+
+Address.prototype.__defineGetter__('program', function() {
+  return this.getProgram();
+});
+
+Address.prototype.__defineGetter__('programHash', function() {
+  return this.getProgramHash();
+});
+
+Address.prototype.__defineGetter__('programAddress', function() {
+  return this.getProgramAddress();
+});
+
+Address.prototype.__defineGetter__('keyHash', function() {
+  return this.getKeyHash();
+});
+
+Address.prototype.__defineGetter__('keyAddress', function() {
+  return this.getKeyAddress();
+});
+
+Address.prototype.__defineGetter__('hash', function() {
+  return this.getHash();
+});
+
+Address.prototype.__defineGetter__('address', function() {
+  return this.getAddress();
+});
+
+/**
+ * Perform a hash160 (sha256 + ripemd160)
+ * @param {Buffer} key
+ * @returns {Buffer}
+ */
+
+Address.hash160 = function hash160(key) {
+  return utils.ripesha(key);
+};
+
+/**
+ * @param {Buffer} key
+ * @returns {Buffer}
+ */
+
+Address.sha256 = function sha256(key) {
+  return utils.sha256(key);
+};
+
+/**
+ * Can be `pubkeyhash`, `scripthash`, `witnesspubkeyhash`,
+ * or `witnessscripthash`, or an address prefix
+ * (see {@link network.address}).
+ * @global
+ * @typedef {String|Number} AddressType
+ */
+
+/**
+ * Compile a hash to an address.
+ * @param {Hash|Buffer} hash
+ * @param {AddressType?} type
+ * @param {Number?} version - Witness version.
+ * @returns {Base58Address}
+ * @throws Error on bad hash/prefix.
+ */
+
+Address.compileHash = function compileHash(hash, type, version) {
+  var p, prefix;
+
+  if (!Buffer.isBuffer(hash))
+    hash = new Buffer(hash, 'hex');
+
+  if (!type)
+    type = 'pubkeyhash';
+
+  prefix = network.address.prefixes[type];
+
+  if (version == null)
+    version = network.address.versions[type];
+
+  assert(prefix != null, 'Not a valid address prefix.');
+
+  if (version == null)
+    assert(hash.length === 20, 'Hash is the wrong size.');
+  else if (version === 0 &amp;&amp; type === 'witnesspubkeyhash')
+    assert(hash.length === 20, 'Hash is the wrong size.');
+  else if (version === 0 &amp;&amp; type === 'witnessscripthash')
+    assert(hash.length === 32, 'Hash is the wrong size.');
+
+  p = new BufferWriter();
+
+  p.writeU8(prefix);
+  if (version != null) {
+    p.writeU8(version);
+    p.writeU8(0)
+  }
+  p.writeBytes(hash);
+  p.writeChecksum();
+
+  return utils.toBase58(p.render());
+};
+
+/**
+ * Hash data and compile hash to an address.
+ * @param {Hash|Buffer} hash
+ * @param {AddressType?} type
+ * @param {Number?} version - Witness program version.
+ * @returns {Base58Address}
+ */
+
+Address.compileData = function compileData(data, type, version) {
+  if (type === 'witnessscripthash')
+    data = Address.sha256(data);
+  else
+    data = Address.hash160(data);
+
+  return Address.compileHash(data, type, version);
+};
+
+/**
+ * @typedef {Object} ParsedAddress
+ * @property {Number?} version - Witness program version (-1 if not present).
+ * @property {AddressType} type
+ * @property {Buffer} hash
+ */
+
+/**
+ * Parse a base58 address.
+ * @param {Base58Address} address
+ * @returns {ParsedAddress}
+ * @throws Parse error
+ */
+
+Address.parse = function parse(address) {
+  var prefix, type, version, hash;
+
+  if (!Buffer.isBuffer(address))
+    address = utils.fromBase58(address);
+
+  p = new BufferReader(address, true);
+  prefix = p.readU8();
+
+  type = network.address.prefixesByVal[prefix];
+  version = network.address.versions[type];
+
+  assert(type != null, 'Not a valid address prefix.');
+
+  if (version != null) {
+    version = p.readU8();
+    assert(version >= 0 &amp;&amp; version &lt;= 16, 'Bad program version.');
+    assert(p.readU8() === 0, 'Address version padding is non-zero.');
+  }
+
+  if (type === 'witnessscripthash')
+    hash = p.readBytes(32);
+  else
+    hash = p.readBytes(20);
+
+  p.verifyChecksum();
+
+  return {
+    type: type,
+    hash: hash,
+    version: version == null ? -1 : version
+  };
+};
+
+/**
+ * Validate an address, optionally test against a type.
+ * @param {String} address - Can be of any type in reality.
+ * @param {AddressType}
+ * @returns {Boolean}
+ */
+
+Address.validate = function validate(address, type) {
+  if (!address)
+    return false;
+
+  if (!Buffer.isBuffer(address) &amp;&amp; typeof address !== 'string')
+    return false;
+
+  try {
+    address = Address.parse(address);
+  } catch (e) {
+    return false;
+  }
+
+  if (type &amp;&amp; address.type !== type)
+    return false;
+
+  return true;
+};
+
+/**
+ * Convert an Address to a more json-friendly object.
+ * @param {String?} passphrase - Address passphrase
+ * @returns {Object}
+ */
+
+Address.prototype.toJSON = function toJSON(passphrase) {
+  var key = this.key;
+
+  if (!(key instanceof bcoin.keypair))
+    key = new bcoin.keypair({ privateKey: key.getPrivateKey() });
+
+  return {
+    v: 1,
+    name: 'address',
+    network: network.type,
+    label: this.label,
+    change: this.change,
+    derived: this.derived,
+    index: this.index,
+    path: this.path,
+    address: this.getAddress(),
+    key: key.toJSON(passphrase),
+    type: this.type,
+    witness: this.witness,
+    keys: this.keys.map(utils.toBase58),
+    m: this.m,
+    n: this.n
+  };
+};
+
+/**
+ * Instantiate an Address from a jsonified transaction object.
+ * @param {Object} json - The jsonified transaction object.
+ * @param {String?} passphrase - Address passphrase
+ * @returns {Address}
+ */
+
+Address.fromJSON = function fromJSON(json, passphrase) {
+  var w;
+
+  assert.equal(json.v, 1);
+  assert.equal(json.name, 'address');
+
+  if (json.network)
+    assert.equal(json.network, network.type);
+
+  w = new Address({
+    label: json.label,
+    change: json.change,
+    derived: json.derived,
+    index: json.index,
+    path: json.path,
+    key: bcoin.keypair.fromJSON(json.key, passphrase),
+    type: json.type,
+    witness: json.witness,
+    keys: json.keys.map(utils.fromBase58),
+    m: json.m,
+    n: json.n
+  });
+
+  return w;
+};
+
+return Address;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

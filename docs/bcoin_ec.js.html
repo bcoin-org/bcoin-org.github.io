@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/ec.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/ec.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * ec.js - ecdsa wrapper for secp256k1 and elliptic
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+var elliptic = require('elliptic');
+var utils = require('./utils');
+var assert = utils.assert;
+var crypto, secp256k1;
+
+if (!utils.isBrowser)
+  crypto = require('cry' + 'pto');
+
+try {
+  secp256k1 = require('secp' + '256k1');
+} catch (e) {
+  ;
+}
+
+/**
+ * @exports ec
+ */
+
+var ec = exports;
+
+/**
+ * elliptic.js secp256k1 curve.
+ * @type {Object}
+ */
+
+ec.elliptic = elliptic.ec('secp256k1');
+
+/**
+ * elliptic.js signature constructor.
+ * @constructor
+ */
+
+ec.signature = require('elliptic/lib/elliptic/ec/signature');
+
+/**
+ * elliptic.js keypair constructor.
+ * @constructor
+ */
+
+ec.keypair = require('elliptic/lib/elliptic/ec/key');
+
+/**
+ * Generate a private key.
+ * @returns {Buffer} Private key.
+ */
+
+ec.generatePrivateKey = function generatePrivateKey() {
+  var key, priv;
+
+  if (secp256k1 &amp;&amp; crypto) {
+    do {
+      priv = crypto.randomBytes(32);
+    } while (!secp256k1.privateKeyVerify(priv));
+  } else {
+    key = ec.elliptic.genKeyPair();
+    priv = key.getPrivate().toBuffer('be', 32);
+  }
+
+  return priv;
+};
+
+/**
+ * Create a public key from a private key.
+ * @param {Buffer} priv
+ * @param {Boolean?} compressed
+ * @returns {Buffer}
+ */
+
+ec.publicKeyCreate = function publicKeyCreate(priv, compressed) {
+  assert(Buffer.isBuffer(priv));
+
+  if (secp256k1)
+    return secp256k1.publicKeyCreate(priv, compressed);
+
+  priv = ec.elliptic.keyPair({ priv: priv }).getPublic(compressed, 'array');
+  return new Buffer(priv);
+};
+
+/**
+ * Generate some random bytes.
+ * @param {Number} size
+ * @returns {Buffer}
+ */
+
+ec.random = function random(size) {
+  if (crypto)
+    return crypto.randomBytes(size);
+  return new Buffer(ec.elliptic.rand(size));
+};
+
+/**
+ * Verify a signature.
+ * @param {Buffer} msg
+ * @param {Buffer} sig - DER formatted.
+ * @param {Buffer} key
+ * @param {Boolean?} - Whether this should be treated as a
+ * "historical" signature. This allows signatures to be of
+ * odd lengths and high S values.
+ * @returns {Boolean}
+ */
+
+ec.verify = function verify(msg, sig, key, historical) {
+  if (!Buffer.isBuffer(sig))
+    return false;
+
+  if (sig.length === 0)
+    return false;
+
+  if (key.getPublicKey)
+    key = key.getPublicKey();
+
+  // Attempt to normalize the signature
+  // length before passing to elliptic.
+  // Note: We only do this for historical data!
+  // https://github.com/indutny/elliptic/issues/78
+  if (historical)
+    sig = ec.normalizeLength(sig);
+
+  try {
+    if (secp256k1) {
+      // secp256k1 fails on high s values. This is
+      // bad for verifying historical data.
+      if (historical)
+        sig = ec.toLowS(sig);
+
+      // Import from DER.
+      sig = secp256k1.signatureImport(sig);
+
+      return secp256k1.verify(msg, sig, key);
+    }
+    return ec.elliptic.verify(msg, sig, key);
+  } catch (e) {
+    // if (!ec.publicKeyVerify(key))
+    //   bcoin.debug('Public key is invalid.');
+    return false;
+  }
+};
+
+/**
+ * Validate a public key.
+ * @param {Buffer} key
+ * @returns {Boolean} True if buffer is a valid public key.
+ */
+
+ec.publicKeyVerify = function publicKeyVerify(key) {
+  if (secp256k1)
+    return secp256k1.publicKeyVerify(key);
+  return ec.elliptic.keyPair({ pub: key }).validate();
+};
+
+/**
+ * Sign a message.
+ * @param {Buffer} msg
+ * @param {Buffer} key - Private key.
+ * @returns {Buffer} DER-formatted signature.
+ */
+
+ec.sign = function sign(msg, key) {
+  var sig;
+
+  if (key.getPrivateKey)
+    key = key.getPrivateKey();
+
+  if (secp256k1) {
+    // Sign message
+    sig = secp256k1.sign(msg, key);
+
+    // Ensure low S value
+    sig = secp256k1.signatureNormalize(sig.signature);
+
+    // Convert to DER array
+    sig = secp256k1.signatureExport(sig);
+  } else {
+    // Sign message and ensure low S value
+    sig = ec.elliptic.sign(msg, key, { canonical: true });
+
+    // Convert to DER array
+    sig = new Buffer(sig.toDER());
+  }
+
+  return sig;
+};
+
+/**
+ * Normalize the length of a signature
+ * (only done for historical data).
+ * @param {Buffer} sig - DER formatted signature.
+ * @returns {Buffer} Signature.
+ */
+
+ec.normalizeLength = function normalizeLength(sig) {
+  var data, p, len, rlen, slen;
+
+  data = sig.slice();
+  p = { place: 0 };
+
+  if (data[p.place++] !== 0x30)
+    return sig;
+
+  len = getLength(data, p);
+
+  if (data.length > len + p.place)
+    data = data.slice(0, len + p.place);
+
+  if (data[p.place++] !== 0x02)
+    return sig;
+
+  rlen = getLength(data, p);
+  p.place += rlen;
+
+  if (data[p.place++] !== 0x02)
+    return sig;
+
+  slen = getLength(data, p);
+  if (data.length > slen + p.place)
+    data = data.slice(0, slen + p.place);
+
+  return data;
+};
+
+function getLength(buf, p) {
+  var initial = buf[p.place++];
+  if (!(initial &amp; 0x80)) {
+    return initial;
+  }
+  var octetLen = initial &amp; 0xf;
+  var val = 0;
+  for (var i = 0, off = p.place; i &lt; octetLen; i++, off++) {
+    val &lt;&lt;= 8;
+    val |= buf[off];
+  }
+  p.place = off;
+  return val;
+}
+
+/**
+ * Test whether a signature has a low S value.
+ * @param {Buffer} sig
+ * @returns {Boolean}
+ */
+
+ec.isLowS = function isLowS(sig) {
+  if (!sig.s) {
+    assert(Buffer.isBuffer(sig));
+
+    try {
+      sig = new ec.signature(sig);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Technically a negative S value is low,
+  // but we don't want to ever use negative
+  // S values in bitcoin.
+  if (sig.s.cmpn(0) &lt;= 0)
+    return false;
+
+  // If S is greater than half the order,
+  // it's too high.
+  if (sig.s.cmp(ec.elliptic.nh) > 0)
+    return false;
+
+  return true;
+};
+
+/**
+ * Lower the S value of a signature (used
+ * for verifying historical data).
+ * @param {Buffer} sig - DER formatted.
+ * @returns {Buffer}
+ */
+
+ec.toLowS = function toLowS(sig) {
+  if (!sig.s) {
+    assert(Buffer.isBuffer(sig));
+
+    try {
+      sig = new ec.signature(sig);
+    } catch (e) {
+      return sig;
+    }
+  }
+
+  // If S is greater than half the order,
+  // it's too high.
+  if (sig.s.cmp(ec.elliptic.nh) > 0)
+    sig.s = ec.elliptic.n.sub(sig.s);
+
+  return new Buffer(sig.toDER());
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

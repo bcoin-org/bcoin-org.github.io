@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/coins.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/coins.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * coins.js - coins object for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+module.exports = function(bcoin) {
+
+var utils = bcoin.utils;
+var assert = utils.assert;
+var constants = bcoin.protocol.constants;
+var BufferReader = require('./reader');
+var BufferWriter = require('./writer');
+
+/**
+ * Represents the outputs for a single transaction.
+ * @exports Coins
+ * @constructor
+ * @param {TX|Object} tx/options - TX or options object.
+ * @param {Hash|Buffer} hash - Transaction hash.
+ * @property {Hash} hash - Transaction hash.
+ * @property {Number} version - Transaction version.
+ * @property {Number} height - Transaction height (-1 if unconfirmed).
+ * @property {Boolean} coinbase - Whether the containing
+ * transaction is a coinbase.
+ * @property {Coin[]} outputs - Coins.
+ */
+
+function Coins(options, hash) {
+  if (!(this instanceof Coins))
+    return new Coins(options, hash);
+
+  if (Buffer.isBuffer(hash))
+    hash = utils.toHex(hash);
+
+  this.version = options.version;
+  this.height = options.height;
+
+  this.coinbase = options.isCoinbase
+    ? options.isCoinbase()
+    : options.coinbase;
+
+  this.hash = hash;
+
+  this.outputs = options.outputs.map(function(coin, i) {
+    if (!coin)
+      return null;
+
+    if (coin instanceof bcoin.coin)
+      return coin;
+
+    coin = utils.merge({}, coin);
+    coin.version = options.version;
+    coin.height = options.height;
+    coin.hash = hash;
+    coin.index = i;
+    coin.coinbase = this.coinbase;
+
+    return new bcoin.coin(coin);
+  }, this);
+}
+
+/**
+ * Add a coin to the collection.
+ * @param {Coin|TX} tx/coin
+ * @param {Number?} index
+ */
+
+Coins.prototype.add = function add(tx, i) {
+  var coin;
+
+  if (i == null) {
+    coin = tx;
+    this.outputs[coin.index] = coin;
+    return;
+  }
+
+  this.outputs[i] = new bcoin.coin(tx, i);
+};
+
+/**
+ * Test whether the collection has a coin.
+ * @param {Number} index
+ * @returns {Boolean}
+ */
+
+Coins.prototype.has = function has(index) {
+  return this.outputs[index] != null;
+};
+
+/**
+ * Get a coin.
+ * @param {Number} index
+ * @returns {Coin}
+ */
+
+Coins.prototype.get = function get(index) {
+  return this.outputs[index];
+};
+
+/**
+ * Remove a coin.
+ * @param {Number} index
+ */
+
+Coins.prototype.remove = function remove(index) {
+  if (index &lt; this.outputs.length)
+    this.outputs[index] = null;
+};
+
+/**
+ * Remove a coin and return it.
+ * @param {Number} index
+ * @returns {Coin}
+ */
+
+Coins.prototype.spend = function spend(index) {
+  var coin = this.get(index);
+  this.remove(index);
+  return coin;
+};
+
+/**
+ * Fill transaction(s) with coins.
+ * @param {TX|TX[]} tx
+ * @param {Boolean?} spend - Whether the coins should
+ * be spent when filling.
+ * @returns {Boolean} True if any inputs were filled.
+ */
+
+Coins.prototype.fill = function fill(tx, spend) {
+  var res = true;
+  var i, input;
+
+  if (tx.txs)
+    tx = tx.txs;
+
+  if (Array.isArray(tx)) {
+    for (i = 0; i &lt; tx.length; i++) {
+      if (!this.fill(tx[i]))
+        res = false;
+    }
+    return res;
+  }
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+
+    if (input.prevout.hash !== this.hash)
+      continue;
+
+    if (!input.coin) {
+      if (spend)
+        input.coin = this.spend(input.prevout.index);
+      else
+        input.coin = this.get(input.prevout.index);
+
+      if (!input.coin)
+        res = false;
+    }
+  }
+
+  return res;
+};
+
+/**
+ * Count number of available coins.
+ * @returns {Number} Total.
+ */
+
+Coins.prototype.count = function count() {
+  return this.outputs.reduce(function(total, output) {
+    if (!output)
+      return total;
+    return total + 1;
+  }, 0);
+};
+
+/**
+ * Convert collection to an array.
+ * @returns {Coin[]}
+ */
+
+Coins.prototype.toArray = function toArray() {
+  return this.outputs.filter(Boolean);
+};
+
+/**
+ * Serialize the coins object.
+ * @returns {Buffer}
+ */
+
+Coins.prototype.toRaw = function toRaw() {
+  return Coins.toRaw(this);
+};
+
+/**
+ * Instantiate a coins object from a transaction.
+ * @param {TX} tx
+ * @returns {Coins}
+ */
+
+Coins.fromTX = function fromTX(tx) {
+  return new Coins(tx, tx.hash('hex'));
+};
+
+/**
+ * Serialize the coins object.
+ * @param {TX|Coins} tx
+ * @returns {Buffer}
+ */
+
+Coins.toRaw = function toRaw(tx) {
+  var p = new BufferWriter();
+  var height = tx.height;
+
+  if (height === -1)
+    height = 0x7fffffff;
+
+  p.writeU32(tx.version);
+  p.writeU32(height);
+  p.writeU8(tx.coinbase ? 1 : 0);
+  p.writeVarint(tx.outputs.length);
+
+  tx.outputs.forEach(function(output) {
+    if (!output) {
+      p.writeVarint(0);
+      return;
+    }
+    p.writeVarBytes(bcoin.protocol.framer.output(output));
+  });
+
+  return p.render();
+};
+
+/**
+ * Parse serialized coins.
+ * @param {Buffer} buf
+ * @returns {Object} A "naked" coins object.
+ */
+
+Coins._fromRaw = function _fromRaw(buf) {
+  var tx = { outputs: [] };
+  var p = new BufferReader(buf);
+  var coinCount, i, coin;
+
+  tx.version = p.readU32();
+  tx.height = p.readU32();
+  tx.coinbase = p.readU8() === 1;
+
+  if (tx.height === 0x7fffffff)
+    tx.height = -1;
+
+  coinCount = p.readVarint();
+  for (i = 0; i &lt; coinCount; i++) {
+    coin = p.readVarBytes();
+    if (coin.length === 0) {
+      tx.outputs.push(null);
+      continue;
+    }
+    coin = bcoin.protocol.parser.parseOutput(coin);
+    tx.outputs.push(coin);
+  }
+
+  return tx;
+};
+
+/**
+ * Instantiate coins from a serialized Buffer.
+ * @param {Buffer} data
+ * @param {Hash|Buffer} hash - Transaction hash.
+ * @returns {Coins}
+ */
+
+Coins.fromRaw = function fromRaw(buf, hash) {
+  return new Coins(Coins._fromRaw(buf), hash);
+};
+
+return Coins;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

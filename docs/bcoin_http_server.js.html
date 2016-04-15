@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/http/server.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/http/server.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * server.js - http server for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+module.exports = function(bcoin) {
+
+var EventEmitter = require('events').EventEmitter;
+var constants = bcoin.protocol.constants;
+var network = bcoin.protocol.network;
+var HTTPServer = bcoin.http.http;
+var utils = require('../utils');
+var assert = utils.assert;
+
+/**
+ * NodeServer
+ * @exports NodeServer
+ * @constructor
+ * @param {Object} options
+ * @param {Fullnode} options.node
+ * @see HTTPServer
+ * @emits NodeServer#websocket
+ */
+
+function NodeServer(options) {
+  if (!options)
+    options = {};
+
+  this.options = options;
+  this.node = options.node;
+
+  assert(this.node, 'HTTP requires a Node.');
+
+  this.walletdb = this.node.walletdb;
+  this.mempool = this.node.mempool;
+  this.pool = this.node.pool;
+  this.loaded = false;
+
+  this.server = new HTTPServer(options);
+  this.io = null;
+
+  this._init();
+}
+
+utils.inherits(NodeServer, EventEmitter);
+
+NodeServer.prototype._init = function _init() {
+  var self = this;
+
+  this.server.on('request', function(req, res) {
+    bcoin.debug('Request from %s path=%s',
+      req.socket.remoteAddress, req.pathname);
+  });
+
+  this.use(function(req, res, next, send) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET,HEAD,PUT,PATCH,POST,DELETE');
+
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 200;
+      return res.end();
+    }
+
+    res.setHeader('X-Bcoin-Network', network.type);
+    res.setHeader('X-Bcoin-Version', constants.userAgent);
+
+    next();
+  });
+
+  this.use(function(req, res, next, send) {
+    var params = utils.merge({}, req.query, req.body, req.params);
+    var options = {};
+
+    if (params.id) {
+      assert(params.id !== '!all');
+      options.id = params.id;
+    }
+
+    if (params.hash) {
+      if (utils.isInt(params.hash))
+        options.height = params.hash >>> 0;
+      else
+        options.hash = utils.revHex(params.hash);
+    }
+
+    if (params.index != null)
+      options.index = params.index >>> 0;
+
+    if (params.height != null)
+      options.height = params.height >>> 0;
+
+    if (params.start != null)
+      options.start = params.start >>> 0;
+
+    if (params.end != null)
+      options.end = params.end >>> 0;
+
+    if (params.limit != null)
+      options.limit = params.limit >>> 0;
+
+    if (params.changeDepth)
+      options.changeDepth = params.changeDepth >>> 0;
+
+    if (params.receiveDepth)
+      options.receiveDepth = params.receiveDepth >>> 0;
+
+    if (params.address) {
+      params.addresses = params.address;
+      options.address = params.address;
+    }
+
+    if (Array.isArray(params.outputs)) {
+      options.outputs = params.outputs.map(function(output) {
+        return {
+          address: output.address,
+          script: decodeScript(output.script),
+          value: utils.satoshi(output.value)
+        };
+      });
+    } else if (options.value) {
+      options.outputs = [{
+        address: params.address,
+        script: decodeScript(params.script),
+        value: utils.satoshi(params.value)
+      }];
+    }
+
+    if (params.addresses) {
+      if (typeof params.addresses === 'string')
+        options.addresses = params.addresses.split(',');
+      else
+        options.addresses = params.addresses;
+    }
+
+    if (params.tx) {
+      try {
+        options.tx = bcoin.tx.fromRaw(params.tx, 'hex');
+      } catch (e) {
+        return next(e);
+      }
+    }
+
+    if (params.now)
+      options.now = params.now >>> 0;
+
+    if (params.age)
+      options.age = params.age >>> 0;
+
+    if (params.key)
+      params.keys = params.key;
+
+    if (params.keys) {
+      if (typeof params.keys === 'string')
+        options.keys = params.keys.split(',');
+      else
+        options.keys = params.keys;
+    }
+
+    if (params.passphrase)
+      options.passphrase = params.passphrase;
+
+    if (params.bin)
+      options.bin = true;
+
+    req.options = options;
+
+    next();
+  });
+
+  function decodeScript(script) {
+    if (!script)
+      return;
+    if (typeof script === 'string')
+      return new bcoin.script(new Buffer(script, 'hex'));
+    return new bcoin.script(script);
+  }
+
+  this.get('/', function(req, res, next, send) {
+    send(200, {
+      version: constants.userAgent,
+      network: network.type
+    });
+  });
+
+  // UTXO by address
+  this.get('/coin/address/:address', function(req, res, next, send) {
+    self.node.getCoinsByAddress(req.options.addresses, function(err, coins) {
+      if (err)
+        return next(err);
+
+      if (!coins.length)
+        return send(404);
+
+      send(200, coins.map(function(coin) {
+        return coin.toJSON();
+      }));
+    });
+  });
+
+  // UTXO by id
+  this.get('/coin/:hash/:index', function(req, res, next, send) {
+    self.node.getCoin(req.options.hash, req.options.index, function(err, coin) {
+      if (err)
+        return next(err);
+
+      if (!coin)
+        return send(404);
+
+      send(200, coin.toJSON());
+    });
+  });
+
+  // Bulk read UTXOs
+  this.post('/coin/address', function(req, res, next, send) {
+    self.node.getCoinsByAddress(req.options.addresses, function(err, coins) {
+      if (err)
+        return next(err);
+
+      if (!coins.length)
+        return send(404);
+
+      send(200, coins.map(function(coin) {
+        return coin.toJSON();
+      }));
+    });
+  });
+
+  // TX by hash
+  this.get('/tx/:hash', function(req, res, next, send) {
+    self.node.getTX(req.options.hash, function(err, tx) {
+      if (err)
+        return next(err);
+
+      if (!tx)
+        return send(404);
+
+      send(200, tx.toJSON());
+    });
+  });
+
+  // TX by address
+  this.get('/tx/address/:address', function(req, res, next, send) {
+    self.node.getTXByAddress(req.options.addresses, function(err, txs) {
+      if (err)
+        return next(err);
+
+      if (!txs.length)
+        return send(404);
+
+      send(200, txs.map(function(tx) {
+        return tx.toJSON();
+      }));
+    });
+  });
+
+  // Bulk read TXs
+  this.post('/tx/address', function(req, res, next, send) {
+    self.node.getTXByAddress(req.options.addresses, function(err, txs) {
+      if (err)
+        return next(err);
+
+      if (!txs.length)
+        return send(404);
+
+      send(200, txs.map(function(tx) {
+        return tx.toJSON();
+      }));
+    });
+  });
+
+  // Block by hash/height
+  this.get('/block/:hash', function(req, res, next, send) {
+    var hash = req.options.hash || req.options.height;
+    self.node.getFullBlock(hash, function(err, block) {
+      if (err)
+        return next(err);
+
+      if (!block)
+        return send(404);
+
+      send(200, block.toJSON());
+    });
+  });
+
+  // Get wallet
+  this.get('/wallet/:id', function(req, res, next, send) {
+    self.walletdb.getJSON(req.options.id, function(err, json) {
+      if (err)
+        return next(err);
+
+      if (!json)
+        return send(404);
+
+      send(200, json);
+    });
+  });
+
+  // Create/get wallet
+  this.post(['/wallet', '/wallet/:id'], function(req, res, next, send) {
+    self.walletdb.ensure(req.options, function(err, wallet) {
+      var json;
+
+      if (err)
+        return next(err);
+
+      if (!wallet)
+        return send(404);
+
+      json = wallet.toJSON();
+      wallet.destroy();
+
+      send(200, json);
+    });
+  });
+
+  // Send TX
+  this.post('/wallet/:id/send', function(req, res, next, send) {
+    var id = req.options.id;
+    var passphrase = req.options.passphrase;
+    var outputs = req.options.outputs;
+
+    if (!Array.isArray(outputs))
+      return send(400);
+
+    self.walletdb.get(id, passphrase, function(err, wallet) {
+      if (err)
+        return next(err);
+
+      if (!wallet)
+        return send(404);
+
+      wallet.createTX(outputs, function(err, tx) {
+        if (err) {
+          wallet.destroy();
+          return next(err);
+        }
+
+        wallet.destroy();
+
+        self.node.sendTX(tx, function(err) {
+          if (err)
+            return next(err);
+
+          send(200, tx.toJSON());
+        });
+      });
+    });
+  });
+
+  // Zap Wallet TXs
+  this.post('/wallet/:id/zap', function(req, res, next, send) {
+    var id = req.options.id;
+    var now = req.options.now;
+    var age = req.options.age;
+
+    self.walletdb.zapWallet(id, now, age, function(err, wallet) {
+      if (err)
+        return next(err);
+
+      send(200, {
+        success: true
+      });
+    });
+  });
+
+  // Update wallet / sync address depth
+  this.put('/wallet/:id', function(req, res, next, send) {
+    var id = req.options.id;
+    var receive = req.options.receiveDepth;
+    var change = req.options.changeDepth;
+
+    self.walletdb.setDepth(id, receive, change, function(err) {
+      if (err)
+        return next(err);
+
+      send(200, {
+        success: true
+      });
+    });
+  });
+
+  // Add key
+  this.put('/wallet/:id/key', function(req, res, next, send) {
+    self.walletdb.addKey(req.options.id, req.options.keys, function(err) {
+      if (err)
+        return next(err);
+
+      send(200, { success: true });
+    });
+  });
+
+  // Remove key
+  this.del('/wallet/:id/key', function(req, res, next, send) {
+    self.walletdb.removeKey(req.options.id, req.options.keys, function(err) {
+      if (err)
+        return next(err);
+
+      if (!json)
+        return send(404);
+
+      send(200, { success: true });
+    });
+  });
+
+  // Wallet Balance
+  this.get('/wallet/:id/balance', function(req, res, next, send) {
+    self.walletdb.getBalance(req.options.id, function(err, balance) {
+      if (err)
+        return next(err);
+
+      if (!balance)
+        return send(404);
+
+      send(200, {
+        confirmed: utils.btc(balance.confirmed),
+        unconfirmed: utils.btc(balance.unconfirmed),
+        total: utils.btc(balance.total)
+      });
+    });
+  });
+
+  // Wallet UTXOs
+  this.get('/wallet/:id/coin', function(req, res, next, send) {
+    self.walletdb.getCoins(req.options.id, function(err, coins) {
+      if (err)
+        return next(err);
+
+      if (!coins.length)
+        return send(404);
+
+      send(200, coins.map(function(coin) {
+        return coin.toJSON();
+      }));
+    });
+  });
+
+  // Wallet TX
+  this.get('/wallet/:id/coin/:hash/:index', function(req, res, next, send) {
+    var hash = req.options.hash;
+    var index = req.options.index;
+    self.walletdb.getCoin(hash, index, function(err, coin) {
+      if (err)
+        return next(err);
+
+      if (!coin)
+        return send(404);
+
+      send(200, coin.toJSON());
+    });
+  });
+
+  // Wallet TXs
+  this.get('/wallet/:id/tx/all', function(req, res, next, send) {
+    self.walletdb.getAll(req.options.id, function(err, txs) {
+      if (err)
+        return next(err);
+
+      if (!txs.length)
+        return send(404);
+
+      send(200, txs.map(function(tx) {
+        return tx.toJSON();
+      }));
+    });
+  });
+
+  // Wallet Pending TXs
+  this.get('/wallet/:id/tx/pending', function(req, res, next, send) {
+    self.walletdb.getPending(req.options.id, function(err, txs) {
+      if (err)
+        return next(err);
+
+      if (!txs.length)
+        return send(404);
+
+      send(200, txs.map(function(tx) {
+        return tx.toJSON();
+      }));
+    });
+  });
+
+  // Wallet TXs within time range
+  this.get('/wallet/:id/tx/range', function(req, res, next, send) {
+    self.walletdb.getRange(req.options.id, req.options, function(err, txs) {
+      if (err)
+        return next(err);
+
+      if (!txs.length)
+        return send(404);
+
+      send(200, txs.map(function(tx) {
+        return tx.toJSON();
+      }));
+    });
+  });
+
+  // Wallet TXs within time range
+  this.get('/wallet/:id/tx/last', function(req, res, next, send) {
+    var id = req.options.id;
+    var limit = req.options.limit;
+    self.walletdb.getRange(id, limit, function(err, txs) {
+      if (err)
+        return next(err);
+
+      if (!txs.length)
+        return send(404);
+
+      send(200, txs.map(function(tx) {
+        return tx.toJSON();
+      }));
+    });
+  });
+
+  // Wallet TX
+  this.get('/wallet/:id/tx/:hash', function(req, res, next, send) {
+    self.walletdb.getTX(req.options.hash, function(err, tx) {
+      if (err)
+        return next(err);
+
+      if (!tx)
+        return send(404);
+
+      send(200, tx.toJSON());
+    });
+  });
+
+  // Broadcast TX
+  this.post('/broadcast', function(req, res, next, send) {
+    self.pool.sendTX(req.options.tx, function(err) {
+      if (err)
+        return callback(err);
+
+      send(200, {
+        success: true
+      });
+    });
+  });
+
+  // Mempool snapshot
+  this.get('/mempool', function(req, res, next, send) {
+    self.node.mempool.getAll(function(err, txs) {
+      if (err)
+        return callback(err);
+
+      if (!txs.length)
+        return send(404);
+
+      send(200, txs.map(function(tx) {
+        return tx.toJSON();
+      }));
+    });
+  });
+
+  this.server.on('error', function(err) {
+    self.emit('error', err);
+  });
+
+  this._initIO();
+
+  if (this.options.port != null)
+    this.listen(this.options.port, this.options.host);
+};
+
+/**
+ * Open the server, wait for socket.
+ * @param {Function} callback
+ */
+
+NodeServer.prototype.open = function open(callback) {
+  if (this.loaded)
+    return utils.nextTick(callback);
+
+  this.once('open', callback);
+};
+
+/**
+ * Close the server, wait for server socket to close.
+ * @method
+ * @param {Function} callback
+ */
+
+NodeServer.prototype.close =
+NodeServer.prototype.destroy = function destroy(callback) {
+  this.server.close(callback);
+};
+
+NodeServer.prototype._initIO = function _initIO() {
+  var self = this;
+
+  if (!this.server.io)
+    return;
+
+  this.server.on('websocket', function(socket) {
+    socket.on('error', function(err) {
+      self.emit('error', err);
+    });
+
+    self.emit('websocket', socket);
+
+    socket.emit('version', {
+      version: constants.userAgent,
+      network: network.type
+    });
+  });
+
+  this.walletdb.on('tx', function(tx, map) {
+    tx = tx.toJSON();
+    map.all.forEach(function(id) {
+      self.server.io.to(id).emit('tx', tx);
+    });
+    self.server.io.to('!all').emit('tx', tx, map);
+  });
+
+  this.walletdb.on('confirmed', function(tx, map) {
+    tx = tx.toJSON();
+    map.all.forEach(function(id) {
+      self.server.io.to(id).emit('confirmed', tx);
+    });
+    self.server.io.to('!all').emit('confirmed', tx, map);
+  });
+
+  this.walletdb.on('updated', function(tx, map) {
+    tx = tx.toJSON();
+    map.all.forEach(function(id) {
+      self.server.io.to(id).emit('updated', tx);
+    });
+    self.server.io.to('!all').emit('updated', tx, map);
+  });
+
+  this.walletdb.on('balance', function(balance, id) {
+    var json = {
+      confirmed: utils.btc(balance.confirmed),
+      unconfirmed: utils.btc(balance.unconfirmed),
+      total: utils.btc(balance.total)
+    };
+    self.server.io.to(id).emit('balance', json);
+    self.server.io.to('!all').emit('balance', json, id);
+  });
+
+  this.walletdb.on('balances', function(balances) {
+    var json = {};
+    Object.keys(balances).forEach(function(id) {
+      json[id] = {
+        confirmed: utils.btc(balances[id].confirmed),
+        unconfirmed: utils.btc(balances[id].unconfirmed),
+        total: utils.btc(balances[id].total)
+      };
+    });
+    self.server.io.to('!all').emit('balances', json);
+  });
+};
+
+/**
+ * @see HTTPServer#use
+ */
+
+NodeServer.prototype.use = function use(path, callback) {
+  return this.server.use(path, callback);
+};
+
+/**
+ * @see HTTPServer#get
+ */
+
+NodeServer.prototype.get = function get(path, callback) {
+  return this.server.get(path, callback);
+};
+
+/**
+ * @see HTTPServer#post
+ */
+
+NodeServer.prototype.post = function post(path, callback) {
+  return this.server.post(path, callback);
+};
+
+/**
+ * @see HTTPServer#put
+ */
+
+NodeServer.prototype.put = function put(path, callback) {
+  return this.server.put(path, callback);
+};
+
+/**
+ * @see HTTPServer#del
+ */
+
+NodeServer.prototype.del = function del(path, callback) {
+  return this.server.del(path, callback);
+};
+
+/**
+ * @see HTTPServer#listen
+ */
+
+NodeServer.prototype.listen = function listen(port, host, callback) {
+  var self = this;
+  return this.server.listen(port, host, function(err, address) {
+    if (err) {
+      if (callback)
+        return callback(err);
+      return self.emit('error', err);
+    }
+
+    bcoin.debug('Listening - host=%s port=%d',
+      address.address, address.port);
+
+    self.loaded = true;
+    self.emit('open');
+
+    if (callback)
+      callback();
+  });
+};
+
+return NodeServer;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/protocol/framer.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/protocol/framer.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * framer.js - packet framer for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+module.exports = function(bcoin) {
+
+var network = bcoin.protocol.network;
+var constants = require('./constants');
+var utils = require('../utils');
+var assert = utils.assert;
+var BufferWriter = require('../writer');
+var DUMMY = new Buffer([]);
+
+/**
+ * Protocol packet framer
+ * @exports Framer
+ * @constructor
+ * @param {Object} options
+ * @param {String} options.userAgent - User agent string.
+ * @property {Buffer} agent
+ */
+
+function Framer(options) {
+  if (!(this instanceof Framer))
+    return new Framer(options);
+
+  options = options || {};
+
+  this.options = options;
+
+  this.agent = new Buffer(options.userAgent || constants.userAgent, 'ascii');
+}
+
+/**
+ * Create a header for a payload.
+ * @param {String} cmd - Packet type.
+ * @param {Buffer} payload
+ * @returns {Buffer} Header.
+ */
+
+Framer.prototype.header = function header(cmd, payload) {
+  var h = new Buffer(24);
+  var len, i;
+
+  cmd = new Buffer(cmd, 'ascii');
+
+  assert(cmd.length &lt; 12);
+  assert(payload.length &lt;= 0xffffffff);
+
+  // Magic value
+  utils.writeU32(h, network.magic, 0);
+
+  // Command
+  len = utils.copy(cmd, h, 4);
+  for (i = 4 + len; i &lt; 4 + 12; i++)
+    h[i] = 0;
+
+  // Payload length
+  utils.writeU32(h, payload.length, 16);
+
+  // Checksum
+  utils.copy(utils.checksum(payload), h, 20);
+
+  return h;
+};
+
+/**
+ * Frame a payload with a header.
+ * @param {String} cmd - Packet type.
+ * @param {Buffer} payload
+ * @returns {Buffer} Payload with header prepended.
+ */
+
+Framer.prototype.packet = function packet(cmd, payload) {
+  var header;
+
+  assert(payload, 'No payload.');
+
+  header = this.header(cmd, payload);
+
+  return Buffer.concat([header, payload]);
+};
+
+/**
+ * Create a version packet with a header.
+ * @param {Object} options - See {@link Framer.version}.
+ * @returns {Buffer} version packet.
+ */
+
+Framer.prototype.version = function version(options) {
+  if (!options)
+    options = {};
+
+  options.agent = this.agent;
+
+  return this.packet('version', Framer.version(options));
+};
+
+/**
+ * Create a verack packet with a header.
+ * See {@link Framer.verack}.
+ * @returns {Buffer} verack packet.
+ */
+
+Framer.prototype.verack = function verack() {
+  return this.packet('verack', Framer.verack());
+};
+
+/**
+ * Create a mempool packet with a header.
+ * See {@link Framer.mempool}.
+ * @returns {Buffer} mempool packet.
+ */
+
+Framer.prototype.mempool = function mempool() {
+  return this.packet('mempool', Framer.mempool());
+};
+
+/**
+ * Create a getutxos packet with a header.
+ * @param {Object} data - See {@link Framer.getUTXOs}.
+ * @returns {Buffer} getutxos packet.
+ */
+
+Framer.prototype.getUTXOs = function getUTXOs(data) {
+  return this.packet('getutxos', Framer.getUTXOs(data));
+};
+
+/**
+ * Create a utxos packet with a header.
+ * @param {Object} data - See {@link Framer.utxos}.
+ * @returns {Buffer} utxos packet.
+ */
+
+Framer.prototype.UTXOs = function UTXOs(data) {
+  return this.packet('utxos', Framer.UTXOs(data));
+};
+
+/**
+ * Create a getaddr packet with a header.
+ * @returns {Buffer} getaddr packet.
+ */
+
+Framer.prototype.getAddr = function getAddr() {
+  return this.packet('getaddr', Framer.getAddr());
+};
+
+/**
+ * Create a submitorder packet with a header.
+ * @param {Object} order - See {@link Framer.submitOrder}.
+ * @returns {Buffer} submitorder packet.
+ */
+
+Framer.prototype.submitOrder = function submitOrder(order) {
+  return this.packet('submitorder', Framer.submitOrder(order));
+};
+
+/**
+ * Create a checkorder packet with a header.
+ * @param {Object} order - See {@link Framer.checkOrder}.
+ * @returns {Buffer} checkorder packet.
+ */
+
+Framer.prototype.checkOrder = function checkOrder(order) {
+  return this.packet('checkorder', Framer.checkOrder(order));
+};
+
+/**
+ * Create a reply packet with a header.
+ * @param {Object} data - See {@link Framer.reply}.
+ * @returns {Buffer} reply packet.
+ */
+
+Framer.prototype.reply = function reply(data) {
+  return this.packet('reply', Framer.reply(data));
+};
+
+/**
+ * Create a sendheaders packet with a header.
+ * @param {Object} options - See {@link Framer.sendHeaders}.
+ * @returns {Buffer} sendheaders packet.
+ */
+
+Framer.prototype.sendHeaders = function sendHeaders() {
+  return this.packet('sendheaders', Framer.sendHeaders());
+};
+
+/**
+ * Create a havewitness packet with a header.
+ * @returns {Buffer} havewitness packet.
+ */
+
+Framer.prototype.haveWitness = function haveWitness() {
+  return this.packet('havewitness', Framer.haveWitness());
+};
+
+/**
+ * Create a filteradd packet with a header.
+ * @param {Object} data - See {@link Framer.filteradd}.
+ * @returns {Buffer} filteradd packet.
+ */
+
+Framer.prototype.filterAdd = function filterAdd(data) {
+  return this.packet('filteradd', Framer.filterAdd(data));
+};
+
+/**
+ * Create a filterclear packet with a header.
+ * @returns {Buffer} filterclear packet.
+ */
+
+Framer.prototype.filterClear = function filterClear() {
+  return this.packet('filterclear', Framer.filterClear());
+};
+
+/**
+ * Create an inv packet with a header.
+ * @param {Object} items - See {@link Framer.inv}.
+ * @returns {Buffer} inv packet.
+ */
+
+Framer.prototype.inv = function inv(items) {
+  return this.packet('inv', Framer.inv(items));
+};
+
+/**
+ * Create a getdata packet with a header.
+ * @param {Object} items - See {@link Framer.getData}.
+ * @returns {Buffer} getdata packet.
+ */
+
+Framer.prototype.getData = function getData(items) {
+  return this.packet('getdata', Framer.getData(items));
+};
+
+/**
+ * Create a notfound packet with a header.
+ * @param {Object} items - See {@link Framer.notFound}.
+ * @returns {Buffer} notfound packet.
+ */
+
+Framer.prototype.notFound = function notFound(items) {
+  return this.packet('notfound', Framer.notFound(items));
+};
+
+/**
+ * Create a ping packet with a header.
+ * @param {Object} data - See {@link Framer.ping}.
+ * @returns {Buffer} ping packet.
+ */
+
+Framer.prototype.ping = function ping(data) {
+  return this.packet('ping', Framer.ping(data));
+};
+
+/**
+ * Create a pong packet with a header.
+ * @param {Object} data - See {@link Framer.pong}.
+ * @returns {Buffer} pong packet.
+ */
+
+Framer.prototype.pong = function pong(data) {
+  return this.packet('pong', Framer.pong(data));
+};
+
+/**
+ * Create a filterload packet with a header.
+ * @param {Object} data - See {@link Framer.filterLoad}.
+ * @returns {Buffer} filterload packet.
+ */
+
+Framer.prototype.filterLoad = function filterLoad(data) {
+  return this.packet('filterload', Framer.filterLoad(data));
+};
+
+/**
+ * Create a getheaders packet with a header.
+ * @param {Object} options - See {@link Framer.getHeaders}.
+ * @returns {Buffer} getheaders packet.
+ */
+
+Framer.prototype.getHeaders = function getHeaders(data) {
+  return this.packet('getheaders', Framer.getHeaders(data));
+};
+
+/**
+ * Create a getblocks packet with a header.
+ * @param {Object} data - See {@link Framer.getBlocks}.
+ * @returns {Buffer} getblocks packet.
+ */
+
+Framer.prototype.getBlocks = function getBlocks(data) {
+  return this.packet('getblocks', Framer.getBlocks(data));
+};
+
+/**
+ * Create a tx packet with a header.
+ * @param {TX} tx - See {@link Framer.tx}.
+ * @returns {Buffer} tx packet.
+ */
+
+Framer.prototype.tx = function tx(tx) {
+  return this.packet('tx', Framer.renderTX(tx, false));
+};
+
+/**
+ * Create a tx packet with a header, using witness serialization.
+ * @param {TX} tx - See {@link Framer.witnessTX}.
+ * @returns {Buffer} tx packet.
+ */
+
+Framer.prototype.witnessTX = function witnessTX(tx) {
+  return this.packet('tx', Framer.renderTX(tx, true));
+};
+
+/**
+ * Create a block packet with a header.
+ * @param {Block} block - See {@link Framer.block}.
+ * @returns {Buffer} block packet.
+ */
+
+Framer.prototype.block = function _block(block) {
+  return this.packet('block', Framer.block(block));
+};
+
+/**
+ * Create a block packet with a header, using witness serialization.
+ * @param {Block} block - See {@link Framer.witnessBlock}.
+ * @returns {Buffer} block packet.
+ */
+
+Framer.prototype.witnessBlock = function witnessBlock(block) {
+  return this.packet('block', Framer.witnessBlock(block));
+};
+
+/**
+ * Create a merkleblock packet with a header.
+ * @param {MerkleBlock} block - See {@link Framer.merkleBlock}.
+ * @returns {Buffer} merkleblock packet.
+ */
+
+Framer.prototype.merkleBlock = function merkleBlock(block) {
+  return this.packet('merkleblock', Framer.merkleBlock(block));
+};
+
+/**
+ * Create a headers packet with a header.
+ * @param {Headers[]} headers - See {@link Framer.headers}.
+ * @returns {Buffer} headers packet.
+ */
+
+Framer.prototype.headers = function _headers(headers) {
+  return this.packet('headers', Framer.headers(headers));
+};
+
+/**
+ * Create a reject packet with a header.
+ * @param {Object} details - See {@link Framer.reject}.
+ * @returns {Buffer} reject packet.
+ */
+
+Framer.prototype.reject = function reject(details) {
+  return this.packet('reject', Framer.reject(details));
+};
+
+/**
+ * Create an addr packet with a header.
+ * @param {Object} peers - See {@link Framer.addr}.
+ * @returns {Buffer} addr packet.
+ */
+
+Framer.prototype.addr = function addr(peers) {
+  return this.packet('addr', Framer.addr(peers));
+};
+
+/**
+ * Serialize an address.
+ * @param {NetworkAddress} data
+ * @param {Boolean?} full - Whether to include the timestamp.
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.address = function address(data, full, writer) {
+  var p = new BufferWriter(writer);
+
+  if (full) {
+    if (!data.ts)
+      p.writeU32(utils.now() - (process.uptime() | 0));
+    else
+      p.writeU32(data.ts);
+  }
+
+  p.writeU64(data.services || 0);
+
+  if (data.ipv6) {
+    p.writeBytes(utils.ip2array(data.ipv6, 6));
+  } else {
+    // We don't have an ipv6 address: convert
+    // ipv4 to ipv4-mapped ipv6 address.
+    p.writeU32BE(0x00000000);
+    p.writeU32BE(0x00000000);
+    p.writeU32BE(0x0000ffff);
+    if (data.ipv4)
+      p.writeBytes(utils.ip2array(data.ipv4, 4));
+    else
+      p.writeU32BE(0x00000000);
+  }
+
+  p.writeU16BE(data.port || network.port);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create a version packet (without a header).
+ * @param {VersionPacket} options
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.version = function version(options, writer) {
+  var p = new BufferWriter(writer);
+  var agent = options.agent || constants.userAgent;
+  var remote = options.remote || {};
+  var local = options.local || {};
+
+  if (typeof agent === 'string')
+    agent = new Buffer(agent, 'ascii');
+
+  if (local.services == null)
+    local.services = constants.localServices;
+
+  p.write32(constants.version);
+  p.writeU64(constants.localServices);
+  p.write64(utils.now());
+  Framer.address(remote, false, p);
+  Framer.address(local, false, p);
+  p.writeU64(utils.nonce());
+  p.writeVarString(agent);
+  p.write32(options.height || 0);
+  p.writeU8(options.relay ? 1 : 0);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create a verack packet (without a header).
+ * @returns {Buffer}
+ */
+
+Framer.verack = function verack() {
+  return DUMMY;
+};
+
+Framer._inv = function _inv(items, writer) {
+  var p = new BufferWriter(writer);
+  var type;
+  var i;
+
+  assert(items.length &lt;= 50000);
+
+  p.writeVarint(items.length);
+
+  for (i = 0; i &lt; items.length; i++) {
+    type = items[i].type;
+    if (typeof type === 'string')
+      type = constants.inv[items[i].type];
+    assert(constants.invByVal[type] != null);
+    p.writeU32(type);
+    p.writeHash(items[i].hash);
+  }
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * @typedef {Object} InvItem
+ * @global
+ * @property {Number|String} type - Inv type. See {@link constants.inv}.
+ * @property {Hash|Buffer} hash
+ */
+
+/**
+ * Create an inv packet (without a header).
+ * @param {InvItem[]} items
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.inv = function inv(items, writer) {
+  return Framer._inv(items, writer);
+};
+
+/**
+ * Create a getdata packet (without a header).
+ * @param {InvItem[]} items
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.getData = function getData(items, writer) {
+  return Framer._inv(items, writer);
+};
+
+/**
+ * Create a notfound packet (without a header).
+ * @param {InvItem[]} items
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.notFound = function notFound(items, writer) {
+  return Framer._inv(items, writer);
+};
+
+/**
+ * Create a ping packet (without a header).
+ * @param {PingPacket} data
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.ping = function ping(data) {
+  var p = new Buffer(8);
+  utils.writeU64(p, data.nonce, 0);
+  return p;
+};
+
+/**
+ * Create a pong packet (without a header).
+ * @param {PingPacket} data
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.pong = function pong(data) {
+  var p = new Buffer(8);
+  utils.writeU64(p, data.nonce, 0);
+  return p;
+};
+
+/**
+ * Create a filterload packet (without a header).
+ * @param {FilterLoadPacket} data
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.filterLoad = function filterLoad(data, writer) {
+  var p = new BufferWriter(writer);
+  var update = data.update;
+
+  if (typeof update === 'string')
+    update = constants.filterFlags[update];
+
+  assert(update != null, 'Bad filter flag.');
+
+  p.writeVarBytes(data.filter);
+  p.writeU32(data.n);
+  p.writeU32(data.tweak);
+  p.writeU8(update);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create a getheaders packet (without a header).
+ * @param {GetBlocksPacket} data
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.getHeaders = function getHeaders(data, writer) {
+  return Framer._getBlocks(data, writer, true);
+};
+
+/**
+ * Create a getblocks packet (without a header).
+ * @param {GetBlocksPacket} data
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.getBlocks = function getBlocks(data, writer) {
+  return Framer._getBlocks(data, writer, false);
+};
+
+Framer._getBlocks = function _getBlocks(data, writer, headers) {
+  var version = data.version;
+  var locator = data.locator;
+  var stop = data.stop;
+  var p, i;
+
+  if (!version)
+    version = constants.version;
+
+  if (!locator) {
+    if (headers)
+      locator = [];
+    else
+      assert(false, 'getblocks requires a locator');
+  }
+
+  if (!stop)
+    stop = constants.zeroHash;
+
+  p = new BufferWriter(writer);
+
+  p.writeU32(version);
+  p.writeVarint(locator.length);
+
+  for (i = 0; i &lt; locator.length; i++)
+    p.writeHash(locator[i]);
+
+  p.writeHash(stop);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Serialize a coin.
+ * @param {NakedCoin|Coin} coin
+ * @param {Boolean} extended - Whether to include the hash and index.
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.coin = function _coin(coin, extended, writer) {
+  var p = new BufferWriter(writer);
+  var height = coin.height;
+
+  if (height === -1)
+    height = 0x7fffffff;
+
+  assert(coin.value.byteLength() &lt;= 8);
+
+  p.writeU32(coin.version);
+  p.writeU32(height);
+  p.write64(coin.value);
+  Framer.script(coin.script, p);
+  p.writeU8(coin.coinbase ? 1 : 0);
+
+  if (extended) {
+    p.writeHash(coin.hash);
+    p.writeU32(coin.index);
+  }
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Serialize transaction without witness.
+ * @param {NakedTX|TX} tx
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.tx = function _tx(tx, writer) {
+  var p = new BufferWriter(writer);
+  var i;
+
+  p.write32(tx.version);
+
+  p.writeVarint(tx.inputs.length);
+  for (i = 0; i &lt; tx.inputs.length; i++)
+    Framer.input(tx.inputs[i], p);
+
+  p.writeVarint(tx.outputs.length);
+  for (i = 0; i &lt; tx.outputs.length; i++)
+    Framer.output(tx.outputs[i], p);
+
+  p.writeU32(tx.locktime);
+
+  if (!writer)
+    p = p.render();
+
+  p._witnessSize = 0;
+
+  return p;
+};
+
+/**
+ * Serialize an outpoint.
+ * @param {Hash} hash
+ * @param {Number} index
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.outpoint = function outpoint(hash, index, writer) {
+  var p = new BufferWriter(writer);
+
+  p.writeHash(hash);
+  p.writeU32(index);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Serialize an input.
+ * @param {NakedInput|Input} input
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.input = function _input(input, writer) {
+  var p = new BufferWriter(writer);
+
+  p.writeHash(input.prevout.hash);
+  p.writeU32(input.prevout.index);
+  Framer.script(input.script, p);
+  p.writeU32(input.sequence);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Serialize an output.
+ * @param {NakedOutput|Output} output
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.output = function _output(output, writer) {
+  var p = new BufferWriter(writer);
+
+  assert(output.value.byteLength() &lt;= 8);
+
+  p.write64(output.value);
+  Framer.script(output.script, p);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Serialize transaction with witness. Calculates the witness
+ * size as it is framing (exposed on return value as `_witnessSize`).
+ * @param {NakedTX|TX} tx
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.witnessTX = function _witnessTX(tx, writer) {
+  var p = new BufferWriter(writer);
+  var witnessSize = 0;
+  var i, start;
+
+  p.write32(tx.version);
+  p.writeU8(0);
+  p.writeU8(tx.flag || 1);
+
+  p.writeVarint(tx.inputs.length);
+
+  for (i = 0; i &lt; tx.inputs.length; i++)
+    Framer.input(tx.inputs[i], p);
+
+  p.writeVarint(tx.outputs.length);
+
+  for (i = 0; i &lt; tx.outputs.length; i++)
+    Framer.output(tx.outputs[i], p);
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    start = p.written;
+    Framer.witness(tx.inputs[i].witness, p);
+    witnessSize += p.written - start;
+  }
+
+  p.writeU32(tx.locktime);
+
+  if (!writer)
+    p = p.render();
+
+  p._witnessSize = witnessSize + 2;
+
+  return p;
+};
+
+/**
+ * Serialize a script. Note that scripts require
+ * extra magic since they're so goddamn bizarre.
+ * Normally in an "encoded" script we don't
+ * include the varint size because scripthashes
+ * don't include them. This is why
+ * script.encode/decode is separate from the
+ * framer and parser.
+ * @param {NakedScript|Script} script
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.script = function _script(script, writer) {
+  var data;
+
+  p = new BufferWriter(writer);
+
+  if (script.encode)
+    data = script.encode();
+  else
+    data = script.raw || bcoin.script.encode(script.code);
+
+  p.writeVarBytes(data);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Serialize a witness.
+ * @param {NakedWitness|Witness} witness
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.witness = function _witness(witness, writer) {
+  var p = new BufferWriter(writer);
+  var i;
+
+  p.writeVarint(witness.items.length);
+
+  for (i = 0; i &lt; witness.items.length; i++)
+    p.writeVarBytes(witness.items[i]);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Serialize a block without witness data.
+ * @param {NakedBlock|Block} block
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.block = function _block(block, writer) {
+  return Framer._block(block, false, writer);
+};
+
+/**
+ * Serialize a block with witness data. Calculates the witness
+ * size as it is framing (exposed on return value as `_witnessSize`).
+ * @param {NakedBlock|Block} block
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.witnessBlock = function _witnessBlock(block, writer) {
+  return Framer._block(block, true, writer);
+};
+
+/**
+ * Serialize a transaction lazily (use existing raw data if present).
+ * @param {NakedTX|TX} tx
+ * @param {Boolean} useWitness - Whether to include witness data.
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.renderTX = function renderTX(tx, useWitness, writer) {
+  var p = new BufferWriter(writer);
+  var witnessSize;
+
+  if (tx._raw) {
+    if (!useWitness &amp;&amp; bcoin.protocol.parser.isWitnessTX(tx._raw)) {
+      Framer.tx(tx, p);
+      witnessSize = p._witnessSize;
+    } else {
+      p.writeBytes(tx._raw);
+      witnessSize = tx._witnessSize;
+    }
+  } else {
+    if (useWitness &amp;&amp; bcoin.tx.prototype.hasWitness.call(tx))
+      Framer.witnessTX(tx, p);
+    else
+      Framer.tx(tx, p);
+    witnessSize = p._witnessSize;
+  }
+
+  if (!writer)
+    p = p.render();
+
+  p._witnessSize = witnessSize;
+
+  return p;
+};
+
+Framer._block = function _block(block, useWitness, writer) {
+  var p = new BufferWriter(writer);
+  var witnessSize = 0;
+  var i;
+
+  p.write32(block.version);
+  p.writeHash(block.prevBlock);
+  p.writeHash(block.merkleRoot);
+  p.writeU32(block.ts);
+  p.writeU32(block.bits);
+  p.writeU32(block.nonce);
+  p.writeVarint(block.txs.length);
+
+  for (i = 0; i &lt; block.txs.length; i++) {
+    Framer.renderTX(block.txs[i], useWitness, p);
+    witnessSize += p._witnessSize;
+  }
+
+  if (!writer)
+    p = p.render();
+
+  p._witnessSize = witnessSize;
+
+  return p;
+};
+
+/**
+ * Serialize a merkle block.
+ * @param {NakedBlock|MerkleBlock} block
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.merkleBlock = function _merkleBlock(block, writer) {
+  var p = new BufferWriter(writer);
+  var i;
+
+  p.writeU32(block.version);
+  p.writeHash(block.prevBlock);
+  p.writeHash(block.merkleRoot);
+  p.writeU32(block.ts);
+  p.writeU32(block.bits);
+  p.writeU32(block.nonce);
+  p.writeU32(block.totalTX);
+
+  p.writeVarint(block.hashes.length);
+
+  for (i = 0; i &lt; block.hashes.length; i++)
+    p.writeHash(block.hashes[i]);
+
+  p.writeVarBytes(block.flags);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Serialize headers.
+ * @param {NakedBlock[]|Headers[]} headers
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.headers = function _headers(headers, writer) {
+  var p = new BufferWriter(writer);
+  var i, header;
+
+  p.writeVarint(headers.length);
+
+  for (i = 0; i &lt; headers.length; i++) {
+    header = headers[i];
+    p.write32(header.version);
+    p.writeHash(header.prevBlock);
+    p.writeHash(header.merkleRoot);
+    p.writeU32(header.ts);
+    p.writeU32(header.bits);
+    p.writeU32(header.nonce);
+    p.writeVarint(header.totalTX);
+  }
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Serialize a block header without any transaction count field.
+ * @param {NakedBlock|Block|MerkleBlock|Headers|ChainBlock} block
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.blockHeaders = function blockHeaders(block, writer) {
+  var p = new BufferWriter(writer);
+
+  p.write32(block.version);
+  p.writeHash(block.prevBlock);
+  p.writeHash(block.merkleRoot);
+  p.writeU32(block.ts);
+  p.writeU32(block.bits);
+  p.writeU32(block.nonce);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create a reject packet (without a header).
+ * @param {RejectPacket} details
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.reject = function reject(details, writer) {
+  var p = new BufferWriter(writer);
+  var ccode = constants.reject[details.ccode] || constants.reject.invalid;
+
+  if (ccode >= constants.reject.internal)
+    ccode = constants.reject.invalid;
+
+  p.writeVarString(details.message || '', 'ascii');
+  p.writeU8(ccode);
+  p.writeVarString(details.reason || '', 'ascii');
+  if (details.data)
+    p.writeHash(details.data);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create an addr packet (without a header).
+ * @param {InvItem[]} peers
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.addr = function addr(peers, writer) {
+  var p = new BufferWriter(writer);
+  var i, peer;
+
+  p.writeVarint(peers.length);
+
+  for (i = 0; i &lt; peers.length; i++) {
+    peer = peers[i];
+    Framer.address({
+      ts: peer.ts,
+      services: peer.services,
+      ipv6: peer.ipv6,
+      ipv4: peer.ipv4,
+      port: peer.port
+    }, true, p);
+  }
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create an alert packet (without a header).
+ * @param {AlertPacket} data
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.alert = function alert(data, writer) {
+  var p, i, payload;
+
+  if (!data.payload) {
+    p = new BufferWriter();
+    p.write32(data.version);
+    p.write64(data.relayUntil);
+    p.write64(data.expiration);
+    p.write32(data.id);
+    p.write32(data.cancel);
+    p.writeVarint(data.cancels.length);
+    for (i = 0; i &lt; data.cancels.length; i++)
+      p.write32(data.cancels[i]);
+    p.write32(data.minVer);
+    p.write32(data.maxVer);
+    p.writeVarint(data.subVers.length);
+    for (i = 0; i &lt; data.subVers.length; i++)
+      p.writeVarString(data.subVers[i], 'ascii');
+    p.write32(data.priority);
+    p.writeVarString(data.comment, 'ascii');
+    p.writeVarString(data.statusBar, 'ascii');
+    p.writeVarString(data.reserved || '', 'ascii');
+    payload = p.render();
+  } else {
+    payload = data.payload;
+  }
+
+  p = new BufferWriter(writer);
+  p.writeVarBytes(payload);
+
+  if (data.signature)
+    p.writeVarBytes(data.signature);
+  else if (data.key)
+    p.writeVarBytes(bcoin.ec.sign(utils.dsha256(payload), data.key));
+  else
+    assert(false, 'No key or signature.');
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create a mempool packet (without a header).
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.mempool = function mempool() {
+  return DUMMY;
+};
+
+/**
+ * Create a getaddr packet (without a header).
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.getAddr = function getAddr() {
+  return DUMMY;
+};
+
+/**
+ * @typedef {Object} Outpoint
+ * @global
+ * @property {Hash} hash
+ * @property {Number} index
+ */
+
+/**
+ * Create a getutxos packet (without a header).
+ * @param {GetUTXOsPacket} data
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.getUTXOs = function getUTXOs(data, writer) {
+  var p = new BufferWriter(writer);
+  var i, prevout;
+
+  p.writeU8(data.mempool ? 1 : 0);
+  p.writeVarint(data.prevout.length);
+
+  for (i = 0; i &lt; data.prevout.length; i++) {
+    prevout = data.prevout[i];
+    p.writeHash(prevout.hash);
+    p.writeU32(prevout.index);
+  }
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create a utxos packet (without a header).
+ * @param {UTXOsPacket} data
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.UTXOs = function UTXOs(data, writer) {
+  var p = new BufferWriter(writer);
+  var i, j, coin, height, index, map;
+
+  if (!data.map) {
+    assert(data.hits);
+    map = new Buffer((data.hits.length + 7) / 8 | 0);
+    for (i = 0; i &lt; data.hits.length; i++)
+      map[i / 8 | 0] |= +data.hits[i] &lt;&lt; (i % 8);
+  } else {
+    map = data.map;
+  }
+
+  p.writeU32(data.height);
+  p.writeHash(data.tip);
+  p.writeVarBytes(map);
+  p.writeVarInt(data.coins.length);
+
+  for (i = 0; i &lt; data.coins.length; i++) {
+    coin = data.coins[i];
+    height = coin.height;
+
+    if (height === -1)
+      height = 0x7fffffff;
+
+    p.writeU32(coin.version);
+    p.writeU32(height);
+    Framer.output(coin, p);
+  }
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create a submitorder packet (without a header).
+ * @param {SubmitOrderPacket} order
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.submitOrder = function submitOrder(order, writer) {
+  var p = new BufferWriter(writer);
+
+  p.writeHash(order.hash);
+  Framer.renderTX(order.tx, true, p);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create a checkorder packet (without a header).
+ * @param {SubmitOrderPacket} order
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.checkOrder = function checkOrder(order, writer) {
+  return Framer.submitOrder(order, writer);
+};
+
+/**
+ * Create a reply packet (without a header).
+ * @param {ReplyPacket} data
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.reply = function reply(data, writer) {
+  var p = new BufferWriter(writer);
+
+  p.writeHash(data.hash);
+  p.writeU32(data.code || 0);
+
+  if (data.publicKey)
+    p.writeVarBytes(data.publicKey);
+  else
+    p.writeVarInt(0);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create a sendheaders packet (without a header).
+ * @returns {Buffer}
+ */
+
+Framer.sendHeaders = function sendHeaders() {
+  return DUMMY;
+};
+
+/**
+ * Create a havewitness packet (without a header).
+ * @returns {Buffer}
+ */
+
+Framer.haveWitness = function haveWitness() {
+  return DUMMY;
+};
+
+/**
+ * Create a filteradd packet (without a header).
+ * @param {Object|Buffer} data - Data to be added to bloom filter.
+ * @param {BufferWriter?} writer - A buffer writer to continue writing from.
+ * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
+ */
+
+Framer.filterAdd = function filterAdd(data, writer) {
+  var p = new BufferWriter(writer);
+
+  p.writeVarBytes(data.data || data);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Create a filterclear packet (without a header).
+ * @returns {Buffer}
+ */
+
+Framer.filterClear = function filterClear() {
+  return DUMMY;
+};
+
+/**
+ * Calculate total block size and
+ * witness size without serializing.
+ * @param {NakedBlock|Block} block
+ * @returns {Object} In the form of `{size: Number, witnessSize: Number}`.
+ */
+
+Framer.block.sizes = function blockSizes(block) {
+  var writer = new BufferWriter();
+  Framer.witnessBlock(block, writer);
+  return {
+    size: writer.written,
+    witnessSize: writer._witnessSize
+  };
+};
+
+/**
+ * Calculate total transaction size and
+ * witness size without serializing.
+ * @param {NakedBlock|Block} block
+ * @returns {Object} In the form of `{size: Number, witnessSize: Number}`.
+ */
+
+Framer.tx.sizes = function txSizes(tx) {
+  var writer = new BufferWriter();
+  Framer.renderTX(tx, true, writer);
+  return {
+    size: writer.written,
+    witnessSize: writer._witnessSize
+  };
+};
+
+/**
+ * Calculate block size with witness (if present).
+ * @param {NakedBlock|Block} block
+ * @returns {Number} Size.
+ */
+
+Framer.block.witnessSize = function blockWitnessSize(block) {
+  return Framer.block.sizes(block).size;
+};
+
+/**
+ * Calculate transaction size with witness (if present).
+ * @param {NakedTX|TX} tx
+ * @returns {Number} Size.
+ */
+
+Framer.tx.witnessSize = function txWitnessSize(tx) {
+  return Framer.tx.sizes(tx).size;
+};
+
+/**
+ * Calculate transaction size without witness.
+ * @param {NakedBlock|Block} block
+ * @returns {Number} Size.
+ */
+
+Framer.block.size = function blockSize(block) {
+  var writer = new BufferWriter();
+  Framer.block(block, writer);
+  return writer.written;
+};
+
+/**
+ * Calculate transaction size without witness.
+ * @param {NakedTX|TX} tx
+ * @returns {Number} Size.
+ */
+
+Framer.tx.size = function txSize(tx) {
+  var writer = new BufferWriter()
+  Framer.renderTX(tx, false, writer);
+  return writer.written;
+};
+
+/**
+ * Calculate block virtual size.
+ * @param {NakedBlock|Block} block
+ * @returns {Number} Virtual size.
+ */
+
+Framer.block.virtualSize = function blockVirtualSize(block) {
+  var sizes = Framer.block.sizes(block);
+  var base = sizes.size - sizes.witnessSize;
+  return (base * 4 + sizes.witnessSize + 3) / 4 | 0;
+};
+
+/**
+ * Calculate transaction virtual size.
+ * @param {NakedTX|TX} tx
+ * @returns {Number} Virtual size.
+ */
+
+Framer.tx.virtualSize = function txVirtualSize(tx) {
+  var sizes = Framer.tx.sizes(tx);
+  var base = sizes.size - sizes.witnessSize;
+  return (base * 4 + sizes.witnessSize + 3) / 4 | 0;
+};
+
+return Framer;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/merkleblock.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/merkleblock.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * merkleblock.js - merkleblock object for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+module.exports = function(bcoin) {
+
+var utils = require('./utils');
+
+/**
+ * Represents a merkle (filtered) block.
+ * @exports MerkleBlock
+ * @constructor
+ * @extends AbstractBlock
+ * @param {NakedBlock} data
+ * @property {String} type - "merkleblock" (getdata type).
+ * @property {Number} version - Block version. Note
+ * that BCoin reads versions as unsigned despite
+ * them being signed on the protocol level. This
+ * number will never be negative.
+ * @property {Hash} prevBlock - Previous block hash.
+ * @property {Hash} merkleRoot - Merkle root hash.
+ * @property {Number} ts - Timestamp.
+ * @property {Number} bits
+ * @property {Number} nonce
+ * @property {Number} totalTX - Transaction count.
+ * @property {Number} height - Block height (-1 if not in the chain).
+ * @property {Buffer[]} hashes
+ * @property {Buffer} flags
+ * @property {TX[]} txs - Transaction vector.
+ * @property {Hash[]} tx - List of matched tx hashes.
+ * @property {Object} txMap - Map of matched tx hashes.
+ * @property {ReversedHash} rhash - Reversed block hash (uint256le).
+ */
+
+function MerkleBlock(data) {
+  if (!(this instanceof MerkleBlock))
+    return new MerkleBlock(data);
+
+  bcoin.abstractblock.call(this, data);
+
+  this.type = 'merkleblock';
+
+  this.hashes = (data.hashes || []).map(function(hash) {
+    return utils.toBuffer(hash, 'hex');
+  });
+
+  this.flags = data.flags || [];
+
+  // List of matched TXs
+  this.txMap = {};
+  this.tx = [];
+
+  // TXs that will be pushed on
+  this.txs = [];
+}
+
+utils.inherits(MerkleBlock, bcoin.abstractblock);
+
+/**
+ * Serialize the merkleblock.
+ * @returns {Buffer}
+ */
+
+MerkleBlock.prototype.render = function render() {
+  return this.getRaw();
+};
+
+/**
+ * Serialize the merkleblock.
+ * @returns {Buffer}
+ */
+
+MerkleBlock.prototype.renderNormal = function renderNormal() {
+  return this.getRaw();
+};
+
+/**
+ * Serialize the merkleblock.
+ * @returns {Buffer}
+ */
+
+MerkleBlock.prototype.renderWitness = function renderWitness() {
+  return this.getRaw();
+};
+
+/**
+ * Get merkleblock size.
+ * @returns {Number} Size.
+ */
+
+MerkleBlock.prototype.getSize = function getSize() {
+  if (this._size == null)
+    this.getRaw();
+  return this._size;
+};
+
+/**
+ * Get the raw merkleblock serialization.
+ * @returns {Buffer}
+ */
+
+MerkleBlock.prototype.getRaw = function getRaw() {
+  if (!this._raw) {
+    this._raw = bcoin.protocol.framer.merkleBlock(this);
+    this._size = this._raw.length;
+  }
+  return this._raw;
+};
+
+/**
+ * Test the block's _matched_ transaction vector against a hash.
+ * @param {Hash|TX} hash
+ * @returns {Boolean}
+ */
+
+MerkleBlock.prototype.hasTX = function hasTX(hash) {
+  if (hash instanceof bcoin.tx)
+    hash = hash.hash('hex');
+
+  return this.txMap[hash] === true;
+};
+
+/**
+ * Verify the partial merkletree. Push leaves onto
+ * {@link MerkleBlock#tx} and into {@link MerkleBlock#txMap}.
+ * @private
+ * @returns {Boolean}
+ */
+
+MerkleBlock.prototype._verifyPartial = function _verifyPartial() {
+  var height = 0;
+  var tx = [];
+  var txMap = {};
+  var j = 0;
+  var hashes = this.hashes;
+  var flags = this.flags;
+  var i, root;
+
+  // Count leaves
+  for (i = this.totalTX; i > 0; i >>= 1)
+    height++;
+
+  if (this.totalTX > (1 &lt;&lt; (height - 1)))
+    height++;
+
+  function visit(depth) {
+    var flag, left, right;
+
+    if (i === flags.length * 8 || j === hashes.length)
+      return null;
+
+    flag = (flags[i >> 3] >>> (i &amp; 7)) &amp; 1;
+    i++;
+
+    if (flag === 0 || depth === height) {
+      if (depth === height) {
+        tx.push(utils.toHex(hashes[j]));
+        txMap[tx[tx.length - 1]] = true;
+      }
+      return hashes[j++];
+    }
+
+    // Go deeper
+    left = visit(depth + 1);
+    if (!left)
+      return null;
+
+    right = visit(depth + 1);
+    if (right &amp;&amp; utils.isEqual(right, left))
+      return null;
+
+    if (!right)
+      right = left;
+
+    return utils.dsha256(Buffer.concat([left, right]));
+  }
+
+  root = utils.toHex(visit(1));
+
+  if (!root || root !== this.merkleRoot)
+    return false;
+
+  this.tx = tx;
+  this.txMap = txMap;
+
+  return true;
+};
+
+/**
+ * Do non-contextual verification on the block.
+ * Verify the headers and the partial merkle tree.
+ * @name verify
+ * @param {Object?} ret - Return object, may be
+ * set with properties `reason` and `score`.
+ * @returns {Boolean}
+ */
+
+MerkleBlock.prototype._verify = function _verify(ret) {
+  if (!ret)
+    ret = {};
+
+  if (!this.verifyHeaders(ret))
+    return false;
+
+  // Verify the partial merkle tree if we are a merkleblock.
+  if (!this._verifyPartial()) {
+    ret.reason = 'bad-txnmrklroot';
+    ret.score = 100;
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Extract the coinbase height (always -1).
+ * @returns {Number}
+ */
+
+MerkleBlock.prototype.getCoinbaseHeight = function getCoinbaseHeight() {
+  return -1;
+};
+
+/**
+ * Inspect the block and return a more
+ * user-friendly representation of the data.
+ * @returns {Object}
+ */
+
+MerkleBlock.prototype.inspect = function inspect() {
+  var copy = bcoin.merkleblock(this);
+  copy.__proto__ = null;
+  delete copy._raw;
+  delete copy._chain;
+  copy.hash = this.hash('hex');
+  copy.rhash = this.rhash;
+  copy.date = new Date((copy.ts || 0) * 1000).toISOString();
+  return copy;
+};
+
+/**
+ * Serialize the merkleblock.
+ * @see {MerkleBlock#render}
+ * @param {String?} enc - Encoding, can be `'hex'` or null.
+ * @returns {Buffer|String}
+ */
+
+MerkleBlock.prototype.toRaw = function toRaw(enc) {
+  var data;
+
+  data = this.render();
+
+  if (enc === 'hex')
+    data = utils.toHex(data);
+
+  return data;
+};
+
+/**
+ * Parse a serialized merkleblock.
+ * @param {Buffer} data
+ * @param {String?} enc - Encoding, can be `'hex'` or null.
+ * @returns {NakedBlock} A "naked" headers object.
+ */
+
+MerkleBlock._fromRaw = function _fromRaw(data, enc) {
+  if (enc === 'hex')
+    data = new Buffer(data, 'hex');
+
+  return bcoin.protocol.parser.parseMerkleBlock(data);
+};
+
+/**
+ * Instantiate a merkleblock from a serialized Buffer.
+ * @param {Buffer} data
+ * @param {String?} enc - Encoding, can be `'hex'` or null.
+ * @returns {Headers}
+ */
+
+MerkleBlock.fromRaw = function fromRaw(data, enc) {
+  return new MerkleBlock(MerkleBlock._fromRaw(data, enc));
+};
+
+/**
+ * Test an object to see if it is a MerkleBlock object.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+MerkleBlock.isMerkleBlock = function isMerkleBlock(obj) {
+  return obj
+    &amp;&amp; Array.isArray(obj.flags)
+    &amp;&amp; typeof obj._verifyPartial === 'function';
+};
+
+/**
+ * Create a merkleblock from a {@link Block} object, passing
+ * it through a filter first. This will build the partial
+ * merkle tree.
+ * @param {Block} block
+ * @param {Bloom} bloom
+ * @returns {MerkleBlock}
+ */
+
+MerkleBlock.fromBlock = function fromBlock(block, bloom) {
+  var matches = [];
+  var txs = [];
+  var leaves = [];
+  var bits = [];
+  var hashes = [];
+  var i, tx, totalTX, height, flags, p;
+
+  for (i = 0; i &lt; block.txs.length; i++) {
+    tx = block.txs[i];
+    if (tx.isWatched(bloom)) {
+      matches.push(1);
+      txs.push(tx);
+    } else {
+      matches.push(0);
+    }
+    leaves.push(tx.hash());
+  }
+
+  totalTX = leaves.length;
+
+  function width(height) {
+    return (totalTX + (1 &lt;&lt; height) - 1) >> height;
+  }
+
+  function hash(height, pos, leaves) {
+    var left, right;
+
+    if (height === 0)
+      return leaves[0];
+
+    left = hash(height - 1, pos * 2, leaves);
+
+    if (pos * 2 + 1 &lt; width(height - 1, pos * 2 + 1, leaves))
+      right = hash(height - 1, pos * 2 + 1, leaves);
+    else
+      right = left;
+
+    return utils.dsha256(Buffer.concat([left, right]));
+  }
+
+  function traverse(height, pos, leaves, matches) {
+    var parent = 0;
+    var p;
+
+    for (p = (pos &lt;&lt; height); p &lt; ((pos + 1) &lt;&lt; height) &amp;&amp; p &lt; totalTX; p++)
+      parent |= matches[p];
+
+    bits.push(parent);
+
+    if (height === 0 || !parent) {
+      hashes.push(hash(height, pos, leaves));
+      return;
+    }
+
+    traverse(height - 1, pos * 2, leaves, matches);
+
+    if (pos * 2 + 1 &lt; width(height - 1))
+      traverse(height - 1, pos * 2 + 1, leaves, matches);
+  }
+
+  height = 0;
+  while (width(height) > 1)
+    height++;
+
+  traverse(height, 0, leaves, matches);
+
+  flags = new Buffer((bits.length + 7) / 8 | 0);
+  for (p = 0; p &lt; bits.length; p++)
+    flags[p / 8 | 0] |= bits[p] &lt;&lt; (p % 8);
+
+  block = new MerkleBlock({
+    version: block.version,
+    prevBlock: block.prevBlock,
+    merkleRoot: block.merkleRoot,
+    ts: block.ts,
+    bits: block.bits,
+    nonce: block.nonce,
+    totalTX: totalTX,
+    height: block.height,
+    hashes: hashes,
+    flags: flags
+  });
+
+  block.txs = txs;
+
+  return block;
+};
+
+return MerkleBlock;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

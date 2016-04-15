@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/keypair.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/keypair.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * keypair.js - keypair object for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+module.exports = function(bcoin) {
+
+var utils = require('./utils');
+var assert = utils.assert;
+var network = bcoin.protocol.network;
+var BufferWriter = require('./writer');
+var BufferReader = require('./reader');
+
+/**
+ * Represents an ecdsa keypair.
+ * @exports KeyPair
+ * @constructor
+ * @param {Object} options
+ * @param {Buffer?} options.privateKey
+ * @param {Buffer?} options.publicKey
+ * @property {Buffer?} privateKey
+ * @property {Buffer} publicKey
+ */
+
+function KeyPair(options) {
+  if (!(this instanceof KeyPair))
+    return new KeyPair(options);
+
+  if (!options)
+    options = {};
+
+  this.options = options;
+  this.key = null;
+  this.compressed = options.compressed !== false;
+
+  if (!options.privateKey &amp;&amp; !options.publicKey)
+    throw new Error('No options for keypair');
+
+  assert(!options.privateKey || Buffer.isBuffer(options.privateKey));
+  assert(!options.publicKey || Buffer.isBuffer(options.publicKey));
+
+  this.privateKey = options.privateKey;
+  this._publicKey = options.publicKey;
+}
+
+/**
+ * Generate a keypair.
+ * @returns {KeyPair}
+ */
+
+KeyPair.generate = function() {
+  return new KeyPair({ privateKey: bcoin.ec.generatePrivateKey() });
+};
+
+/**
+ * Sign a message.
+ * @param {Buffer} msg
+ * @returns {Buffer} Signature in DER format.
+ */
+
+KeyPair.prototype.sign = function sign(msg) {
+  return bcoin.ec.sign(msg, this.getPrivateKey());
+};
+
+/**
+ * Verify a message.
+ * @param {Buffer} msg
+ * @param {Buffer} sig - Signature in DER format.
+ * @returns {Boolean}
+ */
+
+KeyPair.prototype.verify = function verify(msg, sig) {
+  return bcoin.ec.verify(msg, sig, this.getPublicKey());
+};
+
+KeyPair.prototype.__defineGetter__('publicKey', function() {
+  if (!this._publicKey) {
+    if (!this.privateKey)
+      return;
+
+    this._publicKey = bcoin.ec.publicKeyCreate(
+      this.privateKey, this.compressed
+    );
+  }
+
+  return this._publicKey;
+});
+
+/**
+ * Get private key.
+ * @param {String?} enc - Can be `"hex"`, `"base58"`, or `null`.
+ * @returns {Buffer} Private key.
+ */
+
+KeyPair.prototype.getPrivateKey = function getPrivateKey(enc) {
+  if (!this.privateKey)
+    return;
+
+  if (enc === 'base58')
+    return this.toSecret();
+
+  if (enc === 'hex')
+    return utils.toHex(this.privateKey);
+
+  return this.privateKey;
+};
+
+/**
+ * Get public key.
+ * @param {String?} enc - Can be `"hex"`, or `null`.
+ * @returns {Buffer} Public key.
+ */
+
+KeyPair.prototype.getPublicKey = function getPublicKey(enc) {
+  if (enc === 'base58')
+    return utils.toBase58(this.publicKey);
+
+  if (enc === 'hex')
+    return utils.toHex(this.publicKey);
+
+  return this.publicKey;
+};
+
+/**
+ * Convert key to a CBitcoinSecret.
+ * @returns {Base58String}
+ */
+
+KeyPair.prototype.toSecret = function toSecret() {
+  return KeyPair.toSecret(this.getPrivateKey(), this.compressed);
+};
+
+/**
+ * Convert key to a CBitcoinSecret.
+ * @param {Buffer} privateKey
+ * @param {Boolean?} compressed
+ * @returns {Base58String}
+ */
+
+KeyPair.toSecret = function toSecret(privateKey, compressed) {
+  var p = new BufferWriter();
+
+  p.writeU8(network.prefixes.privkey);
+  p.writeBytes(privateKey);
+
+  if (compressed !== false)
+    p.writeU8(1);
+
+  p.writeChecksum();
+
+  return utils.toBase58(p.render());
+};
+
+/**
+ * Parse a serialized CBitcoinSecret.
+ * @param {Base58String} secret
+ * @returns {Object} A "naked" keypair object.
+ */
+
+KeyPair._fromSecret = function _fromSecret(secret) {
+  var data = utils.fromBase58(secret);
+  var p = new BufferReader(data, true);
+  var compressed = false;
+  var privateKey;
+
+  assert(p.readU8() === network.prefixes.privkey, 'Bad network.');
+
+  privateKey = p.readBytes(32);
+
+  if (p.left() > 4) {
+    assert(p.readU8() === 1);
+    compressed = true;
+  }
+
+  p.verifyChecksum();
+
+  return {
+    privateKey: privateKey,
+    compressed: compressed
+  };
+};
+
+/**
+ * Instantiate a transaction from a serialized CBitcoinSecret.
+ * @param {Base58String} secret
+ * @returns {Keypair}
+ */
+
+KeyPair.fromSecret = function fromSecret(secret) {
+  return new KeyPair(KeyPair._fromSecret(secret));
+};
+
+/**
+ * Convert the keypair to an object suitable
+ * for JSON serialization.
+ * @returns {Object}
+ */
+
+KeyPair.prototype.toJSON = function toJSON(passphrase) {
+  var json = {
+    v: 1,
+    name: 'keypair',
+    encrypted: passphrase ? true : false
+  };
+
+  if (this.key.privateKey) {
+    json.privateKey = passphrase
+      ? utils.encrypt(this.toSecret(), passphrase)
+      : this.toSecret();
+    return json;
+  }
+
+  json.publicKey = this.getPublicKey('base58');
+
+  return json;
+};
+
+/**
+ * Handle a deserialized JSON keypair object.
+ * @param {Object} json
+ * @returns {Object} A "naked" keypair (a
+ * plain javascript object which is suitable
+ * for passing to the KeyPair constructor).
+ */
+
+KeyPair._fromJSON = function _fromJSON(json, passphrase) {
+  var privateKey, publicKey;
+
+  assert.equal(json.v, 1);
+  assert.equal(json.name, 'keypair');
+
+  if (json.encrypted &amp;&amp; !passphrase)
+    throw new Error('Cannot decrypt key.');
+
+  if (json.privateKey) {
+    privateKey = json.privateKey;
+    if (json.encrypted)
+      privateKey = utils.decrypt(privateKey, passphrase);
+    return KeyPair._fromSecret(privateKey);
+  }
+
+  if (json.publicKey) {
+    publicKey = utils.fromBase58(json.publicKey);
+    return {
+      publicKey: publicKey,
+      compressed: publicKey[0] !== 0x04
+    };
+  }
+
+  assert(false, 'Could not parse KeyPair JSON.');
+};
+
+/**
+ * Instantiate a transaction from a jsonified keypair object.
+ * @param {Object} json - The jsonified transaction object.
+ * @returns {KeyPair}
+ */
+
+KeyPair.fromJSON = function fromJSON(json, passphrase) {
+  return new KeyPair(KeyPair._fromJSON(json, passphrase));
+};
+
+return KeyPair;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

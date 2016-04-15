@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/locker.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/locker.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * locker.js - lock and queue for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+var EventEmitter = require('events').EventEmitter;
+var utils = require('./utils');
+var assert = utils.assert;
+
+/**
+ * Represents a mutex lock for locking asynchronous object methods.
+ * @exports Locker
+ * @constructor
+ * @param {Function} parent - Parent constructor.
+ * @param {Function?} add - `add` method (whichever method is queuing data).
+ * @param {Number?} limit - Limit in bytes of data that can be queued.
+ */
+
+function Locker(parent, add, limit) {
+  if (!(this instanceof Locker))
+    return Locker(parent, add, limit);
+
+  this.parent = parent;
+  this.jobs = [];
+  this.busy = false;
+
+  this.pending = [];
+  this.pendingMap = {};
+  this.pendingSize = 0;
+  this.pendingLimit = limit || (20 &lt;&lt; 20);
+  this.add = add;
+}
+
+utils.inherits(Locker, EventEmitter);
+
+/**
+ * Test whether the locker has a pending
+ * object by key (usually a {@link Hash}).
+ * @param {Hash|String} key
+ * @returns {Boolean}
+ */
+
+Locker.prototype.hasPending = function hasPending(key) {
+  return this.pendingMap[key] === true;
+};
+
+/**
+ * Lock the parent object and all its methods
+ * which use the locker. Begin to queue calls.
+ * @param {Function} func - The method being called.
+ * @param {Array} args - Arguments passed to the method.
+ * @param {Boolean?} force - Force a call.
+ * @returns {Function} unlock - Unlocker - must be
+ * called once the method finishes executing in order
+ * to resolve the queue.
+ */
+
+Locker.prototype.lock = function lock(func, args, force) {
+  var self = this;
+  var obj, called;
+
+  if (force) {
+    assert(this.busy);
+    return function unlock() {
+      assert(!called);
+      called = true;
+    };
+  }
+
+  if (this.busy) {
+    if (this.add &amp;&amp; func === this.add) {
+      obj = args[0];
+      this.pending.push(obj);
+      this.pendingMap[obj.hash('hex')] = true;
+      this.pendingSize += obj.getSize();
+      if (this.pendingSize > this.pendingLimit) {
+        this.purgePending();
+        return;
+      }
+    }
+    this.jobs.push([func, args]);
+    return;
+  }
+
+  this.busy = true;
+
+  return function unlock() {
+    var item, obj;
+
+    assert(!called);
+    called = true;
+
+    self.busy = false;
+
+    if (self.add &amp;&amp; func === self.add) {
+      if (self.pending.length === 0)
+        self.emit('flush');
+    }
+
+    if (self.jobs.length === 0)
+      return;
+
+    item = self.jobs.shift();
+
+    if (self.add &amp;&amp; item[0] === self.add) {
+      obj = item[1][0];
+      assert(obj === self.pending.shift());
+      delete self.pendingMap[obj.hash('hex')];
+      self.pendingSize -= obj.getSize();
+    }
+
+    item[0].apply(self.parent, item[1]);
+  };
+};
+
+/**
+ * Destroy the locker. Purge all pending calls.
+ */
+
+Locker.prototype.destroy = function destroy() {
+  if (this.add)
+    this.purgePending();
+  this.jobs.length = 0;
+};
+
+/**
+ * Purge all pending calls (called once `add` has hit `limit`).
+ */
+
+Locker.prototype.purgePending = function purgePending() {
+  var self = this;
+  var total = this.pending.length;
+
+  assert(this.add);
+
+  this.emit('purge', total, this.pendingSize);
+
+  this.pending.forEach(function(obj) {
+    delete self.pendingMap[obj.hash('hex')];
+  });
+
+  this.pending.length = 0;
+  this.pendingSize = 0;
+
+  this.jobs = this.jobs.filter(function(item) {
+    return item[0] !== self.add;
+  });
+
+  if (total !== 0)
+    this.emit('flush');
+};
+
+/**
+ * Wait for a flush (empty queue).
+ * @param {Function} callback
+ */
+
+Locker.prototype.onFlush = function onFlush(callback) {
+  if (this.pending.length === 0)
+    return callback();
+
+  this.once('flush', callback);
+};
+
+module.exports = Locker;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

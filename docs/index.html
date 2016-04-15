@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>BCoin</h1><p><strong>BCoin</strong> is a bitcoin node which can act as an SPV node or a fully validating
+fullnode. Bcoin runs in node.js, but it can also be browserified.</p>
+<h2>Features</h2><ul>
+<li>SPV mode</li>
+<li>HD Wallets (using BIP44 (or optionally BIP45) derivation)</li>
+<li>Fully browserifiable</li>
+<li>Full block validation</li>
+<li>Full block database</li>
+<li>Fully validating mempool (stored in-memory or on-disk)</li>
+<li>Wallet database</li>
+<li>HTTP server which acts as a wallet server and can also serve:
+blocks, txs (by hash/address), and utxos (by id/address).<ul>
+<li>Fast UTXO retrieval by address for wallets (10000 utxos from 10000 different
+addresses in ~700ms, 50000+ utxos from 10-100 addresses in ~400ms)</li>
+</ul>
+</li>
+<li>Segregated witness support for block/tx validation and wallets.</li>
+<li>Versionbits suport.</li>
+</ul>
+<h2>Install</h2><pre class="prettyprint source"><code>$ npm install bcoin</code></pre><h2>NOTE</h2><p>Docs need to be rewritten. They're coming soon. I promise.</p>
+<h2>Example Usage</h2><h3>High-level usage for Node object</h3><pre class="prettyprint source lang-js"><code>var bcoin = require('bcoin')('main');
+
+var node = bcoin.fullnode({
+  prune: false,
+  useCheckpoints: true,
+  debug: true,
+  // Primary wallet passphrase
+  passsphrase: 'node'
+});
+
+// Start the node
+node.open(function(err) {
+  if (err)
+    throw err;
+
+  // Create a new wallet (or get an existing one with the same ID)
+  var options = {
+    id: 'mywallet',
+    witness: false,
+    type: 'pubkeyhash',
+    derivation: 'bip44',
+    passphrase: 'foo'
+  };
+
+  node.createWallet(options, function(err, wallet) {
+    if (err)
+      throw err;
+
+    console.log('Created wallet with address: %s', wallet.getAddress());
+
+    // Start syncing the blockchain
+    // (this will take a while since we're a fullnode)
+    node.startSync();
+
+    // Wait for balance and send it to a new address.
+    wallet.once('balance', function(balance) {
+      var newReceiving = wallet.createAddress();
+      console.log('Created new receiving address: %s', newReceiving);
+      // Create a transaction, fill
+      // it with coins, and sign it.
+      wallet.createTX({
+        address: newReceiving,
+        value: balance.confirmed
+      }, function(err, tx) {
+        if (err)
+          throw err;
+
+        console.log('sending tx:');
+        console.log(tx);
+
+        // Destroy wallet to clean up the listeners.
+        wallet.destroy();
+
+        // Broadcast the transaction (alternatively,
+        // we could just add it to our own mempool
+        // and have the mempool object relay it).
+        node.broadcast(tx, function(err) {
+          if (err) {
+            // Could be a reject
+            // packet or a timeout.
+            return console.log(err);
+          }
+          console.log('tx sent!');
+        });
+      });
+    });
+  });
+});
+
+node.chain.on('block', function(block) {
+  console.log(block);
+});
+
+node.mempool.on('tx', function(tx) {
+  console.log(block);
+});
+
+node.chain.on('full', function() {
+  node.mempool.getAll(function(err, txs) {
+    if (err)
+      throw err;
+
+    console.log(txs);
+  });
+});</code></pre><h3>CLI Usage</h3><pre class="prettyprint source lang-bash"><code>$ BCOIN_NETWORK=segnet4 node bin/node
+# View the genesis block
+$ node bin/bcoin-cli block 0
+# View primary wallet
+$ node bin/bcoin-cli wallet primary --passphrase=node
+# View the mempool
+$ node bin/bcoin-cli mempool</code></pre><h3>Creating a blockchain and mempool</h3><pre class="prettyprint source lang-js"><code>var bcoin = require('bcoin')('regtest');
+var chain = new bcoin.chain({ db: 'memory' });
+var mempool = new bcoin.mempool({ chain: chain, db: 'memory' });
+var miner = new bcoin.miner({ chain: chain, mempool: mempool });
+
+// Create a block &quot;attempt&quot;
+miner.createBlock(function(err, attempt) {
+  if (err)
+    throw err;
+
+  // Mine the block on the worker pool (use mine() for the master process)
+  attempt.mineAsync(function(err, block) {
+    if (err)
+      throw err;
+
+    // Add the block to the chain
+    chain.add(block, function(err) {
+      if (err)
+        throw err;
+
+      console.log('Added %s to the blockchain.', block.rhash);
+      console.log(block);
+    });
+  });
+});</code></pre><h3>Connecting to the P2P network</h3><pre class="prettyprint source lang-js"><code>var bcoin = require('bcoin')('testnet');
+
+var chain = new bcoin.chain({ db: 'leveldb' });
+var mempool = new bcoin.mempool({ chain: chain, db: 'memory' });
+var pool = new bcoin.pool({ chain: chain, mempool: mempool, size: 8 });
+
+// Connect, start retrieving and relaying txs
+pool.connect();
+
+// Start the blockchain sync.
+pool.startSync();
+
+chain.on('block', function(block) {
+  console.log('Added block:');
+  console.log(block);
+});
+
+mempool.on('tx', function(tx) {
+  console.log('Added tx to mempool:');
+  console.log(tx);
+});
+
+pool.on('tx', function(tx) {
+  console.log('Saw transaction:');
+  console.log(tx);
+});</code></pre><h3>Doing an SPV sync</h3><pre class="prettyprint source lang-js"><code>var bcoin = require('bcoin')('testnet');
+
+var chain = new bcoin.chain({
+  db: 'leveldb',
+  location: process.env.HOME + '/chain.db',
+  spv: true
+});
+
+var pool = new bcoin.pool({
+  chain: chain,
+  spv: true,
+  size: 8
+});
+
+var walletdb = new bcoin.walletdb({ db: 'memory' });
+
+var wallet = new bcoin.wallet({
+  provider: walletdb.provider(),
+  derivation: 'bip44',
+  type: 'pubkeyhash'
+});
+
+walletdb.save(wallet);
+pool.watchWallet(wallet);
+
+console.log('Created wallet with address %s', wallet.getAddress());
+
+// Connect, start retrieving and relaying txs
+pool.connect();
+
+// Start the blockchain sync.
+pool.startSync();
+
+pool.on('tx', function(tx) {
+  wallet.addTX(tx);
+});
+
+wallet.on('balance', function(balance) {
+  console.log('Balance updated.');
+  console.log(bcoin.utils.btc(balance.unconfirmed));
+});</code></pre><h3>TX creation</h3><p>TODO</p>
+<h3>Scripting</h3><p>TODO</p>
+<h3>Wallet usage</h3><p>TODO</p>
+<h3>Accessing the mempool</h3><p>TODO</p>
+<h3>HTTP server/client</h3><p>TODO</p>
+<h2>LICENSE</h2><p>This software is licensed under the MIT License.</p>
+<p>Copyright Fedor Indutny, 2014-2016.</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+&quot;Software&quot;), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the
+following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.</p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

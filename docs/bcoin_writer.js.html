@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/writer.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/writer.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * writer.js - buffer writer for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+var utils = require('./utils');
+var assert = utils.assert;
+
+/**
+ * An object that allows writing of buffers in a sane manner.
+ * @exports BufferWriter
+ * @constructor
+ * @param {(BufferWriter|Object)?} options
+ */
+
+function BufferWriter(options) {
+  if (options instanceof BufferWriter)
+    return options;
+
+  if (!(this instanceof BufferWriter))
+    return new BufferWriter(options);
+
+  this.data = [];
+  this.written = 0;
+}
+
+/**
+ * Allocate and render the final buffer.
+ * @param {Boolean?} keep - Do not destroy the writer.
+ * @returns {Buffer} Rendered buffer.
+ */
+
+BufferWriter.prototype.render = function render(keep) {
+  var data = new Buffer(this.written);
+  var off = 0;
+  var i, item;
+
+  for (i = 0; i &lt; this.data.length; i++) {
+    item = this.data[i];
+    switch (item[0]) {
+      case 'u8': off += utils.writeU8(data, item[1], off); break;
+      case 'u16': off += utils.writeU16(data, item[1], off); break;
+      case 'u16be': off += utils.writeU16BE(data, item[1], off); break;
+      case 'u32': off += utils.writeU32(data, item[1], off); break;
+      case 'u32be': off += utils.writeU32BE(data, item[1], off); break;
+      case 'u64': off += utils.writeU64(data, item[1], off); break;
+      case 'u64be': off += utils.writeU64BE(data, item[1], off); break;
+      case '8': off += utils.write8(data, item[1], off); break;
+      case '16': off += utils.write16(data, item[1], off); break;
+      case '16be': off += utils.write16BE(data, item[1], off); break;
+      case '32': off += utils.write32(data, item[1], off); break;
+      case '32be': off += utils.write32BE(data, item[1], off); break;
+      case '64': off += utils.write64(data, item[1], off); break;
+      case '64be': off += utils.write64BE(data, item[1], off); break;
+      case 'varint': off += utils.writeVarint(data, item[1], off); break;
+      case 'bytes': off += utils.copy(item[1], data, off); break;
+      case 'checksum':
+        off += utils.copy(utils.checksum(data.slice(0, off)), data, off);
+        break;
+    }
+  }
+
+  if (!keep)
+    this.destroy();
+
+  return data;
+};
+
+/**
+ * Destroy the buffer writer. Remove references to `data`.
+ */
+
+BufferWriter.prototype.destroy = function destroy() {
+  this.data.length = 0;
+  delete this.data;
+  delete this.written;
+};
+
+/**
+ * Write uint8.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.writeU8 = function writeU8(value) {
+  this.written += 1;
+  this.data.push(['u8', value]);
+};
+
+/**
+ * Write uint16le.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.writeU16 = function writeU16(value) {
+  this.written += 2;
+  this.data.push(['u16', value]);
+};
+
+/**
+ * Write uint16be.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.writeU16BE = function writeU16BE(value) {
+  this.written += 2;
+  this.data.push(['u16be', value]);
+};
+
+/**
+ * Write uint32le.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.writeU32 = function writeU32(value) {
+  this.written += 4;
+  this.data.push(['u32', value]);
+};
+
+/**
+ * Write uint32be.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.writeU32BE = function writeU32BE(value) {
+  this.written += 4;
+  this.data.push(['u32be', value]);
+};
+
+/**
+ * Write uint64le.
+ * @param {BN|Number} value
+ */
+
+BufferWriter.prototype.writeU64 = function writeU64(value) {
+  this.written += 8;
+  this.data.push(['u64', value]);
+};
+
+/**
+ * Write uint64be.
+ * @param {BN|Number} value
+ */
+
+BufferWriter.prototype.writeU64BE = function writeU64BE(value) {
+  this.written += 8;
+  this.data.push(['u64be', value]);
+};
+
+/**
+ * Write int8.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.write8 = function write8(value) {
+  this.written += 1;
+  this.data.push(['8', value]);
+};
+
+/**
+ * Write int16le.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.write16 = function write16(value) {
+  this.written += 2;
+  this.data.push(['16', value]);
+};
+
+/**
+ * Write int16be.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.write16BE = function write16BE(value) {
+  this.written += 2;
+  this.data.push(['16be', value]);
+};
+
+/**
+ * Write int32le.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.write32 = function write32(value) {
+  this.written += 4;
+  this.data.push(['32', value]);
+};
+
+/**
+ * Write int32be.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.write32BE = function write32BE(value) {
+  this.written += 4;
+  this.data.push(['32be', value]);
+};
+
+/**
+ * Write int64le.
+ * @param {BN|Number} value
+ */
+
+BufferWriter.prototype.write64 = function write64(value) {
+  this.written += 8;
+  this.data.push(['64', value]);
+};
+
+/**
+ * Write int64be.
+ * @param {BN|Number} value
+ */
+
+BufferWriter.prototype.write64BE = function write64BE(value) {
+  this.written += 8;
+  this.data.push(['64be', value]);
+};
+
+/**
+ * Write bytes.
+ * @param {Buffer} value
+ */
+
+BufferWriter.prototype.writeBytes = function writeBytes(value) {
+  this.written += value.length;
+  this.data.push(['bytes', value]);
+};
+
+/**
+ * Get size of data written so far.
+ * @returns {Number}
+ */
+
+BufferWriter.prototype.getSize = function getSize() {
+  return this.written;
+};
+
+/**
+ * Write string to buffer.
+ * @param {String|Buffer} value
+ * @param {String?} enc - Any buffer-supported encoding.
+ */
+
+BufferWriter.prototype.writeString = function writeString(value, enc) {
+  if (typeof value === 'string')
+    value = new Buffer(value, enc);
+  this.writeBytes(value);
+};
+
+/**
+ * Write a hash/hex-string.
+ * @param {Hash|Buffer}
+ */
+
+BufferWriter.prototype.writeHash = function writeHash(value) {
+  if (typeof value === 'string')
+    value = new Buffer(value, 'hex');
+  this.writeBytes(value);
+};
+
+/**
+ * Write a string with a varint length before it.
+ * @param {String|Buffer}
+ * @param {String?} enc - Any buffer-supported encoding.
+ */
+
+BufferWriter.prototype.writeVarString = function writeVarString(value, enc) {
+  if (typeof value === 'string')
+    value = new Buffer(value, enc);
+  this.writeVarBytes(value);
+};
+
+/**
+ * Write bytes with a varint length before them.
+ * @param {Buffer} value
+ */
+
+BufferWriter.prototype.writeVarBytes = function writeVarBytes(value) {
+  this.written += utils.sizeVarint(value.length);
+  this.written += value.length;
+  this.data.push(['varint', value.length]);
+  this.data.push(['bytes', value]);
+};
+
+/**
+ * Write a null-terminated string.
+ * @param {String|Buffer}
+ * @param {String?} enc - Any buffer-supported encoding.
+ */
+
+BufferWriter.prototype.writeNullString = function writeNullString(value, enc) {
+  this.writeString(value, enc);
+  this.writeU8(0);
+};
+
+/**
+ * Write a varint.
+ * @param {BN|Number} value
+ */
+
+BufferWriter.prototype.writeVarint = function writeVarint(value) {
+  assert(value >= 0);
+  this.written += utils.sizeVarint(value);
+  this.data.push(['varint', value]);
+};
+
+/**
+ * Calculate and write a checksum for the data written so far.
+ */
+
+BufferWriter.prototype.writeChecksum = function writeChecksum() {
+  this.written += 4;
+  this.data.push(['checksum']);
+};
+
+/**
+ * Fill N bytes with value.
+ * @param {Number} value
+ * @param {Number} size
+ */
+
+BufferWriter.prototype.fill = function fill(value, size) {
+  assert(size >= 0);
+  var buf = new Buffer(size);
+  buf.fill(value);
+  this.written += buf.length;
+  this.data.push(['bytes', buf]);
+};
+
+module.exports = BufferWriter;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

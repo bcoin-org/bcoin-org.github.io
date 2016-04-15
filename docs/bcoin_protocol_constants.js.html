@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/protocol/constants.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/protocol/constants.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * constants.js - bitcoin constants for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+/**
+ * @module constants
+ */
+
+var bn = require('bn.js');
+var utils = require('../utils');
+
+/**
+ * Minimum protocol version we're willing to talk to.
+ * @const {Number}
+ * @default
+ */
+
+exports.minVersion = 70001;
+
+/**
+ * BCoin's protocol version.
+ * @const {Number}
+ * @default
+ */
+
+exports.version = 70012;
+
+/**
+ * Max message size (~4mb with segwit, formerly 2mb)
+ * @const {Number}
+ * @default
+ */
+
+exports.maxMessage = 4 * 1000 * 1000;
+
+/**
+ * Service bits.
+ * @enum {Number}
+ * @default
+ */
+
+exports.services = {
+  network: (1 &lt;&lt; 0),
+  getutxo: (1 &lt;&lt; 1),
+  bloom: (1 &lt;&lt; 2),
+  witness: (1 &lt;&lt; 3)
+};
+
+/**
+ * BCoin's services (NETWORK | WITNESS)
+ * @const {Number}
+ * @default
+ */
+
+exports.localServices = exports.services.network
+  | exports.services.witness;
+
+/**
+ * Inv types.
+ * @enum {Number}
+ * @default
+ */
+
+exports.inv = {
+  error: 0,
+  tx: 1,
+  block: 2,
+  filteredblock: 3,
+  witnesstx: 1 | (1 &lt;&lt; 30),
+  witnessblock: 2 | (1 &lt;&lt; 30),
+  witnessfilteredblock: 3 | (1 &lt;&lt; 30)
+};
+
+/**
+ * An inverse enum. Retrieves key by value.
+ * @global
+ * @typedef {Object} RevMap
+ */
+
+/**
+ * Inv types by value.
+ * @const {RevMap}
+ */
+
+exports.invByVal = utils.revMap(exports.inv);
+
+/**
+ * Witness mask for inv types.
+ * @const {Number}
+ * @default
+ */
+
+exports.invWitnessMask = 1 &lt;&lt; 30;
+
+/**
+ * Bloom filter update flags.
+ * @enum {Number}
+ * @default
+ */
+
+exports.filterFlags = {
+  none: 0,
+  all: 1,
+  pubkeyOnly: 2
+};
+
+/**
+ * Bloom filter update flags by value.
+ * @const {RevMap}
+ */
+
+exports.filterFlagsByVal = utils.revMap(exports.filterFlags);
+
+/**
+ * Script opcodes.
+ * @enum {Number}
+ * @default
+ */
+
+exports.opcodes = {
+  OP_FALSE: 0x00,
+  OP_0: 0x00,
+
+  OP_PUSHDATA1: 0x4c,
+  OP_PUSHDATA2: 0x4d,
+  OP_PUSHDATA4: 0x4e,
+
+  OP_1NEGATE: 0x4f,
+
+  OP_RESERVED: 0x50,
+
+  OP_TRUE: 0x51,
+  OP_1: 0x51,
+  OP_2: 0x52,
+  OP_3: 0x53,
+  OP_4: 0x54,
+  OP_5: 0x55,
+  OP_6: 0x56,
+  OP_7: 0x57,
+  OP_8: 0x58,
+  OP_9: 0x59,
+  OP_10: 0x5a,
+  OP_11: 0x5b,
+  OP_12: 0x5c,
+  OP_13: 0x5d,
+  OP_14: 0x5e,
+  OP_15: 0x5f,
+  OP_16: 0x60,
+
+  OP_NOP: 0x61,
+  OP_VER: 0x62,
+  OP_IF: 0x63,
+  OP_NOTIF: 0x64,
+  OP_VERIF: 0x65,
+  OP_VERNOTIF: 0x66,
+  OP_ELSE: 0x67,
+  OP_ENDIF: 0x68,
+  OP_VERIFY: 0x69,
+  OP_RETURN: 0x6a,
+
+  OP_TOALTSTACK: 0x6b,
+  OP_FROMALTSTACK: 0x6c,
+  OP_2DROP: 0x6d,
+  OP_2DUP: 0x6e,
+  OP_3DUP: 0x6f,
+  OP_2OVER: 0x70,
+  OP_2ROT: 0x71,
+  OP_2SWAP: 0x72,
+  OP_IFDUP: 0x73,
+  OP_DEPTH: 0x74,
+  OP_DROP: 0x75,
+  OP_DUP: 0x76,
+  OP_NIP: 0x77,
+  OP_OVER: 0x78,
+  OP_PICK: 0x79,
+  OP_ROLL: 0x7a,
+  OP_ROT: 0x7b,
+  OP_SWAP: 0x7c,
+  OP_TUCK: 0x7d,
+
+  OP_CAT: 0x7e,
+  OP_SUBSTR: 0x7f,
+  OP_LEFT: 0x80,
+  OP_RIGHT: 0x81,
+  OP_SIZE: 0x82,
+
+  OP_INVERT: 0x83,
+  OP_AND: 0x84,
+  OP_OR: 0x85,
+  OP_XOR: 0x86,
+  OP_EQUAL: 0x87,
+  OP_EQUALVERIFY: 0x88,
+
+  OP_RESERVED1: 0x89,
+  OP_RESERVED2: 0x8a,
+
+  OP_1ADD: 0x8b,
+  OP_1SUB: 0x8c,
+  OP_2MUL: 0x8d,
+  OP_2DIV: 0x8e,
+  OP_NEGATE: 0x8f,
+  OP_ABS: 0x90,
+  OP_NOT: 0x91,
+  OP_0NOTEQUAL: 0x92,
+  OP_ADD: 0x93,
+  OP_SUB: 0x94,
+  OP_MUL: 0x95,
+  OP_DIV: 0x96,
+  OP_MOD: 0x97,
+  OP_LSHIFT: 0x98,
+  OP_RSHIFT: 0x99,
+  OP_BOOLAND: 0x9a,
+  OP_BOOLOR: 0x9b,
+  OP_NUMEQUAL: 0x9c,
+  OP_NUMEQUALVERIFY: 0x9d,
+  OP_NUMNOTEQUAL: 0x9e,
+  OP_LESSTHAN: 0x9f,
+  OP_GREATERTHAN: 0xa0,
+  OP_LESSTHANOREQUAL: 0xa1,
+  OP_GREATERTHANOREQUAL: 0xa2,
+  OP_MIN: 0xa3,
+  OP_MAX: 0xa4,
+  OP_WITHIN: 0xa5,
+
+  OP_RIPEMD160: 0xa6,
+  OP_SHA1: 0xa7,
+  OP_SHA256: 0xa8,
+  OP_HASH160: 0xa9,
+  OP_HASH256: 0xaa,
+  OP_CODESEPARATOR: 0xab,
+  OP_CHECKSIG: 0xac,
+  OP_CHECKSIGVERIFY: 0xad,
+  OP_CHECKMULTISIG: 0xae,
+  OP_CHECKMULTISIGVERIFY: 0xaf,
+
+  OP_EVAL: 0xb0,
+  OP_NOP1: 0xb0,
+  OP_NOP2: 0xb1,
+  OP_CHECKLOCKTIMEVERIFY: 0xb1,
+  OP_NOP3: 0xb2,
+  OP_CHECKSEQUENCEVERIFY: 0xb2,
+  OP_NOP4: 0xb3,
+  OP_NOP5: 0xb4,
+  OP_NOP6: 0xb5,
+  OP_NOP7: 0xb6,
+  OP_NOP8: 0xb7,
+  OP_NOP9: 0xb8,
+  OP_NOP10: 0xb9,
+
+  OP_PUBKEYHASH: 0xfd,
+  OP_PUBKEY: 0xfe,
+  OP_INVALIDOPCODE: 0xff
+};
+
+/**
+ * Opcodes by value.
+ * @const {RevMap}
+ */
+
+exports.opcodesByVal = utils.revMap(exports.opcodes);
+
+/**
+ * One bitcoin in satoshis.
+ * @const {BN}
+ * @default
+ */
+
+exports.coin = new bn(10000000).muln(10);
+
+/**
+ * One bitcoin / 100.
+ * @const {BN}
+ * @default
+ */
+
+exports.cent = new bn(1000000);
+
+/**
+ * Maximum amount of money in satoshis (1btc * 21million)
+ * @const {BN}
+ * @default
+ */
+
+exports.maxMoney = new bn(21000000).mul(exports.coin);
+
+/**
+ * Sighash Types.
+ * @enum {SighashType}
+ * @default
+ */
+
+exports.hashType = {
+  all: 1,
+  none: 2,
+  single: 3,
+  anyonecanpay: 0x80
+};
+
+/**
+ * Sighash types by value.
+ * @const {RevMap}
+ */
+
+exports.hashTypeByVal = utils.revMap(exports.hashType);
+
+/**
+ * Block-related constants.
+ * @enum {Number}
+ * @default
+ */
+
+exports.block = {
+  maxSize: 1000000,
+  maxSigops: 1000000 / 50,
+  maxOrphanTx: 1000000 / 100,
+  medianTimespan: 11,
+  bip16time: 1333238400,
+  sighashLimit: 1300000000
+};
+
+/**
+ * TX-related constants.
+ * @enum {Number}
+ * @default
+ */
+
+exports.tx = {
+  version: 2,
+  maxSize: 100000,
+  minFee: 10000,
+  bareMultisig: true,
+  freeThreshold: exports.coin.muln(144).divn(250),
+  maxSigops: exports.block.maxSigops / 5,
+  coinbaseMaturity: 100
+};
+
+exports.tx.dustThreshold = 182 * exports.tx.minFee / 1000 * 3;
+
+/**
+ * Script-related constants.
+ * @enum {Number}
+ * @default
+ */
+
+exports.script = {
+  maxSize: 10000,
+  maxStack: 1000,
+  maxPush: 520,
+  maxOps: 201,
+  maxPubkeysPerMultisig: 20,
+  maxScripthashSigops: 15,
+  maxOpReturnBytes: 83,
+  maxOpReturn: 80
+};
+
+/**
+ * Reject codes. Note that `internal` and higher
+ * are not meant for use on the p2p network.
+ * @enum {Number}
+ * @default
+ */
+
+exports.reject = {
+  malformed: 0x01,
+  invalid: 0x10,
+  obsolete: 0x11,
+  duplicate: 0x12,
+  nonstandard: 0x40,
+  dust: 0x41,
+  insufficientfee: 0x42,
+  checkpoint: 0x43,
+  // Internal codes (NOT FOR USE ON NETWORK)
+  internal: 0x100,
+  highfee: 0x100,
+  alreadyknown: 0x101,
+  conflict: 0x102
+};
+
+/**
+ * Reject codes by value.
+ * @const {RevMap}
+ */
+
+exports.rejectByVal = utils.revMap(exports.reject);
+
+/**
+ * HD-related constants.
+ * @const {Object}
+ * @default
+ */
+
+exports.hd = {
+  hardened: 0x80000000,
+  maxIndex: 2 * 0x80000000,
+  minEntropy: 128 / 8,
+  maxEntropy: 512 / 8,
+  parentFingerPrintSize: 4,
+  pathRoots: ['m', 'M', 'm\'', 'M\'']
+};
+
+/**
+ * nLockTime threshold for differentiating
+ * between height and time.
+ * Tue Nov 5 00:53:20 1985 UTC
+ * @const {Number}
+ * @default
+ */
+
+exports.locktimeThreshold = 500000000;
+
+/**
+ * Highest nSequence bit (disables sequence locktimes).
+ * @const {Number}
+ */
+
+exports.sequenceLocktimeDisableFlag = (1 &lt;&lt; 31) >>> 0;
+
+/**
+ * @const {Number}
+ * @default
+ */
+
+exports.sequenceLocktimeTypeFlag = 1 &lt;&lt; 22;
+
+/**
+ * @const {Number}
+ * @default
+ */
+
+exports.sequenceLocktimeGranularity = 9;
+
+/**
+ * @const {Number}
+ * @default
+ */
+
+exports.sequenceLocktimeMask = 0x0000ffff;
+
+/**
+ * A hash of all zeroes with a `1` at the
+ * end (used for the SIGHASH_SINGLE bug).
+ * @const {Buffer}
+ * @default
+ */
+
+exports.oneHash = new Buffer(
+  '0000000000000000000000000000000000000000000000000000000000000001',
+  'hex'
+);
+
+/**
+ * A hash of all zeroes.
+ * @const {Buffer}
+ * @default
+ */
+
+exports.zeroHash = new Buffer(
+  '0000000000000000000000000000000000000000000000000000000000000000',
+  'hex'
+);
+
+/**
+ * A hash of all zeroes.
+ * @const {String}
+ * @default
+ */
+
+exports.nullHash =
+  '0000000000000000000000000000000000000000000000000000000000000000';
+
+/**
+ * BCoin version.
+ * @const {String}
+ * @default
+ */
+
+exports.userVersion = require('../../../package.json').version;
+
+/**
+ * BCoin user agent: `/bcoin:{version}/`.
+ * @const {String}
+ * @default
+ */
+
+exports.userAgent = '/bcoin:' + exports.userVersion + '/';
+
+exports.banTime = 24 * 60 * 60;
+exports.banScore = 100;
+
+/**
+ * Script and locktime flags. See {@link VerifyFlags}.
+ * @enum {Number}
+ */
+
+exports.flags = {
+  VERIFY_NONE: 0,
+  VERIFY_P2SH: (1 &lt;&lt; 0),
+  VERIFY_STRICTENC: (1 &lt;&lt; 1),
+  VERIFY_DERSIG: (1 &lt;&lt; 2),
+  VERIFY_LOW_S: (1 &lt;&lt; 3),
+  VERIFY_NULLDUMMY: (1 &lt;&lt; 4),
+  VERIFY_SIGPUSHONLY: (1 &lt;&lt; 5),
+  VERIFY_MINIMALDATA: (1 &lt;&lt; 6),
+  VERIFY_DISCOURAGE_UPGRADABLE_NOPS: (1 &lt;&lt; 7),
+  VERIFY_CLEANSTACK: (1 &lt;&lt; 8),
+  VERIFY_CHECKLOCKTIMEVERIFY: (1 &lt;&lt; 9),
+  VERIFY_CHECKSEQUENCEVERIFY: (1 &lt;&lt; 10),
+  VERIFY_WITNESS: (1 &lt;&lt; 11),
+  VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM: (1 &lt;&lt; 12),
+  VERIFY_SEQUENCE: (1 &lt;&lt; 0),
+  MEDIAN_TIME_PAST: (1 &lt;&lt; 1)
+};
+
+/**
+ * Consensus verify flags (used for block validation).
+ * @const {VerifyFlags}
+ * @default
+ */
+
+exports.flags.MANDATORY_VERIFY_FLAGS = exports.flags.VERIFY_P2SH;
+
+/**
+ * Standard verify flags (used for mempool validation).
+ * @const {VerifyFlags}
+ * @default
+ */
+
+exports.flags.STANDARD_VERIFY_FLAGS =
+  exports.flags.MANDATORY_VERIFY_FLAGS
+  | exports.flags.VERIFY_DERSIG
+  | exports.flags.VERIFY_STRICTENC
+  | exports.flags.VERIFY_MINIMALDATA
+  | exports.flags.VERIFY_NULLDUMMY
+  | exports.flags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS
+  | exports.flags.VERIFY_CLEANSTACK
+  | exports.flags.VERIFY_CHECKLOCKTIMEVERIFY
+  | exports.flags.VERIFY_LOW_S
+  | exports.flags.VERIFY_CHECKSEQUENCEVERIFY;
+  // | exports.flags.VERIFY_WITNESS
+  // | exports.flags.VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM
+
+/**
+ * Consensus locktime flags (used for block validation).
+ * @const {LockFlags}
+ * @default
+ */
+
+exports.flags.MANDATORY_LOCKTIME_FLAGS = 0;
+
+/**
+ * Standard locktime flags (used for mempool validation).
+ * @const {LockFlags}
+ * @default
+ */
+
+exports.flags.STANDARD_LOCKTIME_FLAGS =
+  exports.flags.VERIFY_SEQUENCE
+  | exports.flags.MEDIAN_TIME_PAST;
+
+/**
+ * Versionbits constants.
+ * @enum {Number}
+ * @default
+ */
+
+exports.versionbits = {
+  // What block version to use for new blocks (pre versionbits)
+  LAST_OLD_BLOCK_VERSION: 4,
+  // What bits to set in version for versionbits blocks
+  TOP_BITS: 0x20000000,
+  // What bitmask determines whether versionbits is in use
+  TOP_MASK: 0xe0000000
+};
+
+/**
+ * Threshold states for versionbits
+ * @enum {Number}
+ * @default
+ */
+
+exports.thresholdStates = {
+  DEFINED: 0,
+  STARTED: 1,
+  LOCKED_IN: 2,
+  ACTIVE: 3,
+  FAILED: 4
+};
+
+/**
+ * Bitcoinj-style confidence calculation
+ * @enum {Number}
+ * @default
+ */
+
+exports.confidence = {
+  BUILDING: 1,
+  PENDING: 2,
+  DEAD: 4,
+  INCONFLICT: 5,
+  UNKNOWN: 0
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/compactblock.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/compactblock.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * compactblock.js - compact block object for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+module.exports = function(bcoin) {
+
+var bn = require('bn.js');
+var utils = require('./utils');
+var assert = utils.assert;
+
+/**
+ * A block object which is essentially a "placeholder"
+ * for a full {@link Block} object. The v8 garbage
+ * collector's head will explode if there is too much
+ * data on the javascript heap. Blocks can currently
+ * be up to 1mb in size. In the future, they may be
+ * 2mb, 8mb, or maybe 20mb, who knows? A CompactBlock
+ * is an optimization in BCoin which defers parsing of
+ * the serialized transactions (the block Buffer) until
+ * the block has passed through the chain queue and
+ * is about to enter the chain. This keeps a lot data
+ * off of the javascript heap for most of the time a
+ * block even exists in memory, and manages to keep a
+ * lot of strain off of the garbage collector. Having
+ * 500mb of blocks on the js heap would not be a good
+ * thing.
+ * @exports CompactBlock
+ * @constructor
+ * @param {Object} data
+ * @property {Number} version - Block version. Note
+ * that BCoin reads versions as unsigned despite
+ * them being signed on the protocol level. This
+ * number will never be negative.
+ * @property {Hash} prevBlock - Previous block hash.
+ * @property {Hash} merkleRoot - Merkle root hash.
+ * @property {Number} ts - Timestamp.
+ * @property {Number} bits
+ * @property {Number} nonce
+ * @property {Number} totalTX - Transaction count.
+ * @property {Number} height - Block height (-1 if not present).
+ * @property {Number} coinbaseHeight - The coinbase height which
+ * was extracted by the parser (the coinbase is the only
+ * transaction we parse ahead of time).
+ * @property {Buffer} _raw - The raw block data.
+ * @property {ReversedHash} rhash - Reversed block hash (uint256le).
+ */
+
+function CompactBlock(data) {
+  if (!(this instanceof CompactBlock))
+    return new CompactBlock(data);
+
+  bcoin.abstractblock.call(this, data);
+
+  this.type = 'compactblock';
+  this.coinbaseHeight = -1;
+
+  if (this.version >= 2) {
+    if (Buffer.isBuffer(data.coinbaseHeight) &amp;&amp; data.coinbaseHeight.length &lt;= 6)
+      this.coinbaseHeight = new bn(data.coinbaseHeight, 'le').toNumber();
+  }
+}
+
+utils.inherits(CompactBlock, bcoin.abstractblock);
+
+/**
+ * Verify the block headers.
+ * @name verify
+ * @param {Object?} ret - Return object, may be
+ * set with properties `reason` and `score`.
+ * @returns {Boolean}
+ */
+
+CompactBlock.prototype._verify = function _verify(ret) {
+  return this.verifyHeaders(ret);
+};
+
+/**
+ * Retrieve the coinbase height from the coinbase input script (already
+ * extracted in actuality).
+ * @returns {Number} height (-1 if not present).
+ */
+
+CompactBlock.prototype.getCoinbaseHeight = function getCoinbaseHeight() {
+  return this.coinbaseHeight;
+};
+
+/**
+ * Parse the serialized block data and create an actual {@link Block}.
+ * @returns {Block}
+ * @throws Parse error
+ */
+
+CompactBlock.prototype.toBlock = function toBlock() {
+  var block = bcoin.protocol.parser.parseBlock(this._raw);
+  delete this._raw;
+  assert(!block._raw);
+  block = new bcoin.block(block);
+  if (this.valid != null)
+    block.valid = this.valid;
+  return block;
+};
+
+/**
+ * Test an object to see if it is a CompactBlock.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+CompactBlock.isCompactBlock = function isCompactBlock(block) {
+  return block
+    &amp;&amp; block.type === 'compactblock'
+    &amp;&amp; typeof block.toBlock === 'function';
+};
+
+return CompactBlock;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

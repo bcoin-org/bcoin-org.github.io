@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/coinview.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/coinview.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * coinview.js - coinview object for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+module.exports = function(bcoin) {
+
+var utils = bcoin.utils;
+var assert = utils.assert;
+var constants = bcoin.protocol.constants;
+
+/**
+ * A collections of {@link Coins} objects.
+ * @exports CoinView
+ * @constructor
+ * @param {Object} coins - A hash-to-coins map.
+ * @property {Object} coins
+ */
+
+function CoinView(coins) {
+  if (!(this instanceof CoinView))
+    return new CoinView(coins);
+
+  this.coins = coins || {};
+}
+
+/**
+ * Add a coin to the collection.
+ * @param {Coins|TX} tx/coins
+ * @param {Number?} index
+ */
+
+CoinView.prototype.add = function add(tx, i) {
+  var coin, hash;
+
+  if (i == null) {
+    coin = tx;
+    this.coins[coin.hash] = coin;
+    return;
+  }
+
+  hash = tx.hash('hex');
+
+  if (!this.coins[hash]) {
+    this.coins[hash] = Object.create(bcoin.coins.prototype);
+    this.coins[hash].version = tx.version;
+    this.coins[hash].height = tx.height;
+    this.coins[hash].coinbase = tx.isCoinbase();
+    this.coins[hash].hash = hash;
+    this.coins[hash].outputs = new Array(tx.outputs.length);
+  }
+
+  this.coins[hash].add(tx, i);
+};
+
+/**
+ * Get a coin.
+ * @param {Hash} hash
+ * @param {Number} index
+ * @returns {Coin}
+ */
+
+CoinView.prototype.get = function get(hash, index) {
+  if (!this.coins[hash])
+    return;
+
+  return this.coins[hash].get(index);
+};
+
+/**
+ * Count number of available coins.
+ * @param {Hash} hash
+ * @returns {Number} Total.
+ */
+
+CoinView.prototype.count = function count(hash) {
+  if (!this.coins[hash])
+    return 0;
+
+  return this.coins[hash].count();
+};
+
+/**
+ * Test whether the collection has a coin.
+ * @param {Hash} hash
+ * @param {Number} index
+ * @returns {Boolean}
+ */
+
+CoinView.prototype.has = function has(hash, index) {
+  if (!this.coins[hash])
+    return false;
+
+  return this.coins[hash].has(index);
+};
+
+/**
+ * Remove a coin.
+ * @param {Hash} hash
+ * @param {Number} index
+ */
+
+CoinView.prototype.remove = function remove(hash, index) {
+  if (!this.coins[hash])
+    return;
+
+  return this.coins[hash].remove(index);
+};
+
+/**
+ * Remove a coin and return it.
+ * @param {Hash} hash
+ * @param {Number} index
+ * @returns {Coin}
+ */
+
+CoinView.prototype.spend = function spend(hash, index) {
+  if (!this.coins[hash])
+    return;
+
+  return this.coins[hash].spend(index);
+};
+
+/**
+ * Fill transaction(s) with coins.
+ * @param {TX|TX[]} tx
+ * @param {Boolean?} spend - Whether the coins should
+ * be spent when filling.
+ * @returns {Boolean} True if any inputs were filled.
+ */
+
+CoinView.prototype.fill = function fill(obj, spend) {
+  var keys = Object.keys(this.coins);
+  var res = true;
+  var i;
+
+  for (i = 0; i &lt; keys.length; i++) {
+    if (!this.coins[keys[i]].fill(obj, spend))
+      res = false;
+  }
+
+  return res;
+};
+
+/**
+ * Convert collection to an array.
+ * @returns {Coins[]}
+ */
+
+CoinView.prototype.toArray = function toArray() {
+  return Object.keys(this.coins).map(function(hash) {
+    return this.coins[hash];
+  }, this);
+};
+
+return CoinView;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

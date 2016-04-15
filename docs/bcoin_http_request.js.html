@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/http/request.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/http/request.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * request.js - http request for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+var Stream = require('stream').Stream;
+var assert = require('../utils').assert;
+
+// Spoof by default
+var USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1)'
+  + ' AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.1 Safari/537.36';
+
+/**
+ * Request
+ * @exports request
+ * @function
+ * @param {Object} options
+ * @param {String} options.uri
+ * @param {Object?} options.query
+ * @param {Object?} options.body
+ * @param {Object?} options.json
+ * @param {Object?} options.form
+ * @param {String?} options.type - One of `"json"`,
+ * `"form"`, `"text"`, or `"binary"`.
+ * @param {String?} options.agent - User agent string.
+ * @param {Object?} [options.strictSSL=true] - Whether to accept bad certs.
+ * @param {Object?} options.method - HTTP method.
+ * @param {Object?} options.auth
+ * @param {String?} options.auth.username
+ * @param {String?} options.auth.password
+ * @param {String?} options.expect - Type to expect (see options.type).
+ * Error will be returned if the response is not of this type.
+ * @param {Number?} options.limit - Byte limit on response.
+ * @param {Function} callback
+ */
+
+function request(options, callback, stream) {
+  var qs = require('querystring');
+  var url = require('url');
+
+  var uri = options.uri;
+  var query = options.query;
+  var body = options.body;
+  var json = options.json;
+  var form = options.form;
+  var type = options.type;
+  var http, req, opt;
+
+  if (callback)
+    return request._buffer(options, callback);
+
+  if (json &amp;&amp; typeof json === 'object') {
+    body = json;
+    json = true;
+  }
+
+  if (form &amp;&amp; typeof form === 'object') {
+    body = qs.stringify(form);
+    form = true;
+  }
+
+  if (typeof uri !== 'object') {
+    if (!/:\/\//.test(uri))
+      uri = 'http://' + uri;
+    uri = url.parse(uri);
+  }
+
+  if (uri.protocol === 'https:')
+    http = require('https');
+  else
+    http = require('http');
+
+  if (uri.search)
+    query = qs.parse(uri.search);
+
+  if (query &amp;&amp; typeof query !== 'string')
+    query = qs.stringify(query);
+
+  if (query)
+    query = '?' + query;
+  else
+    query = '';
+
+  opt = {
+    host: uri.hostname,
+    port: uri.port || (uri.protocol === 'https:' ? 443 : 80),
+    path: uri.pathname + query,
+    headers: {
+      'User-Agent': options.agent || USER_AGENT
+    },
+    rejectUnauthorized: options.strictSSL !== false
+  };
+
+  if (body) {
+    if (!type) {
+      if (form)
+        type = 'form';
+      else if (json || (typeof body === 'object' &amp;&amp; !Buffer.isBuffer(body)))
+        type = 'json';
+      else if (typeof body === 'string')
+        type = 'text';
+      else
+        type = 'binary';
+    }
+
+    if (type === 'json' &amp;&amp; typeof body === 'object')
+      body = JSON.stringify(body);
+    else if (type === 'form' &amp;&amp; typeof body === 'object')
+      body = qs.stringify(body);
+
+    if (type === 'form')
+      type = 'application/x-www-form-urlencoded; charset=utf-8';
+    else if (type === 'json')
+      type = 'application/json; charset=utf-8';
+    else if (type === 'text')
+      type = 'text/plain; charset=utf-8';
+    else if (type === 'binary')
+      type = 'application/octet-stream';
+
+    if (typeof body === 'string')
+      body = new Buffer(body, 'utf8');
+
+    assert(Buffer.isBuffer(body));
+
+    opt.headers['Content-Type'] = type;
+    opt.headers['Content-Length'] = body.length + '';
+
+    opt.method = options.method || 'POST';
+  } else {
+    opt.method = options.method || 'GET';
+  }
+
+  if (options.auth)
+    uri.auth = options.auth.username + ':' + options.auth.password;
+
+  if (uri.auth) {
+    opt.headers['Authorization'] =
+      'Basic ' + new Buffer(uri.auth, 'utf8').toString('base64');
+  }
+
+  opt.method = opt.method.toUpperCase();
+
+  req = http.request(opt);
+
+  if (!stream)
+    stream = new ReqStream(options);
+
+  stream.req = req;
+
+  req.on('response', function(res) {
+    var called = false;
+    var type = res.headers['content-type'];
+
+    if (res.headers['location']) {
+      if (++stream._redirects > stream.maxRedirects)
+        return done(new Error('Too many redirects.'));
+      options.uri = res.headers['location'];
+      return request(options, null, stream);
+    }
+
+    if (/\/json/i.test(type))
+      type = 'json';
+    else if (/form-urlencoded/i.test(type))
+      type = 'form';
+    else if (/text\/plain/i.test(type))
+      type = 'text';
+    else if (/\/x?html/i.test(type))
+      type = 'html';
+    else
+      type = 'binary';
+
+    stream.res = res;
+    stream.headers = res.headers;
+    stream.type = type;
+
+    if (options.expect &amp;&amp; type !== options.expect)
+      return done(new Error('Wrong content-type for response.'));
+
+    stream.emit('headers', res.headers);
+    stream.emit('type', type);
+    stream.emit('response', res);
+
+    function done(err) {
+      if (called)
+        return;
+
+      called = true;
+
+      if (res.socket)
+        res.socket.removeListener('end', done);
+
+      if (err) {
+        stream.destroy();
+        stream.emit('error', err);
+        return;
+      }
+
+      stream.emit('end');
+      stream.emit('close');
+    }
+
+    res.on('data', function(data) {
+      stream.emit('data', data);
+    });
+
+    res.on('error', done);
+
+    res.on('end', done);
+
+    // An agent socket's `end` sometimes
+    // won't be emitted on the response.
+    if (res.socket)
+      res.socket.on('end', done);
+  });
+
+  req.on('error', function(err) {
+    stream.destroy();
+    stream.emit('error', err);
+  });
+
+  if (body)
+    req.write(body);
+
+  req.end();
+
+  return stream;
+}
+
+request._buffer = function(options, callback) {
+  var qs = require('querystring');
+  var StringDecoder = require('string_decoder').StringDecoder;
+  var stream = request(options);
+  var total = 0;
+  var called = false;
+  var decoder, body;
+
+  function done(err) {
+    if (called)
+      return;
+
+    called = true;
+
+    if (err)
+      return callback(err);
+
+    if (stream.type === 'binary') {
+      body = Buffer.concat(body);
+    } else if (stream.type === 'json') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        return callback(e);
+      }
+    } else if (stream.type === 'form') {
+      try {
+        body = qs.parse(body);
+      } catch (e) {
+        return callback(e);
+      }
+    }
+
+    callback(null, stream.res, body, stream.type);
+  }
+
+  stream.on('type', function(type) {
+    if (type !== 'binary') {
+      decoder = new StringDecoder('utf8');
+      body = '';
+    } else {
+      body = [];
+    }
+  });
+
+  stream.on('data', function(data) {
+    total += data.length;
+
+    if (options.limit &amp;&amp; total > options.limit) {
+      stream.destroy();
+      return done();
+    }
+
+    if (decoder)
+      body += decoder.write(data);
+    else
+      body.push(data);
+  });
+
+  stream.on('error', done);
+
+  stream.on('end', done);
+
+  return stream;
+};
+
+/*
+ * ReqStream
+ */
+
+function ReqStream(options) {
+  if (!(this instanceof ReqStream))
+    return new ReqStream(options);
+
+  Stream.call(this);
+
+  this.req = null;
+  this.res = null;
+  this.headers = null;
+  this.type = null;
+  this._redirects = 0;
+  this.maxRedirects = options.maxRedirects || 5;
+}
+
+ReqStream.prototype.__proto__ = Stream.prototype;
+
+ReqStream.prototype.destroy = function destroy() {
+  try {
+    this.req.abort();
+  } catch (e) {
+    ;
+  }
+
+  try {
+    this.res.destroy();
+  } catch (e) {
+    ;
+  }
+
+  try {
+    this.res.socket.destroy();
+  } catch (e) {
+    ;
+  }
+};
+
+module.exports = request;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

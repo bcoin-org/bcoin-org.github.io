@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/reader.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/reader.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * reader.js - buffer reader for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+var utils = require('./utils');
+var assert = utils.assert;
+
+/**
+ * An object that allows reading of buffers in a sane manner.
+ * @exports BufferReader
+ * @constructor
+ * @param {Buffer} data
+ * @param {Boolean?} zeroCopy - Do not reallocate buffers when
+ * slicing. Note that this can lead to memory leaks if not used
+ * carefully.
+ */
+
+function BufferReader(data, zeroCopy) {
+  if (data instanceof BufferReader)
+    return data;
+
+  if (!(this instanceof BufferReader))
+    return new BufferReader(data, zeroCopy);
+
+  this.data = data;
+  this.offset = 0;
+  this.zeroCopy = zeroCopy;
+  this.stack = [];
+}
+
+/**
+ * Mark the current starting position.
+ */
+
+BufferReader.prototype.start = function start() {
+  this.stack.push(this.offset);
+};
+
+/**
+ * Stop reading. Pop the start position off the stack
+ * and calculate the size of the data read. This will
+ * destroy the BufferReader if no positions are left
+ * on the stack.
+ * @returns {Number} Size.
+ * @throws on empty stack.
+ */
+
+BufferReader.prototype.end = function end() {
+  assert(this.stack.length > 0);
+
+  var start = this.stack.pop();
+  var end = this.offset;
+
+  if (this.stack.length === 0)
+    this.destroy();
+
+  return end - start;
+};
+
+/**
+ * Stop reading. Pop the start position off the stack
+ * and return the data read. This will
+ * destroy the BufferReader if no positions are left
+ * on the stack.
+ * @returns {Buffer} Data read.
+ * @throws on empty stack.
+ */
+
+BufferReader.prototype.endData = function endData() {
+  assert(this.stack.length > 0);
+
+  var start = this.stack.pop();
+  var end = this.offset;
+  var size = end - start;
+  var data = this.data;
+
+  if (this.stack.length === 0)
+    this.destroy();
+
+  if (size === data.length)
+    return data;
+
+  // if (this.zeroCopy)
+  //   return data.slice(start, end);
+
+  return utils.slice(data, start, end);
+};
+
+/**
+ * Destroy the reader. Remove references to the data.
+ */
+
+BufferReader.prototype.destroy = function destroy() {
+  delete this.offset;
+  delete this.stack;
+  delete this.data;
+};
+
+/**
+ * Read uint8.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.readU8 = function readU8() {
+  assert(this.offset + 1 &lt;= this.data.length);
+  var ret = utils.readU8(this.data, this.offset);
+  this.offset += 1;
+  return ret;
+};
+
+/**
+ * Read uint16le.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.readU16 = function readU16() {
+  assert(this.offset + 2 &lt;= this.data.length);
+  var ret = utils.readU16(this.data, this.offset);
+  this.offset += 2;
+  return ret;
+};
+
+/**
+ * Read uint16be.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.readU16BE = function readU16BE() {
+  assert(this.offset + 2 &lt;= this.data.length);
+  var ret = utils.readU16BE(this.data, this.offset);
+  this.offset += 2;
+  return ret;
+};
+
+/**
+ * Read uint32le.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.readU32 = function readU32() {
+  assert(this.offset + 4 &lt;= this.data.length);
+  var ret = utils.readU32(this.data, this.offset);
+  this.offset += 4;
+  return ret;
+};
+
+/**
+ * Read uint32be.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.readU32BE = function readU32BE() {
+  assert(this.offset + 4 &lt;= this.data.length);
+  var ret = utils.readU32BE(this.data, this.offset);
+  this.offset += 4;
+  return ret;
+};
+
+/**
+ * Read uint64le.
+ * @returns {BN}
+ */
+
+BufferReader.prototype.readU64 = function readU64() {
+  assert(this.offset + 8 &lt;= this.data.length);
+  var ret = utils.readU64(this.data, this.offset);
+  this.offset += 8;
+  return ret;
+};
+
+/**
+ * Read uint64be.
+ * @returns {BN}
+ */
+
+BufferReader.prototype.readU64BE = function readU64BE() {
+  assert(this.offset + 8 &lt;= this.data.length);
+  var ret = utils.readU64BE(this.data, this.offset);
+  this.offset += 8;
+  return ret;
+};
+
+/**
+ * Read uint64le as a js number.
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+BufferReader.prototype.readU64N = function readU64N(force53) {
+  assert(this.offset + 8 &lt;= this.data.length);
+  var ret = utils.readU64N(this.data, this.offset, force53);
+  this.offset += 8;
+  return ret;
+};
+
+/**
+ * Read uint64be as a js number.
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+BufferReader.prototype.readU64NBE = function readU64NBE(force53) {
+  assert(this.offset + 8 &lt;= this.data.length);
+  var ret = utils.readU64NBE(this.data, this.offset, force53);
+  this.offset += 8;
+  return ret;
+};
+
+/**
+ * Read first least significant 53 bits of
+ * a uint64le as a js number. Maintain the sign.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.readU53 = function readU53() {
+  return this.readU64N(true);
+};
+
+/**
+ * Read first least significant 53 bits of
+ * a uint64be as a js number. Maintain the sign.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.readU53BE = function readU53BE() {
+  return this.readU64NBE(true);
+};
+
+/**
+ * Read int8.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.read8 = function read8() {
+  assert(this.offset + 1 &lt;= this.data.length);
+  var ret = utils.read8(this.data, this.offset);
+  this.offset += 1;
+  return ret;
+};
+
+/**
+ * Read int16le.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.read16 = function read16() {
+  assert(this.offset + 2 &lt;= this.data.length);
+  var ret = utils.read16(this.data, this.offset);
+  this.offset += 2;
+  return ret;
+};
+
+/**
+ * Read int16be.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.read16BE = function read16BE() {
+  assert(this.offset + 2 &lt;= this.data.length);
+  var ret = utils.read16BE(this.data, this.offset);
+  this.offset += 2;
+  return ret;
+};
+
+/**
+ * Read int32le.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.read32 = function read32() {
+  assert(this.offset + 4 &lt;= this.data.length);
+  var ret = utils.read32(this.data, this.offset);
+  this.offset += 4;
+  return ret;
+};
+
+/**
+ * Read int32be.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.read32BE = function read32BE() {
+  assert(this.offset + 4 &lt;= this.data.length);
+  var ret = utils.read32BE(this.data, this.offset);
+  this.offset += 4;
+  return ret;
+};
+
+/**
+ * Read int64le.
+ * @returns {BN}
+ */
+
+BufferReader.prototype.read64 = function read64() {
+  assert(this.offset + 8 &lt;= this.data.length);
+  var ret = utils.read64(this.data, this.offset);
+  this.offset += 8;
+  return ret;
+};
+
+/**
+ * Read int64be.
+ * @returns {BN}
+ */
+
+BufferReader.prototype.read64BE = function read64BE() {
+  assert(this.offset + 8 &lt;= this.data.length);
+  var ret = utils.read64BE(this.data, this.offset);
+  this.offset += 8;
+  return ret;
+};
+
+/**
+ * Read int64le as a js number.
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+BufferReader.prototype.read64N = function read64N(force53) {
+  assert(this.offset + 8 &lt;= this.data.length);
+  var ret = utils.read64N(this.data, this.offset, force53);
+  this.offset += 8;
+  return ret;
+};
+
+/**
+ * Read int64be as a js number.
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+BufferReader.prototype.read64NBE = function read64NBE(force53) {
+  assert(this.offset + 8 &lt;= this.data.length);
+  var ret = utils.read64NBE(this.data, this.offset, force53);
+  this.offset += 8;
+  return ret;
+};
+
+/**
+ * Read first least significant 53 bits of
+ * a int64le as a js number. Maintain the sign.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.read53 = function read53() {
+  return this.read64N(true);
+};
+
+/**
+ * Read first least significant 53 bits of
+ * a int64be as a js number. Maintain the sign.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.read53BE = function read53BE() {
+  return this.read64NBE(true);
+};
+
+/**
+ * Read N bytes (will do a fast slice if zero copy).
+ * @param {Number} size
+ * @returns {Buffer}
+ */
+
+BufferReader.prototype.readBytes = function readBytes(size) {
+  var ret;
+
+  assert(size >= 0);
+  assert(this.offset + size &lt;= this.data.length);
+
+  if (this.zeroCopy)
+    ret = this.data.slice(this.offset, this.offset + size);
+  else
+    ret = utils.slice(this.data, this.offset, this.offset + size);
+
+  this.offset += size;
+
+  return ret;
+};
+
+/**
+ * Read a string.
+ * @param {String} enc - Any buffer-supported encoding.
+ * @param {Number} size
+ * @returns {String}
+ */
+
+BufferReader.prototype.readString = function readString(enc, size) {
+  assert(size >= 0);
+  assert(this.offset + size &lt;= this.data.length);
+  var ret = this.data.toString(enc, this.offset, this.offset + size);
+  this.offset += size;
+  return ret;
+};
+
+/**
+ * Read a 32-byte hash.
+ * @param {String} enc - `"hex"` or `null`.
+ * @returns {Hash|Buffer}
+ */
+
+BufferReader.prototype.readHash = function readHash(enc) {
+  if (enc)
+    return this.readString(enc, 32);
+  return this.readBytes(32);
+};
+
+/**
+ * Read string of a varint length.
+ * @param {String} enc - Any buffer-supported encoding.
+ * @returns {String}
+ */
+
+BufferReader.prototype.readVarString = function readVarString(enc) {
+  return this.readString(enc, this.readVarint());
+};
+
+/**
+ * Read a varint number of bytes (will do a fast slice if zero copy).
+ * @returns {Buffer}
+ */
+
+BufferReader.prototype.readVarBytes = function readVarBytes() {
+  return this.readBytes(this.readVarint());
+};
+
+/**
+ * Read a null-terminated string.
+ * @param {String} enc - Any buffer-supported encoding.
+ * @returns {String}
+ */
+
+BufferReader.prototype.readNullString = function readNullString(enc) {
+  assert(this.offset + 1 &lt;= this.data.length);
+  for (var i = this.offset; i &lt; this.data.length; i++) {
+    if (this.data[i] === 0)
+      break;
+  }
+  assert(i !== this.data.length);
+  var ret = this.readString(enc, i - this.offset);
+  this.offset = i + 1;
+  return ret;
+};
+
+/**
+ * Read a varint.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.readVarint = function readVarint() {
+  assert(this.offset + 1 &lt;= this.data.length);
+  var result = utils.readVarint(this.data, this.offset);
+  assert(result.off &lt;= this.data.length);
+  assert(result.r >= 0);
+  this.offset = result.off;
+  return result.r;
+};
+
+/**
+ * Calculate number of bytes left to read.
+ * @returns {Number}
+ */
+
+BufferReader.prototype.left = function left() {
+  assert(this.offset &lt;= this.data.length);
+  return this.data.length - this.offset;
+};
+
+/**
+ * Get total size of passed-in Buffer.
+ * @returns {Buffer}
+ */
+
+BufferReader.prototype.getSize = function getSize() {
+  return this.data.length;
+};
+
+/**
+ * Seek to a position to read from by offset.
+ * @param {Number} off - Offset (positive or negative).
+ */
+
+BufferReader.prototype.seek = function seek(off) {
+  assert(this.offset + off >= 0);
+  assert(this.offset + off &lt;= this.data.length);
+  this.offset += off;
+  return off;
+};
+
+/**
+ * Create a checksum from the last start position.
+ * @returns {Number} Checksum.
+ */
+
+BufferReader.prototype.createChecksum = function createChecksum() {
+  var start = this.stack[this.stack.length - 1] || 0;
+  var data = this.data.slice(start, this.offset);
+  return utils.readU32BE(utils.checksum(data), 0);
+};
+
+/**
+ * Verify a 4-byte checksum against a calculated checksum.
+ * @returns {Number} checksum
+ * @throws on bad checksum
+ */
+
+BufferReader.prototype.verifyChecksum = function verifyChecksum() {
+  var chk = this.createChecksum();
+  var checksum = this.readU32BE();
+  assert(chk === checksum, 'Checksum mismatch.');
+  return checksum;
+};
+
+module.exports = BufferReader;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 06:53:54 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
