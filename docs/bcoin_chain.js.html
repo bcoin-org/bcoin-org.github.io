@@ -44,11 +44,6 @@ var assert = utils.assert;
 var VerifyError = utils.VerifyError;
 
 /**
- * @event Chain#block
- * @type {Block|MerkleBlock}
- */
-
-/**
  * Represents a blockchain.
  * @exports Chain
  * @constructor
@@ -786,9 +781,6 @@ Chain.prototype._checkInputs = function _checkInputs(block, prev, flags, callbac
     if (err)
       return callback(err);
 
-    if (block.getClaimed().cmp(block.getReward()) > 0)
-      return callback(new VerifyError(block, 'invalid', 'bad-cb-amount', 100));
-
     // Check all transactions
     for (i = 0; i &lt; block.txs.length; i++) {
       tx = block.txs[i];
@@ -812,13 +804,6 @@ Chain.prototype._checkInputs = function _checkInputs(block, prev, flags, callbac
       // Coinbases do not have prevouts
       if (tx.isCoinbase())
         continue;
-
-      if (!tx.checkInputs(height, ret)) {
-        return callback(new VerifyError(block,
-          'invalid',
-          ret.reason,
-          ret.score));
-      }
 
       for (j = 0; j &lt; tx.inputs.length; j++) {
         input = tx.inputs[j];
@@ -847,7 +832,17 @@ Chain.prototype._checkInputs = function _checkInputs(block, prev, flags, callbac
             100));
         }
       }
+
+      if (!tx.checkInputs(height, ret)) {
+        return callback(new VerifyError(block,
+          'invalid',
+          ret.reason,
+          ret.score));
+      }
     }
+
+    if (block.getClaimed().cmp(block.getReward()) > 0)
+      return callback(new VerifyError(block, 'invalid', 'bad-cb-amount', 100));
 
     if (self.options.verifySync === true)
       return callback();
@@ -948,8 +943,9 @@ Chain.prototype._findFork = function _findFork(fork, longer, callback) {
 
 Chain.prototype._reorganize = function _reorganize(entry, block, callback) {
   var self = this;
+  var tip = this.tip;
 
-  return this._findFork(this.tip, entry, function(err, fork) {
+  return this._findFork(tip, entry, function(err, fork) {
     if (err)
       return callback(err);
 
@@ -959,6 +955,8 @@ Chain.prototype._reorganize = function _reorganize(entry, block, callback) {
     function disconnect(callback) {
       var entries = [];
 
+      entries.push(tip);
+
       (function collect(entry) {
         entry.getPrevious(function(err, entry) {
           if (err)
@@ -966,20 +964,20 @@ Chain.prototype._reorganize = function _reorganize(entry, block, callback) {
 
           assert(entry);
 
-          entries.push(entry);
-
           if (entry.hash === fork.hash)
             return finish();
 
+          entries.push(entry);
+
           collect(entry);
         });
-      })(self.tip);
+      })(tip);
 
       function finish() {
         assert(entries.length > 0);
 
         utils.forEachSerial(entries, function(entry, next) {
-          self.db.disconnect(entry, next);
+          self.disconnect(entry, next);
         }, callback);
       }
     }
@@ -995,10 +993,10 @@ Chain.prototype._reorganize = function _reorganize(entry, block, callback) {
 
           assert(entry);
 
-          entries.push(entry);
-
           if (entry.hash === fork.hash)
             return finish();
+
+          entries.push(entry);
 
           collect(entry);
         });
@@ -1009,7 +1007,7 @@ Chain.prototype._reorganize = function _reorganize(entry, block, callback) {
         assert(entries.length > 0);
 
         utils.forEachSerial(entries, function(entry, next) {
-          self.db.connect(entry, next);
+          self.connect(entry, next);
         }, callback);
       }
     }
@@ -1024,12 +1022,91 @@ Chain.prototype._reorganize = function _reorganize(entry, block, callback) {
 
         self.emit('fork', block, {
           height: fork.height,
-          expected: self.tip.hash,
+          expected: tip.hash,
           received: entry.hash,
           checkpoint: false
         });
 
         return callback();
+      });
+    });
+  });
+};
+
+/**
+ * Disconnect an entry from the chain (updates the tip).
+ * @param {ChainBlock} entry
+ * @param {Function} callback
+ */
+
+Chain.prototype.disconnect = function disconnect(entry, callback) {
+  var self = this;
+
+  this.db.disconnect(entry, function(err) {
+    if (err)
+      return callback(err);
+
+    entry.getPrevious(function(err, entry) {
+      if (err)
+        return callback(err);
+
+      assert(entry);
+
+      self.tip = entry;
+      self.height = entry.height;
+
+      if (self.bestHeight === -1)
+        network.height = entry.height;
+
+      self.emit('tip', entry);
+
+      return callback();
+    });
+  });
+};
+
+/**
+ * Connect an entry to the chain (updates the tip).
+ * This will do contextual-verification on the block
+ * (necessary because we cannot validate the inputs
+ * in side chains when they come in).
+ * @param {ChainBlock} entry
+ * @param {Function} callback
+ */
+
+Chain.prototype.connect = function connect(entry, callback) {
+  var self = this;
+
+  this.db.getBlock(entry.hash, function(err, block) {
+    if (err)
+      return callback(err);
+
+    assert(block);
+
+    entry.getPrevious(function(err, prev) {
+      if (err)
+        return callback(err);
+
+      assert(prev);
+
+      self._verifyContext(block, prev, function(err) {
+        if (err)
+          return callback(err);
+
+        self.db.connect(entry, block, function(err) {
+          if (err)
+            return callback(err);
+
+          self.tip = entry;
+          self.height = entry.height;
+
+          if (self.bestHeight === -1)
+            network.height = entry.height;
+
+          self.emit('tip', entry);
+
+          return callback();
+        });
       });
     });
   });
@@ -1042,32 +1119,52 @@ Chain.prototype._reorganize = function _reorganize(entry, block, callback) {
  * reorganize the chain (a higher fork).
  * @private
  * @param {ChainBlock} entry
+ * @param {ChainBlock} prev
  * @param {Block|MerkleBlock} block
  * @param {Function} callback - Returns [{@link VerifyError}].
  */
 
-Chain.prototype._setBestChain = function _setBestChain(entry, block, callback) {
+Chain.prototype._setBestChain = function _setBestChain(entry, prev, block, callback) {
   var self = this;
 
   function done(err) {
     if (err)
       return callback(err);
 
-    // Save block and connect inputs.
-    self.db.save(entry, block, true, function(err) {
-      if (err)
+    self._verifyContext(block, prev, function(err) {
+      if (err) {
+        // Couldn't verify block.
+        // Revert the height.
+        block.setHeight(-1);
+
+        if (err.type === 'VerifyError') {
+          self.invalid[entry.hash] = true;
+          self.emit('invalid', block, {
+            height: entry.height,
+            hash: entry.hash,
+            seen: false,
+            chain: false
+          });
+        }
+
         return callback(err);
+      }
 
-      self.tip = entry;
-      self.height = entry.height;
+      // Save block and connect inputs.
+      self.db.save(entry, block, true, function(err) {
+        if (err)
+          return callback(err);
 
-      if (self.bestHeight === -1)
-        network.height = entry.height;
+        self.tip = entry;
+        self.height = entry.height;
 
-      self.emit('tip', entry);
+        if (self.bestHeight === -1)
+          network.height = entry.height;
 
-      // Return true (added to the main chain)
-      return callback(null, true);
+        self.emit('tip', entry);
+
+        return callback();
+      });
     });
   }
 
@@ -1087,21 +1184,10 @@ Chain.prototype._setBestChain = function _setBestChain(entry, block, callback) {
     return done();
   }
 
-  // The block is on a side chain if the
-  // chainwork is less than or equal to
-  // our tip's. Add the block but do _not_
-  // connect the inputs.
-  if (entry.chainwork.cmp(this.tip.chainwork) &lt;= 0) {
-    return this.db.save(entry, block, false, function(err) {
-      if (err)
-        return callback(err);
-
-      // Return false (added to side chain)
-      return callback(null, false);
-    });
-  }
-
   // Everything is in order.
+  // Do "contextual" verification on our block
+  // now that we're certain its previous
+  // block is in the chain.
   if (entry.prevBlock === this.tip.hash)
     return done();
 
@@ -1202,7 +1288,22 @@ Chain.prototype.add = function add(block, callback, force) {
   (function next(block, initial) {
     var hash = block.hash('hex');
     var prevHash = block.prevBlock;
-    var height, checkpoint, orphan;
+    var height, checkpoint, orphan, entry;
+
+    function handleOrphans() {
+      // No orphan chain.
+      if (!self.orphan.map[hash])
+        return done();
+
+      // An orphan chain was found, start resolving.
+      block = self.orphan.map[hash];
+      delete self.orphan.bmap[block.hash('hex')];
+      delete self.orphan.map[hash];
+      self.orphan.count--;
+      self.orphan.size -= block.getSize();
+
+      next(block);
+    }
 
     // Do not revalidate known invalid blocks.
     if (self.invalid[hash] || self.invalid[prevHash]) {
@@ -1377,76 +1478,55 @@ Chain.prototype.add = function add(block, callback, force) {
         // need access to height on txs.
         block.setHeight(height);
 
-        // Do "contextual" verification on our block
-        // now that we're certain its previous
-        // block is in the chain.
-        self._verifyContext(block, prev, function(err) {
-          var entry;
+        // Create a new chain entry.
+        entry = new bcoin.chainblock(self, {
+          hash: hash,
+          version: block.version,
+          prevBlock: block.prevBlock,
+          merkleRoot: block.merkleRoot,
+          ts: block.ts,
+          bits: block.bits,
+          nonce: block.nonce,
+          height: height
+        }, prev);
 
-          if (err) {
-            // Couldn't verify block.
-            // Revert the height.
-            block.setHeight(-1);
-
-            if (err.type === 'VerifyError') {
-              self.invalid[hash] = true;
-              self.emit('invalid', block, {
-                height: height,
-                hash: hash,
-                seen: false,
-                chain: false
-              });
-            }
-
-            return done(err);
-          }
-
-          // Create a new chain entry.
-          entry = new bcoin.chainblock(self, {
-            hash: hash,
-            version: block.version,
-            prevBlock: block.prevBlock,
-            merkleRoot: block.merkleRoot,
-            ts: block.ts,
-            bits: block.bits,
-            nonce: block.nonce,
-            height: height
-          }, prev);
-
-          // Attempt to add block to the chain index.
-          self._setBestChain(entry, block, function(err, mainChain) {
+        // The block is on a side chain if the
+        // chainwork is less than or equal to
+        // our tip's. Add the block but do _not_
+        // connect the inputs.
+        if (entry.chainwork.cmp(self.tip.chainwork) &lt;= 0) {
+          return self.db.save(entry, block, false, function(err) {
             if (err)
-              return done(err);
-
-            // Keep track of the number of blocks we
-            // added and the number of orphans resolved.
-            total++;
+              return callback(err);
 
             // Emit our block (and potentially resolved
             // orphan) only if it is on the main chain.
-            if (mainChain) {
-              self.emit('block', block, entry);
-              if (!initial)
-                self.emit('resolved', block, entry);
-            } else {
-              self.emit('competitor', block, entry);
-              if (!initial)
-                self.emit('competitor resolved', block, entry);
-            }
+            self.emit('competitor', block, entry);
 
-            // No orphan chain.
-            if (!self.orphan.map[hash])
-              return done();
+            if (!initial)
+              self.emit('competitor resolved', block, entry);
 
-            // An orphan chain was found, start resolving.
-            block = self.orphan.map[hash];
-            delete self.orphan.bmap[block.hash('hex')];
-            delete self.orphan.map[hash];
-            self.orphan.count--;
-            self.orphan.size -= block.getSize();
-
-            next(block);
+            handleOrphans();
           });
+        }
+
+        // Attempt to add block to the chain index.
+        self._setBestChain(entry, prev, block, function(err) {
+          if (err)
+            return done(err);
+
+          // Keep track of the number of blocks we
+          // added and the number of orphans resolved.
+          total++;
+
+          // Emit our block (and potentially resolved
+          // orphan) only if it is on the main chain.
+          self.emit('block', block, entry);
+
+          if (!initial)
+            self.emit('resolved', block, entry);
+
+          handleOrphans();
         });
       });
     });
@@ -2477,13 +2557,13 @@ return Chain;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Events</h3><ul><li><a href="Chain.html#event:block">block</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Apr 15 2016 08:01:15 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 01:38:45 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
