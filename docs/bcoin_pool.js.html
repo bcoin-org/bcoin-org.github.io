@@ -60,7 +60,6 @@ var constants = bcoin.protocol.constants;
  * send another getblocks request.
  * @param {Number?} [requestTimeout=120000] - Timeout for in-flight blocks.
  * @param {Number?} [invTimeout=60000] - Timeout for broadcasted objects.
- * @param {Wallet[]?} wallets - Wallets to add to the bloom filter.
  * @param {Boolean?} listen - Whether to spin up a server socket
  * and listen for peers.
  * @param {Boolean?} selfish - A selfish pool. Will not serve blocks,
@@ -320,10 +319,6 @@ Pool.prototype._init = function _init() {
     self.synced = true;
     self.emit('full');
     bcoin.debug('Chain is fully synced (height=%d).', self.chain.height);
-  });
-
-  (this.options.wallets || []).forEach(function(wallet) {
-    self.addWallet(wallet);
   });
 };
 
@@ -921,12 +916,13 @@ Pool.prototype._load = function _load() {
  */
 
 Pool.prototype.getMempool = function getMempool() {
+  var i;
+
   if (this.peers.load)
     this.peers.load.getMempool();
 
-  this.peers.regular.forEach(function(peer) {
-    peer.getMempool();
-  });
+  for (i = 0; i &lt; this.peers.regular.length; i++)
+    this.peers.regular[i].getMempool();
 };
 
 Pool.prototype._createPeer = function _createPeer(options) {
@@ -971,11 +967,14 @@ Pool.prototype._createPeer = function _createPeer(options) {
   });
 
   peer.on('notfound', function(items) {
-    items.forEach(function(item) {
-      var req = self.request.map[utils.toHex(item.hash)];
+    var i, item;
+
+    for (i = 0; i &lt; items.length; i++) {
+      item = items[i];
+      req = self.request.map[utils.toHex(item.hash)];
       if (req &amp;&amp; req.peer === peer)
         item.finish();
-    });
+    }
   });
 
   peer.on('tx', function(tx) {
@@ -1007,6 +1006,8 @@ Pool.prototype._createPeer = function _createPeer(options) {
   });
 
   peer.on('txs', function(txs) {
+    var i, hash;
+
     self.emit('txs', txs, peer);
 
     if (!self.options.spv) {
@@ -1014,11 +1015,11 @@ Pool.prototype._createPeer = function _createPeer(options) {
         return;
     }
 
-    txs.forEach(function(hash) {
-      hash = utils.toHex(hash);
+    for (i = 0; i &lt; txs.length; i++) {
+      hash = utils.toHex(txs[i]);
       if (self.markTX(hash, 0))
         self.getData(peer, self.tx.type, hash);
-    });
+    }
   });
 
   peer.on('version', function(version) {
@@ -1384,19 +1385,19 @@ Pool.prototype.updateWatch = function updateWatch() {
 
 Pool.prototype.addWallet = function addWallet(wallet, callback) {
   var self = this;
+  var i;
 
   callback = utils.asyncify(callback);
 
   if (this.options.spv)
     this.watchWallet(wallet);
 
-  wallet.getPending(function(err, txs) {
+  wallet.getUnconfirmed(function(err, txs) {
     if (err)
       return callback(err);
 
-    txs.forEach(function(tx) {
-      self.sendTX(tx);
-    });
+    for (i = 0; i &lt; txs.length; i++)
+      self.sendTX(txs[i]);
 
     if (!self.options.spv)
       return callback();
@@ -1741,7 +1742,7 @@ Pool.prototype._sendRequests = function _sendRequests(peer) {
  */
 
 Pool.prototype.fulfill = function fulfill(hash) {
-  var item;
+  var i, item;
 
   if (Buffer.isBuffer(hash))
     hash = utils.toHex(hash);
@@ -1754,9 +1755,8 @@ Pool.prototype.fulfill = function fulfill(hash) {
 
   item.finish();
 
-  item.callback.forEach(function(callback) {
-    callback();
-  });
+  for (i = 0; i &lt; item.callback.length; i++)
+    item.callback[i]();
 
   return item;
 };
@@ -1839,10 +1839,12 @@ Pool.prototype.getTX = function getTX(hash, range, callback) {
     range = { start: utils.now() - delta, end: 0 };
 
   function done(err, tx, range) {
+    var i;
+
     delete self.validate.map[hash];
-    cbs.forEach(function(callback) {
-      callback(err, tx, range);
-    });
+
+    for (i = 0; i &lt; cbs.length; i++)
+      cbs[i](err, tx, range);
   }
 
   (function next() {
@@ -2016,7 +2018,7 @@ Pool.prototype.getUTXOs = function getUTXOs(utxos, callback) {
  * @param {Function} callback - Returns [Error, {@link TX}].
  */
 
-Pool.prototype.fillTX = function fillTX(tx, callback) {
+Pool.prototype.fillHistory = function fillHistory(tx, callback) {
   var utxos = [];
   var reqs = [];
   var i, input;
@@ -2121,11 +2123,13 @@ Pool.prototype._getRandom = function _getRandom(seeds, uniq) {
  */
 
 Pool.prototype.setSeeds = function setSeeds(seeds) {
+  var i, seed;
+
   this.seeds = [];
   this.hosts = {};
-  seeds.forEach(function(seed) {
-    this.addSeed(seed);
-  }, this);
+
+  for (i = 0; i &lt; seeds.length; i++)
+    this.addSeed(seeds[i]);
 };
 
 /**
@@ -2351,13 +2355,13 @@ return Pool;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 01:38:45 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 21:01:06 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

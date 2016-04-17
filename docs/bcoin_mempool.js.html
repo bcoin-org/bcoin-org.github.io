@@ -519,8 +519,8 @@ Mempool.prototype.getTXByAddress = function getTXByAddress(addresses, callback) 
  * @param {Function} callback - Returns [Error, {@link TX}].
  */
 
-Mempool.prototype.fillTX = function fillTX(tx, callback) {
-  return this.tx.fillTX(tx, callback);
+Mempool.prototype.fillHistory = function fillHistory(tx, callback) {
+  return this.tx.fillHistory(tx, callback);
 };
 
 /**
@@ -723,7 +723,7 @@ Mempool.prototype.addUnchecked = function addUnchecked(tx, callback) {
 
 Mempool.prototype.removeUnchecked = function removeUnchecked(tx, callback) {
   var self = this;
-  this.fillAllTX(tx, function(err, tx) {
+  this.fillAllHistory(tx, function(err, tx) {
     if (err)
       return callback(err);
 
@@ -988,8 +988,8 @@ Mempool.prototype.getBalance = function getBalance(callback) {
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-Mempool.prototype.getAll = function getAll(callback) {
-  return this.tx.getAll(callback);
+Mempool.prototype.getHistory = function getHistory(callback) {
+  return this.tx.getHistory(callback);
 };
 
 /**
@@ -1173,9 +1173,9 @@ Mempool.prototype.removeOrphan = function removeOrphan(tx, callback) {
         }
 
         p = new BufferWriter();
-        hashes.forEach(function(hash) {
-          p.writeHash(hash);
-        });
+
+        for (i = 0; i &lt; hashes.length; i++)
+          p.writeHash(hashes[i]);
 
         batch.put('m/d/' + prev, p.render());
 
@@ -1223,24 +1223,24 @@ Mempool.prototype.seenTX = function seenTX(tx, callback) {
 
 /**
  * Fill transaction with all unspent _and spent_
- * coins. Similar to {@link Mempool#fillTX}
+ * coins. Similar to {@link Mempool#fillHistory}
  * except that it will also fill with coins
  * from the blockchain as well.
  * @param {TX} tx
  * @param {Function} callback - Returns [Error, {@link TX}].
  */
 
-Mempool.prototype.fillAllTX = function fillAllTX(tx, callback) {
+Mempool.prototype.fillAllHistory = function fillAllHistory(tx, callback) {
   var self = this;
 
-  this.fillTX(tx, function(err) {
+  this.fillHistory(tx, function(err) {
     if (err)
       return callback(err);
 
     if (tx.hasCoins())
       return callback(null, tx);
 
-    self.chain.db.fillTX(tx, callback);
+    self.chain.db.fillHistory(tx, callback);
   });
 };
 
@@ -1305,7 +1305,7 @@ Mempool.prototype.fillAllCoins = function fillAllCoins(tx, callback) {
  */
 
 Mempool.prototype.getSnapshot = function getSnapshot(callback) {
-  return this.tx.getAllHashes(callback);
+  return this.tx.getHistoryHashes(callback);
 };
 
 /**
@@ -1438,7 +1438,7 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
   var self = this;
   var prefix = 'm/';
   var hash = tx.hash('hex');
-  var batch;
+  var i, addresses, address, input, output, key, coin, batch;
 
   var unlock = this.writeLock.lock(addUnchecked, [tx, callback], force);
   if (!unlock)
@@ -1451,18 +1451,20 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
   batch.put(prefix + 't/t/' + hash, tx.toExtended());
   batch.put(prefix + 't/s/s/' + pad32(tx.ps) + '/' + hash, DUMMY);
 
-  tx.getAddresses().forEach(function(address) {
-    batch.put(prefix + 't/a/' + address + '/' + hash, DUMMY);
-  });
+  addresses = tx.getAddresses();
 
-  tx.inputs.forEach(function(input) {
-    var key = input.prevout.hash + '/' + input.prevout.index;
-    var address;
+  for (i = 0; i &lt; addresses.length; i++)
+    batch.put(prefix + 't/a/' + addresses[i] + '/' + hash, DUMMY);
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+    key = input.prevout.hash + '/' + input.prevout.index;
 
     if (tx.isCoinbase())
-      return;
+      break;
 
     assert(input.coin);
+
     address = input.getAddress();
 
     batch.del(prefix + 'u/t/' + key);
@@ -1470,18 +1472,19 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
 
     if (address)
       batch.del(prefix + 'u/a/' + address + '/' + key);
-  });
+  }
 
-  tx.outputs.forEach(function(output, i) {
-    var key = hash + '/' + i;
-    var address = output.getAddress();
-    var coin = bcoin.coin(tx, i).toRaw();
+  for (i = 0; i &lt; tx.outputs.length; i++) {
+    output = tx.outputs[i];
+    key = hash + '/' + i;
+    address = output.getAddress();
+    coin = bcoin.coin(tx, i).toRaw();
 
     batch.put(prefix + 'u/t/' + key, coin);
 
     if (address)
       batch.put(prefix + 'u/a/' + address + '/' + key, DUMMY);
-  });
+  }
 
   return batch.write(callback);
 };
@@ -1497,7 +1500,7 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
 Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, force) {
   var self = this;
   var prefix = 'm/';
-  var batch;
+  var batch, i, addresses, output;
 
   var unlock = this.writeLock.lock(removeUnchecked, [hash, callback], force);
   if (!unlock)
@@ -1520,9 +1523,10 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
     batch.del(prefix + 't/t/' + hash);
     batch.del(prefix + 't/s/s/' + pad32(tx.ps) + '/' + hash);
 
-    tx.getAddresses().forEach(function(address) {
-      batch.del(prefix + 't/a/' + address + '/' + hash);
-    });
+    addresses = tx.getAddresses();
+
+    for (i = 0; i &lt; addresses.length; i++)
+      batch.del(prefix + 't/a/' + addresses[i] + '/' + hash);
 
     utils.forEachSerial(tx.inputs, function(input, next) {
       var key = input.prevout.hash + '/' + input.prevout.index;
@@ -1558,15 +1562,16 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
       if (err)
         return callback(err);
 
-      tx.outputs.forEach(function(output, i) {
-        var key = hash + '/' + i;
-        var address = output.getAddress();
+      for (i = 0; i &lt; tx.outputs.length; i++) {
+        output = tx.outputs[i];
+        key = hash + '/' + i;
+        address = output.getAddress();
 
         batch.del(prefix + 'u/t/' + key);
 
         if (address)
           batch.del(prefix + 'u/a/' + address + '/' + key);
-      });
+      }
 
       return batch.write(callback);
     });
@@ -1589,13 +1594,13 @@ return Mempool;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 01:38:45 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 21:01:06 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

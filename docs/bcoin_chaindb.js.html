@@ -47,9 +47,13 @@ var DUMMY = new Buffer([0]);
  * @exports ChainDB
  * @constructor
  * @param {Object} options
- * @param {Boolean?} options.prune
- * @param {Boolean?} options.spv
- * @param {Number?} options.keepBlocks
+ * @param {Boolean?} options.prune - Whether to prune the chain.
+ * @param {Boolean?} options.spv - SPV-mode, will not save block
+ * data, only entries.
+ * @param {Number?} [options.keepBlocks=288] - Number of
+ * blocks to keep when pruning.
+ * @param {Boolean?} options.paranoid - Perform some paranoid checks
+ * against hashes. Will throw if corruption is detected.
  * @param {String?} options.name - Database name
  * @param {String?} options.location - Database location
  * @param {String?} options.db - Database backend name
@@ -193,8 +197,8 @@ ChainDB.prototype.addCache = function addCache(entry) {
 };
 
 /**
- * Test the cache for a present transaction.
- * @param {Hash} hash
+ * Test the cache for a present entry hash or height.
+ * @param {Hash|Number} hash - Hash or height.
  */
 
 ChainDB.prototype.hasCache = function hasCache(hash) {
@@ -208,10 +212,10 @@ ChainDB.prototype.hasCache = function hasCache(hash) {
 };
 
 /**
- * Get a transaction directly from the LRU cache. This is
+ * Get an entry directly from the LRU cache. This is
  * useful for optimization if we don't want to wait on a
  * nextTick during a `get()` call.
- * @param {Hash} hash
+ * @param {Hash|Number} hash - Hash or height.
  */
 
 ChainDB.prototype.getCache = function getCache(hash) {
@@ -500,12 +504,7 @@ ChainDB.prototype.save = function save(entry, block, connect, callback) {
   this.saveBlock(block, batch, true, function(err) {
     if (err)
       return callback(err);
-
-    self._pruneBlock(block, batch, function(err) {
-      if (err)
-        return callback(err);
-      return batch.write(callback);
-    });
+    return batch.write(callback);
   });
 };
 
@@ -746,14 +745,17 @@ ChainDB.prototype.has = function has(height, callback) {
  */
 
 ChainDB.prototype.saveBlock = function saveBlock(block, batch, connect, callback) {
+  var i, tx;
+
   if (this.options.spv)
     return utils.nextTick(callback);
 
   batch.put('b/b/' + block.hash('hex'), block.toCompact());
 
-  block.txs.forEach(function(tx) {
+  for (i = 0; i &lt; block.txs.length; i++) {
+    tx = block.txs[i];
     batch.put('t/t/' + tx.hash('hex'), tx.toExtended());
-  });
+  }
 
   if (!connect)
     return utils.nextTick(callback);
@@ -771,6 +773,7 @@ ChainDB.prototype.saveBlock = function saveBlock(block, batch, connect, callback
 
 ChainDB.prototype.removeBlock = function removeBlock(hash, batch, callback) {
   var self = this;
+  var i, tx;
 
   if (this.options.spv)
     return utils.nextTick(callback);
@@ -784,9 +787,10 @@ ChainDB.prototype.removeBlock = function removeBlock(hash, batch, callback) {
 
     batch.del('b/b/' + block.hash('hex'));
 
-    block.txs.forEach(function(tx) {
+    for (i = 0; i &lt; block.txs.length; i++) {
+      tx = block.txs[i];
       batch.del('t/t/' + tx.hash('hex'));
-    });
+    }
 
     self.disconnectBlock(block, batch, callback);
   });
@@ -801,6 +805,7 @@ ChainDB.prototype.removeBlock = function removeBlock(hash, batch, callback) {
 
 ChainDB.prototype.connectBlock = function connectBlock(block, batch, callback) {
   var self = this;
+  var i, j, tx, input, output, key, address, hash, uniq;
 
   if (this.options.spv) {
     self.emit('add block', block);
@@ -808,24 +813,23 @@ ChainDB.prototype.connectBlock = function connectBlock(block, batch, callback) {
   }
 
   this._ensureBlock(block, function(err, block) {
-    var height;
-
     if (err)
       return callback(err);
 
     if (!block)
       return callback();
 
-    block.txs.forEach(function(tx) {
-      var hash = tx.hash('hex');
-      var uniq = {};
+    for (i = 0; i &lt; block.txs.length; i++) {
+      tx = block.txs[i];
+      hash = tx.hash('hex');
+      uniq = {};
 
-      tx.inputs.forEach(function(input) {
-        var key = input.prevout.hash + '/' + input.prevout.index;
-        var address;
+      for (j = 0; j &lt; tx.inputs.length; j++) {
+        input = tx.inputs[j];
+        key = input.prevout.hash + '/' + input.prevout.index;
 
         if (tx.isCoinbase())
-          return;
+          break;
 
         assert(input.coin);
 
@@ -842,11 +846,11 @@ ChainDB.prototype.connectBlock = function connectBlock(block, batch, callback) {
         }
 
         batch.del('u/t/' + key);
-      });
+      }
 
-      tx.outputs.forEach(function(output, i) {
-        var key = hash + '/' + i;
-        var address;
+      for (j = 0; j &lt; tx.outputs.length; j++) {
+        output = tx.outputs[j];
+        key = hash + '/' + j;
 
         if (self.options.indexAddress) {
           address = output.getAddress();
@@ -860,13 +864,17 @@ ChainDB.prototype.connectBlock = function connectBlock(block, batch, callback) {
             batch.put('u/a/' + address + '/' + key, DUMMY);
         }
 
-        batch.put('u/t/' + key, bcoin.coin(tx, i).toRaw());
-      });
-    });
+        batch.put('u/t/' + key, bcoin.coin(tx, j).toRaw());
+      }
+    }
 
     self.emit('add block', block);
 
-    return callback(null, block);
+    self._pruneBlock(block, batch, function(err) {
+      if (err)
+        return callback(err);
+      return callback(null, block);
+    });
   });
 };
 
@@ -877,34 +885,31 @@ ChainDB.prototype.connectBlock = function connectBlock(block, batch, callback) {
  * @param {Function} callback - Returns [Error, {@link Block}].
  */
 
-ChainDB.prototype.disconnectBlock = function disconnectBlock(hash, batch, callback) {
+ChainDB.prototype.disconnectBlock = function disconnectBlock(block, batch, callback) {
   var self = this;
+  var i, j, tx, input, output, key, address, hash, uniq;
 
   if (this.options.spv)
     return utils.nextTick(callback);
 
-  this._ensureHistory(hash, function(err, block) {
+  this._ensureHistory(block, function(err, block) {
     if (err)
       return callback(err);
 
     if (!block)
       return callback(new Error('Block not found.'));
 
-    if (self.options.paranoid) {
-      if (typeof hash === 'string')
-        assert(block.hash('hex') === hash, 'Database is corrupt.');
-    }
+    for (i = block.txs.length - 1; i >= 0; i--) {
+      tx = block.txs[i];
+      hash = tx.hash('hex');
+      uniq = {};
 
-    block.txs.slice().reverse().forEach(function(tx) {
-      var hash = tx.hash('hex');
-      var uniq = {};
-
-      tx.inputs.forEach(function(input) {
-        var key = input.prevout.hash + '/' + input.prevout.index;
-        var address;
+      for (j = 0; j &lt; tx.inputs.length; j++) {
+        input = tx.inputs[j];
+        key = input.prevout.hash + '/' + input.prevout.index;
 
         if (tx.isCoinbase())
-          return;
+          break;
 
         assert(input.coin);
 
@@ -921,11 +926,11 @@ ChainDB.prototype.disconnectBlock = function disconnectBlock(hash, batch, callba
         }
 
         batch.put('u/t/' + key, input.coin.toRaw());
-      });
+      }
 
-      tx.outputs.forEach(function(output, i) {
-        var key = hash + '/' + i;
-        var address;
+      for (j = 0; j &lt; tx.outputs.length; j++) {
+        output = tx.outputs[j];
+        key = hash + '/' + j;
 
         if (self.options.indexAddress) {
           address = output.getAddress();
@@ -940,8 +945,8 @@ ChainDB.prototype.disconnectBlock = function disconnectBlock(hash, batch, callba
         }
 
         batch.del('u/t/' + key);
-      });
-    });
+      }
+    }
 
     self.emit('remove block', block);
 
@@ -997,12 +1002,12 @@ ChainDB.prototype.fillCoins = function fillCoins(tx, callback) {
  * @param {Function} callback - Returns [Error, {@link TX}].
  */
 
-ChainDB.prototype.fillTX = function fillTX(tx, callback) {
+ChainDB.prototype.fillHistory = function fillHistory(tx, callback) {
   var self = this;
 
   if (Array.isArray(tx)) {
     return utils.forEachSerial(tx, function(tx, next) {
-      self.fillTX(tx, next);
+      self.fillHistory(tx, next);
     }, function(err) {
       if (err)
         return callback(err);
@@ -1060,15 +1065,10 @@ ChainDB.prototype.fillTX = function fillTX(tx, callback) {
  * @param {Function} callback - Returns [Error, {@link Coin}[]].
  */
 
-ChainDB.prototype.getCoinsByAddress = function getCoinsByAddress(addresses, options, callback) {
+ChainDB.prototype.getCoinsByAddress = function getCoinsByAddress(addresses, callback) {
   var self = this;
   var ids = [];
   var coins = [];
-
-  if (!callback) {
-    callback = options;
-    options = {};
-  }
 
   if (typeof addresses === 'string')
     addresses = [addresses];
@@ -1169,16 +1169,11 @@ ChainDB.prototype.getCoin = function getCoin(hash, index, callback) {
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-ChainDB.prototype.getTXByAddress = function getTXByAddress(addresses, options, callback) {
+ChainDB.prototype.getTXByAddress = function getTXByAddress(addresses, callback) {
   var self = this;
   var hashes = [];
   var txs = [];
   var have = {};
-
-  if (!callback) {
-    callback = options;
-    options = {};
-  }
 
   if (typeof addresses === 'string')
     addresses = [addresses];
@@ -1307,7 +1302,7 @@ ChainDB.prototype.getFullTX = function getFullTX(hash, callback) {
     if (!tx)
       return callback();
 
-    return self.fillTX(tx, function(err) {
+    return self.fillHistory(tx, function(err) {
       if (err)
         return callback(err);
 
@@ -1332,7 +1327,7 @@ ChainDB.prototype.getFullBlock = function getFullBlock(hash, callback) {
     if (!block)
       return callback();
 
-    return self.fillTX(block.txs, function(err) {
+    return self.fillHistory(block.txs, function(err) {
       if (err)
         return callback(err);
 
@@ -1371,7 +1366,7 @@ ChainDB.prototype._ensureHistory = function _ensureHistory(hash, callback) {
     if (!block)
       return callback();
 
-    return self.fillTXBlock(block, callback);
+    return self.fillHistoryBlock(block, callback);
   });
 };
 
@@ -1417,8 +1412,8 @@ ChainDB.prototype.fillBlock = function fillBlock(block, callback) {
  * @param {Function} callback - Returns [Error, {@link Block}].
  */
 
-ChainDB.prototype.fillTXBlock = function fillTXBlock(block, callback) {
-  return this.fillTX(block.txs, function(err) {
+ChainDB.prototype.fillHistoryBlock = function fillHistoryBlock(block, callback) {
+  return this.fillHistory(block.txs, function(err) {
     var coins, i, tx, hash, j, input, key;
 
     if (err)
@@ -1570,7 +1565,7 @@ ChainDB.prototype.isSpentTX = function isSpentTX(hash, callback) {
 };
 
 ChainDB.prototype._pruneBlock = function _pruneBlock(block, batch, callback) {
-  var futureHeight;
+  var futureHeight, i, j, key, tx, input;
 
   if (this.options.spv)
     return callback();
@@ -1586,25 +1581,22 @@ ChainDB.prototype._pruneBlock = function _pruneBlock(block, batch, callback) {
 
   batch.put('b/q/' + futureHeight, block.hash());
 
-  block.txs.forEach(function(tx) {
-    if (tx.isCoinbase())
-      return;
+  for (i = 0; i &lt; block.txs.length; i++) {
+    tx = block.txs[i];
 
-    tx.inputs.forEach(function(input) {
+    for (j = 0; j &lt; tx.inputs.length; j++) {
+      input = tx.inputs[j];
+      key = input.prevout.hash + '/' + input.prevout.index;
+
+      if (tx.isCoinbase())
+        break;
+
       assert(input.coin);
 
-      batch.put('u/x/'
-        + input.prevout.hash
-        + '/' + input.prevout.index,
-        input.coin.toRaw());
-
-      batch.put('u/q/'
-        + futureHeight
-        + '/' + input.prevout.hash
-        + '/' + input.prevout.index,
-        DUMMY);
-    });
-  });
+      batch.put('u/x/' + key, input.coin.toRaw());
+      batch.put('u/q/' + futureHeight + '/' + key, DUMMY);
+    }
+  }
 
   this._pruneQueue(block, batch, callback);
 };
@@ -1612,6 +1604,8 @@ ChainDB.prototype._pruneBlock = function _pruneBlock(block, batch, callback) {
 ChainDB.prototype._pruneQueue = function _pruneQueue(block, batch, callback) {
   var self = this;
   var key = 'b/q/' + pad32(block.height);
+  var i;
+
   this.db.get(key, function(err, hash) {
     if (err &amp;&amp; err.type !== 'NotFoundError')
       return callback(err);
@@ -1638,9 +1632,8 @@ ChainDB.prototype._pruneQueue = function _pruneQueue(block, batch, callback) {
 
       batch.del('b/b/' + hash);
 
-      compact.hashes.forEach(function(hash) {
-        batch.del('t/t/' + hash);
-      });
+      for (i = 0; i &lt; compact.hashes.length; i++)
+        batch.del('t/t/' + compact.hashes[i]);
 
       self._pruneCoinQueue(block, batch, callback);
     });
@@ -1775,13 +1768,13 @@ return ChainDB;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Client.html">Client</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="module-ec.keypair.html">keypair</a></li><li><a href="module-ec.signature.html">signature</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="NodeServer.html">NodeServer</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3>Global</h3><ul><li><a href="global.html#request">request</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 01:38:45 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 21:01:06 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
