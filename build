@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd ../bcoin
+rm -rf docs
+jsdoc -c jsdoc.json
+cd ../bcoin-org.github.io
+rm -rf ./docs
+cp -r ../bcoin/docs .

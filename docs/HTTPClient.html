@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: Mempool</title>
+    <title>JSDoc: Class: HTTPClient</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: Mempool</h1>
+    <h1 class="page-title">Class: HTTPClient</h1>
 
     
 
@@ -28,7 +28,7 @@
 
 <header>
     
-        <h2>Mempool</h2>
+        <h2>HTTPClient</h2>
         
     
 </header>
@@ -40,14 +40,206 @@
 
     
 
-    <h4 class="name" id="Mempool"><span class="type-signature"></span>new Mempool<span class="signature">(options)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="HTTPClient"><span class="type-signature"></span>new HTTPClient<span class="signature">(uri, options<span class="signature-attributes">nullable</span>)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Represents a mempool.</p>
+    <p>BCoin HTTP client.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>uri</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line24">line 24</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="_createWallet"><span class="type-signature">(private) </span>_createWallet<span class="signature">(options, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Request the raw wallet JSON (will create wallet if it does not exist).</p>
 </div>
 
 
@@ -99,9 +291,121 @@
 
             
 
-            <td class="description last">
-                <h6>Properties</h6>
+            <td class="description last"><p>See <a href="Wallet.html">Wallet</a>.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
                 
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, Object].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line301">line 301</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="_del"><span class="type-signature">(private) </span>_del<span class="signature">(endpoint, json, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Make a DELETE http request to endpoint.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
 
 <table class="params">
     <thead>
@@ -113,8 +417,6 @@
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
         
 
@@ -127,7 +429,7 @@
 
         <tr>
             
-                <td class="name"><code>name</code></td>
+                <td class="name"><code>endpoint</code></td>
             
 
             <td class="type">
@@ -140,352 +442,17 @@
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
 
             
 
-            <td class="description last"><p>Database name.</p></td>
+            <td class="description last"><p>Path.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>location</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Database file location.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>db</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Database backend (<code>&quot;memory&quot;</code> by default).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>limitFree</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>limitFreeRelay</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>relayPriority</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>requireStandard</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>rejectInsaneFees</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>relay</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>loaded</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>db</code></td>
+                <td class="name"><code>json</code></td>
             
 
             <td class="type">
@@ -501,20 +468,328 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Body.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>size</code></td>
+                <td class="name"><code>callback</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Number</span>
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, Object?].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line290">line 290</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="_get"><span class="type-signature">(private) </span>_get<span class="signature">(endpoint, json, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Make a GET http request to endpoint.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>endpoint</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Path.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>json</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Querystring.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, Object?].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line254">line 254</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="_getWallet"><span class="type-signature">(private) </span>_getWallet<span class="signature">(id, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Get the raw wallet JSON.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
             
@@ -531,13 +806,13 @@
 
         <tr>
             
-                <td class="name"><code>orphans</code></td>
+                <td class="name"><code>callback</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Number</span>
+<span class="param-type">function</span>
 
 
             
@@ -547,20 +822,128 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Returns [Error, Object].</p></td>
         </tr>
 
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line312">line 312</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="_post"><span class="type-signature">(private) </span>_post<span class="signature">(endpoint, json, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Make a POST http request to endpoint.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
     
 
         <tr>
             
-                <td class="name"><code>locker</code></td>
+                <td class="name"><code>endpoint</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="Locker.html">Locker</a></span>
+<span class="param-type">String</span>
 
 
             
@@ -570,20 +953,20 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Path.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>freeCount</code></td>
+                <td class="name"><code>json</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Number</span>
+<span class="param-type">Object</span>
 
 
             
@@ -593,20 +976,20 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Body.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>lastTime</code></td>
+                <td class="name"><code>callback</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Number</span>
+<span class="param-type">function</span>
 
 
             
@@ -616,14 +999,299 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Returns [Error, Object?].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line266">line 266</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="_put"><span class="type-signature">(private) </span>_put<span class="signature">(endpoint, json, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Make a PUT http request to endpoint.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>endpoint</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Path.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>backend</code></td>
+                <td class="name"><code>json</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Body.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, Object?].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line278">line 278</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="_request"><span class="type-signature">(private) </span>_request<span class="signature">(method, endpoint, json, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Make an http request to endpoint.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>method</code></td>
             
 
             <td class="type">
@@ -643,12 +1311,83 @@
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>endpoint</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Path.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>json</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Body or query depending on method.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, Object?].</p></td>
+        </tr>
+
+    
     </tbody>
 </table>
 
 
 
 
+
+
 <dl class="details">
 
     
@@ -678,7 +1417,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line51">line 51</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line201">line 201</a>
     </li></ul></dd>
     
 
@@ -693,18 +1432,6 @@
 
 
 
-<h5>Fires:</h5>
-<ul>
-    <li>Mempool#event:open</li>
-
-    <li>Mempool#event:error</li>
-
-    <li>Mempool#event:tx</li>
-
-    <li>Mempool#event:add tx</li>
-
-    <li>Mempool#event:remove tx</li>
-</ul>
 
 
 
@@ -715,195 +1442,128 @@
 
 
 
-
-
-    
-    </div>
-
-    
-
-    
-
-    
-
-     
-
-    
-
-    
-        <h3 class="subsection-title">Members</h3>
 
         
             
-<h4 class="name" id=".ANCESTOR_LIMIT"><span class="type-signature">(static, constant) </span>ANCESTOR_LIMIT<span class="type-signature"> :Number</span></h4>
 
+    
+
+    <h4 class="name" id="addKey"><span class="type-signature"></span>addKey<span class="signature">(id, keys, callback)</span><span class="type-signature"></span></h4>
+
+    
 
 
 
 <div class="description">
-    <p>Ancestor limit.</p>
+    <p>Add a public account/purpose key to the wallet for multisig.</p>
 </div>
 
 
 
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Number</span>
-
-
-        </li>
-    </ul>
 
 
 
 
 
-<dl class="details">
 
+    <h5>Parameters:</h5>
     
 
-    
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-default">Default Value:</dt>
-    <dd class="tag-default"><ul class="dummy">
-            <li>25</li>
-        </ul></dd>
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line122">line 122</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
+        <th>Type</th>
 
         
-            
-<h4 class="name" id=".flags"><span class="type-signature">(static, constant) </span>flags<span class="type-signature"> :<a href="global.html#VerifyFlags">VerifyFlags</a></span></h4>
-
-
-
-
-<div class="description">
-    <p>Standard verify flags.</p>
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type"><a href="global.html#VerifyFlags">VerifyFlags</a></span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line98">line 98</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
 
         
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
             
-<h4 class="name" id=".lockFlags"><span class="type-signature">(static, constant) </span>lockFlags<span class="type-signature"> :<a href="global.html#LockFlags">LockFlags</a></span></h4>
-
-
-
-
-<div class="description">
-    <p>Locktime flags.</p>
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
+                <td class="name"><code>id</code></td>
             
-<span class="param-type"><a href="global.html#LockFlags">LockFlags</a></span>
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
-        </li>
-    </ul>
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>keys</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="HDPublicKey.html">HDPublicKey</a>></span>
+|
+
+<span class="param-type">Array.&lt;<a href="global.html#Base58String">Base58String</a>></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Account (bip44) or
+Purpose (bip45) key (can be in base58 form).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
 
 
 
@@ -938,7 +1598,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line114">line 114</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line833">line 833</a>
     </li></ul></dd>
     
 
@@ -954,72 +1614,10 @@
 
 
 
-        
-            
-<h4 class="name" id=".mandatory"><span class="type-signature">(static, constant) </span>mandatory<span class="type-signature"> :<a href="global.html#VerifyFlags">VerifyFlags</a></span></h4>
 
 
 
 
-<div class="description">
-    <p>Mandatory verify flags.</p>
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type"><a href="global.html#VerifyFlags">VerifyFlags</a></span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line106">line 106</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
 
 
 
@@ -1028,245 +1626,17 @@
 
         
             
-<h4 class="name" id=".MAX_MEMPOOL_SIZE"><span class="type-signature">(static, constant) </span>MAX_MEMPOOL_SIZE<span class="type-signature"> :Number</span></h4>
-
-
-
-
-<div class="description">
-    <p>Maximum mempool size in bytes.</p>
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Number</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
 
     
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line130">line 130</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id=".MAX_ORPHAN_TX"><span class="type-signature">(static, constant) </span>MAX_ORPHAN_TX<span class="type-signature"> :Number</span></h4>
-
-
-
-
-<div class="description">
-    <p>Maximum number of orphan transactions.</p>
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Number</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-default">Default Value:</dt>
-    <dd class="tag-default"><ul class="dummy">
-            <li>100</li>
-        </ul></dd>
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line147">line 147</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id=".MEMPOOL_EXPIRY"><span class="type-signature">(static, constant) </span>MEMPOOL_EXPIRY<span class="type-signature"> :Number</span></h4>
-
-
-
-
-<div class="description">
-    <p>The time at which transactions
-fall out of the mempool.</p>
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Number</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line139">line 139</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-
-    
-
-    <h4 class="name" id="_addUnchecked"><span class="type-signature">(private) </span>_addUnchecked<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="broadcast"><span class="type-signature"></span>broadcast<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Add a transaction to the mempool database.</p>
+    <p>Add a transaction to the mempool and broadcast it.</p>
 </div>
 
 
@@ -1382,7 +1752,7 @@ fall out of the mempool.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1409">line 1409</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line756">line 756</a>
     </li></ul></dd>
     
 
@@ -1413,15 +1783,351 @@ fall out of the mempool.</p>
 
     
 
-    <h4 class="name" id="_removeUnchecked"><span class="type-signature">(private) </span>_removeUnchecked<span class="signature">(hash, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="close"><span class="type-signature"></span>close<span class="signature">(callback)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Remove a transaction from the database. Note
-that this <em>may</em> not disconnect the inputs.</p>
+    <p>Close the client, wait for the socket to close.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line179">line 179</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="createWallet"><span class="type-signature"></span>createWallet<span class="signature">(id, passphrase<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Get wallet and setup http provider (note that the
+passphrase is <em>not</em> sent over the wire).</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>passphrase</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, <a href="Wallet.html">Wallet</a>].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line352">line 352</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getBlock"><span class="type-signature"></span>getBlock<span class="signature">(hash, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Retrieve a block from the chain database.</p>
 </div>
 
 
@@ -1496,7 +2202,7 @@ that this <em>may</em> not disconnect the inputs.</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Returns [Error, <a href="Block.html">Block</a>].</p></td>
         </tr>
 
     
@@ -1537,1649 +2243,7 @@ that this <em>may</em> not disconnect the inputs.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1472">line 1472</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="addBlock"><span class="type-signature"></span>addBlock<span class="signature">(block, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Notify the mempool that a new block has come
-in (removes all transactions contained in the
-block from the mempool).</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>block</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="Block.html">Block</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line247">line 247</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="addTX"><span class="type-signature"></span>addTX<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Add a transaction to the mempool. Note that this
-will lock the mempool until the transaction is
-fully processed.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [<a href="VerifyError.html">VerifyError</a>].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line527">line 527</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="addUnchecked"><span class="type-signature"></span>addUnchecked<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Add a transaction to the mempool without performing any
-validation. Note that this method does not lock the mempool
-and may lend itself to race conditions if used unwisely.
-This function will also resolve orphans if possible (the
-resolved orphans <em>will</em> be validated).</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [<a href="VerifyError.html">VerifyError</a>].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line647">line 647</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="checkLocks"><span class="type-signature"></span>checkLocks<span class="signature">(tx, flags, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Check sequence locks on a transaction against the current tip.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>flags</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#LockFlags">LockFlags</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, Boolean].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1290">line 1290</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="close"><span class="type-signature"></span>close<span class="signature">(callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Close the chain, wait for the database to close.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line234">line 234</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="countAncestors"><span class="type-signature"></span>countAncestors<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Count the highest number of
-ancestors a transaction may have.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, Number].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line855">line 855</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="fillAllCoins"><span class="type-signature"></span>fillAllCoins<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Fill transaction with all unspent
-coins. Similar to <a href="Mempool.html#fillCoins">Mempool#fillCoins</a>
-except that it will also fill with coins
-from the blockchain as well.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1228">line 1228</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="fillAllHistory"><span class="type-signature"></span>fillAllHistory<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Fill transaction with all unspent <em>and spent</em>
-coins. Similar to <a href="Mempool.html#fillHistory">Mempool#fillHistory</a>
-except that it will also fill with coins
-from the blockchain as well.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1205">line 1205</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="fillCoins"><span class="type-signature"></span>fillCoins<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Fill a transaction with all available (unspent) coins
-in the mempool.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line505">line 505</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="fillHistory"><span class="type-signature"></span>fillHistory<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Fill a transaction with all available transaction outputs
-in the mempool. This differs from <a href="Mempool.html#fillCoins">Mempool#fillCoins</a>
-in that it will fill with all historical coins and not
-just unspent coins.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line494">line 494</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getBalance"><span class="type-signature"></span>getBalance<span class="signature">()</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Return the full balance of all unspents in the mempool
-(not very useful in practice, only used for testing).</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line954">line 954</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line729">line 729</a>
     </li></ul></dd>
     
 
@@ -3217,7 +2281,8 @@ just unspent coins.</p>
 
 
 <div class="description">
-    <p>Retrieve a coin from the mempool (unspents only).</p>
+    <p>Retrieve a coin from the mempool or chain database.
+Takes into account spent coins in the mempool.</p>
 </div>
 
 
@@ -3356,7 +2421,7 @@ just unspent coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line447">line 447</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line648">line 648</a>
     </li></ul></dd>
     
 
@@ -3394,7 +2459,8 @@ just unspent coins.</p>
 
 
 <div class="description">
-    <p>Find all coins pertaining to a certain address.</p>
+    <p>Get coins that pertain to an address from the mempool or chain database.
+Takes into account spent coins in the mempool.</p>
 </div>
 
 
@@ -3436,10 +2502,10 @@ just unspent coins.</p>
             <td class="type">
             
                 
-<span class="param-type">Array.&lt;<a href="global.html#Base58Address">Base58Address</a>></span>
+<span class="param-type"><a href="global.html#Base58Address">Base58Address</a></span>
 |
 
-<span class="param-type"><a href="global.html#Base58Address">Base58Address</a></span>
+<span class="param-type">Array.&lt;<a href="global.html#Base58Address">Base58Address</a>></span>
 
 
             
@@ -3513,7 +2579,7 @@ just unspent coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line471">line 471</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line618">line 618</a>
     </li></ul></dd>
     
 
@@ -3544,14 +2610,14 @@ just unspent coins.</p>
 
     
 
-    <h4 class="name" id="getConfidence"><span class="type-signature"></span>getConfidence<span class="signature">(hash, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getInfo"><span class="type-signature"></span>getInfo<span class="signature">(callback)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Calculate bitcoinj-style confidence.</p>
+    <p>Get some info about the server (network and version).</p>
 </div>
 
 
@@ -3587,32 +2653,6 @@ just unspent coins.</p>
 
         <tr>
             
-                <td class="name"><code>hash</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-|
-
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
                 <td class="name"><code>callback</code></td>
             
 
@@ -3629,7 +2669,7 @@ just unspent coins.</p>
 
             
 
-            <td class="description last"><p>Returns [Error, Number].</p></td>
+            <td class="description last"><p>Returns [Error, Object].</p></td>
         </tr>
 
     
@@ -3670,19 +2710,12 @@ just unspent coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1330">line 1330</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line905">line 905</a>
     </li></ul></dd>
     
 
     
 
-    
-    <dt class="tag-see">See:</dt>
-    <dd class="tag-see">
-        <ul>
-            <li><a href="https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/TransactionConfidence.java">https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/core/TransactionConfidence.java</a></li>
-        </ul>
-    </dd>
     
 
     
@@ -3708,14 +2741,14 @@ just unspent coins.</p>
 
     
 
-    <h4 class="name" id="getHistory"><span class="type-signature"></span>getHistory<span class="signature">(callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getMempool"><span class="type-signature"></span>getMempool<span class="signature">(callback)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Retrieve <em>all</em> transactions from the mempool.</p>
+    <p>Get a mempool snapshot.</p>
 </div>
 
 
@@ -3808,293 +2841,7 @@ just unspent coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line963">line 963</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getOrphan"><span class="type-signature"></span>getOrphan<span class="signature">(orphanHash, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Retrieve an orphan transaction.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>orphanHash</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1008">line 1008</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getSnapshot"><span class="type-signature"></span>getSnapshot<span class="signature">(callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get a snapshot of all transaction hashes in the mempool. Used
-for generating INV packets in response to MEMPOOL packets.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="global.html#Hash">Hash</a>[]].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1279">line 1279</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line880">line 880</a>
     </li></ul></dd>
     
 
@@ -4132,8 +2879,7 @@ for generating INV packets in response to MEMPOOL packets.</p>
 
 
 <div class="description">
-    <p>Retrieve a transaction from the mempool.
-Note that this will not be filled with coins.</p>
+    <p>Retrieve a transaction from the mempool or chain database.</p>
 </div>
 
 
@@ -4175,9 +2921,6 @@ Note that this will not be filled with coins.</p>
             <td class="type">
             
                 
-<span class="param-type"><a href="TX.html">TX</a></span>
-|
-
 <span class="param-type"><a href="global.html#Hash">Hash</a></span>
 
 
@@ -4252,7 +2995,7 @@ Note that this will not be filled with coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line434">line 434</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line703">line 703</a>
     </li></ul></dd>
     
 
@@ -4290,7 +3033,8 @@ Note that this will not be filled with coins.</p>
 
 
 <div class="description">
-    <p>Find all transactions pertaining to a certain address.</p>
+    <p>Retrieve transactions pertaining to an
+address from the mempool or chain database.</p>
 </div>
 
 
@@ -4332,10 +3076,10 @@ Note that this will not be filled with coins.</p>
             <td class="type">
             
                 
-<span class="param-type">Array.&lt;<a href="global.html#Base58Address">Base58Address</a>></span>
+<span class="param-type"><a href="global.html#Base58Address">Base58Address</a></span>
 |
 
-<span class="param-type"><a href="global.html#Base58Address">Base58Address</a></span>
+<span class="param-type">Array.&lt;<a href="global.html#Base58Address">Base58Address</a>></span>
 
 
             
@@ -4409,7 +3153,7 @@ Note that this will not be filled with coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line481">line 481</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line675">line 675</a>
     </li></ul></dd>
     
 
@@ -4440,14 +3184,15 @@ Note that this will not be filled with coins.</p>
 
     
 
-    <h4 class="name" id="getWaiting"><span class="type-signature"></span>getWaiting<span class="signature">(hash, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getWallet"><span class="type-signature"></span>getWallet<span class="signature">(id, passphrase<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Get hashes of all orphans a transaction hash potentially resolves.</p>
+    <p>Get wallet and setup http provider (note that the
+passphrase is <em>not</em> sent over the wire).</p>
 </div>
 
 
@@ -4471,6 +3216,8 @@ Note that this will not be filled with coins.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -4483,23 +3230,64 @@ Note that this will not be filled with coins.</p>
 
         <tr>
             
-                <td class="name"><code>hash</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>Resolving transaction.</p></td>
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>passphrase</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
         </tr>
 
     
@@ -4519,10 +3307,18 @@ Note that this will not be filled with coins.</p>
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>Return [Error, <a href="global.html#Hash">Hash</a>[]].</p></td>
+            <td class="description last"><p>Returns [Error, <a href="Wallet.html">Wallet</a>].</p></td>
         </tr>
 
     
@@ -4563,7 +3359,7 @@ Note that this will not be filled with coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line973">line 973</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line324">line 324</a>
     </li></ul></dd>
     
 
@@ -4594,11 +3390,15 @@ Note that this will not be filled with coins.</p>
 
     
 
-    <h4 class="name" id="hasOrphan"><span class="type-signature"></span>hasOrphan<span class="signature">(orphanHash, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getWalletBalance"><span class="type-signature"></span>getWalletBalance<span class="signature">(id, callback)</span><span class="type-signature"></span></h4>
 
     
 
 
+
+<div class="description">
+    <p>Calculate wallet balance.</p>
+</div>
 
 
 
@@ -4633,13 +3433,13 @@ Note that this will not be filled with coins.</p>
 
         <tr>
             
-                <td class="name"><code>orphanHash</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
             
@@ -4672,7 +3472,7 @@ Note that this will not be filled with coins.</p>
 
             
 
-            <td class="description last"><p>Returns [Error, Boolean].</p></td>
+            <td class="description last"><p>Returns [Error, <a href="global.html#Balance">Balance</a>].</p></td>
         </tr>
 
     
@@ -4713,7 +3513,7 @@ Note that this will not be filled with coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1033">line 1033</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line454">line 454</a>
     </li></ul></dd>
     
 
@@ -4744,14 +3544,15 @@ Note that this will not be filled with coins.</p>
 
     
 
-    <h4 class="name" id="hasTX"><span class="type-signature"></span>hasTX<span class="signature">(hash, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getWalletCoin"><span class="type-signature"></span>getWalletCoin<span class="signature">(id, hash, index, callback)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Test the mempool to see if it contains a transaction.</p>
+    <p>Get unspent coin (only possible if the transaction
+is available in the wallet history).</p>
 </div>
 
 
@@ -4787,13 +3588,13 @@ Note that this will not be filled with coins.</p>
 
         <tr>
             
-                <td class="name"><code>hash</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
             
@@ -4806,298 +3607,6 @@ Note that this will not be filled with coins.</p>
             <td class="description last"></td>
         </tr>
 
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, Boolean].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line515">line 515</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="isDoubleSpend"><span class="type-signature"></span>isDoubleSpend<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Test all of a transactions outpoints to see if they are doublespends.
-Note that this will only test against the mempool spents, not the
-blockchain's. The blockchain spents are not checked against because
-the blockchain does not maintain a spent list. The transaction will
-be seen as an orphan rather than a double spend.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, Boolean].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1319">line 1319</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="isSpent"><span class="type-signature"></span>isSpent<span class="signature">(hash, index, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Check to see if a coin has been spent. This differs from
-ChainDB#isSpent in that it actually maintains a
-map of spent coins, whereas ChainDB may return <code>true</code>
-for transaction outputs that never existed.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
     
 
         <tr>
@@ -5164,7 +3673,7 @@ for transaction outputs that never existed.</p>
 
             
 
-            <td class="description last"><p>Returns [Error, Boolean].</p></td>
+            <td class="description last"><p>Returns [Error, <a href="Coin.html">Coin</a>[]].</p></td>
         </tr>
 
     
@@ -5205,7 +3714,7 @@ for transaction outputs that never existed.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line461">line 461</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line566">line 566</a>
     </li></ul></dd>
     
 
@@ -5236,14 +3745,14 @@ for transaction outputs that never existed.</p>
 
     
 
-    <h4 class="name" id="limitMempoolSize"><span class="type-signature"></span>limitMempoolSize<span class="signature">(callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getWalletCoins"><span class="type-signature"></span>getWalletCoins<span class="signature">(id, callback)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Ensure the size of the mempool stays below 300mb.</p>
+    <p>Get wallet coins.</p>
 </div>
 
 
@@ -5279,6 +3788,29 @@ for transaction outputs that never existed.</p>
 
         <tr>
             
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
                 <td class="name"><code>callback</code></td>
             
 
@@ -5286,6 +3818,1215 @@ for transaction outputs that never existed.</p>
             
                 
 <span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, <a href="Coin.html">Coin</a>[]].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line402">line 402</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getWalletHistory"><span class="type-signature"></span>getWalletHistory<span class="signature">(id, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Get wallet transaction history.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>[]].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line376">line 376</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getWalletLast"><span class="type-signature"></span>getWalletLast<span class="signature">(id, limit, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Get last N wallet transactions.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>limit</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Max number of transactions.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>[]].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line477">line 477</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getWalletRange"><span class="type-signature"></span>getWalletRange<span class="signature">(id, options, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Get wallet transactions by timestamp range.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>start</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Start height.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>end</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>End height.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>limit</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Max number of records.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>reverse</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Reverse order.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>[]].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line509">line 509</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getWalletTX"><span class="type-signature"></span>getWalletTX<span class="signature">(id, hash, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Get transaction (only possible if the transaction
+is available in the wallet history).</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>hash</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#Hash">Hash</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>[]].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line537">line 537</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getWalletUnconfirmed"><span class="type-signature"></span>getWalletUnconfirmed<span class="signature">(id, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Get all unconfirmed transactions.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>[]].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line428">line 428</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="listenAll"><span class="type-signature"></span>listenAll<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Listen for events on all wallets.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line161">line 161</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="listenWallet"><span class="type-signature"></span>listenWallet<span class="signature">(id)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Listen for events on wallet id.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
             
@@ -5336,7 +5077,7 @@ for transaction outputs that never existed.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line340">line 340</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line138">line 138</a>
     </li></ul></dd>
     
 
@@ -5374,7 +5115,7 @@ for transaction outputs that never existed.</p>
 
 
 <div class="description">
-    <p>Open the chain, wait for the database to load.</p>
+    <p>Open the client, wait for the socket to load.</p>
 </div>
 
 
@@ -5467,7 +5208,7 @@ for transaction outputs that never existed.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line221">line 221</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line126">line 126</a>
     </li></ul></dd>
     
 
@@ -5498,14 +5239,14 @@ for transaction outputs that never existed.</p>
 
     
 
-    <h4 class="name" id="purgeOrphans"><span class="type-signature"></span>purgeOrphans<span class="signature">(callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="removeKey"><span class="type-signature"></span>removeKey<span class="signature">(id, keys, callback)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Purge orphan transactions from the mempool.</p>
+    <p>Remove a public account/purpose key to the wallet for multisig.</p>
 </div>
 
 
@@ -5541,227 +5282,13 @@ for transaction outputs that never existed.</p>
 
         <tr>
             
-                <td class="name"><code>callback</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line374">line 374</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="purgePending"><span class="type-signature"></span>purgePending<span class="signature">()</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Purge pending txs in the queue.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line157">line 157</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="removeBlock"><span class="type-signature"></span>removeBlock<span class="signature">(block, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Notify the mempool that a block has been disconnected
-from the main chain (reinserts transactions into the mempool).</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>block</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="Block.html">Block</a></span>
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
             
@@ -5778,147 +5305,16 @@ from the main chain (reinserts transactions into the mempool).</p>
 
         <tr>
             
-                <td class="name"><code>callback</code></td>
+                <td class="name"><code>keys</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line295">line 295</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="removeOrphan"><span class="type-signature"></span>removeOrphan<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Remove a transaction from the mempool.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
+<span class="param-type">Array.&lt;<a href="HDPublicKey.html">HDPublicKey</a>></span>
 |
 
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
+<span class="param-type">Array.&lt;<a href="global.html#Base58String">Base58String</a>></span>
 
 
             
@@ -5928,7 +5324,8 @@ from the main chain (reinserts transactions into the mempool).</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Account (bip44) or Purpose
+(bip45) key (can be in base58 form).</p></td>
         </tr>
 
     
@@ -5992,7 +5389,7 @@ from the main chain (reinserts transactions into the mempool).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1105">line 1105</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line858">line 858</a>
     </li></ul></dd>
     
 
@@ -6023,15 +5420,14 @@ from the main chain (reinserts transactions into the mempool).</p>
 
     
 
-    <h4 class="name" id="removeUnchecked"><span class="type-signature"></span>removeUnchecked<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="syncWallet"><span class="type-signature"></span>syncWallet<span class="signature">(id, options, callback)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Remove a transaction from the mempool. Generally
-only called when a new block is added to the main chain.</p>
+    <p>Sync wallet receive and change depth with the server.</p>
 </div>
 
 
@@ -6067,13 +5463,13 @@ only called when a new block is added to the main chain.</p>
 
         <tr>
             
-                <td class="name"><code>tx</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="TX.html">TX</a></span>
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
             
@@ -6084,6 +5480,101 @@ only called when a new block is added to the main chain.</p>
             
 
             <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>receiveDepth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>changeDepth</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -6147,7 +5638,7 @@ only called when a new block is added to the main chain.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line696">line 696</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line598">line 598</a>
     </li></ul></dd>
     
 
@@ -6178,17 +5669,96 @@ only called when a new block is added to the main chain.</p>
 
     
 
-    <h4 class="name" id="resolveOrphans"><span class="type-signature"></span>resolveOrphans<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="unlistenAll"><span class="type-signature"></span>unlistenAll<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Potentially resolve any transactions
-that redeem the passed-in transaction.
-Deletes all orphan entries and
-returns orphan hashes.</p>
+    <p>Unlisten for events on all wallets.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line169">line 169</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="unlistenWallet"><span class="type-signature"></span>unlistenWallet<span class="signature">(id)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Unlisten for events on wallet id.</p>
 </div>
 
 
@@ -6224,13 +5794,13 @@ returns orphan hashes.</p>
 
         <tr>
             
-                <td class="name"><code>tx</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="TX.html">TX</a></span>
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
             
@@ -6241,29 +5811,6 @@ returns orphan hashes.</p>
             
 
             <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="global.html#Hash">Hash</a>[]].</p></td>
         </tr>
 
     
@@ -6304,7 +5851,7 @@ returns orphan hashes.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1051">line 1051</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line150">line 150</a>
     </li></ul></dd>
     
 
@@ -6335,17 +5882,14 @@ returns orphan hashes.</p>
 
     
 
-    <h4 class="name" id="seenTX"><span class="type-signature"></span>seenTX<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="walletSend"><span class="type-signature"></span>walletSend<span class="signature">(id, options, callback)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Test a transaction hash to see if it has been seen as
-an orphan, in the mempool, or in the blockchain. This
-is the closest thing to a function
-named &quot;DoesThisTransactionExist()&quot;.</p>
+    <p>Create a transaction, fill, sign, and broadcast.</p>
 </div>
 
 
@@ -6381,13 +5925,13 @@ named &quot;DoesThisTransactionExist()&quot;.</p>
 
         <tr>
             
-                <td class="name"><code>tx</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="TX.html">TX</a></span>
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
             
@@ -6398,6 +5942,101 @@ named &quot;DoesThisTransactionExist()&quot;.</p>
             
 
             <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>address</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#Base58Address">Base58Address</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#BN">BN</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -6420,7 +6059,7 @@ named &quot;DoesThisTransactionExist()&quot;.</p>
 
             
 
-            <td class="description last"><p>Returns [Error, Boolean].</p></td>
+            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>].</p></td>
         </tr>
 
     
@@ -6461,7 +6100,7 @@ named &quot;DoesThisTransactionExist()&quot;.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1173">line 1173</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line777">line 777</a>
     </li></ul></dd>
     
 
@@ -6492,15 +6131,11 @@ named &quot;DoesThisTransactionExist()&quot;.</p>
 
     
 
-    <h4 class="name" id="storeOrphan"><span class="type-signature"></span>storeOrphan<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="zapWallet"><span class="type-signature"></span>zapWallet<span class="signature">(id, now, age, callback)</span><span class="type-signature"></span></h4>
 
     
 
 
-
-<div class="description">
-    <p>Store an orphaned transaction.</p>
-</div>
 
 
 
@@ -6535,13 +6170,13 @@ named &quot;DoesThisTransactionExist()&quot;.</p>
 
         <tr>
             
-                <td class="name"><code>tx</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="TX.html">TX</a></span>
+<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
 
 
             
@@ -6552,6 +6187,52 @@ named &quot;DoesThisTransactionExist()&quot;.</p>
             
 
             <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>now</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Current time.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>age</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Age delta (delete transactions older than <code>now - age</code>).</p></td>
         </tr>
 
     
@@ -6615,161 +6296,7 @@ named &quot;DoesThisTransactionExist()&quot;.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line896">line 896</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="verify"><span class="type-signature"></span>verify<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Verify a transaction with mempool standards.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>tx</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [<a href="VerifyError.html">VerifyError</a>].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line723">line 723</a>
+        <a href="bcoin_http_client.js.html">bcoin/http/client.js</a>, <a href="bcoin_http_client.js.html#line806">line 806</a>
     </li></ul></dd>
     
 
