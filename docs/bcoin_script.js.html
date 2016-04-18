@@ -63,14 +63,24 @@ var STACK_NEGATE = new Buffer([0xff]);
  * @constructor
  * @param {Buffer[]|Buffer|NakedWitness} items - Array of
  * stack items or raw witness buffer.
+ * @param {Boolean} mutable - Whether the script will
+ * be changed in the future.
+ * @property {Buffer[]} items
+ * @property {Script?} redeem
+ * @property {Boolean} mutable
  */
 
-function Witness(items) {
-  if (items instanceof Witness)
+function Witness(items, mutable) {
+  if (items instanceof Witness) {
+    if (mutable || items.mutable)
+      return items.clone(mutable);
     return items;
+  }
 
   if (!(this instanceof Witness))
     return new Witness(items);
+
+  this.mutable = !!mutable;
 
   if (!items)
     items = [];
@@ -100,8 +110,8 @@ Witness.prototype.inspect = function inspect() {
  * @returns {Witness} A clone of the current witness object.
  */
 
-Witness.prototype.clone = function clone() {
-  return new Witness(this.items.slice());
+Witness.prototype.clone = function clone(mutable) {
+  return new Witness(this.items.slice(), mutable);
 };
 
 /**
@@ -179,6 +189,12 @@ Witness.prototype.isScripthashInput = function isScripthashInput() {
   return Script.isScripthashInput(this.items, true);
 };
 
+/**
+ * "Guess" whether the witness is an unknown/non-standard type.
+ * This method is not 100% reliable.
+ * @returns {Boolean}
+ */
+
 Witness.prototype.isUnknownInput = function isUnknownInput() {
   return Script.isUnknownInput(this.items, true);
 };
@@ -189,10 +205,23 @@ Witness.prototype.isUnknownInput = function isUnknownInput() {
  */
 
 Witness.prototype.getRedeem = function getRedeem() {
+  if (this.mutable)
+    return Script.getRedeem(this.items);
+
   if (!this.redeem)
     this.redeem = Script.getRedeem(this.items);
 
   return this.redeem;
+};
+
+/**
+ * Find a data element in a witness.
+ * @param {Buffer} data - Data element to match against.
+ * @returns {Number} Index (`-1` if not present).
+ */
+
+Witness.prototype.indexOf = function indexOf(data) {
+  return utils.indexOf(this.items, data);
 };
 
 /**
@@ -307,12 +336,16 @@ Witness.isWitness = function isWitness(obj) {
  * @param {Buffer[]?} items - Stack items.
  * @property {Buffer[]} items - Stack items.
  * @property {Buffer[]} alt - Alt stack items.
+ * @property {Number[]} state - State of if statements.
+ * @property {Boolean} negate - State of if negations.
  * @property {Number} length - Size of stack.
  */
 
 function Stack(items) {
   this.items = items || [];
   this.alt = [];
+  this.state = [];
+  this.negate = 0;
 }
 
 /**
@@ -779,17 +812,25 @@ Stack.isStack = function isStack(obj) {
  * @constructor
  * @param {Buffer|Array|Object|NakedScript} code - Array
  * of script code or a serialized script Buffer.
+ * @param {Boolean} mutable - Whether the script will
+ * be changed in the future.
  * @property {Array} code - Script code.
- * @property {Buffer} raw - Serialized script.
- * @property {Script} redeem - Redeem script.
+ * @property {Buffer?} raw - Serialized script.
+ * @property {Script?} redeem - Redeem script.
+ * @property {Boolean} mutable
  */
 
-function Script(code) {
-  if (code instanceof Script)
+function Script(code, mutable) {
+  if (code instanceof Script) {
+    if (mutable || code.mutable)
+      return code.clone(mutable);
     return code;
+  }
 
   if (!(this instanceof Script))
     return new Script(code);
+
+  this.mutable = !!mutable;
 
   if (Buffer.isBuffer(code)) {
     this.raw = code;
@@ -809,6 +850,9 @@ function Script(code) {
     }
   }
 
+  if (this.mutable)
+    this.raw = null;
+
   this.redeem = null;
 }
 
@@ -817,8 +861,8 @@ function Script(code) {
  * @returns {Script} Cloned script.
  */
 
-Script.prototype.clone = function clone() {
-  return new Script(this.code.slice());
+Script.prototype.clone = function clone(mutable) {
+  return new Script(this.code.slice(), mutable);
 };
 
 /**
@@ -838,8 +882,12 @@ Script.prototype.inspect = function inspect() {
  */
 
 Script.prototype.encode = function encode() {
+  if (this.mutable)
+    return Script.encode(this.code);
+
   if (!this.raw)
     this.raw = Script.encode(this.code);
+
   return this.raw;
 };
 
@@ -875,35 +923,6 @@ Script.prototype.getSubscript = function getSubscript(lastSep) {
   }
 
   return new Script(code);
-};
-
-Script.prototype._next = function _next(to, code, ip) {
-  var depth = 0;
-  var op;
-
-  while (code[ip]) {
-    op = code[ip];
-
-    if (op === opcodes.OP_IF || op === opcodes.OP_NOTIF)
-      depth++;
-    else if (op === opcodes.OP_ELSE)
-      depth--;
-    else if (op === opcodes.OP_ENDIF)
-      depth--;
-
-    if (depth &lt; 0)
-      break;
-
-    if (depth === 0 &amp;&amp; op === to)
-      return ip;
-
-    if (op === opcodes.OP_ELSE)
-      depth++;
-
-    ip++;
-  }
-
-  return -1;
 };
 
 /**
@@ -942,10 +961,10 @@ Script.prototype.execute = function execute(stack, flags, tx, index, version) {
  */
 
 Script.prototype.interpret = function interpret(stack, flags, tx, index, version) {
-  var code = this.code.slice();
   var ip = 0;
   var lastSep = -1;
-  var op, val, if_, else_, endif;
+  var opCount = 0;
+  var op, val, v1, v2, v3;
   var n, n1, n2, n3;
   var res, key, sig, type, subscript, hash;
   var keys, i, j, m;
@@ -954,20 +973,108 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
 
-  if (code.length > constants.script.maxOps)
+  // The alt stack and execution
+  // stack are local to the script.
+  stack.alt.length = 0;
+  stack.state.length = 0;
+  stack.negate = 0;
+
+  if (this.getSize() > constants.script.MAX_SIZE)
     throw new ScriptError('Script too large.');
 
-  for (ip = 0; ip &lt; code.length; ip++) {
-    op = code[ip];
+  for (ip = 0; ip &lt; this.code.length; ip++) {
+    op = this.code[ip];
 
     if (Buffer.isBuffer(op)) {
-      if (op.length > constants.script.maxPush)
-        throw new ScriptError('Push data too large.', op, ip);
-      if (!Script.checkPush(op, flags))
-        throw new ScriptError('Push verification failed.', op, ip);
-      stack.push(op);
+      if (!Script.checkPush(op))
+        throw new ScriptError('Pushdata out of range.', op, ip);
+      if (op.length > constants.script.MAX_PUSH)
+        throw new ScriptError('Pushdata too large.', op, ip);
+      // Note that minimaldata is not checked
+      // on unexecuted branches of code.
+      if (stack.negate === 0) {
+        if (!Script.checkMinimal(op, flags))
+          throw new ScriptError('Push verification failed.', op, ip);
+        stack.push(op);
+      }
       continue;
     }
+
+    if (op > opcodes.OP_16 &amp;&amp; ++opCount > constants.script.MAX_OPS)
+      throw new ScriptError('Too many opcodes.', op, ip);
+
+    // It's very important to make a distiction
+    // here: these opcodes will fail _even if they
+    // are in unexecuted branches of code_. Whereas
+    // a totally unknown opcode is fine as long as it
+    // is unexecuted.
+    if (op == opcodes.OP_CAT
+        || op == opcodes.OP_SUBSTR
+        || op == opcodes.OP_LEFT
+        || op == opcodes.OP_RIGHT
+        || op == opcodes.OP_INVERT
+        || op == opcodes.OP_AND
+        || op == opcodes.OP_OR
+        || op == opcodes.OP_XOR
+        || op == opcodes.OP_2MUL
+        || op == opcodes.OP_2DIV
+        || op == opcodes.OP_MUL
+        || op == opcodes.OP_DIV
+        || op == opcodes.OP_MOD
+        || op == opcodes.OP_LSHIFT
+        || op == opcodes.OP_RSHIFT) {
+      throw new ScriptError('Disabled opcode.', op, ip);
+    }
+
+    if (op >= opcodes.OP_IF &amp;&amp; op &lt;= opcodes.OP_ENDIF) {
+      switch (op) {
+        case opcodes.OP_IF:
+        case opcodes.OP_NOTIF: {
+          if (stack.negate === 0) {
+            if (stack.length &lt; 1)
+              throw new ScriptError('Stack too small.', op, ip);
+            val = Script.bool(stack.pop());
+            if (op === opcodes.OP_NOTIF)
+              val = !val;
+            stack.state.push(val === true ? 1 : 0);
+            if (!val)
+              stack.negate++;
+          } else {
+            stack.state.push(0);
+            stack.negate++;
+          }
+          break;
+        }
+        case opcodes.OP_ELSE: {
+          if (stack.state.length === 0)
+            throw new ScriptError('Unexpected else.', op, ip);
+          stack.state[stack.state.length - 1] ^= 1;
+          if (stack.state[stack.state.length - 1] === 0)
+            stack.negate++;
+          else
+            stack.negate--;
+          break;
+        }
+        case opcodes.OP_ENDIF: {
+          if (stack.state.length === 0)
+            throw new ScriptError('Unexpected endif.', op, ip);
+          if (stack.state.pop() === 0)
+            stack.negate--;
+          break;
+        }
+        case opcodes.OP_VERIF:
+        case opcodes.OP_VERNOTIF: {
+          throw new ScriptError('Unknown opcode.', op, ip);
+        }
+        default: {
+          assert.fatal(false, 'Fatal script error.');
+        }
+      }
+      continue;
+    }
+
+    if (stack.negate !== 0)
+      continue;
 
     if (op === opcodes.OP_0) {
       stack.push(STACK_FALSE);
@@ -997,47 +1104,6 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         if (flags &amp; constants.flags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
           throw new ScriptError('Upgradable NOP used.', op, ip);
         break;
-      }
-      case opcodes.OP_IF:
-      case opcodes.OP_NOTIF: {
-        if (stack.length &lt; 1)
-          throw new ScriptError('Stack too small.', op, ip);
-        val = Script.bool(stack.pop());
-        if (op === opcodes.OP_NOTIF)
-          val = !val;
-        if_ = ip;
-        else_ = this._next(opcodes.OP_ELSE, code, ip);
-        endif = this._next(opcodes.OP_ENDIF, code, ip);
-        // Splice out the statement blocks we don't need
-        if (val) {
-          if (endif === -1)
-            throw new ScriptError('Missing endif.', op, ip);
-          if (else_ === -1) {
-            code.splice(endif, 1);
-            code.splice(if_, 1);
-          } else {
-            code.splice(else_, (endif - else_) + 1);
-            code.splice(if_, 1);
-          }
-        } else {
-          if (endif === -1)
-            throw new ScriptError('Missing endif.', op, ip);
-          if (else_ === -1) {
-            code.splice(if_, (endif - if_) + 1);
-          } else {
-            code.splice(endif, 1);
-            code.splice(if_, (else_ - if_) + 1);
-          }
-        }
-        // Subtract one since we removed the if/notif opcode
-        ip--;
-        break;
-      }
-      case opcodes.OP_ELSE: {
-        throw new ScriptError('Unexpected else.', op, ip);
-      }
-      case opcodes.OP_ENDIF: {
-        throw new ScriptError('Unexpected endif.', op, ip);
       }
       case opcodes.OP_VERIFY: {
         if (stack.length === 0)
@@ -1131,6 +1197,8 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       }
       case opcodes.OP_1ADD:
       case opcodes.OP_1SUB:
+      case opcodes.OP_2MUL:
+      case opcodes.OP_2DIV:
       case opcodes.OP_NEGATE:
       case opcodes.OP_ABS:
       case opcodes.OP_NOT:
@@ -1145,8 +1213,14 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
           case opcodes.OP_1SUB:
             n.isub(1);
             break;
+          case opcodes.OP_2MUL:
+            n.iushln(1);
+            break;
+          case opcodes.OP_2DIV:
+            n.iushrn(1);
+            break;
           case opcodes.OP_NEGATE:
-            n = n.neg();
+            n.ineg();
             break;
           case opcodes.OP_ABS:
             if (n.cmpn(0) &lt; 0)
@@ -1159,7 +1233,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
             n = n.cmpn(0) !== 0;
             break;
           default:
-            return false;
+            assert.fatal(false, 'Fatal script error.');
         }
         if (typeof n === 'boolean')
           n = new bn(n ? 1 : 0);
@@ -1168,6 +1242,11 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       }
       case opcodes.OP_ADD:
       case opcodes.OP_SUB:
+      case opcodes.OP_MUL:
+      case opcodes.OP_DIV:
+      case opcodes.OP_MOD:
+      case opcodes.OP_LSHIFT:
+      case opcodes.OP_RSHIFT:
       case opcodes.OP_BOOLAND:
       case opcodes.OP_BOOLOR:
       case opcodes.OP_NUMEQUAL:
@@ -1182,6 +1261,11 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         switch (op) {
           case opcodes.OP_ADD:
           case opcodes.OP_SUB:
+          case opcodes.OP_MUL:
+          case opcodes.OP_DIV:
+          case opcodes.OP_MOD:
+          case opcodes.OP_LSHIFT:
+          case opcodes.OP_RSHIFT:
           case opcodes.OP_BOOLAND:
           case opcodes.OP_BOOLOR:
           case opcodes.OP_NUMEQUAL:
@@ -1204,6 +1288,25 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
                 break;
               case opcodes.OP_SUB:
                 n = n1.sub(n2);
+                break;
+              case opcodes.OP_MUL:
+                n = n1.mul(n2);
+                break;
+              case opcodes.OP_DIV:
+                n = n1.div(n2);
+                break;
+              case opcodes.OP_MOD:
+                n = n1.mod(n2);
+                break;
+              case opcodes.OP_LSHIFT:
+                if (n2.cmpn(0) &lt; 0 || n2.cmpn(2048) > 0)
+                  throw new ScriptError('Shift out of range.', op, ip);
+                n = n1.ushln(n2.toNumber());
+                break;
+              case opcodes.OP_RSHIFT:
+                if (n2.cmpn(0) &lt; 0 || n2.cmpn(2048) > 0)
+                  throw new ScriptError('Shift out of range.', op, ip);
+                n = n1.ushrn(n2.toNumber());
                 break;
               case opcodes.OP_BOOLAND:
                 n = n1.cmpn(0) !== 0 &amp;&amp; n2.cmpn(0) !== 0;
@@ -1239,7 +1342,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
                 n = n1.cmp(n2) > 0 ? n1 : n2;
                 break;
               default:
-                return false;
+                assert.fatal(false, 'Fatal script error.');
             }
             if (typeof n === 'boolean')
               n = new bn(n ? 1 : 0);
@@ -1331,7 +1434,8 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         type = sig[sig.length - 1];
 
         subscript = this.getSubscript(lastSep);
-        subscript.removeData(sig);
+        if (version === 0)
+          subscript.removeData(sig);
 
         hash = tx.signatureHash(index, subscript, type, version);
 
@@ -1355,7 +1459,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
 
         n = Script.num(stack.pop(), flags).toNumber();
 
-        if (!(n >= 1 &amp;&amp; n &lt;= constants.script.maxPubkeysPerMultisig))
+        if (!(n >= 1 &amp;&amp; n &lt;= constants.script.MAX_MULTISIG_PUBKEYS))
           throw new ScriptError('`n` is out of bounds.', op, ip);
 
         if (stack.length &lt; n + 1)
@@ -1383,7 +1487,8 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
 
         for (i = 0; i &lt; m; i++) {
           sig = stack.get(stack.length - 1 - i);
-          subscript.removeData(sig);
+          if (version === 0)
+            subscript.removeData(sig);
         }
 
         succ = 0;
@@ -1473,12 +1578,93 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
 
         locktime = locktime.uand(utils.U32).toNumber();
 
-        if ((locktime &amp; constants.sequenceLocktimeDisableFlag) !== 0)
+        if ((locktime &amp; constants.sequence.DISABLE_FLAG) !== 0)
           break;
 
         if (!Script.checkSequence(locktime, tx, index))
           throw new ScriptError('Sequence verification failed.', op, ip);
 
+        break;
+      }
+      case opcodes.OP_CAT: {
+        if (stack.length &lt; 2)
+          throw new ScriptError('Stack too small.', op, ip);
+        v2 = stack.pop();
+        v1 = stack.pop();
+        stack.push(Buffer.concat([v1, v2]));
+        if (stack.top(-1).length > constants.script.MAX_PUSH)
+          throw new ScriptError('Push data too large.', op, ip);
+        break;
+      }
+      case opcodes.OP_SUBSTR: {
+        if (stack.length &lt; 3)
+          throw new ScriptError('Stack too small.', op, ip);
+        v3 = Script.num(stack.pop(), flags).toNumber(); // end
+        v2 = Script.num(stack.pop(), flags).toNumber(); // begin
+        v1 = stack.pop(); // string
+        if (v2 &lt; 0 || v3 &lt; v2)
+          throw new ScriptError('String begin or end out of range.', op, ip);
+        if (v2 > v1.length)
+          v2 = v1.length;
+        if (v3 > v1.length)
+          v3 = v1.length;
+        stack.push(v1.slice(v2, v3));
+        break;
+      }
+      case opcodes.OP_LEFT:
+      case opcodes.OP_RIGHT: {
+        if (stack.length &lt; 2)
+          throw new ScriptError('Stack too small.', op, ip);
+        v2 = Script.num(stack.pop(), flags).toNumber(); // size
+        v1 = stack.pop(); // string
+        if (v2 &lt; 0)
+          throw new ScriptError('String size is negative.', op, ip);
+        if (v2 > v1.length)
+          v2 = v1.length;
+        if (op === opcodes.OP_LEFT)
+          v1 = v1.slice(0, v2);
+        else
+          v1 = v1.slice(v1.length - v2);
+        stack.push(v1);
+        break;
+      }
+      case opcodes.OP_INVERT: {
+        if (stack.length &lt; 1)
+          throw new ScriptError('Stack too small.', op, ip);
+        val = utils.slice(stack.pop());
+        for (i = 0; i &lt; val.length; i++)
+          val[i] = ~val[i] &amp; 0xff;
+        stack.push(val);
+        break;
+      }
+      case opcodes.OP_AND:
+      case opcodes.OP_OR:
+      case opcodes.OP_XOR: {
+        if (stack.length &lt; 2)
+          throw new ScriptError('Stack too small.', op, ip);
+        v2 = stack.pop();
+        v1 = utils.slice(stack.pop());
+        if (v1.length &lt; v2.length) {
+          v3 = new Buffer(v2.length - v1.length);
+          v3.fill(0);
+          v1 = Buffer.concat([v1, v3]);
+        }
+        if (v2.length &lt; v1.length) {
+          v3 = new Buffer(v1.length - v2.length);
+          v3.fill(0);
+          v2 = Buffer.concat([v2, v3]);
+        }
+        if (op === opcodes.OP_AND) {
+          for (i = 0; i &lt; v1.length; i++)
+            v1[i] &amp;= v2[i];
+        } else if (op === opcodes.OP_OR) {
+          for (i = 0; i &lt; v1.length; i++)
+            v1[i] |= v2[i];
+        } else if (op === opcodes.OP_XOR) {
+          for (i = 0; i &lt; v1.length; i++)
+            v1[i] ^= v2[i];
+        }
+        stack.push(v1);
         break;
       }
       default: {
@@ -1487,8 +1673,11 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
     }
   }
 
-  if (stack.getSize() > constants.script.maxStack)
+  if (stack.getSize() > constants.script.MAX_STACK)
     throw new ScriptError('Stack size too large.', op, ip);
+
+  if (stack.state.length !== 0)
+    throw new ScriptError('Expected endif.', op, ip);
 
   return true;
 };
@@ -1502,7 +1691,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
  */
 
 Script.checkLocktime = function checkLocktime(locktime, tx, i) {
-  var threshold = constants.locktimeThreshold;
+  var threshold = constants.LOCKTIME_THRESHOLD;
 
   if (!(
     (tx.locktime &lt; threshold &amp;&amp; locktime &lt; threshold)
@@ -1535,19 +1724,19 @@ Script.checkSequence = function checkSequence(sequence, tx, i) {
   if (tx.version &lt; 2)
     return false;
 
-  if (txSequence &amp; constants.sequenceLocktimeDisableFlag)
+  if (txSequence &amp; constants.sequence.DISABLE_FLAG)
     return false;
 
-  locktimeMask = constants.sequenceLocktimeTypeFlag
-    | constants.sequenceLocktimeMask;
+  locktimeMask = constants.sequence.TYPE_FLAG
+    | constants.sequence.MASK;
   txSequenceMasked = txSequence &amp; locktimeMask;
   sequenceMasked = sequence &amp; locktimeMask;
 
   if (!(
-    (txSequenceMasked &lt; constants.sequenceLocktimeTypeFlag
-    &amp;&amp; sequenceMasked &lt; constants.sequenceLocktimeTypeFlag)
-    || (txSequenceMasked >= constants.sequenceLocktimeTypeFlag
-    &amp;&amp; sequenceMasked >= constants.sequenceLocktimeTypeFlag)
+    (txSequenceMasked &lt; constants.sequence.TYPE_FLAG
+    &amp;&amp; sequenceMasked &lt; constants.sequence.TYPE_FLAG)
+    || (txSequenceMasked >= constants.sequence.TYPE_FLAG
+    &amp;&amp; sequenceMasked >= constants.sequence.TYPE_FLAG)
   )) {
     return false;
   }
@@ -1561,7 +1750,6 @@ Script.checkSequence = function checkSequence(sequence, tx, i) {
 /**
  * Cast a big number or Buffer to a bool.
  * @see CastToBool
- * @static
  * @param {BN|Buffer} value
  * @returns {Boolean}
  */
@@ -1588,7 +1776,6 @@ Script.bool = function bool(value) {
 
 /**
  * Create a CScriptNum.
- * @static
  * @param {Buffer} value
  * @param {Number?} flags - Script standard flags.
  * @param {Number?} size - Max size in bytes.
@@ -1644,7 +1831,6 @@ Script.num = function num(value, flags, size) {
  * Create a script array. Will convert Numbers and big
  * numbers to a little-endian buffer while taking into
  * account negative zero, minimaldata, etc.
- * @static
  * @example
  * assert.deepEqual(Script.array(0), new Buffer([]));
  * assert.deepEqual(Script.array(0xffee), new Buffer([0xee, 0xff]));
@@ -1682,27 +1868,76 @@ Script.array = function(value) {
  * a script's code (used to remove signatures
  * before verification).
  * @param {Buffer} data - Data element to match against.
+ * @returns {Number} Total.
  */
 
 Script.prototype.removeData = function removeData(data) {
-  for (var i = this.code.length - 1; i >= 0; i--) {
+  var total = 0;
+  var i;
+
+  for (i = this.code.length - 1; i >= 0; i--) {
     if (!Buffer.isBuffer(this.code[i]))
       continue;
-    if (utils.isEqual(this.code[i], data))
+    if (utils.isEqual(this.code[i], data)) {
       this.code.splice(i, 1);
+      total++;
+    }
   }
+
+  return total;
+};
+
+/**
+ * Find a data element in a script.
+ * @param {Buffer} data - Data element to match against.
+ * @returns {Number} Index (`-1` if not present).
+ */
+
+Script.prototype.indexOf = function indexOf(data) {
+  return utils.indexOf(this.code, data);
+};
+
+/**
+ * Test whether an op is a buffer, also
+ * check for buffer underflows.
+ * @param {Buffer?} value
+ * @returns {Boolean}
+ */
+
+Script.isPush = function isPush(value) {
+  return Buffer.isBuffer(value) &amp;&amp; Script.checkPush(value);
+};
+
+/**
+ * Perform some range checking on the pushdatas
+ * (exactly what GetOp2 does). Note that this
+ * _must_ be done during execution, not parsing.
+ * @see GetOp2
+ * @param {Buffer} value - Pushdata op from script code
+ * (must be from a deserialized script).
+ * @returns {Boolean}
+ */
+
+Script.checkPush = function checkPush(value) {
+  var pushdata = value.pushdata;
+
+  if (!pushdata)
+    return true;
+
+  // The pushdata size can never
+  // be greater than the buffer.
+  return pushdata.size === value.length;
 };
 
 /**
  * Check to see if a pushdata Buffer abides by minimaldata.
- * @static
  * @param {Buffer} value - Pushdata op from script code
  * (must be from a deserialized script).
  * @param {Number?} flags
  * @returns {Boolean}
  */
 
-Script.checkPush = function checkPush(value, flags) {
+Script.checkMinimal = function checkMinimal(value, flags) {
   var pushdata = value.pushdata;
 
   if (flags == null)
@@ -1852,7 +2087,7 @@ Script.createScripthash = function createScripthash(hash) {
 
 Script.createNulldata = function createNulldata(flags) {
   assert(Buffer.isBuffer(flags));
-  assert(flags.length &lt;= constants.script.maxOpReturn, 'Nulldata too large.');
+  assert(flags.length &lt;= constants.script.MAX_OP_RETURN, 'Nulldata too large.');
   return new Script([
     opcodes.OP_RETURN,
     flags
@@ -1893,6 +2128,9 @@ Script.createCommitment = function createCommitment(hash) {
  */
 
 Script.prototype.getRedeem = function getRedeem() {
+  if (this.mutable)
+    return Script.getRedeem(this.code);
+
   if (!this.redeem)
     this.redeem = Script.getRedeem(this.code);
 
@@ -1901,7 +2139,6 @@ Script.prototype.getRedeem = function getRedeem() {
 
 /**
  * Grab and deserialize the redeem script from script code.
- * @static
  * @param {Array} code
  * @returns {Script|null} Redeem script.
  */
@@ -1909,7 +2146,7 @@ Script.prototype.getRedeem = function getRedeem() {
 Script.getRedeem = function getRedeem(code) {
   var redeem = code[code.length - 1];
 
-  if (!Buffer.isBuffer(redeem))
+  if (!Script.isPush(redeem))
     return;
 
   return new Script(redeem);
@@ -1967,9 +2204,6 @@ Script.prototype.isStandard = function isStandard() {
 
     if (m &lt; 1 || m > n)
       return false;
-  } else if (type === 'nulldata') {
-    if (this.getSize() > constants.script.maxOpReturnBytes)
-      return false;
   }
 
   return type !== 'unknown';
@@ -2009,7 +2243,7 @@ Script.prototype.isStandardProgram = function isStandardProgram(witness, flags) 
   }
 
   for (i = 0; i &lt; witness.items.length; i++) {
-    if (witness.items[i].length > constants.script.maxSize)
+    if (witness.items[i].length > constants.script.MAX_SIZE)
       return false;
   }
 
@@ -2017,10 +2251,14 @@ Script.prototype.isStandardProgram = function isStandardProgram(witness, flags) 
 };
 
 /**
- * @returns {Number} Size of script excluding the varint size bytes.
+ * Calculate size of script excluding the varint size bytes.
+ * @returns {Number}
  */
 
 Script.prototype.getSize = function getSize() {
+  if (this.mutable)
+    return Script.encode(this.code, new BufferWriter()).written;
+
   return this.encode().length;
 };
 
@@ -2246,9 +2484,29 @@ Script.prototype.isScripthash = function isScripthash() {
  */
 
 Script.prototype.isNulldata = function isNulldata() {
-  return this.code.length === 2
-    &amp;&amp; this.code[0] === opcodes.OP_RETURN
-    &amp;&amp; Script.isData(this.code[1]);
+  var i, op;
+
+  if (this.raw &amp;&amp; this.raw.length > constants.script.MAX_OP_RETURN_BYTES)
+    return false;
+
+  if (this.code.length === 0)
+    return false;
+
+  if (this.code[0] !== opcodes.OP_RETURN)
+    return false;
+
+  for (i = 1; i &lt; this.code.length; i++) {
+    op = this.code[i];
+    if (Buffer.isBuffer(op)) {
+      if (!Script.checkPush(op))
+        return false;
+      continue;
+    }
+    if (op > opcodes.OP_16)
+      return false;
+  }
+
+  return true;
 };
 
 /**
@@ -2261,9 +2519,20 @@ Script.prototype.isNulldata = function isNulldata() {
  */
 
 Script.prototype.isCommitment = function isCommitment() {
+  if (this.raw) {
+    if (this.raw.length &lt; 38)
+      return false;
+    if (this.raw[0] !== opcodes.OP_RETURN)
+      return false;
+    if (this.raw[1] !== 0x24)
+      return false;
+    if (utils.readU32BE(this.raw, 2) !== 0xaa21a9ed)
+      return false;
+    return true;
+  }
   return this.code.length >= 2
     &amp;&amp; this.code[0] === opcodes.OP_RETURN
-    &amp;&amp; Buffer.isBuffer(this.code[1])
+    &amp;&amp; Script.isPush(this.code[1])
     &amp;&amp; this.code[1].length === 36
     &amp;&amp; utils.readU32BE(this.code[1], 0) === 0xaa21a9ed;
 };
@@ -2288,13 +2557,29 @@ Script.prototype.getCommitmentHash = function getCommitmentHash() {
  */
 
 Script.prototype.isWitnessProgram = function isWitnessProgram() {
+  // Witness programs are strict minimaldata.
+  if (this.raw) {
+    if (!(this.raw.length >= 4 &amp;&amp; this.raw.length &lt;= 34))
+      return false;
+
+    if (this.raw[0] !== opcodes.OP_0
+        &amp;&amp; !(this.raw[0] >= opcodes.OP_1 &amp;&amp; this.raw[0] &lt;= opcodes.OP_16)) {
+      return false;
+    }
+
+    if (this.raw[1] + 2 !== this.raw.length)
+      return false;
+
+    return true;
+  }
+
   if (this.code.length !== 2)
     return false;
 
   if (typeof this.code[0] !== 'number')
     return false;
 
-  if (!Buffer.isBuffer(this.code[1]))
+  if (!Script.isPush(this.code[1]))
     return false;
 
   return (this.code[0] === opcodes.OP_0
@@ -2397,7 +2682,7 @@ Script.getInputType = function getInputType(code, isWitness) {
 };
 
 /**
- * "Guess" whether the input script is a scripthash input.
+ * "Guess" whether the input script is an unknown/non-standard type.
  * This method is not 100% reliable.
  * @returns {Boolean}
  */
@@ -2412,7 +2697,6 @@ Script.isUnknownInput = function isUnknownInput(code, isWitness) {
 
 /**
  * Automatically build an output script from any number of options.
- * @static
  * @example
  * Script.createOutputScript({ address: '1HT7xU2Ngenf7D4yocz2SAcnNLW7rK8d4E' });
  * @param {Object} options
@@ -2593,7 +2877,7 @@ Script.isScripthashInput = function isScripthashInput(code, isWitness) {
 
   // Last data element should be an array
   // for the redeem script.
-  if (!Buffer.isBuffer(raw))
+  if (!Script.isPush(raw))
     return false;
 
   // Testing for scripthash inputs requires
@@ -2621,6 +2905,39 @@ Script.isScripthashInput = function isScripthashInput(code, isWitness) {
 };
 
 /**
+ * Get coinbase height.
+ * @returns {Number} `-1` if not present.
+ */
+
+Script.prototype.getCoinbaseHeight = function getCoinbaseHeight() {
+  return Script.getCoinbaseHeight(this.code);
+};
+
+/**
+ * Get coinbase height.
+ * @returns {Number} `-1` if not present.
+ */
+
+Script.getCoinbaseHeight = function getCoinbaseHeight(code) {
+  if (code.length === 0)
+    return -1;
+
+  if (!Buffer.isBuffer(code[0]))
+    return -1;
+
+  if (!Script.checkPush(code[0]))
+    return -1;
+
+  if (!Script.checkMinimal(code[0]))
+    return -1;
+
+  if (code[0].length > 6)
+    return -1;
+
+  return new bn(code[0], 'le').toNumber();
+};
+
+/**
  * Get info about a coinbase script.
  * @returns {Object} Object containing `height`,
  * `extraNonce`, `flags`, and `text`.
@@ -2630,10 +2947,7 @@ Script.prototype.getCoinbaseData = function getCoinbaseData() {
   var coinbase = {};
   var flags;
 
-  if (Buffer.isBuffer(this.code[0]) &amp;&amp; this.code[0].length &lt;= 6)
-    coinbase.height = new bn(this.code[0], 'le').toNumber();
-  else
-    coinbase.height = -1;
+  coinbase.height = this.getCoinbaseHeight();
 
   if (Buffer.isBuffer(this.code[1]))
     coinbase.extraNonce = new bn(this.code[1], 'le');
@@ -2662,7 +2976,7 @@ Script.prototype.getCoinbaseData = function getCoinbaseData() {
  */
 
 Script.isHash = function isHash(hash) {
-  return Buffer.isBuffer(hash) &amp;&amp; hash.length === 20;
+  return Script.isPush(hash) &amp;&amp; hash.length === 20;
 };
 
 /**
@@ -2673,7 +2987,7 @@ Script.isHash = function isHash(hash) {
  */
 
 Script.isKey = function isKey(key) {
-  return Buffer.isBuffer(key) &amp;&amp; key.length >= 33 &amp;&amp; key.length &lt;= 65;
+  return Script.isPush(key) &amp;&amp; key.length >= 33 &amp;&amp; key.length &lt;= 65;
 };
 
 /**
@@ -2684,7 +2998,7 @@ Script.isKey = function isKey(key) {
  */
 
 Script.isSignature = function isSignature(sig) {
-  return Buffer.isBuffer(sig) &amp;&amp; sig.length >= 9 &amp;&amp; sig.length &lt;= 73;
+  return Script.isPush(sig) &amp;&amp; sig.length >= 9 &amp;&amp; sig.length &lt;= 73;
 };
 
 /**
@@ -2694,7 +3008,7 @@ Script.isSignature = function isSignature(sig) {
  */
 
 Script.isDummy = function isDummy(data) {
-  return Buffer.isBuffer(data) &amp;&amp; data.length === 0;
+  return Script.isPush(data) &amp;&amp; data.length === 0;
 };
 
 /**
@@ -2712,16 +3026,6 @@ Script.isZero = function isZero(op) {
 };
 
 /**
- * Test whether the data element is a valid nulldata push.
- * @param {Buffer?} data
- * @returns {Boolean}
- */
-
-Script.isData = function isData(data) {
-  return Buffer.isBuffer(data) &amp;&amp; data.length &lt;= constants.script.maxOpReturn;
-};
-
-/**
  * Test whether the data element is a valid key if VERIFY_STRICTENC is enabled.
  * @param {Buffer} key
  * @param {VerifyFlags?} flags
@@ -2732,7 +3036,7 @@ Script.isValidKey = function isValidKey(key, flags) {
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
 
-  if (!Buffer.isBuffer(key))
+  if (!Script.isPush(key))
     return false;
 
   if (flags &amp; constants.flags.VERIFY_STRICTENC) {
@@ -2752,7 +3056,7 @@ Script.isValidKey = function isValidKey(key, flags) {
  */
 
 Script.isKeyEncoding = function isKeyEncoding(key) {
-  if (!Buffer.isBuffer(key))
+  if (!Script.isPush(key))
     return false;
 
   if (key.length &lt; 33)
@@ -2786,7 +3090,7 @@ Script.isValidSignature = function isValidSignature(sig, flags) {
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
 
-  if (!Buffer.isBuffer(sig))
+  if (!Script.isPush(sig))
     return false;
 
   // Allow empty sigs
@@ -2829,7 +3133,7 @@ Script.isValidSignature = function isValidSignature(sig, flags) {
 Script.isSignatureEncoding = function isSignatureEncoding(sig) {
   var lenR, lenS;
 
-  if (!Buffer.isBuffer(sig))
+  if (!Script.isPush(sig))
     return false;
 
   // Format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S] [sighash]
@@ -2920,13 +3224,13 @@ Script.isSignatureEncoding = function isSignatureEncoding(sig) {
 Script.isHashType = function isHashType(sig) {
   var type;
 
-  if (!Buffer.isBuffer(sig))
+  if (!Script.isPush(sig))
     return false;
 
   if (sig.length === 0)
     return false;
 
-  type = sig[sig.length - 1] &amp; ~constants.hashType.anyonecanpay;
+  type = sig[sig.length - 1] &amp; ~constants.hashType.ANYONECANPAY;
 
   if (!constants.hashTypeByVal[type])
     return false;
@@ -2942,7 +3246,7 @@ Script.isHashType = function isHashType(sig) {
 
 Script.isLowDER = function isLowDER(sig) {
   if (!sig.s) {
-    if (!Buffer.isBuffer(sig))
+    if (!Script.isPush(sig))
       return false;
 
     if (!Script.isSignatureEncoding(sig))
@@ -3011,13 +3315,13 @@ Script.prototype.isPushOnly = function isPushOnly() {
   var i, op;
   for (i = 0; i &lt; this.code.length; i++) {
     op = this.code[i];
-    if (Buffer.isBuffer(op)
-        || op === opcodes.OP_1NEGATE
-        || op === opcodes.OP_0
-        || (op >= opcodes.OP_1 &amp;&amp; op &lt;= opcodes.OP_16)) {
+    if (Buffer.isBuffer(op)) {
+      if (!Script.checkPush(op))
+        return false;
       continue;
     }
-    return false;
+    if (op > opcodes.OP_16)
+      return false;
   }
   return true;
 };
@@ -3037,7 +3341,7 @@ Script.prototype.getSigops = function getSigops(accurate) {
   for (i = 0; i &lt; this.code.length; i++) {
     op = this.code[i];
 
-    if (Buffer.isBuffer(op))
+    if (Script.isPush(op))
       continue;
 
     if (constants.opcodesByVal[op] == null)
@@ -3049,7 +3353,7 @@ Script.prototype.getSigops = function getSigops(accurate) {
       if (accurate &amp;&amp; lastOp >= opcodes.OP_1 &amp;&amp; lastOp &lt;= opcodes.OP_16)
         total += lastOp - 0x50;
       else
-        total += constants.script.maxPubkeysPerMultisig;
+        total += constants.script.MAX_MULTISIG_PUBKEYS;
     }
 
     lastOp = op;
@@ -3288,7 +3592,7 @@ Script.verify = function verify(input, witness, output, tx, i, flags) {
     // Grab the real redeem script
     raw = stack.pop();
 
-    if (!Buffer.isBuffer(raw))
+    if (!Script.isPush(raw))
       return false;
 
     redeem = new Script(raw);
@@ -3395,7 +3699,7 @@ Script.verifyProgram = function verifyProgram(witness, output, flags, tx, i) {
   }
 
   for (j = 0; j &lt; stack.length; j++) {
-    if (stack.get(j).length > constants.script.maxSize)
+    if (stack.get(j).length > constants.script.MAX_SIZE)
       return false;
   }
 
@@ -3509,6 +3813,20 @@ Script.parseScript = function parseScript(buf) {
  * this will apply hidden `pushdata` properties
  * to each Buffer if the buffer was created from
  * a non-standard pushdata.
+ *
+ * This function does not do bounds checking
+ * on buffers because some jackass could do a
+ * direct push of 30 bytes with only 20 bytes
+ * after it. That script would be perfectly
+ * fine _until_ it is executed. There are
+ * output scripts on the blockchain that can
+ * never be redeemed due to this, but they are
+ * in valid blocks, therefore we cannot fail
+ * parsing them.
+ *
+ * Also note that this function uses reference
+ * Buffer slices. Larger buffer slices should
+ * _never_ be passed in here.
  * @param {Buffer} buf - Serialized script.
  * @returns {Array} Script code.
  */
@@ -3520,12 +3838,6 @@ Script.decode = function decode(buf) {
 
   assert(Buffer.isBuffer(buf));
 
-  // NOTE: We can't use a BufferReader here since
-  // script parsing was originally non-strict/ridiculous.
-  // Something could do a direct push of 30 bytes with
-  // only 20 bytes after it.
-  // NOTE 2: We use reference Buffer slices here. Larger
-  // buffer slices should _never_ be passed in here.
   while (off &lt; buf.length) {
     op = buf[off++];
     if (op >= 0x01 &amp;&amp; op &lt;= 0x4b) {
@@ -3589,8 +3901,8 @@ Script.decode = function decode(buf) {
  * @returns {Buffer} Serialized script.
  */
 
-Script.encode = function encode(code) {
-  var p = new BufferWriter();
+Script.encode = function encode(code, writer) {
+  var p = new BufferWriter(writer);
   var i = 0;
   var op;
 
@@ -3653,7 +3965,10 @@ Script.encode = function encode(code) {
     p.writeU8(op);
   }
 
-  return p.render();
+  if (!writer)
+    p = p.render();
+
+  return p;
 };
 
 /**
@@ -3729,7 +4044,7 @@ return Script;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 21:21:59 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Apr 17 2016 21:04:10 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

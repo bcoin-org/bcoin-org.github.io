@@ -117,63 +117,6 @@ function Mempool(options) {
 
 utils.inherits(Mempool, EventEmitter);
 
-/**
- * Standard verify flags.
- * @const {VerifyFlags}
- * @default
- */
-
-Mempool.flags = constants.flags.STANDARD_VERIFY_FLAGS;
-
-/**
- * Mandatory verify flags.
- * @const {VerifyFlags}
- * @default
- */
-
-Mempool.mandatory = constants.flags.MANDATORY_VERIFY_FLAGS;
-
-/**
- * Locktime flags.
- * @const {LockFlags}
- * @default
- */
-
-Mempool.lockFlags = constants.flags.STANDARD_LOCKTIME_FLAGS;
-
-/**
- * Ancestor limit.
- * @const {Number}
- * @default
- */
-
-Mempool.ANCESTOR_LIMIT = 25;
-
-/**
- * Maximum mempool size in bytes.
- * @const {Number}
- * @default
- */
-
-Mempool.MAX_MEMPOOL_SIZE = 300 &lt;&lt; 20;
-
-/**
- * The time at which transactions
- * fall out of the mempool.
- * @const {Number}
- * @default
- */
-
-Mempool.MEMPOOL_EXPIRY = 72 * 60 * 60;
-
-/**
- * Maximum number of orphan transactions.
- * @const {Number}
- * @default
- */
-
-Mempool.MAX_ORPHAN_TX = 100;
-
 Mempool.prototype._lock = function _lock(func, args, force) {
   return this.locker.lock(func, args, force);
 };
@@ -368,12 +311,12 @@ Mempool.prototype.removeBlock = function removeBlock(block, callback, force) {
 Mempool.prototype.limitMempoolSize = function limitMempoolSize(callback) {
   var self = this;
 
-  if (this.size &lt;= Mempool.MAX_MEMPOOL_SIZE)
+  if (this.size &lt;= constants.mempool.MAX_MEMPOOL_SIZE)
     return callback(null, true);
 
   this.tx.getRange({
     start: 0,
-    end: utils.now() - Mempool.MEMPOOL_EXPIRY
+    end: utils.now() - constants.mempool.MEMPOOL_EXPIRY
   }, function(err, txs) {
     if (err)
       return callback(err);
@@ -388,7 +331,7 @@ Mempool.prototype.limitMempoolSize = function limitMempoolSize(callback) {
         if (err)
           return callback(err);
 
-        return callback(self.size &lt;= Mempool.MAX_MEMPOOL_SIZE);
+        return callback(self.size &lt;= constants.mempool.MAX_MEMPOOL_SIZE);
       });
     });
   });
@@ -554,14 +497,17 @@ Mempool.prototype.hasTX = function hasTX(hash, callback) {
 
 Mempool.prototype.addTX = function addTX(tx, callback, force) {
   var self = this;
-  var flags = Mempool.flags;
-  var lockFlags = Mempool.lockFlags;
+  var flags = constants.flags.STANDARD_VERIFY_FLAGS;
+  var lockFlags = constants.flags.STANDARD_LOCKTIME_FLAGS;
   var ret = {};
   var now;
 
   var unlock = this._lock(addTX, [tx, callback], force);
   if (!unlock)
     return;
+
+  if (tx.mutable)
+    tx = tx.toTX();
 
   if (this.chain.segwitActive) {
     flags |= constants.flags.VERIFY_WITNESS;
@@ -589,17 +535,24 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
   if (tx.isCoinbase())
     return callback(new VerifyError(tx, 'invalid', 'coinbase', 100));
 
+  if (this.requireStandard) {
+    if (!tx.isStandard(flags, ret))
+      return callback(new VerifyError(tx, ret.reason, 0));
+
+    if (!this.chain.csvActive &amp;&amp; tx.version >= 2) {
+      return callback(new VerifyError(tx,
+        'nonstandard',
+        'premature-version2-tx',
+        0));
+    }
+  }
+
   this.chain.checkFinal(this.chain.tip, tx, lockFlags, function(err, isFinal) {
     if (err)
       return callback(err);
 
     if (!isFinal)
       return callback(new VerifyError(tx, 'nonstandard', 'non-final', 0));
-
-    if (self.requireStandard) {
-      if (!tx.isStandard(flags, ret))
-        return callback(new VerifyError(tx, ret.reason, 0));
-    }
 
     self.seenTX(tx, function(err, exists) {
       if (err)
@@ -628,7 +581,7 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
             return callback(err);
 
           if (!tx.hasCoins()) {
-            if (self.totalSize > Mempool.MAX_MEMPOOL_SIZE) {
+            if (self.totalSize > constants.mempool.MAX_MEMPOOL_SIZE) {
               return callback(new VerifyError(tx,
                 'insufficientfee',
                 'mempool full',
@@ -751,9 +704,9 @@ Mempool.prototype.removeUnchecked = function removeUnchecked(tx, callback) {
 Mempool.prototype.verify = function verify(tx, callback) {
   var self = this;
   var height = this.chain.height + 1;
-  var lockFlags = Mempool.lockFlags;
-  var flags = Mempool.flags;
-  var mandatory = Mempool.mandatory;
+  var lockFlags = constants.flags.STANDARD_LOCKTIME_FLAGS;
+  var flags = constants.flags.STANDARD_VERIFY_FLAGS;
+  var mandatory = constants.flags.MANDATORY_VERIFY_FLAGS;
   var ret = {};
   var fee, now, free, minFee;
 
@@ -781,7 +734,7 @@ Mempool.prototype.verify = function verify(tx, callback) {
         0));
     }
 
-    if (tx.getSigops(true) > constants.tx.maxSigops) {
+    if (tx.getSigops(true) > constants.tx.MAX_SIGOPS) {
       return callback(new VerifyError(tx,
         'nonstandard',
         'bad-txns-too-many-sigops',
@@ -836,7 +789,7 @@ Mempool.prototype.verify = function verify(tx, callback) {
       if (err)
         return callback(err);
 
-      if (count > Mempool.ANCESTOR_LIMIT) {
+      if (count > constants.mempool.ANCESTOR_LIMIT) {
         return callback(new VerifyError(tx,
           'nonstandard',
           'too-long-mempool-chain',
@@ -962,7 +915,7 @@ Mempool.prototype.storeOrphan = function storeOrphan(tx, callback, force) {
 
     batch.put('m/D/' + hash, tx.toExtended(true));
 
-    if (self.orphans > Mempool.MAX_ORPHAN_TX) {
+    if (self.orphans > constants.mempool.MAX_ORPHAN_TX) {
       return self.purgeOrphans(function(err) {
         if (err)
           return callback(err);
@@ -1320,10 +1273,10 @@ Mempool.prototype.checkLocks = function checkLocks(tx, flags, callback) {
   var tip = this.chain.tip;
 
   var index = new bcoin.chainblock(this.chain, {
-    hash: utils.toHex(constants.zeroHash),
+    hash: utils.toHex(constants.ZERO_HASH),
     version: tip.version,
     prevBlock: tip.hash,
-    merkleRoot: utils.toHex(constants.zeroHash),
+    merkleRoot: utils.toHex(constants.ZERO_HASH),
     ts: utils.now(),
     bits: 0,
     nonce: 0,
@@ -1600,7 +1553,7 @@ return Mempool;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 21:21:59 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Apr 17 2016 21:04:10 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

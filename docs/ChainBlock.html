@@ -647,7 +647,7 @@ advocate for IsSuperMajority and retargeting.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line444">line 444</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line491">line 491</a>
     </li></ul></dd>
     
 
@@ -819,7 +819,7 @@ advocate for IsSuperMajority and retargeting.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line400">line 400</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line447">line 447</a>
     </li></ul></dd>
     
 
@@ -968,7 +968,7 @@ advocate for IsSuperMajority and retargeting.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line469">line 469</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line516">line 516</a>
     </li></ul></dd>
     
 
@@ -2123,7 +2123,7 @@ adding proof to previous chainwork.</p>
 
 
 <div class="description">
-    <p>Get median time past asynchronously.</p>
+    <p>Get median time past asynchronously (see <a href="ChainBlock.html#getMedianTime">ChainBlock#getMedianTime</a>).</p>
 </div>
 
 
@@ -2216,7 +2216,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line358">line 358</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line310">line 310</a>
     </li></ul></dd>
     
 
@@ -2664,7 +2664,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line457">line 457</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line504">line 504</a>
     </li></ul></dd>
     
 
@@ -3067,7 +3067,179 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line312">line 312</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line328">line 328</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="isOutdatedAsync"><span class="type-signature"></span>isOutdatedAsync<span class="signature">(version, callback)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Check <a href="ChainBlock.html#isUpgraded">asynchronously</a>.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>version</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, Boolean].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line339">line 339</a>
     </li></ul></dd>
     
 
@@ -3262,7 +3434,202 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line335">line 335</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line379">line 379</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="isSuperMajorityAsync"><span class="type-signature"></span>isSuperMajorityAsync<span class="signature">(version, required, callback)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Calculate <a href="ChainBlock.html#isSuperMajority">asynchronously</a>.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>version</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>required</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, Boolean].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line405">line 405</a>
     </li></ul></dd>
     
 
@@ -3434,7 +3801,179 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line323">line 323</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line353">line 353</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="isUpgradedAsync"><span class="type-signature"></span>isUpgradedAsync<span class="signature">(version, callback)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Check <a href="ChainBlock.html#isUpgraded">ChainBlock#isUpgraded</a> asynchronously.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>version</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line364">line 364</a>
     </li></ul></dd>
     
 
@@ -3535,7 +4074,7 @@ suitable for JSON serialization.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line423">line 423</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line470">line 470</a>
     </li></ul></dd>
     
 
@@ -3635,7 +4174,7 @@ suitable for JSON serialization.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line378">line 378</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line425">line 425</a>
     </li></ul></dd>
     
 
@@ -3701,7 +4240,7 @@ suitable for JSON serialization.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 21:22:00 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Apr 17 2016 21:04:11 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

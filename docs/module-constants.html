@@ -56,6 +56,239 @@
 
         
             
+<h4 class="name" id=".BAN_SCORE"><span class="type-signature">(static, constant) </span>BAN_SCORE<span class="type-signature"> :Number</span></h4>
+
+
+
+
+<div class="description">
+    <p>Ban score threshold before ban is placed in effect.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Number</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>100</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line615">line 615</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".BAN_TIME"><span class="type-signature">(static, constant) </span>BAN_TIME<span class="type-signature"> :Number</span></h4>
+
+
+
+
+<div class="description">
+    <p>Amount of time to ban misbheaving peers.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Number</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line607">line 607</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".bip30"><span class="type-signature">(static, constant) </span>bip30<span class="type-signature"> :Object</span></h4>
+
+
+
+
+<div class="description">
+    <p>Map of historical blocks which create duplicate transactions hashes.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li class="object-value"><pre class="prettyprint"><code>{"undefined":"21d77ccb4c08386a04ac0196ae10f6a1d2c2a377558ca190f143070000000000"}</code></pre></li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line393">line 393</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki</a></li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
 <h4 class="name" id=".block"><span class="type-signature">(static) </span>block<span class="type-signature"> :Number</span></h4>
 
 
@@ -107,7 +340,7 @@
 
         <tr>
             
-                <td class="name"><code>maxSize</code></td>
+                <td class="name"><code>MAX_SIZE</code></td>
             
 
             <td class="type">
@@ -130,7 +363,7 @@
 
         <tr>
             
-                <td class="name"><code>maxSigops</code></td>
+                <td class="name"><code>MAX_SIGOPS</code></td>
             
 
             <td class="type">
@@ -153,7 +386,7 @@
 
         <tr>
             
-                <td class="name"><code>maxOrphanTx</code></td>
+                <td class="name"><code>MEDIAN_TIMESPAN</code></td>
             
 
             <td class="type">
@@ -176,7 +409,7 @@
 
         <tr>
             
-                <td class="name"><code>medianTimespan</code></td>
+                <td class="name"><code>BIP16_TIME</code></td>
             
 
             <td class="type">
@@ -199,30 +432,7 @@
 
         <tr>
             
-                <td class="name"><code>bip16time</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>sighashLimit</code></td>
+                <td class="name"><code>SIGHASH_LIMIT</code></td>
             
 
             <td class="type">
@@ -275,14 +485,14 @@
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li class="object-value"><pre class="prettyprint"><code>{"maxSize":1000000,"maxSigops":"","maxOrphanTx":"","medianTimespan":11,"bip16time":1333238400,"sighashLimit":1300000000}</code></pre></li>
+            <li class="object-value"><pre class="prettyprint"><code>{"MAX_SIZE":1000000,"MAX_SIGOPS":"","MEDIAN_TIMESPAN":11,"BIP16_TIME":1333238400,"SIGHASH_LIMIT":1300000000}</code></pre></li>
         </ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line315">line 315</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line378">line 378</a>
     </li></ul></dd>
     
 
@@ -300,7 +510,159 @@
 
         
             
-<h4 class="name" id=".cent"><span class="type-signature">(static, constant) </span>cent<span class="type-signature"> :<a href="global.html#BN">BN</a></span></h4>
+<h4 class="name" id=".bloom"><span class="type-signature">(static) </span>bloom<span class="type-signature"> :Number</span></h4>
+
+
+
+
+<div class="description">
+    <p>Bloom filter limits.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Number</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>MAX_BLOOM_FILTER_SIZE</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>MAX_HASH_FUNCS</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li class="object-value"><pre class="prettyprint"><code>{"MAX_BLOOM_FILTER_SIZE":36000,"MAX_HASH_FUNCS":50}</code></pre></li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line149">line 149</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".CENT"><span class="type-signature">(static, constant) </span>CENT<span class="type-signature"> :<a href="global.html#BN">BN</a></span></h4>
 
 
 
@@ -354,7 +716,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line279">line 279</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line323">line 323</a>
     </li></ul></dd>
     
 
@@ -372,7 +734,7 @@
 
         
             
-<h4 class="name" id=".coin"><span class="type-signature">(static, constant) </span>coin<span class="type-signature"> :<a href="global.html#BN">BN</a></span></h4>
+<h4 class="name" id=".COIN"><span class="type-signature">(static, constant) </span>COIN<span class="type-signature"> :<a href="global.html#BN">BN</a></span></h4>
 
 
 
@@ -426,7 +788,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line271">line 271</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line315">line 315</a>
     </li></ul></dd>
     
 
@@ -511,7 +873,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Transaction is in the main chain.</p></td>
         </tr>
 
     
@@ -534,7 +896,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Transaction is valid and in the mempool.</p></td>
         </tr>
 
     
@@ -557,7 +919,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Transaction is on a side chain.</p></td>
         </tr>
 
     
@@ -580,7 +942,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Transaction is double-spent.</p></td>
         </tr>
 
     
@@ -603,7 +965,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Transaction is not in the mempool or chain.</p></td>
         </tr>
 
     
@@ -647,7 +1009,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line598">line 598</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line733">line 733</a>
     </li></ul></dd>
     
 
@@ -716,7 +1078,7 @@
 
         <tr>
             
-                <td class="name"><code>none</code></td>
+                <td class="name"><code>NONE</code></td>
             
 
             <td class="type">
@@ -732,14 +1094,14 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Never update the filter with outpoints.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>all</code></td>
+                <td class="name"><code>ALL</code></td>
             
 
             <td class="type">
@@ -755,14 +1117,14 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Always update the filter with outpoints.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>pubkeyOnly</code></td>
+                <td class="name"><code>PUBKEY_ONLY</code></td>
             
 
             <td class="type">
@@ -778,7 +1140,8 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Only update the filter with outpoints if it is
+&quot;asymmetric&quot; in terms of addresses (pubkey/multisig).</p></td>
         </tr>
 
     
@@ -815,14 +1178,14 @@
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li class="object-value"><pre class="prettyprint"><code>{"none":0,"all":1,"pubkeyOnly":2}</code></pre></li>
+            <li class="object-value"><pre class="prettyprint"><code>{"NONE":0,"ALL":1,"PUBKEY_ONLY":2}</code></pre></li>
         </ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line104">line 104</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line122">line 122</a>
     </li></ul></dd>
     
 
@@ -894,7 +1257,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line115">line 115</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line159">line 159</a>
     </li></ul></dd>
     
 
@@ -1363,7 +1726,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line498">line 498</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line622">line 622</a>
     </li></ul></dd>
     
 
@@ -1432,7 +1795,7 @@
 
         <tr>
             
-                <td class="name"><code>all</code></td>
+                <td class="name"><code>ALL</code></td>
             
 
             <td class="type">
@@ -1448,14 +1811,14 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Sign all outputs.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>none</code></td>
+                <td class="name"><code>NONE</code></td>
             
 
             <td class="type">
@@ -1471,14 +1834,14 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Do not sign outputs (zero sequences).</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>single</code></td>
+                <td class="name"><code>SINGLE</code></td>
             
 
             <td class="type">
@@ -1494,14 +1857,14 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Sign output at the same index (zero sequences).</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>anyonecanpay</code></td>
+                <td class="name"><code>ANYONECANPAY</code></td>
             
 
             <td class="type">
@@ -1517,7 +1880,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Sign only the current input (mask).</p></td>
         </tr>
 
     
@@ -1554,14 +1917,14 @@
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li class="object-value"><pre class="prettyprint"><code>{"all":1,"none":2,"single":3,"anyonecanpay":128}</code></pre></li>
+            <li class="object-value"><pre class="prettyprint"><code>{"ALL":1,"NONE":2,"SINGLE":3,"ANYONECANPAY":128}</code></pre></li>
         </ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line295">line 295</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line339">line 339</a>
     </li></ul></dd>
     
 
@@ -1633,7 +1996,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line307">line 307</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line370">line 370</a>
     </li></ul></dd>
     
 
@@ -1703,14 +2066,14 @@
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li class="object-value"><pre class="prettyprint"><code>{"hardened":2147483648,"maxIndex":"","minEntropy":"","maxEntropy":"","parentFingerPrintSize":4,"pathRoots":""}</code></pre></li>
+            <li class="object-value"><pre class="prettyprint"><code>{"HARDENED":2147483648,"MAX_INDEX":"","MIN_ENTROPY":"","MAX_ENTROPY":"","PARENT_FINGERPRINT_SIZE":4,"PATH_ROOTS":""}</code></pre></li>
         </ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line395">line 395</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line502">line 502</a>
     </li></ul></dd>
     
 
@@ -1779,7 +2142,7 @@
 
         <tr>
             
-                <td class="name"><code>error</code></td>
+                <td class="name"><code>ERROR</code></td>
             
 
             <td class="type">
@@ -1802,7 +2165,7 @@
 
         <tr>
             
-                <td class="name"><code>tx</code></td>
+                <td class="name"><code>TX</code></td>
             
 
             <td class="type">
@@ -1825,7 +2188,7 @@
 
         <tr>
             
-                <td class="name"><code>block</code></td>
+                <td class="name"><code>BLOCK</code></td>
             
 
             <td class="type">
@@ -1848,7 +2211,7 @@
 
         <tr>
             
-                <td class="name"><code>filteredblock</code></td>
+                <td class="name"><code>FILTERED_BLOCK</code></td>
             
 
             <td class="type">
@@ -1871,7 +2234,7 @@
 
         <tr>
             
-                <td class="name"><code>witnesstx</code></td>
+                <td class="name"><code>WITNESS_TX</code></td>
             
 
             <td class="type">
@@ -1894,7 +2257,7 @@
 
         <tr>
             
-                <td class="name"><code>witnessblock</code></td>
+                <td class="name"><code>WITNESS_BLOCK</code></td>
             
 
             <td class="type">
@@ -1917,7 +2280,7 @@
 
         <tr>
             
-                <td class="name"><code>witnessfilteredblock</code></td>
+                <td class="name"><code>WITNESS_FILTERED_BLOCK</code></td>
             
 
             <td class="type">
@@ -1970,14 +2333,14 @@
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li class="object-value"><pre class="prettyprint"><code>{"error":0,"tx":1,"block":2,"filteredblock":3,"witnesstx":"","witnessblock":"","witnessfilteredblock":""}</code></pre></li>
+            <li class="object-value"><pre class="prettyprint"><code>{"ERROR":0,"TX":1,"BLOCK":2,"FILTERED_BLOCK":3,"WITNESS_TX":"","WITNESS_BLOCK":"","WITNESS_FILTERED_BLOCK":""}</code></pre></li>
         </ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line67">line 67</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line85">line 85</a>
     </li></ul></dd>
     
 
@@ -2049,7 +2412,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line88">line 88</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line106">line 106</a>
     </li></ul></dd>
     
 
@@ -2067,79 +2430,7 @@
 
         
             
-<h4 class="name" id=".invWitnessMask"><span class="type-signature">(static, constant) </span>invWitnessMask<span class="type-signature"> :Number</span></h4>
-
-
-
-
-<div class="description">
-    <p>Witness mask for inv types.</p>
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Number</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line96">line 96</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id=".localServices"><span class="type-signature">(static, constant) </span>localServices<span class="type-signature"> :Number</span></h4>
+<h4 class="name" id=".LOCAL_SERVICES"><span class="type-signature">(static, constant) </span>LOCAL_SERVICES<span class="type-signature"> :Number</span></h4>
 
 
 
@@ -2193,7 +2484,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line58">line 58</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line77">line 77</a>
     </li></ul></dd>
     
 
@@ -2211,7 +2502,7 @@
 
         
             
-<h4 class="name" id=".locktimeThreshold"><span class="type-signature">(static, constant) </span>locktimeThreshold<span class="type-signature"> :Number</span></h4>
+<h4 class="name" id=".LOCKTIME_THRESHOLD"><span class="type-signature">(static, constant) </span>LOCKTIME_THRESHOLD<span class="type-signature"> :Number</span></h4>
 
 
 
@@ -2272,7 +2563,7 @@ Tue Nov 5 00:53:20 1985 UTC</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line412">line 412</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line519">line 519</a>
     </li></ul></dd>
     
 
@@ -2290,7 +2581,7 @@ Tue Nov 5 00:53:20 1985 UTC</p>
 
         
             
-<h4 class="name" id=".maxMessage"><span class="type-signature">(static, constant) </span>maxMessage<span class="type-signature"> :Number</span></h4>
+<h4 class="name" id=".MAX_MESSAGE"><span class="type-signature">(static, constant) </span>MAX_MESSAGE<span class="type-signature"> :Number</span></h4>
 
 
 
@@ -2362,7 +2653,7 @@ Tue Nov 5 00:53:20 1985 UTC</p>
 
         
             
-<h4 class="name" id=".maxMoney"><span class="type-signature">(static, constant) </span>maxMoney<span class="type-signature"> :<a href="global.html#BN">BN</a></span></h4>
+<h4 class="name" id=".MAX_MONEY"><span class="type-signature">(static, constant) </span>MAX_MONEY<span class="type-signature"> :<a href="global.html#BN">BN</a></span></h4>
 
 
 
@@ -2416,7 +2707,7 @@ Tue Nov 5 00:53:20 1985 UTC</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line287">line 287</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line331">line 331</a>
     </li></ul></dd>
     
 
@@ -2434,7 +2725,206 @@ Tue Nov 5 00:53:20 1985 UTC</p>
 
         
             
-<h4 class="name" id=".minVersion"><span class="type-signature">(static, constant) </span>minVersion<span class="type-signature"> :Number</span></h4>
+<h4 class="name" id=".mempool"><span class="type-signature">(static) </span>mempool<span class="type-signature"> :Number</span></h4>
+
+
+
+
+<div class="description">
+    <p>Mempool-related constants.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Number</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ANCESTOR_LIMIT</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Ancestor limit.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>MAX_MEMPOOL_SIZE</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Maximum mempool size in bytes.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>MEMPOOL_EXPIRY</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The time at which transactions
+fall out of the mempool.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>MAX_ORPHAN_TX</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Maximum number of orphan transactions.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li class="object-value"><pre class="prettyprint"><code>{"ANCESTOR_LIMIT":25,"MAX_MEMPOOL_SIZE":"","MEMPOOL_EXPIRY":"","MAX_ORPHAN_TX":100}</code></pre></li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line439">line 439</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".MIN_VERSION"><span class="type-signature">(static, constant) </span>MIN_VERSION<span class="type-signature"> :Number</span></h4>
 
 
 
@@ -2511,7 +3001,7 @@ Tue Nov 5 00:53:20 1985 UTC</p>
 
         
             
-<h4 class="name" id=".nullHash"><span class="type-signature">(static, constant) </span>nullHash<span class="type-signature"> :String</span></h4>
+<h4 class="name" id=".NULL_HASH"><span class="type-signature">(static, constant) </span>NULL_HASH<span class="type-signature"> :String</span></h4>
 
 
 
@@ -2570,7 +3060,7 @@ Tue Nov 5 00:53:20 1985 UTC</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line471">line 471</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line582">line 582</a>
     </li></ul></dd>
     
 
@@ -2588,7 +3078,7 @@ Tue Nov 5 00:53:20 1985 UTC</p>
 
         
             
-<h4 class="name" id=".oneHash"><span class="type-signature">(static, constant) </span>oneHash<span class="type-signature"> :Buffer</span></h4>
+<h4 class="name" id=".ONE_HASH"><span class="type-signature">(static, constant) </span>ONE_HASH<span class="type-signature"> :Buffer</span></h4>
 
 
 
@@ -2643,7 +3133,7 @@ end (used for the SIGHASH_SINGLE bug).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line449">line 449</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line560">line 560</a>
     </li></ul></dd>
     
 
@@ -5486,7 +5976,7 @@ end (used for the SIGHASH_SINGLE bug).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line123">line 123</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line167">line 167</a>
     </li></ul></dd>
     
 
@@ -5558,7 +6048,7 @@ end (used for the SIGHASH_SINGLE bug).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line263">line 263</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line307">line 307</a>
     </li></ul></dd>
     
 
@@ -5628,7 +6118,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>malformed</code></td>
+                <td class="name"><code>MALFORMED</code></td>
             
 
             <td class="type">
@@ -5651,7 +6141,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>invalid</code></td>
+                <td class="name"><code>INVALID</code></td>
             
 
             <td class="type">
@@ -5674,7 +6164,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>obsolete</code></td>
+                <td class="name"><code>OBSOLETE</code></td>
             
 
             <td class="type">
@@ -5697,7 +6187,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>duplicate</code></td>
+                <td class="name"><code>DUPLICATE</code></td>
             
 
             <td class="type">
@@ -5720,7 +6210,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>nonstandard</code></td>
+                <td class="name"><code>NONSTANDARD</code></td>
             
 
             <td class="type">
@@ -5743,7 +6233,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>dust</code></td>
+                <td class="name"><code>DUST</code></td>
             
 
             <td class="type">
@@ -5766,7 +6256,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>insufficientfee</code></td>
+                <td class="name"><code>INSUFFICIENTFEE</code></td>
             
 
             <td class="type">
@@ -5789,7 +6279,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>checkpoint</code></td>
+                <td class="name"><code>CHECKPOINT</code></td>
             
 
             <td class="type">
@@ -5812,7 +6302,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>internal</code></td>
+                <td class="name"><code>INTERNAL</code></td>
             
 
             <td class="type">
@@ -5835,7 +6325,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>highfee</code></td>
+                <td class="name"><code>HIGHFEE</code></td>
             
 
             <td class="type">
@@ -5858,7 +6348,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>alreadyknown</code></td>
+                <td class="name"><code>ALREADYKNOWN</code></td>
             
 
             <td class="type">
@@ -5881,7 +6371,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>conflict</code></td>
+                <td class="name"><code>CONFLICT</code></td>
             
 
             <td class="type">
@@ -5934,14 +6424,14 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li class="object-value"><pre class="prettyprint"><code>{"malformed":1,"invalid":16,"obsolete":17,"duplicate":18,"nonstandard":64,"dust":65,"insufficientfee":66,"checkpoint":67,"internal":256,"highfee":256,"alreadyknown":257,"conflict":258}</code></pre></li>
+            <li class="object-value"><pre class="prettyprint"><code>{"MALFORMED":1,"INVALID":16,"OBSOLETE":17,"DUPLICATE":18,"NONSTANDARD":64,"DUST":65,"INSUFFICIENTFEE":66,"CHECKPOINT":67,"INTERNAL":256,"HIGHFEE":256,"ALREADYKNOWN":257,"CONFLICT":258}</code></pre></li>
         </ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line366">line 366</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line473">line 473</a>
     </li></ul></dd>
     
 
@@ -6013,7 +6503,7 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line387">line 387</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line494">line 494</a>
     </li></ul></dd>
     
 
@@ -6082,7 +6572,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>maxSize</code></td>
+                <td class="name"><code>MAX_SIZE</code></td>
             
 
             <td class="type">
@@ -6105,7 +6595,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>maxStack</code></td>
+                <td class="name"><code>MAX_STACK</code></td>
             
 
             <td class="type">
@@ -6128,7 +6618,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>maxPush</code></td>
+                <td class="name"><code>MAX_PUSH</code></td>
             
 
             <td class="type">
@@ -6151,7 +6641,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>maxOps</code></td>
+                <td class="name"><code>MAX_OPS</code></td>
             
 
             <td class="type">
@@ -6174,7 +6664,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>maxPubkeysPerMultisig</code></td>
+                <td class="name"><code>MAX_MULTISIG_PUBKEYS</code></td>
             
 
             <td class="type">
@@ -6197,7 +6687,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>maxScripthashSigops</code></td>
+                <td class="name"><code>MAX_SCRIPTHASH_SIGOPS</code></td>
             
 
             <td class="type">
@@ -6220,7 +6710,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>maxOpReturnBytes</code></td>
+                <td class="name"><code>MAX_OP_RETURN_BYTES</code></td>
             
 
             <td class="type">
@@ -6243,7 +6733,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>maxOpReturn</code></td>
+                <td class="name"><code>MAX_OP_RETURN</code></td>
             
 
             <td class="type">
@@ -6296,14 +6786,14 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li class="object-value"><pre class="prettyprint"><code>{"maxSize":10000,"maxStack":1000,"maxPush":520,"maxOps":201,"maxPubkeysPerMultisig":20,"maxScripthashSigops":15,"maxOpReturnBytes":83,"maxOpReturn":80}</code></pre></li>
+            <li class="object-value"><pre class="prettyprint"><code>{"MAX_SIZE":10000,"MAX_STACK":1000,"MAX_PUSH":520,"MAX_OPS":201,"MAX_MULTISIG_PUBKEYS":20,"MAX_SCRIPTHASH_SIGOPS":15,"MAX_OP_RETURN_BYTES":83,"MAX_OP_RETURN":80}</code></pre></li>
         </ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line348">line 348</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line422">line 422</a>
     </li></ul></dd>
     
 
@@ -6321,13 +6811,13 @@ are not meant for use on the p2p network.</p>
 
         
             
-<h4 class="name" id=".sequenceLocktimeDisableFlag"><span class="type-signature">(static, constant) </span>sequenceLocktimeDisableFlag<span class="type-signature"> :Number</span></h4>
+<h4 class="name" id=".sequence"><span class="type-signature">(static) </span>sequence<span class="type-signature"> :Number</span></h4>
 
 
 
 
 <div class="description">
-    <p>Highest nSequence bit (disables sequence locktimes).</p>
+    <p>Sequence locktime-related constants.</p>
 </div>
 
 
@@ -6346,70 +6836,123 @@ are not meant for use on the p2p network.</p>
 
 
 
-<dl class="details">
+    <h5 class="subsection-title">Properties:</h5>
 
     
 
-    
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line419">line 419</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
+        <th>Type</th>
 
         
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
             
-<h4 class="name" id=".sequenceLocktimeGranularity"><span class="type-signature">(static, constant) </span>sequenceLocktimeGranularity<span class="type-signature"> :Number</span></h4>
-
-
-
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
+                <td class="name"><code>DISABLE_FLAG</code></td>
             
+
+            <td class="type">
+            
+                
 <span class="param-type">Number</span>
 
 
-        </li>
-    </ul>
+            
+            </td>
 
+            
+
+            
+
+            <td class="description last"><p>Highest nSequence bit (disables sequence locktimes).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>TYPE_FLAG</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Type (height or time).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>GRANULARITY</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Sequence granularity.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>MASK</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Mask.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -6441,155 +6984,14 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li>9</li>
+            <li class="object-value"><pre class="prettyprint"><code>{"DISABLE_FLAG":"","TYPE_FLAG":"","GRANULARITY":9,"MASK":65535}</code></pre></li>
         </ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line433">line 433</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id=".sequenceLocktimeMask"><span class="type-signature">(static, constant) </span>sequenceLocktimeMask<span class="type-signature"> :Number</span></h4>
-
-
-
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Number</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-default">Default Value:</dt>
-    <dd class="tag-default"><ul class="dummy">
-            <li>65535</li>
-        </ul></dd>
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line440">line 440</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id=".sequenceLocktimeTypeFlag"><span class="type-signature">(static, constant) </span>sequenceLocktimeTypeFlag<span class="type-signature"> :Number</span></h4>
-
-
-
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Number</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line426">line 426</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line527">line 527</a>
     </li></ul></dd>
     
 
@@ -6658,7 +7060,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>network</code></td>
+                <td class="name"><code>NETWORK</code></td>
             
 
             <td class="type">
@@ -6674,14 +7076,14 @@ are not meant for use on the p2p network.</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Whether network services are enabled.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>getutxo</code></td>
+                <td class="name"><code>GETUTXO</code></td>
             
 
             <td class="type">
@@ -6697,14 +7099,14 @@ are not meant for use on the p2p network.</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Whether the peer supports the getutxos packet.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>bloom</code></td>
+                <td class="name"><code>BLOOM</code></td>
             
 
             <td class="type">
@@ -6720,14 +7122,14 @@ are not meant for use on the p2p network.</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Whether the peer supports BIP37.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>witness</code></td>
+                <td class="name"><code>WITNESS</code></td>
             
 
             <td class="type">
@@ -6743,7 +7145,7 @@ are not meant for use on the p2p network.</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Whether the peer supports segregated witness.</p></td>
         </tr>
 
     
@@ -6780,7 +7182,7 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li class="object-value"><pre class="prettyprint"><code>{"network":"","getutxo":"","bloom":"","witness":""}</code></pre></li>
+            <li class="object-value"><pre class="prettyprint"><code>{"NETWORK":"","GETUTXO":"","BLOOM":"","WITNESS":""}</code></pre></li>
         </ul></dd>
     
 
@@ -7008,7 +7410,7 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line584">line 584</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line719">line 719</a>
     </li></ul></dd>
     
 
@@ -7077,7 +7479,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>version</code></td>
+                <td class="name"><code>MAX_VERSION</code></td>
             
 
             <td class="type">
@@ -7100,7 +7502,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>maxSize</code></td>
+                <td class="name"><code>MAX_SIZE</code></td>
             
 
             <td class="type">
@@ -7123,7 +7525,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>minFee</code></td>
+                <td class="name"><code>MIN_FEE</code></td>
             
 
             <td class="type">
@@ -7146,7 +7548,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>bareMultisig</code></td>
+                <td class="name"><code>BARE_MULTISIG</code></td>
             
 
             <td class="type">
@@ -7169,7 +7571,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>freeThreshold</code></td>
+                <td class="name"><code>FREE_THRESHOLD</code></td>
             
 
             <td class="type">
@@ -7192,7 +7594,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>maxSigops</code></td>
+                <td class="name"><code>MAX_SIGOPS</code></td>
             
 
             <td class="type">
@@ -7215,7 +7617,7 @@ are not meant for use on the p2p network.</p>
 
         <tr>
             
-                <td class="name"><code>coinbaseMaturity</code></td>
+                <td class="name"><code>COINBASE_MATURITY</code></td>
             
 
             <td class="type">
@@ -7268,14 +7670,14 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li class="object-value"><pre class="prettyprint"><code>{"version":2,"maxSize":100000,"minFee":10000,"bareMultisig":true,"freeThreshold":"","maxSigops":"","coinbaseMaturity":100}</code></pre></li>
+            <li class="object-value"><pre class="prettyprint"><code>{"MAX_VERSION":2,"MAX_SIZE":100000,"MIN_FEE":10000,"BARE_MULTISIG":true,"FREE_THRESHOLD":"","MAX_SIGOPS":"","COINBASE_MATURITY":100}</code></pre></li>
         </ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line330">line 330</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line404">line 404</a>
     </li></ul></dd>
     
 
@@ -7293,7 +7695,7 @@ are not meant for use on the p2p network.</p>
 
         
             
-<h4 class="name" id=".userAgent"><span class="type-signature">(static, constant) </span>userAgent<span class="type-signature"> :String</span></h4>
+<h4 class="name" id=".USER_AGENT"><span class="type-signature">(static, constant) </span>USER_AGENT<span class="type-signature"> :String</span></h4>
 
 
 
@@ -7347,7 +7749,7 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line488">line 488</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line599">line 599</a>
     </li></ul></dd>
     
 
@@ -7365,7 +7767,7 @@ are not meant for use on the p2p network.</p>
 
         
             
-<h4 class="name" id=".userVersion"><span class="type-signature">(static, constant) </span>userVersion<span class="type-signature"> :String</span></h4>
+<h4 class="name" id=".USER_VERSION"><span class="type-signature">(static, constant) </span>USER_VERSION<span class="type-signature"> :String</span></h4>
 
 
 
@@ -7419,7 +7821,7 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line480">line 480</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line591">line 591</a>
     </li></ul></dd>
     
 
@@ -7437,7 +7839,7 @@ are not meant for use on the p2p network.</p>
 
         
             
-<h4 class="name" id=".version"><span class="type-signature">(static, constant) </span>version<span class="type-signature"> :Number</span></h4>
+<h4 class="name" id=".VERSION"><span class="type-signature">(static, constant) </span>VERSION<span class="type-signature"> :Number</span></h4>
 
 
 
@@ -7581,7 +7983,7 @@ are not meant for use on the p2p network.</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>What block version to use for new blocks (pre versionbits)</p></td>
         </tr>
 
     
@@ -7604,7 +8006,7 @@ are not meant for use on the p2p network.</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>What bits to set in version for versionbits blocks</p></td>
         </tr>
 
     
@@ -7627,7 +8029,7 @@ are not meant for use on the p2p network.</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>What bitmask determines whether versionbits is in use</p></td>
         </tr>
 
     
@@ -7671,7 +8073,7 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line569">line 569</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line693">line 693</a>
     </li></ul></dd>
     
 
@@ -7689,7 +8091,79 @@ are not meant for use on the p2p network.</p>
 
         
             
-<h4 class="name" id=".zeroHash"><span class="type-signature">(static, constant) </span>zeroHash<span class="type-signature"> :Buffer</span></h4>
+<h4 class="name" id=".WITNESS_MASK"><span class="type-signature">(static, constant) </span>WITNESS_MASK<span class="type-signature"> :Number</span></h4>
+
+
+
+
+<div class="description">
+    <p>Witness mask for inv types.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Number</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line114">line 114</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".ZERO_HASH"><span class="type-signature">(static, constant) </span>ZERO_HASH<span class="type-signature"> :Buffer</span></h4>
 
 
 
@@ -7743,7 +8217,7 @@ are not meant for use on the p2p network.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line460">line 460</a>
+        <a href="bcoin_protocol_constants.js.html">bcoin/protocol/constants.js</a>, <a href="bcoin_protocol_constants.js.html#line571">line 571</a>
     </li></ul></dd>
     
 
@@ -7783,7 +8257,7 @@ are not meant for use on the p2p network.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 21:22:00 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Apr 17 2016 21:04:12 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

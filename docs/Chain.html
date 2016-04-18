@@ -569,35 +569,6 @@ to the instantiated ChainDB.</p></td>
 
         <tr>
             
-                <td class="name"><code>lastUpdate</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
                 <td class="name"><code>tip</code></td>
             
 
@@ -659,6 +630,35 @@ to the instantiated ChainDB.</p></td>
         <tr>
             
                 <td class="name"><code>segwitActive</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>csvActive</code></td>
             
 
             <td class="type">
@@ -828,6 +828,183 @@ to the instantiated ChainDB.</p></td>
 
     
 
+    <h4 class="name" id="_checkDeployments"><span class="type-signature">(private) </span>_checkDeployments<span class="signature">(block, prev, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Check all deployments on a chain, ranging from p2sh to segwit.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>block</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="Block.html">Block</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>prev</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="ChainBlock.html">ChainBlock</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [<a href="VerifyError.html">VerifyError</a>, Object].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line590">line 590</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="_checkDuplicates"><span class="type-signature">(private) </span>_checkDuplicates<span class="signature">(block, prev, callback)</span><span class="type-signature"></span></h4>
 
     
@@ -835,9 +1012,9 @@ to the instantiated ChainDB.</p></td>
 
 
 <div class="description">
-    <p>Check block for duplicate txids in blockchain
-history (BIP30). Note that txids are only considered
-duplicate if they are not yet completely spent.</p>
+    <p>Determine whether to check block for duplicate txids in blockchain
+history (BIP30). If we're on a chain that has bip34 activated, we
+can skip this.</p>
 </div>
 
 
@@ -979,7 +1156,7 @@ duplicate if they are not yet completely spent.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line676">line 676</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line705">line 705</a>
     </li></ul></dd>
     
 
@@ -1193,7 +1370,7 @@ for historical data.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line728">line 728</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line789">line 789</a>
     </li></ul></dd>
     
 
@@ -1204,6 +1381,195 @@ for historical data.</p>
     <dd class="tag-see">
         <ul>
             <li><a href="TX.html#checkInputs">TX#checkInputs</a></li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="_findDuplicates"><span class="type-signature">(private) </span>_findDuplicates<span class="signature">(block, prev, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Check block for duplicate txids in blockchain
+history (BIP30). Note that txids are only considered
+duplicate if they are not yet completely spent.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>block</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="Block.html">Block</a></span>
+|
+
+<span class="param-type"><a href="MerkleBlock.html">MerkleBlock</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>prev</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="ChainBlock.html">ChainBlock</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [<a href="VerifyError.html">VerifyError</a>].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line743">line 743</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki</a></li>
         </ul>
     </dd>
     
@@ -1377,7 +1743,140 @@ for historical data.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line865">line 865</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line926">line 926</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="_getInitialState"><span class="type-signature">(private) </span>_getInitialState<span class="signature">(callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>A helper function to test whether segwit is active at any
+given time. Since segwit affects almost all of bitcoin, it
+is one deployment that needs to be checked frequently.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, Boolean].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2390">line 2390</a>
     </li></ul></dd>
     
 
@@ -1512,7 +2011,7 @@ to calculate it ourselves.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line277">line 277</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line285">line 285</a>
     </li></ul></dd>
     
 
@@ -1694,7 +2193,7 @@ is received.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line916">line 916</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line977">line 977</a>
     </li></ul></dd>
     
 
@@ -1900,7 +2399,7 @@ reorganize the chain (a higher fork).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1105">line 1105</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1166">line 1166</a>
     </li></ul></dd>
     
 
@@ -2083,7 +2582,7 @@ coinbase height, finality checks.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line477">line 477</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line472">line 472</a>
     </li></ul></dd>
     
 
@@ -2263,7 +2762,7 @@ coinbase height, finality checks.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line445">line 445</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line440">line 440</a>
     </li></ul></dd>
     
 
@@ -2423,7 +2922,7 @@ coinbase height, finality checks.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1253">line 1253</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1307">line 1307</a>
     </li></ul></dd>
     
 
@@ -2577,7 +3076,7 @@ coinbase height, finality checks.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1635">line 1635</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1696">line 1696</a>
     </li></ul></dd>
     
 
@@ -2778,7 +3277,7 @@ if it is present in the lock flags.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2391">line 2391</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2445">line 2445</a>
     </li></ul></dd>
     
 
@@ -2978,7 +3477,7 @@ if it is present in the lock flags.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2506">line 2506</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2555">line 2555</a>
     </li></ul></dd>
     
 
@@ -3109,7 +3608,7 @@ if it is present in the lock flags.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line258">line 258</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line266">line 266</a>
     </li></ul></dd>
     
 
@@ -3263,7 +3762,7 @@ if it is present in the lock flags.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2273">line 2273</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2351">line 2351</a>
     </li></ul></dd>
     
 
@@ -3427,7 +3926,7 @@ in side chains when they come in).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1045">line 1045</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1106">line 1106</a>
     </li></ul></dd>
     
 
@@ -3581,7 +4080,7 @@ in side chains when they come in).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1010">line 1010</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1071">line 1071</a>
     </li></ul></dd>
     
 
@@ -3781,7 +4280,7 @@ in side chains when they come in).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2480">line 2480</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2529">line 2529</a>
     </li></ul></dd>
     
 
@@ -3936,7 +4435,7 @@ hash of the latest known block).</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2108">line 2108</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2163">line 2163</a>
     </li></ul></dd>
     
 
@@ -4068,7 +4567,7 @@ hash of the latest known block).</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1991">line 1991</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2046">line 2046</a>
     </li></ul></dd>
     
 
@@ -4225,7 +4724,7 @@ hash of the latest known block).</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1736">line 1736</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1797">line 1797</a>
     </li></ul></dd>
     
 
@@ -4402,7 +4901,7 @@ hash of the latest known block).</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1818">line 1818</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1873">line 1873</a>
     </li></ul></dd>
     
 
@@ -4581,7 +5080,7 @@ non-existent hash, which is useful for headers-first locators.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1870">line 1870</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1925">line 1925</a>
     </li></ul></dd>
     
 
@@ -4782,7 +5281,7 @@ non-existent hash, which is useful for headers-first locators.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2421">line 2421</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2470">line 2470</a>
     </li></ul></dd>
     
 
@@ -4913,7 +5412,7 @@ non-existent hash, which is useful for headers-first locators.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1754">line 1754</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1815">line 1815</a>
     </li></ul></dd>
     
 
@@ -5070,7 +5569,7 @@ in * order to resolve the orphan root.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1961">line 1961</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2016">line 2016</a>
     </li></ul></dd>
     
 
@@ -5174,7 +5673,7 @@ in * order to resolve the orphan root.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1805">line 1805</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1860">line 1860</a>
     </li></ul></dd>
     
 
@@ -5373,7 +5872,7 @@ in * order to resolve the orphan root.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2137">line 2137</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2215">line 2215</a>
     </li></ul></dd>
     
 
@@ -5570,7 +6069,7 @@ have ancestors pre-allocated.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2031">line 2031</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2086">line 2086</a>
     </li></ul></dd>
     
 
@@ -5761,7 +6260,7 @@ have ancestors pre-allocated.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2005">line 2005</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2060">line 2060</a>
     </li></ul></dd>
     
 
@@ -5924,7 +6423,7 @@ have ancestors pre-allocated.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1619">line 1619</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1680">line 1680</a>
     </li></ul></dd>
     
 
@@ -6078,7 +6577,7 @@ have ancestors pre-allocated.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1693">line 1693</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1754">line 1754</a>
     </li></ul></dd>
     
 
@@ -6232,7 +6731,7 @@ have ancestors pre-allocated.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1711">line 1711</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1772">line 1772</a>
     </li></ul></dd>
     
 
@@ -6386,7 +6885,7 @@ have ancestors pre-allocated.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1721">line 1721</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1782">line 1782</a>
     </li></ul></dd>
     
 
@@ -6409,6 +6908,195 @@ have ancestors pre-allocated.</p>
 
 
 
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="isActive"><span class="type-signature"></span>isActive<span class="signature">(prev, id, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Check whether a versionbits deployment is active (BIP9: versionbits).</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>prev</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="ChainBlock.html">ChainBlock</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Previous chain entry.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Deployment id.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, Number].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2192">line 2192</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki</a></li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>chain.isActive(entry, 'witness', callback);</code></pre>
 
 
 
@@ -6468,7 +7156,7 @@ have ancestors pre-allocated.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1768">line 1768</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1829">line 1829</a>
     </li></ul></dd>
     
 
@@ -6570,7 +7258,7 @@ function.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1787">line 1787</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1841">line 1841</a>
     </li></ul></dd>
     
 
@@ -6618,139 +7306,6 @@ function.</p>
 </dl>
 
     
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="isSegwitActive"><span class="type-signature"></span>isSegwitActive<span class="signature">(callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>A helper function to test whether segwit is active at any
-given time. Since segwit affects almost all of bitcoin, it
-is one deployment that needs to be checked frequently.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, Boolean].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2311">line 2311</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6860,7 +7415,7 @@ all of the blocks in its queue).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1243">line 1243</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1297">line 1297</a>
     </li></ul></dd>
     
 
@@ -6991,7 +7546,7 @@ all of the blocks in its queue).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line245">line 245</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line253">line 253</a>
     </li></ul></dd>
     
 
@@ -7074,7 +7629,7 @@ coinbase height (likely to be the peer's tip).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1557">line 1557</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1618">line 1618</a>
     </li></ul></dd>
     
 
@@ -7156,7 +7711,7 @@ coinbase height (likely to be the peer's tip).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1544">line 1544</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1605">line 1605</a>
     </li></ul></dd>
     
 
@@ -7241,7 +7796,7 @@ if more than 500mb of pending blocks are in the queue.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1609">line 1609</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1670">line 1670</a>
     </li></ul></dd>
     
 
@@ -7397,7 +7952,7 @@ for SPV.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1186">line 1186</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1240">line 1240</a>
     </li></ul></dd>
     
 
@@ -7553,7 +8108,7 @@ download for SPV.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1217">line 1217</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line1271">line 1271</a>
     </li></ul></dd>
     
 
@@ -7708,7 +8263,7 @@ hits a retarget diff interval.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2076">line 2076</a>
+        <a href="bcoin_chain.js.html">bcoin/chain.js</a>, <a href="bcoin_chain.js.html#line2131">line 2131</a>
     </li></ul></dd>
     
 
@@ -7778,7 +8333,7 @@ hits a retarget diff interval.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 21:22:00 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Apr 17 2016 21:04:11 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

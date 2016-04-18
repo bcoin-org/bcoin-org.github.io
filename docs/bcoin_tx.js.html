@@ -110,12 +110,12 @@ function TX(data, block, index) {
 
   if (data.inputs) {
     for (i = 0; i &lt; data.inputs.length; i++)
-      this.inputs.push(new bcoin.input(data.inputs[i], this));
+      this.inputs.push(new bcoin.input(data.inputs[i]));
   }
 
   if (data.outputs) {
     for (i = 0; i &lt; data.outputs.length; i++)
-      this.outputs.push(new bcoin.output(data.outputs[i], this));
+      this.outputs.push(new bcoin.output(data.outputs[i]));
   }
 
   if (block &amp;&amp; this.ts === 0) {
@@ -230,8 +230,8 @@ TX.prototype.hash = function hash(enc) {
 TX.prototype.witnessHash = function witnessHash(enc) {
   if (this.isCoinbase()) {
     return enc === 'hex'
-      ? utils.toHex(constants.zeroHash)
-      : utils.slice(constants.zeroHash);
+      ? utils.toHex(constants.ZERO_HASH)
+      : utils.slice(constants.ZERO_HASH);
   }
 
   if (!this.hasWitness())
@@ -387,7 +387,7 @@ TX.prototype.signatureHashV0 = function signatureHashV0(index, prev, type) {
     index = this.inputs.indexOf(index);
 
   if (typeof type === 'string')
-    type = constants.hashType[type];
+    type = constants.hashType[type.toUpperCase()];
 
   assert(index >= 0 &amp;&amp; index &lt; this.inputs.length);
   assert(prev instanceof Script);
@@ -423,7 +423,7 @@ TX.prototype.signatureHashV0 = function signatureHashV0(index, prev, type) {
   // Set our input to previous output's script
   copy.inputs[index].script = prev;
 
-  if ((type &amp; 0x1f) === constants.hashType.none) {
+  if ((type &amp; 0x1f) === constants.hashType.NONE) {
     // Drop all outputs. We don't want to sign them.
     copy.outputs.length = 0;
 
@@ -432,11 +432,11 @@ TX.prototype.signatureHashV0 = function signatureHashV0(index, prev, type) {
       if (i !== index)
         copy.inputs[i].sequence = 0;
     }
-  } else if ((type &amp; 0x1f) === constants.hashType.single) {
+  } else if ((type &amp; 0x1f) === constants.hashType.SINGLE) {
     // Bitcoind used to return 1 as an error code:
     // it ended up being treated like a hash.
     if (index >= copy.outputs.length)
-      return utils.slice(constants.oneHash);
+      return utils.slice(constants.ONE_HASH);
 
     // Drop all the outputs after the input index.
     copy.outputs.length = index + 1;
@@ -457,7 +457,7 @@ TX.prototype.signatureHashV0 = function signatureHashV0(index, prev, type) {
   }
 
   // Only sign our input. Allows anyone to add inputs.
-  if (type &amp; constants.hashType.anyonecanpay) {
+  if (type &amp; constants.hashType.ANYONECANPAY) {
     copy.inputs[0] = copy.inputs[index];
     copy.inputs.length = 1;
   }
@@ -477,12 +477,12 @@ TX.prototype.signatureHashV1 = function signatureHashV1(index, prev, type) {
     index = this.inputs.indexOf(index);
 
   if (typeof type === 'string')
-    type = constants.hashType[type];
+    type = constants.hashType[type.toUpperCase()];
 
   assert(index >= 0 &amp;&amp; index &lt; this.inputs.length);
   assert(prev instanceof Script);
 
-  if (!(type &amp; constants.hashType.anyonecanpay)) {
+  if (!(type &amp; constants.hashType.ANYONECANPAY)) {
     hashPrevouts = new BufferWriter();
     for (i = 0; i &lt; this.inputs.length; i++) {
       prevout = this.inputs[i].prevout;
@@ -491,31 +491,31 @@ TX.prototype.signatureHashV1 = function signatureHashV1(index, prev, type) {
     }
     hashPrevouts = utils.dsha256(hashPrevouts.render());
   } else {
-    hashPrevouts = utils.slice(constants.zeroHash);
+    hashPrevouts = utils.slice(constants.ZERO_HASH);
   }
 
-  if (!(type &amp; constants.hashType.anyonecanpay)
-      &amp;&amp; (type &amp; 0x1f) !== constants.hashType.single
-      &amp;&amp; (type &amp; 0x1f) !== constants.hashType.none) {
+  if (!(type &amp; constants.hashType.ANYONECANPAY)
+      &amp;&amp; (type &amp; 0x1f) !== constants.hashType.SINGLE
+      &amp;&amp; (type &amp; 0x1f) !== constants.hashType.NONE) {
     hashSequence = new BufferWriter();
     for (i = 0; i &lt; this.inputs.length; i++)
       hashSequence.writeU32(this.inputs[i].sequence);
     hashSequence = utils.dsha256(hashSequence.render());
   } else {
-    hashSequence = utils.slice(constants.zeroHash);
+    hashSequence = utils.slice(constants.ZERO_HASH);
   }
 
-  if ((type &amp; 0x1f) !== constants.hashType.single
-      &amp;&amp; (type &amp; 0x1f) !== constants.hashType.none) {
+  if ((type &amp; 0x1f) !== constants.hashType.SINGLE
+      &amp;&amp; (type &amp; 0x1f) !== constants.hashType.NONE) {
     hashOutputs = new BufferWriter();
     for (i = 0; i &lt; this.outputs.length; i++)
       bcoin.protocol.framer.output(this.outputs[i], hashOutputs);
     hashOutputs = utils.dsha256(hashOutputs.render());
-  } else if ((type &amp; 0x1f) === constants.hashType.single &amp;&amp; index &lt; this.outputs.length) {
+  } else if ((type &amp; 0x1f) === constants.hashType.SINGLE &amp;&amp; index &lt; this.outputs.length) {
     hashOutputs = bcoin.protocol.framer.output(this.outputs[index]);
     hashOutputs = utils.dsha256(hashOutputs);
   } else {
-    hashOutputs = utils.slice(constants.zeroHash);
+    hashOutputs = utils.slice(constants.ZERO_HASH);
   }
 
   p.write32(this.version);
@@ -623,7 +623,7 @@ TX.prototype.verifyAsync = function verifyAsync(index, force, flags, callback) {
 
 TX.prototype.isCoinbase = function isCoinbase() {
   return this.inputs.length === 1
-    &amp;&amp; this.inputs[0].prevout.hash === constants.nullHash;
+    &amp;&amp; this.inputs[0].prevout.hash === constants.NULL_HASH;
 };
 
 /**
@@ -883,7 +883,7 @@ TX.prototype.fillCoins = function fillCoins(coins) {
  */
 
 TX.prototype.isFinal = function isFinal(height, ts) {
-  var threshold = constants.locktimeThreshold;
+  var threshold = constants.LOCKTIME_THRESHOLD;
   var i;
 
   if (this.locktime === 0)
@@ -1008,7 +1008,7 @@ TX.prototype.isSane = function isSane(ret) {
     return false;
   }
 
-  if (this.getVirtualSize() > constants.block.maxSize) {
+  if (this.getVirtualSize() > constants.block.MAX_SIZE) {
     ret.reason = 'bad-txns-oversize';
     ret.score = 100;
     return false;
@@ -1023,7 +1023,7 @@ TX.prototype.isSane = function isSane(ret) {
       return false;
     }
 
-    if (output.value.cmp(constants.maxMoney) > 0) {
+    if (output.value.cmp(constants.MAX_MONEY) > 0) {
       ret.reason = 'bad-txns-vout-toolarge';
       ret.score = 100;
       return false;
@@ -1031,7 +1031,7 @@ TX.prototype.isSane = function isSane(ret) {
 
     total.iadd(output.value);
 
-    if (total.cmpn(0) &lt; 0 || total.cmp(constants.maxMoney) > 0) {
+    if (total.cmpn(0) &lt; 0 || total.cmp(constants.MAX_MONEY) > 0) {
       ret.reason = 'bad-txns-txouttotal-toolarge';
       ret.score = 100;
       return false;
@@ -1059,7 +1059,7 @@ TX.prototype.isSane = function isSane(ret) {
   } else {
     for (i = 0; i &lt; this.inputs.length; i++) {
       input = this.inputs[i];
-      if (input.prevout.hash === constants.nullHash
+      if (input.prevout.hash === constants.NULL_HASH
           &amp;&amp; input.prevout.index === 0xffffffff) {
         ret.reason = 'bad-txns-prevout-null';
         ret.score = 10;
@@ -1093,12 +1093,12 @@ TX.prototype.isStandard = function isStandard(flags, ret) {
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
 
-  if (this.version &lt; 1 || this.version > constants.tx.version) {
+  if (this.version &lt; 1 || this.version > constants.tx.MAX_VERSION) {
     ret.reason = 'version';
     return false;
   }
 
-  if (this.getVirtualSize() > constants.tx.maxSize) {
+  if (this.getVirtualSize() > constants.tx.MAX_SIZE) {
     ret.reason = 'tx-size';
     return false;
   }
@@ -1132,12 +1132,12 @@ TX.prototype.isStandard = function isStandard(flags, ret) {
       continue;
     }
 
-    if (output.script.isMultisig() &amp;&amp; !constants.tx.bareMultisig) {
+    if (output.script.isMultisig() &amp;&amp; !constants.tx.BARE_MULTISIG) {
       ret.reason = 'bare-multisig';
       return false;
     }
 
-    if (output.value.cmpn(constants.tx.dustThreshold) &lt; 0) {
+    if (output.value.cmpn(constants.tx.DUST_THRESHOLD) &lt; 0) {
       ret.reason = 'dust';
       return false;
     }
@@ -1160,7 +1160,7 @@ TX.prototype.isStandard = function isStandard(flags, ret) {
  */
 
 TX.prototype.hasStandardInputs = function hasStandardInputs(flags) {
-  var maxSigops = constants.script.maxScripthashSigops;
+  var maxSigops = constants.script.MAX_SCRIPTHASH_SIGOPS;
   var VERIFY_NONE = constants.flags.VERIFY_NONE;
   var i, input, stack, res, redeem;
 
@@ -1236,14 +1236,14 @@ TX.prototype.checkInputs = function checkInputs(spendHeight, ret) {
     coin = input.coin;
 
     if (coin.coinbase) {
-      if (spendHeight - coin.height &lt; constants.tx.coinbaseMaturity) {
+      if (spendHeight - coin.height &lt; constants.tx.COINBASE_MATURITY) {
         ret.reason = 'bad-txns-premature-spend-of-coinbase';
         ret.score = 0;
         return false;
       }
     }
 
-    if (coin.value.cmpn(0) &lt; 0 || coin.value.cmp(constants.maxMoney) > 0) {
+    if (coin.value.cmpn(0) &lt; 0 || coin.value.cmp(constants.MAX_MONEY) > 0) {
       ret.reason = 'bad-txns-inputvalues-outofrange';
       ret.score = 100;
       return false;
@@ -1252,7 +1252,7 @@ TX.prototype.checkInputs = function checkInputs(spendHeight, ret) {
     total.iadd(coin.value);
   }
 
-  if (total.cmpn(0) &lt; 0 || total.cmp(constants.maxMoney) > 0) {
+  if (total.cmpn(0) &lt; 0 || total.cmp(constants.MAX_MONEY) > 0) {
     ret.reason = 'bad-txns-inputvalues-outofrange';
     ret.score = 100;
     return false;
@@ -1274,7 +1274,7 @@ TX.prototype.checkInputs = function checkInputs(spendHeight, ret) {
     return false;
   }
 
-  if (fee.cmp(constants.maxMoney) > 0) {
+  if (fee.cmp(constants.MAX_MONEY) > 0) {
     ret.reason = 'bad-txns-fee-outofrange';
     ret.score = 100;
     return false;
@@ -1385,7 +1385,7 @@ TX.prototype.isFree = function isFree(height, size) {
 
   priority = this.getPriority(height, size);
 
-  return priority.cmp(constants.tx.freeThreshold) > 0;
+  return priority.cmp(constants.tx.FREE_THRESHOLD) > 0;
 };
 
 /**
@@ -1402,10 +1402,10 @@ TX.prototype.getMinFee = function getMinFee(size) {
   if (size == null)
     size = this.maxSize();
 
-  fee = new bn(constants.tx.minFee).muln(size).divn(1000);
+  fee = new bn(constants.tx.MIN_FEE).muln(size).divn(1000);
 
-  if (fee.cmpn(0) === 0 &amp;&amp; constants.tx.minFee > 0)
-    fee = new bn(constants.tx.minFee);
+  if (fee.cmpn(0) === 0 &amp;&amp; constants.tx.MIN_FEE > 0)
+    fee = new bn(constants.tx.MIN_FEE);
 
   return fee;
 };
@@ -1425,10 +1425,10 @@ TX.prototype.getMaxFee = function getMaxFee(size) {
   if (size == null)
     size = this.maxSize();
 
-  fee = new bn(constants.tx.minFee).muln(Math.ceil(size / 1000));
+  fee = new bn(constants.tx.MIN_FEE).muln(Math.ceil(size / 1000));
 
-  if (fee.cmpn(0) === 0 &amp;&amp; constants.tx.minFee > 0)
-    fee = new bn(constants.tx.minFee);
+  if (fee.cmpn(0) === 0 &amp;&amp; constants.tx.MIN_FEE > 0)
+    fee = new bn(constants.tx.MIN_FEE);
 
   return fee;
 };
@@ -1514,10 +1514,10 @@ TX.prototype.isWatched = function isWatched(bloom) {
     output = this.outputs[i];
     // Test the output script
     if (testScript(output.script.code)) {
-      if (bloom.update === 'all') {
+      if (bloom.update === constants.filterFlags.ALL) {
         outpoint = bcoin.protocol.framer.outpoint(this.hash(), i);
         bloom.add(outpoint);
-      } else if (bloom.update === 'pubkeyOnly') {
+      } else if (bloom.update === constants.filterFlags.PUBKEY_ONLY) {
         if (output.script.isPubkey() || output.script.isMultisig()) {
           outpoint = bcoin.protocol.framer.outpoint(this.hash(), i);
           bloom.add(outpoint);
@@ -1746,7 +1746,7 @@ TX.prototype.toExtended = function toExtended(saveCoins) {
 
   bcoin.protocol.framer.renderTX(this, true, p);
   p.writeU32(height);
-  p.writeHash(this.block || constants.zeroHash);
+  p.writeHash(this.block || constants.ZERO_HASH);
   p.writeU32(index);
   p.writeU32(this.ts);
   p.writeU32(this.ps);
@@ -1792,7 +1792,7 @@ TX._fromExtended = function _fromExtended(buf, saveCoins) {
   tx.ps = p.readU32();
   // tx.changeIndex = p.readU32();
 
-  if (tx.block === constants.nullHash)
+  if (tx.block === constants.NULL_HASH)
     tx.block = null;
 
   if (tx.height === 0x7fffffff)
@@ -1875,7 +1875,7 @@ return TX;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 16 2016 21:21:59 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Apr 17 2016 21:04:10 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
