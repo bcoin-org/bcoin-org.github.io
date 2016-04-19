@@ -340,6 +340,201 @@ be changed in the future.</p></td>
 
     
 
+    <h4 class="name" id=".fromRaw"><span class="type-signature">(static) </span>fromRaw<span class="signature">(data, enc<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="Witness.html">Witness</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Create a Witness from a serialized buffer.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+|
+
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Serialized witness.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>enc</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Either <code>&quot;hex&quot;</code> or <code>null</code>.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line235">line 235</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="Witness.html">Witness</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id=".fromString"><span class="type-signature">(static) </span>fromString<span class="signature">(items)</span><span class="type-signature"> &rarr; {<a href="Witness.html">Witness</a>}</span></h4>
 
     
@@ -443,7 +638,7 @@ opcodes).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line209">line 209</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line249">line 249</a>
     </li></ul></dd>
     
 
@@ -606,7 +801,7 @@ opcodes as strings representing their symbolic name.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line310">line 310</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line350">line 350</a>
     </li></ul></dd>
     
 
@@ -778,7 +973,7 @@ opcodes).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line278">line 278</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line318">line 318</a>
     </li></ul></dd>
     
 
@@ -939,7 +1134,7 @@ opcodes).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line349">line 349</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line389">line 389</a>
     </li></ul></dd>
     
 
@@ -974,6 +1169,205 @@ opcodes).</p>
     <dd>
         
 <span class="param-type">Boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".parseRaw"><span class="type-signature">(static) </span>parseRaw<span class="signature">(data, enc<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Create a witness from a serialized buffer.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+|
+
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Serialized witness.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>enc</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Either <code>&quot;hex&quot;</code> or <code>null</code>.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line221">line 221</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Naked witness object.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
 
 
     </dd>
@@ -1042,7 +1436,7 @@ to be altering the stack items by hand.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line85">line 85</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line87">line 87</a>
     </li></ul></dd>
     
 
@@ -1147,7 +1541,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line116">line 116</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line118">line 118</a>
     </li></ul></dd>
     
 
@@ -1251,7 +1645,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line106">line 106</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line108">line 108</a>
     </li></ul></dd>
     
 
@@ -1351,7 +1745,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line179">line 179</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line181">line 181</a>
     </li></ul></dd>
     
 
@@ -1504,7 +1898,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line195">line 195</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line197">line 197</a>
     </li></ul></dd>
     
 
@@ -1608,7 +2002,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line73">line 73</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line75">line 75</a>
     </li></ul></dd>
     
 
@@ -1713,7 +2107,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line150">line 150</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line152">line 152</a>
     </li></ul></dd>
     
 
@@ -1814,7 +2208,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line140">line 140</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line142">line 142</a>
     </li></ul></dd>
     
 
@@ -1915,7 +2309,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line130">line 130</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line132">line 132</a>
     </li></ul></dd>
     
 
@@ -2016,7 +2410,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line160">line 160</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line162">line 162</a>
     </li></ul></dd>
     
 
@@ -2117,7 +2511,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line170">line 170</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line172">line 172</a>
     </li></ul></dd>
     
 
@@ -2152,6 +2546,162 @@ This method is not 100% reliable.</p>
     <dd>
         
 <span class="param-type">Boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="toRaw"><span class="type-signature"></span>toRaw<span class="signature">(enc)</span><span class="type-signature"> &rarr; {Buffer|String}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Encode the witness to a Buffer.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>enc</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Encoding, either <code>'hex'</code> or <code>null</code>.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line207">line 207</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Serialized script.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+|
+
+<span class="param-type">String</span>
 
 
     </dd>
@@ -2219,7 +2769,7 @@ a witness program.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line96">line 96</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line98">line 98</a>
     </li></ul></dd>
     
 
@@ -2285,7 +2835,7 @@ a witness program.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Apr 19 2016 10:51:59 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Apr 19 2016 12:03:05 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
