@@ -43,7 +43,7 @@ var BufferWriter = require('./writer');
 var opcodes = constants.opcodes;
 var STACK_TRUE = new Buffer([1]);
 var STACK_FALSE = new Buffer([]);
-var STACK_NEGATE = new Buffer([0xff]);
+var STACK_NEGATE = new Buffer([0x81]);
 
 /**
  * A big number (bn.js)
@@ -445,6 +445,8 @@ Stack.prototype.slice = function slice(start, end) {
  */
 
 Stack.prototype.splice = function splice(i, remove, insert) {
+  if (insert === undefined)
+    return this.items.splice(i, remove);
   return this.items.splice(i, remove, insert);
 };
 
@@ -638,10 +640,10 @@ Stack.prototype._pickroll = function pickroll(op, flags) {
   val = this.pop();
   n = Script.num(val, flags).toNumber();
 
-  if (n &lt;= 0 || n > this.length)
+  if (n &lt; 0 || n >= this.length)
     throw new ScriptError('Bad value.', op);
 
-  val = this.get(-n - 1);
+  val = this.top(-n - 1);
 
   if (op === opcodes.OP_ROLL)
     this.splice(this.length - n - 1, 1);
@@ -967,8 +969,8 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
   var op, val, v1, v2, v3;
   var n, n1, n2, n3;
   var res, key, sig, type, subscript, hash;
-  var keys, i, j, m;
-  var succ, locktime;
+  var keys, i, j, m, ikey, isig;
+  var locktime;
 
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
@@ -1208,10 +1210,10 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         n = Script.num(stack.pop(), flags);
         switch (op) {
           case opcodes.OP_1ADD:
-            n.iadd(1);
+            n.iaddn(1);
             break;
           case opcodes.OP_1SUB:
-            n.isub(1);
+            n.isubn(1);
             break;
           case opcodes.OP_2MUL:
             n.iushln(1);
@@ -1257,7 +1259,8 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       case opcodes.OP_LESSTHANOREQUAL:
       case opcodes.OP_GREATERTHANOREQUAL:
       case opcodes.OP_MIN:
-      case opcodes.OP_MAX: {
+      case opcodes.OP_MAX:
+      case opcodes.OP_WITHIN: {
         switch (op) {
           case opcodes.OP_ADD:
           case opcodes.OP_SUB:
@@ -1346,10 +1349,9 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
             }
             if (typeof n === 'boolean')
               n = new bn(n ? 1 : 0);
-            res = Script.bool(n);
             if (op === opcodes.OP_NUMEQUALVERIFY) {
-              if (!res)
-                return false;
+              if (!Script.bool(n))
+                throw new ScriptError('Verify failed.', op, ip);
             } else {
               stack.push(Script.array(n));
             }
@@ -1405,7 +1407,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       case opcodes.OP_EQUAL: {
         if (stack.length &lt; 2)
           throw new ScriptError('Stack too small.', op, ip);
-        res = utils.isEqual(stack.pop(), stack.pop());
+        res = utils.equals(stack.pop(), stack.pop());
         if (op === opcodes.OP_EQUALVERIFY) {
           if (!res)
             throw new ScriptError('Equal verification failed.', op, ip);
@@ -1425,6 +1427,10 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         key = stack.pop();
         sig = stack.pop();
 
+        subscript = this.getSubscript(lastSep);
+        if (version === 0)
+          subscript.removeData(sig);
+
         if (!Script.isValidKey(key, flags))
           throw new ScriptError('Key is not valid.', op, ip);
 
@@ -1432,10 +1438,6 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
           throw new ScriptError('Signature is not valid.', op, ip);
 
         type = sig[sig.length - 1];
-
-        subscript = this.getSubscript(lastSep);
-        if (version === 0)
-          subscript.removeData(sig);
 
         hash = tx.signatureHash(index, subscript, type, version);
 
@@ -1454,73 +1456,85 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         if (!tx)
           throw new ScriptError('No TX passed in.', op, ip);
 
-        if (stack.length &lt; 4)
+        i = 1;
+        if (stack.length &lt; i)
           throw new ScriptError('Stack too small.', op, ip);
 
-        n = Script.num(stack.pop(), flags).toNumber();
+        n = Script.num(stack.top(-i), flags).toNumber();
 
-        if (!(n >= 1 &amp;&amp; n &lt;= constants.script.MAX_MULTISIG_PUBKEYS))
+        if (!(n >= 0 &amp;&amp; n &lt;= constants.script.MAX_MULTISIG_PUBKEYS))
           throw new ScriptError('`n` is out of bounds.', op, ip);
 
-        if (stack.length &lt; n + 1)
+        opCount += n;
+
+        if (opCount > constants.script.MAX_OPS)
+          throw new ScriptError('Too many ops.', op, ip);
+
+        i++;
+        ikey = i;
+        i += n;
+
+        if (stack.length &lt; i)
           throw new ScriptError('`n` exceeds stack size.', op, ip);
 
-        keys = [];
-        for (i = 0; i &lt; n; i++) {
-          key = stack.pop();
+        m = Script.num(stack.top(-i), flags).toNumber();
 
-          if (!Script.isValidKey(key, flags))
-            throw new ScriptError('Key is not valid.', op, ip);
-
-          keys.push(key);
-        }
-
-        m = Script.num(stack.pop(), flags).toNumber();
-
-        if (!(m >= 1 &amp;&amp; m &lt;= n))
+        if (!(m >= 0 &amp;&amp; m &lt;= n))
           throw new ScriptError('`m` is out of bounds.', op, ip);
 
-        if (stack.length &lt; m)
+        i++;
+        isig = i;
+        i += m;
+
+        if (stack.length &lt; i)
           throw new ScriptError('`m` exceeds stack size.', op, ip);
 
         subscript = this.getSubscript(lastSep);
 
-        for (i = 0; i &lt; m; i++) {
-          sig = stack.get(stack.length - 1 - i);
+        for (j = 0; j &lt; m; j++) {
+          sig = stack.top(-isig - j);
           if (version === 0)
             subscript.removeData(sig);
         }
 
-        succ = 0;
-        for (i = 0, j = 0; i &lt; m; i++) {
-          sig = stack.pop();
+        res = true;
+        while (res &amp;&amp; m > 0) {
+          sig = stack.top(-isig);
+          key = stack.top(-ikey);
 
           if (!Script.isValidSignature(sig, flags))
             throw new ScriptError('Signature is not valid.', op, ip);
 
-          type = sig[sig.length - 1];
+          if (!Script.isValidKey(key, flags))
+            throw new ScriptError('Key is not valid.', op, ip);
 
+          type = sig[sig.length - 1];
           hash = tx.signatureHash(index, subscript, type, version);
 
-          res = false;
-          for (; !res &amp;&amp; j &lt; n; j++)
-            res = Script.checksig(hash, sig, keys[j], flags);
+          if (Script.checksig(hash, sig, key, flags)) {
+            isig++;
+            m--;
+          }
 
-          if (res)
-            succ++;
+          ikey++;
+          n--;
+
+          if (m > n)
+            res = false;
         }
+
+        while (i-- > 1)
+          stack.pop();
 
         if (stack.length &lt; 1)
           throw new ScriptError('No dummy present.', op, ip);
 
-        val = stack.pop();
-
         if (flags &amp; constants.flags.VERIFY_NULLDUMMY) {
-          if (!Script.isDummy(val))
+          if (!Script.isDummy(stack.top(-1)))
             throw new ScriptError('Dummy did not verify.', op, ip);
         }
 
-        res = succ >= m;
+        stack.pop();
 
         if (op === opcodes.OP_CHECKMULTISIGVERIFY) {
           if (!res)
@@ -1784,6 +1798,8 @@ Script.bool = function bool(value) {
  */
 
 Script.num = function num(value, flags, size) {
+  var result, n;
+
   assert(Buffer.isBuffer(value));
 
   if (flags == null)
@@ -1810,21 +1826,20 @@ Script.num = function num(value, flags, size) {
     }
   }
 
-  // If we are signed, do (~num + 1) to get
-  // the positive counterpart and set bn's
-  // negative flag.
+  if (value.length === 0)
+    return new bn(0);
+
+  result = new bn(value, 'le');
+
+  // If the input vector's most significant byte is
+  // 0x80, remove it from the result's msb and return
+  // a negative.
   if (value[value.length - 1] &amp; 0x80) {
-    if (utils.isNegZero(value, 'le')) {
-      value = new bn(0);
-    } else {
-      value = new bn(value, 'le');
-      value = value.notn(size * 8).addn(1).neg();
-    }
-  } else {
-    value = new bn(value, 'le');
+    n = new bn(0x80).ushln(8 * (value.length - 1)).notn(64);
+    return result.uand(n).neg();
   }
 
-  return value;
+  return result;
 };
 
 /**
@@ -1840,6 +1855,8 @@ Script.num = function num(value, flags, size) {
  */
 
 Script.array = function(value) {
+  var neg, result;
+
   if (Buffer.isBuffer(value))
     return value;
 
@@ -1848,40 +1865,113 @@ Script.array = function(value) {
 
   assert(bn.isBN(value));
 
-  // Convert the number to the
-  // negative byte representation.
-  if (value.isNeg()) {
-    if (value.cmpn(0) === 0)
-      value = new bn(0);
-    else
-      value = value.neg().notn(value.byteLength() * 8).subn(1);
-  }
-
   if (value.cmpn(0) === 0)
     return STACK_FALSE;
 
-  return value.toBuffer('le');
+  // If the most significant byte is >= 0x80
+  // and the value is positive, push a new
+  // zero-byte to make the significant
+  // byte &lt; 0x80 again.
+
+  // If the most significant byte is >= 0x80
+  // and the value is negative, push a new
+  // 0x80 byte that will be popped off when
+  // converting to an integral.
+
+  // If the most significant byte is &lt; 0x80
+  // and the value is negative, add 0x80 to
+  // it, since it will be subtracted and
+  // interpreted as a negative when
+  // converting to an integral.
+
+  neg = value.cmpn(0) &lt; 0;
+  result = value.toArray('le');
+  if (result[result.length - 1] &amp; 0x80)
+    result.push(neg ? 0x80 : 0);
+  else if (neg)
+    result[result.length - 1] |= 0x80;
+
+  return new Buffer(result);
 };
 
 /**
  * Remove all matched data elements from
  * a script's code (used to remove signatures
- * before verification).
+ * before verification). Note that this
+ * compares and removes data on the _byte level_.
+ * It also reserializes the data to a single
+ * script with minimaldata encoding beforehand.
+ * A signature will _not_ be removed if it is
+ * not minimaldata.
+ * @see https://lists.linuxfoundation.org/pipermail/bitcoin-dev/2014-November/006878.html
+ * @see https://test.webbtc.com/tx/19aa42fee0fa57c45d3b16488198b27caaacc4ff5794510d0c17f173f05587ff
  * @param {Buffer} data - Data element to match against.
  * @returns {Number} Total.
  */
 
 Script.prototype.removeData = function removeData(data) {
   var total = 0;
+  var sig, raw, i, a, b;
+
+  if (!this.raw)
+    return this.removeDataFast(data);
+
+  sig = new Script([data]).encode();
+  raw = this.encode();
+
+  // Note that this is _faster_ than Buffer#indexOf.
+  for (i = 0; i &lt; raw.length; i++) {
+    if (raw.length - i &lt; sig.length)
+      break;
+    if (this._cmp(raw, sig, i) === 0) {
+      a = raw.slice(0, i);
+      b = raw.slice(i + sig.length);
+      raw = Buffer.concat([a, b]);
+      total++;
+    }
+  }
+
+  this.raw = raw;
+
+  return total;
+};
+
+Script.prototype._cmp = function _cmp(target, data, start) {
+  var i, a, b;
+
+  if (target.length - start &lt; data.length)
+    return -1;
+
+  for (i = 0; i &lt; data.length; i++) {
+    a = target[i + start];
+    b = data[i];
+    if (a &lt; b)
+      return -1;
+    if (a > b)
+      return 1;
+  }
+
+  return 0;
+};
+
+Script.prototype.removeDataFast = function removeData(data) {
+  var total = 0;
   var i;
 
   for (i = this.code.length - 1; i >= 0; i--) {
     if (!Buffer.isBuffer(this.code[i]))
       continue;
-    if (utils.isEqual(this.code[i], data)) {
+    if (!Script.checkMinimal(this.code[i]))
+      continue;
+    if (utils.equals(this.code[i], data)) {
       this.code.splice(i, 1);
       total++;
     }
+  }
+
+  if (this.raw &amp;&amp; total > 0) {
+    this.raw = null;
+    this.encode();
   }
 
   return total;
@@ -1955,7 +2045,7 @@ Script.checkMinimal = function checkMinimal(value, flags) {
   if (value.length === 1 &amp;&amp; value[0] >= 1 &amp;&amp; value[0] &lt;= 16)
     return false;
 
-  if (value.length === 1 &amp;&amp; value[0] === 0xff)
+  if (value.length === 1 &amp;&amp; value[0] === 0x81)
     return false;
 
   if (value.length &lt;= 75)
@@ -2350,15 +2440,15 @@ Script.getInputHash = function getInputHash(isWitness) {
     return;
 
   if (Script.isPubkeyhashInput(code))
-    return utils.toHex(utils.ripesha(code[1]));
+    return utils.ripesha(code[1]).toString('hex');
 
   if (Script.isMultisigInput(code, isWitness))
     return;
 
   if (Script.isScripthashInput(code, isWitness)) {
     return isWitness
-      ? utils.toHex(utils.sha256(code[code.length - 1]))
-      : utils.toHex(utils.ripesha(code[code.length - 1]));
+      ? utils.sha256(code[code.length - 1]).toString('hex')
+      : utils.ripesha(code[code.length - 1]).toString('hex')
   }
 };
 
@@ -2376,20 +2466,20 @@ Script.prototype.getHash = function getHash() {
     program = this.getWitnessProgram();
     if (!program.type || program.type === 'unknown')
       return;
-    return utils.toHex(program.data);
+    return program.data.toString('hex');
   }
 
   if (this.isPubkey())
-    return utils.toHex(utils.ripesha(this.code[0]));
+    return utils.ripesha(this.code[0]).toString('hex');
 
   if (this.isPubkeyhash())
-    return utils.toHex(this.code[2]);
+    return this.code[2].toString('hex');
 
   if (this.isMultisig())
-    return utils.toHex(utils.ripesha(this.encode()));
+    return utils.ripesha(this.encode()).toString('hex');
 
   if (this.isScripthash())
-    return utils.toHex(this.code[1]);
+    return this.code[1].toString('hex');
 };
 
 /**
@@ -2434,6 +2524,9 @@ Script.prototype.isMultisig = function isMultisig() {
   n = Script.getSmall(this.code[this.code.length - 2]);
 
   if (n == null)
+    return false;
+
+  if (n &lt; 1)
     return false;
 
   m = Script.getSmall(this.code[0]);
@@ -3299,7 +3392,7 @@ Script.format = function format(code) {
 
   return Script.concat(scripts).map(function(chunk) {
     if (Buffer.isBuffer(chunk))
-      return '[' + utils.toHex(chunk) + ']';
+      return '[' + chunk.toString('hex') + ']';
 
     assert(typeof chunk === 'number');
 
@@ -3617,7 +3710,7 @@ Script.verify = function verify(input, witness, output, tx, i, flags) {
       hadWitness = true;
 
       // Input script must be exactly one push of the redeem script.
-      if (!(input.code.length === 1 &amp;&amp; utils.isEqual(input.code[0], raw)))
+      if (!(input.code.length === 1 &amp;&amp; utils.equals(input.code[0], raw)))
         return false;
 
       // Verify the program in the redeem script
@@ -3699,7 +3792,7 @@ Script.verifyProgram = function verifyProgram(witness, output, flags, tx, i) {
 
     witnessScript = stack.pop();
 
-    if (!utils.isEqual(utils.sha256(witnessScript), program.data))
+    if (!utils.equals(utils.sha256(witnessScript), program.data))
       return false;
 
     redeem = new Script(witnessScript);
@@ -3852,45 +3945,41 @@ Script.decode = function decode(buf) {
     if (op >= 0x01 &amp;&amp; op &lt;= 0x4b) {
       code.push(buf.slice(off, off + op));
       off += op;
-      if (off > buf.length) {
-        utils.hidden(code[code.length - 1], 'pushdata', {
-          opcode: null,
-          size: op
-        });
-      }
+      // if (off > buf.length) {
+      utils.hidden(code[code.length - 1], 'pushdata', {
+        opcode: null,
+        size: op
+      });
     } else if (op === opcodes.OP_PUSHDATA1) {
       size = buf[off];
       off += 1;
       code.push(buf.slice(off, off + size));
       off += size;
-      if (size &lt;= 0x4b || off > buf.length) {
-        utils.hidden(code[code.length - 1], 'pushdata', {
-          opcode: op,
-          size: size
-        });
-      }
+      // if (size &lt;= 0x4b || off > buf.length) {
+      utils.hidden(code[code.length - 1], 'pushdata', {
+        opcode: op,
+        size: size
+      });
     } else if (op === opcodes.OP_PUSHDATA2) {
       size = utils.readU16(buf, off);
       off += 2;
       code.push(buf.slice(off, off + size));
       off += size;
-      if (size &lt;= 0xff || off > buf.length) {
-        utils.hidden(code[code.length - 1], 'pushdata', {
-          opcode: op,
-          size: size
-        });
-      }
+      // if (size &lt;= 0xff || off > buf.length) {
+      utils.hidden(code[code.length - 1], 'pushdata', {
+        opcode: op,
+        size: size
+      });
     } else if (op === opcodes.OP_PUSHDATA4) {
       size = utils.readU32(buf, off);
       off += 4;
       code.push(buf.slice(off, off + size));
       off += size;
-      if (size &lt;= 0xffff || off > buf.length) {
-        utils.hidden(code[code.length - 1], 'pushdata', {
-          opcode: op,
-          size: size
-        });
-      }
+      // if (size &lt;= 0xffff || off > buf.length) {
+      utils.hidden(code[code.length - 1], 'pushdata', {
+        opcode: op,
+        size: size
+      });
     } else {
       code.push(op);
     }
@@ -3956,7 +4045,7 @@ Script.encode = function encode(code, writer) {
           } else if (op[0] >= 1 &amp;&amp; op[0] &lt;= 16) {
             p.writeU8(op[0] + 0x50);
             continue;
-          } else if (op[0] === 0xff) {
+          } else if (op[0] === 0x81) {
             p.writeU8(opcodes.OP_1NEGATE);
             continue;
           }
@@ -4065,7 +4154,7 @@ return Script;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Apr 17 2016 22:33:43 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Mon Apr 18 2016 21:53:12 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

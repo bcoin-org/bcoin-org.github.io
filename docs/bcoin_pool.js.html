@@ -308,7 +308,7 @@ Pool.prototype._init = function _init() {
   this.chain.on('orphan', function(block, data, peer) {
     self.emit('orphan', data, peer);
     // Resolve orphan chain
-    self.resolveOrphan(self.peers.load, null, data.hash);
+    // self.resolveOrphan(self.peers.load, null, data.hash);
   });
 
   this.chain.on('full', function() {
@@ -507,6 +507,9 @@ Pool.prototype._startInterval = function _startInterval() {
     // Chain is full and up-to-date
     if (self.chain.isFull())
       return;
+
+    if (self.chain.locker.pending.length > 0)
+      return self._startTimer();
 
     bcoin.debug('Stall recovery: loading again.');
     // self._load();
@@ -761,8 +764,6 @@ Pool.prototype._handleBlocks = function _handleBlocks(hashes, peer, callback) {
   this._startTimer();
 
   utils.forEachSerial(hashes, function(hash, next, i) {
-    hash = utils.toHex(hash);
-
     // Resolve orphan chain.
     if (self.chain.hasOrphan(hash)) {
       bcoin.debug('Peer sent a hash that is already a known orphan.');
@@ -806,7 +807,6 @@ Pool.prototype._handleInv = function _handleInv(hashes, peer, callback) {
     return callback();
 
   utils.forEachSerial(hashes, function(hash, next) {
-    hash = utils.toHex(hash);
     if (self.options.headers)
       self.getHeaders(peer, null, hash, next);
     else
@@ -858,8 +858,8 @@ Pool.prototype._handleBlock = function _handleBlock(block, peer, callback) {
             peer.sendReject(block, err.code, err.reason, err.score);
 
           if (err.reason === 'bad-prevblk') {
-            // self.chain.purgePending();
-            // self.resolveOrphan(peer, null, block.hash('hex'));
+            if (peer === self.peers.load)
+              self.resolveOrphan(peer, null, block.hash('hex'));
           }
 
           self.scheduleRequests(peer);
@@ -946,7 +946,7 @@ Pool.prototype._createPeer = function _createPeer(options) {
 
   peer.on('reject', function(payload) {
     var data = payload.data
-      ? utils.revHex(utils.toHex(payload.data))
+      ? utils.revHex(payload.data)
       : null;
 
     bcoin.debug(
@@ -971,7 +971,7 @@ Pool.prototype._createPeer = function _createPeer(options) {
 
     for (i = 0; i &lt; items.length; i++) {
       item = items[i];
-      req = self.request.map[utils.toHex(item.hash)];
+      req = self.request.map[item.hash];
       if (req &amp;&amp; req.peer === peer)
         item.finish();
     }
@@ -1016,7 +1016,7 @@ Pool.prototype._createPeer = function _createPeer(options) {
     }
 
     for (i = 0; i &lt; txs.length; i++) {
-      hash = utils.toHex(txs[i]);
+      hash = txs[i];
       if (self.markTX(hash, 0))
         self.getData(peer, self.tx.type, hash);
     }
@@ -1238,9 +1238,7 @@ Pool.prototype._addPeer = function _addPeer() {
 };
 
 Pool.prototype.markTX = function(hash, state) {
-  if (Buffer.isBuffer(hash))
-    hash = utils.toHex(hash);
-  else if (hash.hash)
+  if (hash.hash)
     hash = hash.hash('hex');
 
   if (this.tx.count >= 5000) {
@@ -1292,6 +1290,11 @@ Pool.prototype._removePeer = function _removePeer(peer) {
     this.peers.all.splice(i, 1);
 
   if (this.peers.load === peer) {
+    Object.keys(this.request.map).forEach(function(hash) {
+      var item = this.request.map[hash];
+      if (item.peer === peer)
+        item.finish();
+    }, this);
     bcoin.debug('Removed loader peer (%s).', peer.host);
     this.peers.load = null;
   }
@@ -1312,7 +1315,7 @@ Pool.prototype.watch = function watch(id) {
   }
 
   if (id) {
-    hid = utils.toHex(id);
+    hid = id.toString('hex');
 
     if (this.watchMap[hid]) {
       this.watchMap[hid]++;
@@ -1335,14 +1338,14 @@ Pool.prototype.watch = function watch(id) {
 
 Pool.prototype.unwatch = function unwatch(id) {
   var self = this;
-  var i;
+  var i, hid;
 
-  id = utils.toHex(id);
+  hid = id.toString('hex');
 
-  if (!this.watchMap[id] || --this.watchMap[id] !== 0)
+  if (!this.watchMap[hid] || --this.watchMap[hid] !== 0)
     return;
 
-  delete this.watchMap[id];
+  delete this.watchMap[hid];
 
   // Reset bloom filter
   this.bloom.reset();
@@ -1625,9 +1628,6 @@ Pool.prototype.getData = function getData(peer, type, hash, options, callback) {
   if (!options)
     options = {};
 
-  if (Buffer.isBuffer(hash))
-    hash = utils.toHex(hash);
-
   function done(err, exists) {
     if (err)
       return callback(err);
@@ -1744,9 +1744,7 @@ Pool.prototype._sendRequests = function _sendRequests(peer) {
 Pool.prototype.fulfill = function fulfill(hash) {
   var i, item;
 
-  if (Buffer.isBuffer(hash))
-    hash = utils.toHex(hash);
-  else if (hash.hash)
+  if (hash.hash)
     hash = hash.hash('hex');
 
   item = this.request.map[hash];
@@ -1806,8 +1804,6 @@ Pool.prototype.getTX = function getTX(hash, range, callback) {
 
   if (!this.options.spv)
     return callback(new Error('Cannot get tx with full node'));
-
-  hash = utils.toHex(hash);
 
   if (typeof range === 'function') {
     callback = range;
@@ -2365,7 +2361,7 @@ return Pool;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Apr 17 2016 22:33:43 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Mon Apr 18 2016 21:53:12 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
