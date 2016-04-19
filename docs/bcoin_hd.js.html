@@ -119,6 +119,9 @@ function HDSeed(options) {
   this.mnemonic = options.mnemonic;
   this.passphrase = options.passphrase || '';
 
+  if (Buffer.isBuffer(options))
+    this.seed = options;
+
   assert(this.bits % 8 === 0);
 }
 
@@ -191,7 +194,9 @@ HDSeed.isHDSeed = function isHDSeed(obj) {
  */
 
 function HD(options) {
-  return new HDPrivateKey(options);
+  if (!options)
+    return HD.fromSeed();
+  return HD.fromAny(options);
 }
 
 /**
@@ -230,6 +235,42 @@ HD.fromSeed = function fromSeed(options, networkType) {
   return HDPrivateKey.fromSeed(options, networkType);
 };
 
+/**
+ * Generate an hdkey from any number of options.
+ * @param {Object|HDSeed} options - HD seed, HD seed
+ * options, buffer seed, or base58 key.
+ * @param {String?} networkType
+ * @returns {HDPrivateKey|HDPublicKey}
+ */
+
+HD.fromAny = function fromAny(options, networkType) {
+  var xkey;
+
+  assert(options, 'Options required.');
+
+  if (options.xkey)
+    xkey = options.xkey;
+  else if (options.xpubkey)
+    xkey = options.xpubkey;
+  else if (options.xprivkey)
+    xkey = options.xprivkey;
+  else
+    xkey = options;
+
+  if (HDPrivateKey.isExtended(xkey))
+    return HDPrivateKey.fromBase58(xkey);
+
+  if (HDPublicKey.isExtended(xkey))
+    return HDPublicKey.fromBase58(xkey);
+
+  return HDPrivateKey.fromSeed(options, networkType);
+};
+
+/**
+ * LRU cache to avoid deriving keys twice.
+ * @type {LRU}
+ */
+
 HD.cache = new LRU(500);
 
 /**
@@ -256,7 +297,7 @@ HD.isHD = function isHD(obj) {
  * @param {Number?} options.childIndex
  * @param {Buffer?} options.chainCode
  * @param {Buffer?} options.privateKey
- * @property {String} networkType
+ * @property {String} network
  * @property {Base58String} xprivkey
  * @property {Base58String} xpubkey
  * @property {HDSeed?} seed
@@ -267,67 +308,33 @@ HD.isHD = function isHD(obj) {
  * @property {Buffer} chainCode
  * @property {Buffer} privateKey
  * @property {HDPublicKey} hdPublicKey
- * @property {Boolean} isPrivate
- * @property {Boolean} isPublic
  */
 
 function HDPrivateKey(options) {
-  var data;
-
   if (!(this instanceof HDPrivateKey))
     return new HDPrivateKey(options);
 
   assert(options, 'No options for HD private key.');
-  assert(!(options instanceof HDPrivateKey));
-  assert(!(options instanceof HDPublicKey));
+  assert(options.depth &lt;= 0xff, 'Depth is too high.');
 
-  if (HDPrivateKey.isExtended(options))
-    options = { xkey: options };
-
-  if (options.xpubkey)
-    options.xkey = options.xpubkey;
-
-  if (options.xprivkey)
-    options.xkey = options.xprivkey;
-
-  if (HDPublicKey.isExtended(options.xkey))
-    return new HDPublicKey(options);
-
-  this.networkType = options.networkType || network.type;
-  this.xprivkey = options.xkey;
+  this.network = options.network || network.type;
+  this.xprivkey = options.xprivkey;
   this.seed = options.seed;
 
-  if (options.data) {
-    data = options.data;
-  } else if (options.xkey) {
-    data = HDPrivateKey.parse(options.xkey);
-    this.networkType = data.networkType;
-    data = data.data;
-  } else if (options.seed) {
-    data = HDPrivateKey._fromSeed(options.seed, this.networkType);
-  } else {
-    assert(false, 'No data passed to HD key.');
-  }
+  this.version = options.version;
+  this.depth = options.depth;
+  this.parentFingerPrint = options.parentFingerPrint;
+  this.childIndex = options.childIndex;
+  this.chainCode = options.chainCode;
+  this.privateKey = options.privateKey;
 
-  assert(data.depth &lt;= 0xff, 'Depth is too high.');
-
-  this.version = data.version;
-  this.depth = data.depth;
-  this.parentFingerPrint = data.parentFingerPrint;
-  this.childIndex = data.childIndex;
-  this.chainCode = data.chainCode;
-  this.privateKey = data.privateKey;
-
-  this.publicKey = ec.publicKeyCreate(data.privateKey, true);
+  this.publicKey = ec.publicKeyCreate(options.privateKey, true);
   this.fingerPrint = null;
 
   this.hdPrivateKey = this;
 
   if (!this.xprivkey)
-    this.xprivkey = HDPrivateKey.render(data);
-
-  this.isPrivate = true;
-  this.isPublic = false;
+    this.xprivkey = HDPrivateKey.render(options);
 }
 
 utils.inherits(HDPrivateKey, HD);
@@ -335,15 +342,13 @@ utils.inherits(HDPrivateKey, HD);
 HDPrivateKey.prototype.__defineGetter__('hdPublicKey', function() {
   if (!this._hdPublicKey) {
     this._hdPublicKey = new HDPublicKey({
-      networkType: this.networkType,
-      data: {
-        version: network[this.networkType].prefixes.xpubkey,
-        depth: this.depth,
-        parentFingerPrint: this.parentFingerPrint,
-        childIndex: this.childIndex,
-        chainCode: this.chainCode,
-        publicKey: this.publicKey
-      }
+      network: this.network,
+      version: network[this.network].prefixes.xpubkey,
+      depth: this.depth,
+      parentFingerPrint: this.parentFingerPrint,
+      childIndex: this.childIndex,
+      chainCode: this.chainCode,
+      publicKey: this.publicKey
     });
   }
   return this._hdPublicKey;
@@ -403,15 +408,13 @@ HDPrivateKey.prototype.derive = function derive(index, hardened) {
   }
 
   child = new HDPrivateKey({
-    networkType: this.networkType,
-    data: {
-      version: this.version,
-      depth: this.depth + 1,
-      parentFingerPrint: this.fingerPrint,
-      childIndex: index,
-      chainCode: chainCode,
-      privateKey: privateKey
-    }
+    network: this.network,
+    version: this.version,
+    depth: this.depth + 1,
+    parentFingerPrint: this.fingerPrint,
+    childIndex: index,
+    chainCode: chainCode,
+    privateKey: privateKey
   });
 
   HD.cache.set(this.xprivkey + '/' + index, child);
@@ -441,7 +444,7 @@ HDPrivateKey.prototype.deriveAccount44 = function deriveAccount44(options) {
   }
 
   if (coinType == null)
-    coinType = this.networkType === 'main' ? 0 : 1;
+    coinType = this.network === 'main' ? 0 : 1;
 
   assert(utils.isFinite(coinType));
   assert(utils.isFinite(accountIndex));
@@ -605,7 +608,7 @@ HDPrivateKey.prototype.derivePath = function derivePath(path) {
 
 /**
  * Create an hd private key from a seed.
- * @param {HDSeed} seed
+ * @param {Buffer|HDSeed|Object} options - A buffer, HD seed, or HD seed options.
  * @param {String?} networkType
  * @returns {Object} A "naked" key (a
  * plain javascript object which is suitable
@@ -613,8 +616,20 @@ HDPrivateKey.prototype.derivePath = function derivePath(path) {
  */
 
 HDPrivateKey._fromSeed = function _fromSeed(seed, networkType) {
-  var data = seed.createSeed();
-  var hash;
+  var data, hash;
+
+  if (!seed)
+    seed = {};
+
+  if (Buffer.isBuffer(seed)) {
+    data = seed;
+    seed = null;
+  } else if (seed instanceof HDSeed) {
+    data = seed.createSeed();
+  } else {
+    seed = new HDSeed(seed);
+    data = seed.createSeed();
+  }
 
   if (data.length &lt; constants.hd.MIN_ENTROPY
       || data.length > constants.hd.MAX_ENTROPY) {
@@ -631,34 +646,20 @@ HDPrivateKey._fromSeed = function _fromSeed(seed, networkType) {
     parentFingerPrint: new Buffer([0, 0, 0, 0]),
     childIndex: 0,
     chainCode: hash.slice(32, 64),
-    privateKey: hash.slice(0, 32)
+    privateKey: hash.slice(0, 32),
+    seed: seed
   };
 };
 
 /**
  * Instantiate a transaction from an HD seed.
- * @param {HDSeed|Object} options - An HD seed or HD seed options.
+ * @param {Buffer|HDSeed|Object} seed - A buffer, HD seed, or HD seed options.
  * @param {String?} networkType
  * @returns {HDPrivateKey}
  */
 
-HDPrivateKey.fromSeed = function fromSeed(options, networkType) {
-  var seed, key;
-
-  if (!options)
-    options = {};
-
-  seed = (options instanceof HDSeed)
-    ? options
-    : new HDSeed(options);
-
-  key = new HDPrivateKey({
-    data: HDPrivateKey._fromSeed(seed, networkType)
-  });
-
-  key.seed = seed;
-
-  return key;
+HDPrivateKey.fromSeed = function fromSeed(seed, networkType) {
+  return new HDPrivateKey(HDPrivateKey._fromSeed(seed, networkType));
 };
 
 /**
@@ -707,9 +708,7 @@ HDPrivateKey._generate = function _generate(options, networkType) {
  */
 
 HDPrivateKey.generate = function generate(options, networkType) {
-  return new HDPrivateKey({
-    data: HDPrivateKey._generate(options, networkType)
-  });
+  return new HDPrivateKey(HDPrivateKey._generate(options, networkType));
 };
 
 /**
@@ -742,11 +741,10 @@ HDPrivateKey.parse = function parse(xkey) {
 
   assert(i &lt; network.types.length, 'Network not found.');
 
-  return {
-    networkType: type,
-    xprivkey: xkey,
-    data: data
-  };
+  data.network = type;
+  data.xprivkey = xkey;
+
+  return data;
 };
 
 /**
@@ -893,7 +891,7 @@ HDPrivateKey.fromJSON = function fromJSON(json, passphrase) {
  */
 
 HDPrivateKey.isHDPrivateKey = function isHDPrivateKey(obj) {
-  return obj &amp;&amp; obj.isPrivate &amp;&amp; typeof obj.derive === 'function';
+  return obj &amp;&amp; obj.xprivkey &amp;&amp; typeof obj.derive === 'function';
 };
 
 /**
@@ -908,7 +906,7 @@ HDPrivateKey.isHDPrivateKey = function isHDPrivateKey(obj) {
  * @param {Number?} options.childIndex
  * @param {Buffer?} options.chainCode
  * @param {Buffer?} options.publicKey
- * @property {String} networkType
+ * @property {String} network
  * @property {Base58String} xpubkey
  * @property {Number} version
  * @property {Number} depth
@@ -916,67 +914,34 @@ HDPrivateKey.isHDPrivateKey = function isHDPrivateKey(obj) {
  * @property {Number} childIndex
  * @property {Buffer} chainCode
  * @property {Buffer} publicKey
- * @property {Boolean} isPrivate
- * @property {Boolean} isPublic
  */
 
 function HDPublicKey(options) {
-  var data;
-
   if (!(this instanceof HDPublicKey))
     return new HDPublicKey(options);
 
   assert(options, 'No options for HDPublicKey');
-  assert(!(options instanceof HDPrivateKey));
-  assert(!(options instanceof HDPublicKey));
+  assert(options.depth &lt;= 0xff, 'Depth is too high.');
 
-  if (HDPublicKey.isExtended(options))
-    options = { xkey: options };
+  this.network = options.network || network.type;
+  this.xpubkey = options.xpubkey;
+  this.xprivkey = null;
 
-  if (options.xprivkey)
-    options.xkey = options.xprivkey;
-
-  if (options.xpubkey)
-    options.xkey = options.xpubkey;
-
-  if (HDPrivateKey.isExtended(options.xkey))
-    throw new Error('Cannot pass xprivkey into HDPublicKey');
-
-  this.networkType = options.networkType || network.type;
-  this.xpubkey = options.xkey;
-
-  if (options.data) {
-    data = options.data;
-  } else if (options.xkey) {
-    data = HDPublicKey.parse(options.xkey);
-    this.networkType = data.networkType;
-    data = data.data;
-  } else {
-    assert(false, 'No data passed to HD key.');
-  }
-
-  assert(data.depth &lt;= 0xff, 'Depth is too high.');
-
-  this.version = data.version;
-  this.depth = data.depth;
-  this.parentFingerPrint = data.parentFingerPrint;
-  this.childIndex = data.childIndex;
-  this.chainCode = data.chainCode;
-  this.publicKey = data.publicKey;
+  this.version = options.version;
+  this.depth = options.depth;
+  this.parentFingerPrint = options.parentFingerPrint;
+  this.childIndex = options.childIndex;
+  this.chainCode = options.chainCode;
+  this.publicKey = options.publicKey;
 
   this.privateKey = null;
   this.fingerPrint = null;
 
   this.hdPublicKey = this;
-
   this.hdPrivateKey = null;
-  this.xprivkey = null;
 
   if (!this.xpubkey)
-    this.xpubkey = HDPublicKey.render(data);
-
-  this.isPrivate = false;
-  this.isPublic = true;
+    this.xpubkey = HDPublicKey.render(options);
 }
 
 utils.inherits(HDPublicKey, HD);
@@ -1027,22 +992,19 @@ HDPublicKey.prototype.derive = function derive(index, hardened) {
   }
 
   child = new HDPublicKey({
-    networkType: this.networkType,
-    data: {
-      version: this.version,
-      depth: this.depth + 1,
-      parentFingerPrint: this.fingerPrint,
-      childIndex: index,
-      chainCode: chainCode,
-      publicKey: publicKey
-    }
+    network: this.network,
+    version: this.version,
+    depth: this.depth + 1,
+    parentFingerPrint: this.fingerPrint,
+    childIndex: index,
+    chainCode: chainCode,
+    publicKey: publicKey
   });
 
   HD.cache.set(this.xpubkey + '/' + index, child);
 
   return child;
 };
-
 
 /**
  * Derive a BIP44 account key (does not derive, only ensures account key).
@@ -1192,11 +1154,10 @@ HDPublicKey.parse = function parse(xkey) {
 
   assert(i &lt; network.types.length, 'Network not found.');
 
-  return {
-    networkType: type,
-    xpubkey: xkey,
-    data: data
-  };
+  data.network = type;
+  data.xpubkey = xkey;
+
+  return data;
 };
 
 /**
@@ -1235,7 +1196,10 @@ HDPublicKey.fromBase58 = function fromBase58(xkey) {
  */
 
 HDPublicKey.isHDPublicKey = function isHDPublicKey(obj) {
-  return obj &amp;&amp; obj.isPublic &amp;&amp; typeof obj.derive === 'function';
+  return obj
+    &amp;&amp; obj.xpubkey
+    &amp;&amp; !obj.xprivkey
+    &amp;&amp; typeof obj.derive === 'function';
 };
 
 [HDPrivateKey, HDPublicKey].forEach(function(HD) {
@@ -1323,7 +1287,7 @@ return HD;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Apr 19 2016 08:48:08 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Apr 19 2016 10:39:48 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
