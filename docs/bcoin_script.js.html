@@ -237,7 +237,15 @@ Witness.prototype.indexOf = function indexOf(data) {
 Witness.fromString = function fromString(items) {
   var i, op, symbol;
 
-  items = items.trim().split(/\s+/);
+  if (typeof items !== 'string')
+    return new Witness();
+
+  items = items.trim();
+
+  if (items.length === 0)
+    return new Witness();
+
+  items = items.split(/\s+/);
 
   for (i = 0; i &lt; items.length; i++) {
     op = items[i].toLowerCase();
@@ -256,10 +264,22 @@ Witness.fromString = function fromString(items) {
     } else {
       symbol = 'OP_' + op.toUpperCase();
       if (opcodes[symbol] == null) {
+        if (op[0] === '\'' || op[0] === '"') {
+          op = op.slice(1, -1);
+          op = new Buffer(op, 'ascii');
+          items[i] = op;
+          continue;
+        }
+        if (/^-?\d+$/.test(op)) {
+          op = new bn(op, 10);
+          op = Script.array(op);
+          items[i] = op;
+          continue;
+        }
         if (op[0] === '[')
           op = op.slice(1, -1);
         if (op.indexOf('0x') === 0)
-          op = op.substring(2);
+          op = op.slice(2);
         assert(utils.isHex(op), 'Non-stack item in witness string.');
         op = new Buffer(op, 'hex');
       } else {
@@ -271,6 +291,37 @@ Witness.fromString = function fromString(items) {
   }
 
   return new Witness(items);
+};
+
+/**
+ * Parse a test script/array
+ * string into a witness object. _Must_
+ * contain only stack items (no non-push
+ * opcodes).
+ * @param {String|String[]} items - Script string.
+ * @returns {Witness}
+ * @throws Parse error.
+ */
+
+Witness.fromTestString = function fromTestString(items) {
+  var result;
+
+  if (!Array.isArray(items)) {
+    if (typeof items !== 'string')
+      return new Witness();
+
+    items = items.trim();
+  }
+
+  if (items.length === 0)
+    return new Witness();
+
+  result = new Array(items.length);
+
+  for (i = 0; i &lt; items.length; i++)
+    result[i] = new Buffer(items[i], 'hex');
+
+  return new Witness(result);
 };
 
 /**
@@ -782,6 +833,9 @@ Stack.prototype.rot2 = function rot2() {
  */
 
 Stack.prototype.swap2 = function swap2() {
+  if (this.length &lt; 4)
+    throw new ScriptError('Stack too small.', opcodes.OP_2SWAP);
+
   this._swap(-4, -2);
   this._swap(-3, -1);
 };
@@ -1095,6 +1149,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
 
     switch (op) {
       case opcodes.OP_NOP:
+        break;
       case opcodes.OP_NOP1:
       case opcodes.OP_NOP4:
       case opcodes.OP_NOP5:
@@ -1911,12 +1966,19 @@ Script.array = function(value) {
 
 Script.prototype.removeData = function removeData(data) {
   var total = 0;
+  var pushdata = data.pushdata;
   var sig, raw, i, a, b;
 
   if (!this.raw)
     return this.removeDataFast(data);
 
+  // We need to reserialize
+  // the signature as minimaldata.
+  delete data.pushdata;
   sig = new Script([data]).encode();
+  if (pushdata)
+    utils.hidden(data, 'pushdata', pushdata);
+
   raw = this.encode();
 
   // Note that this is _faster_ than Buffer#indexOf.
@@ -2038,9 +2100,6 @@ Script.checkMinimal = function checkMinimal(value, flags) {
 
   if (!pushdata)
     return true;
-
-  if (value.length === 1 &amp;&amp; value[0] === 0)
-    return false;
 
   if (value.length === 1 &amp;&amp; value[0] >= 1 &amp;&amp; value[0] &lt;= 16)
     return false;
@@ -3514,23 +3573,40 @@ Script.prototype.getArgs = function getArgs() {
 Script.fromString = function fromString(code) {
   var i, op, symbol;
 
-  code = code.trim().split(/\s+/);
+  if (typeof code !== 'string')
+    return new Script();
+
+  code = code.trim();
+
+  if (code.length === 0)
+    return new Script();
+
+  code = code.split(/\s+/);
 
   for (i = 0; i &lt; code.length; i++) {
     op = code[i];
 
-    if (op === '-1')
-      op = '1negate';
-
-    symbol = (op + '').toUpperCase();
+    symbol = op.toUpperCase();
     if (symbol.indexOf('OP_') !== 0)
-      symbol = 'OP_' + op;
+      symbol = 'OP_' + symbol;
 
     if (opcodes[symbol] == null) {
+      if (op[0] === '\'' || op[0] === '"') {
+        op = op.slice(1, -1);
+        op = new Buffer(op, 'ascii');
+        code[i] = op;
+        continue;
+      }
       if (op[0] === '[')
         op = op.slice(1, -1);
+      if (/^-?\d+$/.test(op)) {
+        op = new bn(op, 10);
+        op = Script.array(op);
+        code[i] = op;
+        continue;
+      }
       if (op.indexOf('0x') === 0)
-        op = op.substring(2);
+        op = op.slice(2);
       assert(utils.isHex(op), 'Unknown opcode.');
       op = new Buffer(op, 'hex');
       code[i] = op;
@@ -3541,6 +3617,63 @@ Script.fromString = function fromString(code) {
   }
 
   return new Script(code);
+};
+
+/**
+ * Parse a bitcoind test script
+ * string into a script object.
+ * @param {String} items - Script string.
+ * @returns {Script}
+ * @throws Parse error.
+ */
+
+Script.fromTestString = function fromTestString(code) {
+  var i, op, symbol, p;
+
+  if (typeof code !== 'string')
+    return new Script();
+
+  code = code.trim();
+
+  if (code.length === 0)
+    return new Script();
+
+  code = code.split(/\s+/);
+  p = new BufferWriter();
+
+  for (i = 0; i &lt; code.length; i++) {
+    op = code[i];
+
+    symbol = op.toUpperCase();
+    if (symbol.indexOf('OP_') === -1)
+      symbol = 'OP_' + symbol;
+
+    if (opcodes[symbol] == null) {
+      if (op[0] === '\'' || op[0] === '"') {
+        op = op.slice(1, -1);
+        p.writeBytes(Script.encode([new Buffer(op, 'ascii')]));
+        continue;
+      }
+      if (/^-?\d+$/.test(op)) {
+        op = new bn(op, 10);
+        op = Script.array(op);
+        p.writeBytes(Script.encode([op]));
+        continue;
+      }
+      assert(op.indexOf('0x') === 0)
+      op = op.slice(2);
+      assert(utils.isHex(op), 'Unknown opcode.');
+      if (op.length % 2 !== 0)
+        op = op + '0';
+      op = new Buffer(op, 'hex');
+      p.writeBytes(op);
+      continue;
+    }
+
+    p.writeU8(opcodes[symbol]);
+  }
+
+  return new Script(p.render());
 };
 
 /**
@@ -3650,7 +3783,10 @@ Script.verify = function verify(input, witness, output, tx, i, flags) {
   }
 
   // Execute the input script
-  input.execute(stack, flags, tx, i, 0);
+  res = input.execute(stack, flags, tx, i, 0);
+
+  if (!res)
+    return false;
 
   // Copy the stack for P2SH
   if (flags &amp; constants.flags.VERIFY_P2SH)
@@ -3801,7 +3937,7 @@ Script.verifyProgram = function verifyProgram(witness, output, flags, tx, i) {
   }
 
   for (j = 0; j &lt; stack.length; j++) {
-    if (stack.get(j).length > constants.script.MAX_SIZE)
+    if (stack.get(j).length > constants.script.MAX_PUSH)
       return false;
   }
 
@@ -4154,7 +4290,7 @@ return Script;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Mon Apr 18 2016 21:53:12 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Apr 19 2016 04:45:26 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
