@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: bcoin/compactblock.js</title>
+    <title>JSDoc: Source: bcoin/timedata.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: bcoin/compactblock.js</h1>
+    <h1 class="page-title">Source: bcoin/timedata.js</h1>
 
     
 
@@ -27,7 +27,7 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/*!
- * compactblock.js - compact block object for bcoin
+ * adjustedtime.js - time management for bcoin
  * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
  * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
  * https://github.com/indutny/bcoin
@@ -35,105 +35,108 @@
 
 module.exports = function(bcoin) {
 
-var bn = require('bn.js');
+var EventEmitter = require('events').EventEmitter;
 var utils = require('./utils');
 var assert = utils.assert;
 
 /**
- * A block object which is essentially a "placeholder"
- * for a full {@link Block} object. The v8 garbage
- * collector's head will explode if there is too much
- * data on the javascript heap. Blocks can currently
- * be up to 1mb in size. In the future, they may be
- * 2mb, 8mb, or maybe 20mb, who knows? A CompactBlock
- * is an optimization in BCoin which defers parsing of
- * the serialized transactions (the block Buffer) until
- * the block has passed through the chain queue and
- * is about to enter the chain. This keeps a lot data
- * off of the javascript heap for most of the time a
- * block even exists in memory, and manages to keep a
- * lot of strain off of the garbage collector. Having
- * 500mb of blocks on the js heap would not be a good
- * thing.
- * @exports CompactBlock
+ * An object which handles "adjusted time". This may not
+ * look it, but this is actually a semi-consensus-critical
+ * piece of code. It handles version packets from peers
+ * and calculates what to offset our system clock's time by.
+ * @exports TimeData
  * @constructor
- * @param {Object} data
- * @property {Number} version - Block version. Note
- * that BCoin reads versions as unsigned despite
- * them being signed on the protocol level. This
- * number will never be negative.
- * @property {Hash} prevBlock - Previous block hash.
- * @property {Hash} merkleRoot - Merkle root hash.
- * @property {Number} ts - Timestamp.
- * @property {Number} bits
- * @property {Number} nonce
- * @property {Number} totalTX - Transaction count.
- * @property {Number} height - Block height (-1 if not present).
- * @property {Number} coinbaseHeight - The coinbase height which
- * was extracted by the parser (the coinbase is the only
- * transaction we parse ahead of time).
- * @property {Buffer} _raw - The raw block data.
- * @property {ReversedHash} rhash - Reversed block hash (uint256le).
+ * @param {Number} [limit=200]
+ * @property {Array} samples
+ * @property {Object} known
+ * @property {Number} limit
+ * @property {Number} offset
  */
 
-function CompactBlock(data) {
-  if (!(this instanceof CompactBlock))
-    return new CompactBlock(data);
+function TimeData(limit) {
+  if (!(this instanceof TimeData))
+    return new TimeData(limit);
 
-  bcoin.abstractblock.call(this, data);
+  EventEmitter.call(this);
 
-  this.type = 'compactblock';
-  this.coinbaseHeight = data.coinbaseHeight;
+  if (limit == null)
+    limit = 200;
+
+  this.samples = [];
+  this.known = {};
+  this.limit = limit;
+  this.offset = 0;
+  this._checked = false;
 }
 
-utils.inherits(CompactBlock, bcoin.abstractblock);
+utils.inherits(TimeData, EventEmitter);
 
 /**
- * Verify the block headers.
- * @alias verify
- * @param {Object?} ret - Return object, may be
- * set with properties `reason` and `score`.
- * @returns {Boolean}
+ * Add time data.
+ * @param {String} host
+ * @param {Number} time
  */
 
-CompactBlock.prototype._verify = function _verify(ret) {
-  return this.verifyHeaders(ret);
+TimeData.prototype.add = function add(host, time) {
+  var sample = time - utils.now();
+  var i, median, match, offset;
+
+  if (this.samples.length >= this.limit)
+    return;
+
+  if (this.known[host])
+    return;
+
+  this.known[host] = sample;
+
+  i = utils.binarySearch(this.samples, sample, true, compare);
+  this.samples.splice(i + 1, 0, sample);
+
+  bcoin.debug('Added time data: samples=%d, offset=%d (%d minutes)',
+    this.samples.length, sample, sample / 60 | 0);
+
+  if (this.samples.length >= 5 &amp;&amp; this.samples.length % 2 === 1) {
+    median = this.samples[this.samples / 2 | 0];
+
+    if (Math.abs(median) &lt; 70 * 60) {
+      this.offset = median;
+    } else {
+      this.offset = 0;
+      if (!this._checked) {
+        match = false;
+        for (i = 0; i &lt; this.samples.length; i++) {
+          offset = this.samples[i];
+          if (offset !== 0 &amp;&amp; Math.abs(offset) &lt; 5 * 60) {
+            match = true;
+            break;
+          }
+          if (!match) {
+            this._checked = true;
+            bcoin.debug('Please make sure your system clock is correct!');
+          }
+        }
+      }
+    }
+
+    bcoin.debug('Time offset: %d (%d minutes)',
+      this.offset, this.offset / 60 | 0);
+  }
 };
 
 /**
- * Retrieve the coinbase height from the coinbase input script (already
- * extracted in actuality).
- * @returns {Number} height (-1 if not present).
+ * Get the current adjusted time.
+ * @returns {Number} Adjusted Time.
  */
 
-CompactBlock.prototype.getCoinbaseHeight = function getCoinbaseHeight() {
-  return this.coinbaseHeight;
+TimeData.prototype.now = function now() {
+  return utils.now() + this.offset;
 };
 
-/**
- * Parse the serialized block data and create an actual {@link Block}.
- * @returns {Block}
- * @throws Parse error
- */
+function compare(a, b) {
+  return a - b;
+}
 
-CompactBlock.prototype.toBlock = function toBlock() {
-  var data = bcoin.protocol.parser.parseBlock(this._raw);
-  delete this._raw;
-  assert(!data._raw);
-  return new bcoin.block(data);
-};
-
-/**
- * Test an object to see if it is a CompactBlock.
- * @param {Object} obj
- * @returns {Boolean}
- */
-
-CompactBlock.isCompactBlock = function isCompactBlock(obj) {
-  return obj &amp;&amp; typeof obj.toBlock === 'function';
-};
-
-return CompactBlock;
+return TimeData;
 };
 </code></pre>
         </article>
