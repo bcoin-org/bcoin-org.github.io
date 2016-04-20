@@ -185,7 +185,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line364">line 364</a>
+        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line372">line 372</a>
     </li></ul></dd>
     
 
@@ -257,7 +257,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line394">line 394</a>
+        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line402">line 402</a>
     </li></ul></dd>
     
 
@@ -329,7 +329,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line402">line 402</a>
+        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line410">line 410</a>
     </li></ul></dd>
     
 
@@ -632,6 +632,31 @@ determine whether the chain is synced.</p></td>
         </tr>
 
     
+
+        <tr>
+            
+                <td class="name"><code>slowHeight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Height at which block processing is
+slow enough that we can output
+logs without spamming.</p></td>
+        </tr>
+
+    
     </tbody>
 </table>
 
@@ -665,7 +690,7 @@ determine whether the chain is synced.</p></td>
     
     <dt class="tag-default">Default Value:</dt>
     <dd class="tag-default"><ul class="dummy">
-            <li class="object-value"><pre class="prettyprint"><code>{"majorityEnforceUpgrade":750,"majorityRejectOutdated":950,"majorityWindow":1000,"bip34height":227931,"bip34hash":"b808089c756add1591b1d17bab44bba3fed9e02f942ab4894b02000000000000","pruneAfterHeight":100000,"maxTipAge":""}</code></pre></li>
+            <li class="object-value"><pre class="prettyprint"><code>{"majorityEnforceUpgrade":750,"majorityRejectOutdated":950,"majorityWindow":1000,"bip34height":227931,"bip34hash":"b808089c756add1591b1d17bab44bba3fed9e02f942ab4894b02000000000000","pruneAfterHeight":100000,"maxTipAge":"","slowHeight":400000}</code></pre></li>
         </ul></dd>
     
 
@@ -821,7 +846,7 @@ determine whether the chain is synced.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line322">line 322</a>
+        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line330">line 330</a>
     </li></ul></dd>
     
 
@@ -1265,7 +1290,7 @@ The only global variable currently in BCoin.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line314">line 314</a>
+        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line322">line 322</a>
     </li></ul></dd>
     
 
@@ -1933,7 +1958,85 @@ The only global variable currently in BCoin.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line351">line 351</a>
+        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line359">line 359</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".requireStandard"><span class="type-signature">(static, constant) </span>requireStandard<span class="type-signature"> :Boolean</span></h4>
+
+
+
+
+<div class="description">
+    <p>Default value for whether the mempool
+accepts non-standard transactions.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>true</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line419">line 419</a>
     </li></ul></dd>
     
 
@@ -2010,7 +2113,7 @@ The only global variable currently in BCoin.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line306">line 306</a>
+        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line314">line 314</a>
     </li></ul></dd>
     
 
@@ -2164,7 +2267,7 @@ The only global variable currently in BCoin.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line298">line 298</a>
+        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line306">line 306</a>
     </li></ul></dd>
     
 
@@ -2313,7 +2416,7 @@ The only global variable currently in BCoin.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line290">line 290</a>
+        <a href="bcoin_protocol_network.js.html">bcoin/protocol/network.js</a>, <a href="bcoin_protocol_network.js.html#line298">line 298</a>
     </li></ul></dd>
     
 
@@ -2506,7 +2609,7 @@ The only global variable currently in BCoin.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Apr 19 2016 12:03:04 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Apr 20 2016 02:34:28 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

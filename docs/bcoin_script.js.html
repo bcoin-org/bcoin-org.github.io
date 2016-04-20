@@ -615,7 +615,7 @@ Stack.prototype._swap = function _swap(i1, i2) {
 
 Stack.prototype.toalt = function toalt() {
   if (this.length === 0)
-    throw new ScriptError('Stack too small.', opcodes.OP_TOALTSTACK);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_TOALTSTACK);
 
   this.alt.push(this.pop());
 };
@@ -627,7 +627,7 @@ Stack.prototype.toalt = function toalt() {
 
 Stack.prototype.fromalt = function fromalt() {
   if (this.alt.length === 0)
-    throw new ScriptError('Stack too small.', opcodes.OP_FROMALTSTACK);
+    throw new ScriptError('INVALID_ALTSTACK_OPERATION', opcodes.OP_FROMALTSTACK);
 
   this.push(this.alt.pop());
 };
@@ -639,7 +639,7 @@ Stack.prototype.fromalt = function fromalt() {
 
 Stack.prototype.ifdup = function ifdup() {
   if (this.length === 0)
-    throw new ScriptError('Stack too small.', opcodes.OP_IFDUP);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_IFDUP);
 
   if (Script.bool(this.top(-1)))
     this.push(Script.array(this.top(-1)));
@@ -661,7 +661,7 @@ Stack.prototype.depth = function depth() {
 
 Stack.prototype.drop = function drop() {
   if (this.length === 0)
-    throw new ScriptError('Stack too small.', opcodes.OP_DROP);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_DROP);
 
   this.pop();
 };
@@ -673,7 +673,7 @@ Stack.prototype.drop = function drop() {
 
 Stack.prototype.dup = function dup() {
   if (this.length === 0)
-    throw new ScriptError('Stack too small.', opcodes.OP_DUP);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_DUP);
 
   this.push(this.top(-1));
 };
@@ -685,7 +685,7 @@ Stack.prototype.dup = function dup() {
 
 Stack.prototype.nip = function nip() {
   if (this.length &lt; 2)
-    throw new ScriptError('Stack too small.', opcodes.OP_NIP);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_NIP);
 
   this.splice(this.length - 2, 1);
 };
@@ -697,7 +697,7 @@ Stack.prototype.nip = function nip() {
 
 Stack.prototype.over = function over() {
   if (this.length &lt; 2)
-    throw new ScriptError('Stack too small.', opcodes.OP_OVER);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_OVER);
 
   this.push(this.top(-2));
 };
@@ -726,13 +726,13 @@ Stack.prototype._pickroll = function pickroll(op, flags) {
   var val, n;
 
   if (this.length &lt; 2)
-    throw new ScriptError('Stack too small.', op);
+    throw new ScriptError('INVALID_STACK_OPERATION', op);
 
   val = this.pop();
   n = Script.num(val, flags).toNumber();
 
   if (n &lt; 0 || n >= this.length)
-    throw new ScriptError('Bad value.', op);
+    throw new ScriptError('INVALID_STACK_OPERATION', op);
 
   val = this.top(-n - 1);
 
@@ -749,7 +749,7 @@ Stack.prototype._pickroll = function pickroll(op, flags) {
 
 Stack.prototype.rot = function rot() {
   if (this.length &lt; 3)
-    throw new ScriptError('Stack too small.', opcodes.OP_ROT);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_ROT);
 
   this._swap(-3, -2);
   this._swap(-2, -1);
@@ -762,7 +762,7 @@ Stack.prototype.rot = function rot() {
 
 Stack.prototype.swap = function swap() {
   if (this.length &lt; 2)
-    throw new ScriptError('Stack too small.', opcodes.OP_SWAP);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_SWAP);
 
   this._swap(-2, -1);
 };
@@ -774,7 +774,7 @@ Stack.prototype.swap = function swap() {
 
 Stack.prototype.tuck = function tuck() {
   if (this.length &lt; 2)
-    throw new ScriptError('Stack too small.', opcodes.OP_TUCK);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_TUCK);
 
   this.splice(this.length - 2, 0, this.top(-1));
 };
@@ -786,7 +786,7 @@ Stack.prototype.tuck = function tuck() {
 
 Stack.prototype.drop2 = function drop2() {
   if (this.length &lt; 2)
-    throw new ScriptError('Stack too small.', opcodes.OP_2DROP);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_2DROP);
 
   this.pop();
   this.pop();
@@ -801,7 +801,7 @@ Stack.prototype.dup2 = function dup2() {
   var v1, v2;
 
   if (this.length &lt; 2)
-    throw new ScriptError('Stack too small.', opcodes.OP_2DUP);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_2DUP);
 
   v1 = this.top(-2);
   v2 = this.top(-1);
@@ -819,7 +819,7 @@ Stack.prototype.dup3 = function dup3() {
   var v1, v2, v3;
 
   if (this.length &lt; 3)
-    throw new ScriptError('Stack too small.', opcodes.OP_3DUP);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_3DUP);
 
   v1 = this.top(-3);
   v2 = this.top(-2);
@@ -839,7 +839,7 @@ Stack.prototype.over2 = function over2() {
   var v1, v2;
 
   if (this.length &lt; 4)
-    throw new ScriptError('Stack too small.', opcodes.OP_2OVER);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_2OVER);
 
   v1 = this.top(-4);
   v2 = this.top(-3);
@@ -857,7 +857,7 @@ Stack.prototype.rot2 = function rot2() {
   var v1, v2;
 
   if (this.length &lt; 6)
-    throw new ScriptError('Stack too small.', opcodes.OP_2ROT);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_2ROT);
 
   v1 = this.top(-6);
   v2 = this.top(-5);
@@ -874,7 +874,7 @@ Stack.prototype.rot2 = function rot2() {
 
 Stack.prototype.swap2 = function swap2() {
   if (this.length &lt; 4)
-    throw new ScriptError('Stack too small.', opcodes.OP_2SWAP);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_2SWAP);
 
   this._swap(-4, -2);
   this._swap(-3, -1);
@@ -887,7 +887,7 @@ Stack.prototype.swap2 = function swap2() {
 
 Stack.prototype.size = function size() {
   if (this.length &lt; 1)
-    throw new ScriptError('Stack too small.', opcodes.OP_SIZE);
+    throw new ScriptError('INVALID_STACK_OPERATION', opcodes.OP_SIZE);
 
   this.push(Script.array(this.top(-1).length));
 };
@@ -1038,30 +1038,6 @@ Script.prototype.getSubscript = function getSubscript(lastSep) {
 };
 
 /**
- * Execute the script and return false on script execution errors.
- * @param {Stack} stack - Script execution stack.
- * @param {Number?} flags - Script standard flags.
- * @param {TX?} tx - Transaction being verified.
- * @param {Number?} index - Index of input being verified.
- * @param {Number?} version - Signature hash version (0=legacy, 1=segwit).
- * @returns {Boolean} Whether the execution was successful.
- */
-
-Script.prototype.execute = function execute(stack, flags, tx, index, version) {
-  try {
-    return this.interpret(stack, flags, tx, index, version);
-  } catch (e) {
-    if (e.type === 'ScriptError') {
-      bcoin.debug('Script error: %s.', e.message);
-    } else {
-      bcoin.debug('Script interpreter threw:');
-      bcoin.debug(e.stack + '');
-    }
-    return false;
-  }
-};
-
-/**
  * Execute and interpret the script.
  * @param {Stack} stack - Script execution stack.
  * @param {Number?} flags - Script standard flags.
@@ -1072,7 +1048,7 @@ Script.prototype.execute = function execute(stack, flags, tx, index, version) {
  * @returns {Boolean} Whether the execution was successful.
  */
 
-Script.prototype.interpret = function interpret(stack, flags, tx, index, version) {
+Script.prototype.execute = function execute(stack, flags, tx, index, version) {
   var ip = 0;
   var lastSep = -1;
   var opCount = 0;
@@ -1092,28 +1068,28 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
   stack.negate = 0;
 
   if (this.getSize() > constants.script.MAX_SIZE)
-    throw new ScriptError('Script too large.');
+    throw new ScriptError('SCRIPT_SIZE');
 
   for (ip = 0; ip &lt; this.code.length; ip++) {
     op = this.code[ip];
 
     if (Buffer.isBuffer(op)) {
       if (!Script.checkPush(op))
-        throw new ScriptError('Pushdata out of range.', op, ip);
+        throw new ScriptError('BAD_OPCODE', op, ip);
       if (op.length > constants.script.MAX_PUSH)
-        throw new ScriptError('Pushdata too large.', op, ip);
+        throw new ScriptError('PUSH_SIZE', op, ip);
       // Note that minimaldata is not checked
       // on unexecuted branches of code.
       if (stack.negate === 0) {
         if (!Script.checkMinimal(op, flags))
-          throw new ScriptError('Push verification failed.', op, ip);
+          throw new ScriptError('MINIMALDATA', op, ip);
         stack.push(op);
       }
       continue;
     }
 
     if (op > opcodes.OP_16 &amp;&amp; ++opCount > constants.script.MAX_OPS)
-      throw new ScriptError('Too many opcodes.', op, ip);
+      throw new ScriptError('OP_COUNT', op, ip);
 
     // It's very important to make a distiction
     // here: these opcodes will fail _even if they
@@ -1135,7 +1111,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         || op == opcodes.OP_MOD
         || op == opcodes.OP_LSHIFT
         || op == opcodes.OP_RSHIFT) {
-      throw new ScriptError('Disabled opcode.', op, ip);
+      throw new ScriptError('DISABLED_OPCODE', op, ip);
     }
 
     if (op >= opcodes.OP_IF &amp;&amp; op &lt;= opcodes.OP_ENDIF) {
@@ -1144,7 +1120,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         case opcodes.OP_NOTIF: {
           if (stack.negate === 0) {
             if (stack.length &lt; 1)
-              throw new ScriptError('Stack too small.', op, ip);
+              throw new ScriptError('UNBALANCED_CONDITIONAL', op, ip);
             val = Script.bool(stack.pop());
             if (op === opcodes.OP_NOTIF)
               val = !val;
@@ -1159,7 +1135,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         }
         case opcodes.OP_ELSE: {
           if (stack.state.length === 0)
-            throw new ScriptError('Unexpected else.', op, ip);
+            throw new ScriptError('UNBALANCED_CONDITIONAL', op, ip);
           stack.state[stack.state.length - 1] ^= 1;
           if (stack.state[stack.state.length - 1] === 0)
             stack.negate++;
@@ -1169,14 +1145,14 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         }
         case opcodes.OP_ENDIF: {
           if (stack.state.length === 0)
-            throw new ScriptError('Unexpected endif.', op, ip);
+            throw new ScriptError('UNBALANCED_CONDITIONAL', op, ip);
           if (stack.state.pop() === 0)
             stack.negate--;
           break;
         }
         case opcodes.OP_VERIF:
         case opcodes.OP_VERNOTIF: {
-          throw new ScriptError('Unknown opcode.', op, ip);
+          throw new ScriptError('BAD_OPCODE', op, ip);
         }
         default: {
           assert.fatal(false, 'Fatal script error.');
@@ -1188,24 +1164,92 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
     if (stack.negate !== 0)
       continue;
 
-    if (op === opcodes.OP_0) {
-      stack.push(STACK_FALSE);
-      continue;
-    }
-
-    if (op >= opcodes.OP_1 &amp;&amp; op &lt;= opcodes.OP_16) {
-      stack.push(new Buffer([op - 0x50]));
-      continue;
-    }
-
-    if (op === opcodes.OP_1NEGATE) {
-      stack.push(STACK_NEGATE);
-      continue;
-    }
-
     switch (op) {
-      case opcodes.OP_NOP:
+      case opcodes.OP_0: {
+        stack.push(STACK_FALSE);
         break;
+      }
+      case opcodes.OP_1NEGATE: {
+        stack.push(STACK_NEGATE);
+        break;
+      }
+      case opcodes.OP_1:
+      case opcodes.OP_2:
+      case opcodes.OP_3:
+      case opcodes.OP_4:
+      case opcodes.OP_5:
+      case opcodes.OP_6:
+      case opcodes.OP_7:
+      case opcodes.OP_8:
+      case opcodes.OP_9:
+      case opcodes.OP_10:
+      case opcodes.OP_11:
+      case opcodes.OP_12:
+      case opcodes.OP_13:
+      case opcodes.OP_14:
+      case opcodes.OP_15:
+      case opcodes.OP_16: {
+        stack.push(new Buffer([op - 0x50]));
+        break;
+      }
+      case opcodes.OP_NOP: {
+        break;
+      }
+      case opcodes.OP_CHECKLOCKTIMEVERIFY: {
+        // OP_CHECKLOCKTIMEVERIFY = OP_NOP2
+        if (!(flags &amp; constants.flags.VERIFY_CHECKLOCKTIMEVERIFY)) {
+          if (flags &amp; constants.flags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
+            throw new ScriptError('DISCOURAGE_UPGRADABLE_NOPS', op, ip);
+          break;
+        }
+
+        if (!tx)
+          throw new ScriptError('UNKNOWN_ERROR', 'No TX passed in.');
+
+        if (stack.length === 0)
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
+
+        locktime = Script.num(stack.top(-1), flags, 5);
+
+        if (locktime.cmpn(0) &lt; 0)
+          throw new ScriptError('NEGATIVE_LOCKTIME', op, ip);
+
+        locktime = locktime.uand(utils.U32).toNumber();
+
+        if (!Script.checkLocktime(locktime, tx, index))
+          throw new ScriptError('UNSATISFIED_LOCKTIME', op, ip);
+
+        break;
+      }
+      case opcodes.OP_CHECKSEQUENCEVERIFY: {
+        // OP_CHECKSEQUENCEVERIFY = OP_NOP3
+        if (!(flags &amp; constants.flags.VERIFY_CHECKSEQUENCEVERIFY)) {
+          if (flags &amp; constants.flags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
+            throw new ScriptError('DISCOURAGE_UPGRADABLE_NOPS', op, ip);
+          break;
+        }
+
+        if (!tx)
+          throw new ScriptError('UNKNOWN_ERROR', 'No TX passed in.');
+
+        if (stack.length === 0)
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
+
+        locktime = Script.num(stack.top(-1), flags, 5);
+
+        if (locktime.cmpn(0) &lt; 0)
+          throw new ScriptError('NEGATIVE_LOCKTIME', op, ip);
+
+        locktime = locktime.uand(utils.U32).toNumber();
+
+        if ((locktime &amp; constants.sequence.DISABLE_FLAG) !== 0)
+          break;
+
+        if (!Script.checkSequence(locktime, tx, index))
+          throw new ScriptError('UNSATISFIED_LOCKTIME', op, ip);
+
+        break;
+      }
       case opcodes.OP_NOP1:
       case opcodes.OP_NOP4:
       case opcodes.OP_NOP5:
@@ -1215,18 +1259,18 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       case opcodes.OP_NOP9:
       case opcodes.OP_NOP10: {
         if (flags &amp; constants.flags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
-          throw new ScriptError('Upgradable NOP used.', op, ip);
+          throw new ScriptError('DISCOURAGE_UPGRADABLE_NOPS', op, ip);
         break;
       }
       case opcodes.OP_VERIFY: {
         if (stack.length === 0)
-          throw new ScriptError('Stack too small.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
         if (!Script.bool(stack.pop()))
-          throw new ScriptError('Verification failed.', op, ip);
+          throw new ScriptError('VERIFY', op, ip);
         break;
       }
       case opcodes.OP_RETURN: {
-        throw new ScriptError('Script returned.', op, ip);
+        throw new ScriptError('OP_RETURN', op, ip);
       }
       case opcodes.OP_TOALTSTACK: {
         stack.toalt();
@@ -1234,6 +1278,30 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       }
       case opcodes.OP_FROMALTSTACK: {
         stack.fromalt();
+        break;
+      }
+      case opcodes.OP_2DROP: {
+        stack.drop2();
+        break;
+      }
+      case opcodes.OP_2DUP: {
+        stack.dup2();
+        break;
+      }
+      case opcodes.OP_3DUP: {
+        stack.dup3();
+        break;
+      }
+      case opcodes.OP_2OVER: {
+        stack.over2();
+        break;
+      }
+      case opcodes.OP_2ROT: {
+        stack.rot2();
+        break;
+      }
+      case opcodes.OP_2SWAP: {
+        stack.swap2();
         break;
       }
       case opcodes.OP_IFDUP: {
@@ -1280,32 +1348,21 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         stack.tuck();
         break;
       }
-      case opcodes.OP_2DROP: {
-        stack.drop2();
-        break;
-      }
-      case opcodes.OP_2DUP: {
-        stack.dup2();
-        break;
-      }
-      case opcodes.OP_3DUP: {
-        stack.dup3();
-        break;
-      }
-      case opcodes.OP_2OVER: {
-        stack.over2();
-        break;
-      }
-      case opcodes.OP_2ROT: {
-        stack.rot2();
-        break;
-      }
-      case opcodes.OP_2SWAP: {
-        stack.swap2();
-        break;
-      }
       case opcodes.OP_SIZE: {
         stack.size();
+        break;
+      }
+      case opcodes.OP_EQUAL:
+      case opcodes.OP_EQUALVERIFY: {
+        if (stack.length &lt; 2)
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
+        res = utils.equals(stack.pop(), stack.pop());
+        if (op === opcodes.OP_EQUALVERIFY) {
+          if (!res)
+            throw new ScriptError('EQUALVERIFY', op, ip);
+        } else {
+          stack.push(res ? STACK_TRUE : STACK_FALSE);
+        }
         break;
       }
       case opcodes.OP_1ADD:
@@ -1317,7 +1374,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       case opcodes.OP_NOT:
       case opcodes.OP_0NOTEQUAL: {
         if (stack.length &lt; 1)
-          throw new ScriptError('Stack too small.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
         n = Script.num(stack.pop(), flags);
         switch (op) {
           case opcodes.OP_1ADD:
@@ -1370,8 +1427,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       case opcodes.OP_LESSTHANOREQUAL:
       case opcodes.OP_GREATERTHANOREQUAL:
       case opcodes.OP_MIN:
-      case opcodes.OP_MAX:
-      case opcodes.OP_WITHIN: {
+      case opcodes.OP_MAX: {
         switch (op) {
           case opcodes.OP_ADD:
           case opcodes.OP_SUB:
@@ -1392,7 +1448,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
           case opcodes.OP_MIN:
           case opcodes.OP_MAX:
             if (stack.length &lt; 2)
-              throw new ScriptError('Stack too small.', op, ip);
+              throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
             n2 = Script.num(stack.pop(), flags);
             n1 = Script.num(stack.pop(), flags);
             n = new bn(0);
@@ -1414,12 +1470,12 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
                 break;
               case opcodes.OP_LSHIFT:
                 if (n2.cmpn(0) &lt; 0 || n2.cmpn(2048) > 0)
-                  throw new ScriptError('Shift out of range.', op, ip);
+                  throw new ScriptError('UNKNOWN_ERROR', 'Bad shift.');
                 n = n1.ushln(n2.toNumber());
                 break;
               case opcodes.OP_RSHIFT:
                 if (n2.cmpn(0) &lt; 0 || n2.cmpn(2048) > 0)
-                  throw new ScriptError('Shift out of range.', op, ip);
+                  throw new ScriptError('UNKNOWN_ERROR', 'Bad shift.');
                 n = n1.ushrn(n2.toNumber());
                 break;
               case opcodes.OP_BOOLAND:
@@ -1462,78 +1518,66 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
               n = new bn(n ? 1 : 0);
             if (op === opcodes.OP_NUMEQUALVERIFY) {
               if (!Script.bool(n))
-                throw new ScriptError('Verify failed.', op, ip);
+                throw new ScriptError('NUMEQUALVERIFY', op, ip);
             } else {
               stack.push(Script.array(n));
             }
             break;
-          case opcodes.OP_WITHIN:
-            if (stack.length &lt; 3)
-              throw new ScriptError('Stack too small.', op, ip);
-            n3 = Script.num(stack.pop(), flags);
-            n2 = Script.num(stack.pop(), flags);
-            n1 = Script.num(stack.pop(), flags);
-            val = n2.cmp(n1) &lt;= 0 &amp;&amp; n1.cmp(n3) &lt; 0;
-            stack.push(val ? STACK_TRUE : STACK_FALSE);
-            break;
         }
 
+        break;
+      }
+      case opcodes.OP_WITHIN: {
+        if (stack.length &lt; 3)
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
+        n3 = Script.num(stack.pop(), flags);
+        n2 = Script.num(stack.pop(), flags);
+        n1 = Script.num(stack.pop(), flags);
+        val = n2.cmp(n1) &lt;= 0 &amp;&amp; n1.cmp(n3) &lt; 0;
+        stack.push(val ? STACK_TRUE : STACK_FALSE);
+        break;
+      }
+      case opcodes.OP_RIPEMD160: {
+        if (stack.length === 0)
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
+        stack.push(utils.ripemd160(stack.pop()));
+        break;
+      }
+      case opcodes.OP_SHA1: {
+        if (stack.length === 0)
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
+        stack.push(utils.sha1(stack.pop()));
+        break;
+      }
+      case opcodes.OP_SHA256: {
+        if (stack.length === 0)
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
+        stack.push(utils.sha256(stack.pop()));
+        break;
+      }
+      case opcodes.OP_HASH256: {
+        if (stack.length === 0)
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
+        stack.push(utils.dsha256(stack.pop()));
+        break;
+      }
+      case opcodes.OP_HASH160: {
+        if (stack.length === 0)
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
+        stack.push(utils.ripesha(stack.pop()));
         break;
       }
       case opcodes.OP_CODESEPARATOR: {
         lastSep = ip;
         break;
       }
-      case opcodes.OP_RIPEMD160: {
-        if (stack.length === 0)
-          throw new ScriptError('Stack too small.', op, ip);
-        stack.push(utils.ripemd160(stack.pop()));
-        break;
-      }
-      case opcodes.OP_SHA1: {
-        if (stack.length === 0)
-          throw new ScriptError('Stack too small.', op, ip);
-        stack.push(utils.sha1(stack.pop()));
-        break;
-      }
-      case opcodes.OP_SHA256: {
-        if (stack.length === 0)
-          throw new ScriptError('Stack too small.', op, ip);
-        stack.push(utils.sha256(stack.pop()));
-        break;
-      }
-      case opcodes.OP_HASH256: {
-        if (stack.length === 0)
-          throw new ScriptError('Stack too small.', op, ip);
-        stack.push(utils.dsha256(stack.pop()));
-        break;
-      }
-      case opcodes.OP_HASH160: {
-        if (stack.length === 0)
-          throw new ScriptError('Stack too small.', op, ip);
-        stack.push(utils.ripesha(stack.pop()));
-        break;
-      }
-      case opcodes.OP_EQUALVERIFY:
-      case opcodes.OP_EQUAL: {
-        if (stack.length &lt; 2)
-          throw new ScriptError('Stack too small.', op, ip);
-        res = utils.equals(stack.pop(), stack.pop());
-        if (op === opcodes.OP_EQUALVERIFY) {
-          if (!res)
-            throw new ScriptError('Equal verification failed.', op, ip);
-        } else {
-          stack.push(res ? STACK_TRUE : STACK_FALSE);
-        }
-        break;
-      }
       case opcodes.OP_CHECKSIGVERIFY:
       case opcodes.OP_CHECKSIG: {
         if (!tx)
-          throw new ScriptError('No TX passed in.', op, ip);
+          throw new ScriptError('UNKNOWN_ERROR', 'No TX passed in.');
 
         if (stack.length &lt; 2)
-          throw new ScriptError('Stack too small.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
 
         key = stack.pop();
         sig = stack.pop();
@@ -1542,11 +1586,8 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         if (version === 0)
           subscript.removeData(sig);
 
-        if (!Script.isValidKey(key, flags))
-          throw new ScriptError('Key is not valid.', op, ip);
-
-        if (!Script.isValidSignature(sig, flags))
-          throw new ScriptError('Signature is not valid.', op, ip);
+        Script.validateSignature(sig, flags);
+        Script.validateKey(key, flags);
 
         type = sig[sig.length - 1];
 
@@ -1555,7 +1596,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         res = Script.checksig(hash, sig, key, flags);
         if (op === opcodes.OP_CHECKSIGVERIFY) {
           if (!res)
-            throw new ScriptError('Signature verification failed.', op, ip);
+            throw new ScriptError('CHECKSIGVERIFY', op, ip);
         } else {
           stack.push(res ? STACK_TRUE : STACK_FALSE);
         }
@@ -1565,40 +1606,40 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       case opcodes.OP_CHECKMULTISIGVERIFY:
       case opcodes.OP_CHECKMULTISIG: {
         if (!tx)
-          throw new ScriptError('No TX passed in.', op, ip);
+          throw new ScriptError('UNKNOWN_ERROR', 'No TX passed in.');
 
         i = 1;
         if (stack.length &lt; i)
-          throw new ScriptError('Stack too small.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
 
         n = Script.num(stack.top(-i), flags).toNumber();
 
         if (!(n >= 0 &amp;&amp; n &lt;= constants.script.MAX_MULTISIG_PUBKEYS))
-          throw new ScriptError('`n` is out of bounds.', op, ip);
+          throw new ScriptError('PUBKEY_COUNT', op, ip);
 
         opCount += n;
 
         if (opCount > constants.script.MAX_OPS)
-          throw new ScriptError('Too many ops.', op, ip);
+          throw new ScriptError('OP_COUNT', op, ip);
 
         i++;
         ikey = i;
         i += n;
 
         if (stack.length &lt; i)
-          throw new ScriptError('`n` exceeds stack size.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
 
         m = Script.num(stack.top(-i), flags).toNumber();
 
         if (!(m >= 0 &amp;&amp; m &lt;= n))
-          throw new ScriptError('`m` is out of bounds.', op, ip);
+          throw new ScriptError('SIG_COUNT', op, ip);
 
         i++;
         isig = i;
         i += m;
 
         if (stack.length &lt; i)
-          throw new ScriptError('`m` exceeds stack size.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
 
         subscript = this.getSubscript(lastSep);
 
@@ -1613,11 +1654,8 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
           sig = stack.top(-isig);
           key = stack.top(-ikey);
 
-          if (!Script.isValidSignature(sig, flags))
-            throw new ScriptError('Signature is not valid.', op, ip);
-
-          if (!Script.isValidKey(key, flags))
-            throw new ScriptError('Key is not valid.', op, ip);
+          Script.validateSignature(sig, flags);
+          Script.validateKey(key, flags);
 
           type = sig[sig.length - 1];
           hash = tx.signatureHash(index, subscript, type, version);
@@ -1638,97 +1676,42 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
           stack.pop();
 
         if (stack.length &lt; 1)
-          throw new ScriptError('No dummy present.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
 
         if (flags &amp; constants.flags.VERIFY_NULLDUMMY) {
           if (!Script.isDummy(stack.top(-1)))
-            throw new ScriptError('Dummy did not verify.', op, ip);
+            throw new ScriptError('SIG_NULLDUMMY', op, ip);
         }
 
         stack.pop();
 
         if (op === opcodes.OP_CHECKMULTISIGVERIFY) {
           if (!res)
-            throw new ScriptError('Signature verification failed.', op, ip);
+            throw new ScriptError('CHECKMULTISIGVERIFY', op, ip);
         } else {
           stack.push(res ? STACK_TRUE : STACK_FALSE);
         }
 
         break;
       }
-      case opcodes.OP_CHECKLOCKTIMEVERIFY: {
-        // OP_CHECKLOCKTIMEVERIFY = OP_NOP2
-        if (!(flags &amp; constants.flags.VERIFY_CHECKLOCKTIMEVERIFY)) {
-          if (flags &amp; constants.flags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
-            throw new ScriptError('Upgradable NOP used.', op, ip);
-          break;
-        }
-
-        if (!tx)
-          throw new ScriptError('No TX passed in.', op, ip);
-
-        if (stack.length === 0)
-          throw new ScriptError('Stack too small.', op, ip);
-
-        locktime = Script.num(stack.top(-1), flags, 5);
-
-        if (locktime.cmpn(0) &lt; 0)
-          throw new ScriptError('Negative locktime.', op, ip);
-
-        locktime = locktime.uand(utils.U32).toNumber();
-
-        if (!Script.checkLocktime(locktime, tx, index))
-          throw new ScriptError('Locktime verification failed.', op, ip);
-
-        break;
-      }
-      case opcodes.OP_CHECKSEQUENCEVERIFY: {
-        // OP_CHECKSEQUENCEVERIFY = OP_NOP3
-        if (!(flags &amp; constants.flags.VERIFY_CHECKSEQUENCEVERIFY)) {
-          if (flags &amp; constants.flags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
-            throw new ScriptError('Upgradable NOP used.', op, ip);
-          break;
-        }
-
-        if (!tx)
-          throw new ScriptError('No TX passed in.', op, ip);
-
-        if (stack.length === 0)
-          throw new ScriptError('Stack too small.', op, ip);
-
-        locktime = Script.num(stack.top(-1), flags, 5);
-
-        if (locktime.cmpn(0) &lt; 0)
-          throw new ScriptError('Negative sequence.', op, ip);
-
-        locktime = locktime.uand(utils.U32).toNumber();
-
-        if ((locktime &amp; constants.sequence.DISABLE_FLAG) !== 0)
-          break;
-
-        if (!Script.checkSequence(locktime, tx, index))
-          throw new ScriptError('Sequence verification failed.', op, ip);
-
-        break;
-      }
       case opcodes.OP_CAT: {
         if (stack.length &lt; 2)
-          throw new ScriptError('Stack too small.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
         v2 = stack.pop();
         v1 = stack.pop();
         stack.push(Buffer.concat([v1, v2]));
         if (stack.top(-1).length > constants.script.MAX_PUSH)
-          throw new ScriptError('Push data too large.', op, ip);
+          throw new ScriptError('PUSH_SIZE', op, ip);
         break;
       }
       case opcodes.OP_SUBSTR: {
         if (stack.length &lt; 3)
-          throw new ScriptError('Stack too small.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
         v3 = Script.num(stack.pop(), flags).toNumber(); // end
         v2 = Script.num(stack.pop(), flags).toNumber(); // begin
         v1 = stack.pop(); // string
         if (v2 &lt; 0 || v3 &lt; v2)
-          throw new ScriptError('String begin or end out of range.', op, ip);
+          throw new ScriptError('UNKNOWN_ERROR', 'String out of range.');
         if (v2 > v1.length)
           v2 = v1.length;
         if (v3 > v1.length)
@@ -1739,11 +1722,11 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       case opcodes.OP_LEFT:
       case opcodes.OP_RIGHT: {
         if (stack.length &lt; 2)
-          throw new ScriptError('Stack too small.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
         v2 = Script.num(stack.pop(), flags).toNumber(); // size
         v1 = stack.pop(); // string
         if (v2 &lt; 0)
-          throw new ScriptError('String size is negative.', op, ip);
+          throw new ScriptError('UNKNOWN_ERROR', 'String size out of range.');
         if (v2 > v1.length)
           v2 = v1.length;
         if (op === opcodes.OP_LEFT)
@@ -1755,7 +1738,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       }
       case opcodes.OP_INVERT: {
         if (stack.length &lt; 1)
-          throw new ScriptError('Stack too small.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
         val = utils.slice(stack.pop());
         for (i = 0; i &lt; val.length; i++)
           val[i] = ~val[i] &amp; 0xff;
@@ -1766,7 +1749,7 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
       case opcodes.OP_OR:
       case opcodes.OP_XOR: {
         if (stack.length &lt; 2)
-          throw new ScriptError('Stack too small.', op, ip);
+          throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
         v2 = stack.pop();
         v1 = utils.slice(stack.pop());
         if (v1.length &lt; v2.length) {
@@ -1793,16 +1776,16 @@ Script.prototype.interpret = function interpret(stack, flags, tx, index, version
         break;
       }
       default: {
-        throw new ScriptError('Unknown opcode.', op, ip);
+        throw new ScriptError('BAD_OPCODE', op, ip);
       }
     }
   }
 
   if (stack.getSize() > constants.script.MAX_STACK)
-    throw new ScriptError('Stack size too large.', op, ip);
+    throw new ScriptError('STACK_SIZE', op, ip);
 
   if (stack.state.length !== 0)
-    throw new ScriptError('Expected endif.', op, ip);
+    throw new ScriptError('UNBALANCED_CONDITIONAL', op, ip);
 
   return true;
 };
@@ -1920,7 +1903,7 @@ Script.num = function num(value, flags, size) {
     size = 4;
 
   if (value.length > size)
-    throw new ScriptError('Script number overflow.');
+    throw new ScriptError('UNKNOWN_ERROR', 'Script number overflow.');
 
   if ((flags &amp; constants.flags.VERIFY_MINIMALDATA) &amp;&amp; value.length > 0) {
     // If the low bits on the last byte are unset,
@@ -1932,8 +1915,11 @@ Script.num = function num(value, flags, size) {
     // to avoid negative zero (also avoids positive
     // zero).
     if (!(value[value.length - 1] &amp; 0x7f)) {
-      if (value.length === 1 || !(value[value.length - 2] &amp; 0x80))
-        throw new ScriptError('Non-minimally encoded Script number.');
+      if (value.length === 1 || !(value[value.length - 2] &amp; 0x80)) {
+        throw new ScriptError(
+          'UNKNOWN_ERROR',
+          'Non-minimally encoded Script number.');
+      }
     }
   }
 
@@ -3247,20 +3233,19 @@ Script.isZero = function isZero(op) {
  * @param {Buffer} key
  * @param {VerifyFlags?} flags
  * @returns {Boolean}
+ * @throws {ScriptError}
  */
 
-Script.isValidKey = function isValidKey(key, flags) {
+Script.validateKey = function validateKey(key, flags) {
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
 
   if (!Script.isPush(key))
-    return false;
+    throw new ScriptError('BAD_OPCODE');
 
   if (flags &amp; constants.flags.VERIFY_STRICTENC) {
-    if (!Script.isKeyEncoding(key)) {
-      bcoin.debug('Script failed key encoding test.');
-      return false;
-    }
+    if (!Script.isKeyEncoding(key))
+      throw new ScriptError('PUBKEYTYPE');
   }
 
   return true;
@@ -3301,14 +3286,15 @@ Script.isKeyEncoding = function isKeyEncoding(key) {
  * @param {Buffer} sig
  * @param {VerifyFlags?} flags
  * @returns {Boolean}
+ * @throws {ScriptError}
  */
 
-Script.isValidSignature = function isValidSignature(sig, flags) {
+Script.validateSignature = function validateSignature(sig, flags) {
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
 
   if (!Script.isPush(sig))
-    return false;
+    throw new ScriptError('BAD_OPCODE');
 
   // Allow empty sigs
   if (sig.length === 0)
@@ -3317,24 +3303,18 @@ Script.isValidSignature = function isValidSignature(sig, flags) {
   if ((flags &amp; constants.flags.VERIFY_DERSIG)
       || (flags &amp; constants.flags.VERIFY_LOW_S)
       || (flags &amp; constants.flags.VERIFY_STRICTENC)) {
-    if (!Script.isSignatureEncoding(sig)) {
-      bcoin.debug('Script does not have a proper signature encoding.');
-      return false;
-    }
+    if (!Script.isSignatureEncoding(sig))
+      throw new ScriptError('SIG_DER');
   }
 
   if (flags &amp; constants.flags.VERIFY_LOW_S) {
-    if (!Script.isLowDER(sig)) {
-      bcoin.debug('Script does not have a low DER.');
-      return false;
-    }
+    if (!Script.isLowDER(sig))
+      throw new ScriptError('SIG_HIGH_S');
   }
 
   if (flags &amp; constants.flags.VERIFY_STRICTENC) {
-    if (!Script.isHashType(sig)) {
-      bcoin.debug('Script does not have a valid hash type.');
-      return false;
-    }
+    if (!Script.isHashType(sig))
+      throw new ScriptError('SIG_HASHTYPE');
   }
 
   return true;
@@ -3824,10 +3804,11 @@ Script.fromSymbolic = function fromSymbolic(items) {
  * @param {Number} i
  * @param {VerifyFlags} flags
  * @returns {Boolean}
+ * @throws {ScriptError}
  */
 
 Script.verify = function verify(input, witness, output, tx, i, flags) {
-  var copy, res, raw, redeem, hadWitness;
+  var copy, raw, redeem, hadWitness;
   var stack = new Stack();
 
   if (flags == null)
@@ -3835,36 +3816,32 @@ Script.verify = function verify(input, witness, output, tx, i, flags) {
 
   if (flags &amp; constants.flags.VERIFY_SIGPUSHONLY) {
     if (!input.isPushOnly())
-      return false;
+      throw new ScriptError('SIG_PUSHONLY');
   }
 
   // Execute the input script
-  res = input.execute(stack, flags, tx, i, 0);
-
-  if (!res)
-    return false;
+  input.execute(stack, flags, tx, i, 0);
 
   // Copy the stack for P2SH
   if (flags &amp; constants.flags.VERIFY_P2SH)
     copy = stack.clone();
 
   // Execute the previous output script
-  res = output.execute(stack, flags, tx, i, 0);
+  output.execute(stack, flags, tx, i, 0);
 
   // Verify the script did not fail as well as the stack values
-  if (!res || stack.length === 0 || !Script.bool(stack.pop()))
-    return false;
+  if (stack.length === 0 || !Script.bool(stack.pop()))
+    throw new ScriptError('EVAL_FALSE');
 
   if ((flags &amp; constants.flags.VERIFY_WITNESS) &amp;&amp; output.isWitnessProgram()) {
     hadWitness = true;
 
     // Input script must be empty.
     if (input.code.length !== 0)
-      return false;
+      throw new ScriptError('WITNESS_MALLEATED');
 
     // Verify the program in the output script
-    if (!Script.verifyProgram(witness, output, flags, tx, i))
-      return false;
+    Script.verifyProgram(witness, output, flags, tx, i);
 
     // Force a cleanstack
     stack.length = 0;
@@ -3874,40 +3851,35 @@ Script.verify = function verify(input, witness, output, tx, i, flags) {
   if ((flags &amp; constants.flags.VERIFY_P2SH) &amp;&amp; output.isScripthash()) {
     // P2SH can only have push ops in the scriptSig
     if (!input.isPushOnly())
-      return false;
+      throw new ScriptError('SIG_PUSHONLY');
 
     // Reset the stack
     stack = copy;
 
     // Stack should not be empty at this point
     if (stack.length === 0)
-      return false;
+      throw new ScriptError('EVAL_FALSE');
 
     // Grab the real redeem script
     raw = stack.pop();
-
-    if (!Script.isPush(raw))
-      return false;
-
     redeem = new Script(raw);
 
     // Execute the redeem script
-    res = redeem.execute(stack, flags, tx, i, 0);
+    redeem.execute(stack, flags, tx, i, 0);
 
     // Verify the script did not fail as well as the stack values
-    if (!res || stack.length === 0 || !Script.bool(stack.pop()))
-      return false;
+    if (stack.length === 0 || !Script.bool(stack.pop()))
+      throw new ScriptError('EVAL_FALSE');
 
     if ((flags &amp; constants.flags.VERIFY_WITNESS) &amp;&amp; redeem.isWitnessProgram()) {
       hadWitness = true;
 
       // Input script must be exactly one push of the redeem script.
       if (!(input.code.length === 1 &amp;&amp; utils.equals(input.code[0], raw)))
-        return false;
+        throw new ScriptError('WITNESS_MALLEATED');
 
       // Verify the program in the redeem script
-      if (!Script.verifyProgram(witness, redeem, flags, tx, i))
-        return false;
+      Script.verifyProgram(witness, redeem, flags, tx, i);
 
       // Force a cleanstack
       stack.length = 0;
@@ -3919,14 +3891,14 @@ Script.verify = function verify(input, witness, output, tx, i, flags) {
     assert((flags &amp; constants.flags.VERIFY_P2SH) !== 0);
     // assert((flags &amp; constants.flags.VERIFY_WITNESS) !== 0);
     if (stack.length !== 0)
-      return false;
+      throw new ScriptError('CLEANSTACK');
   }
 
   // If we had a witness but no witness program, fail.
   if (flags &amp; constants.flags.VERIFY_WITNESS) {
     assert((flags &amp; constants.flags.VERIFY_P2SH) !== 0);
     if (!hadWitness &amp;&amp; witness.length > 0)
-      return false;
+      throw new ScriptError('WITNESS_UNEXPECTED');
   }
 
   return true;
@@ -3941,23 +3913,38 @@ Script.verify = function verify(input, witness, output, tx, i, flags) {
  * @param {VerifyFlags} flags
  * @param {TX} tx
  * @param {Number} i
+ * @throws {ScriptError}
  */
 
 Script.verifyProgram = function verifyProgram(witness, output, flags, tx, i) {
-  var program, witnessScript, redeem, stack, j, res;
+  var program = output.getWitnessProgram();
+  var stack = witness.toStack();
+  var witnessScript, redeem, j;
 
+  assert(program, 'verifyProgram called on non-witness-program.');
   assert((flags &amp; constants.flags.VERIFY_WITNESS) !== 0);
-  assert(output.isWitnessProgram());
 
-  program = output.getWitnessProgram();
+  if (program.version === 0) {
+    if (program.data.length === 32) {
+      if (stack.length === 0)
+        throw new ScriptError('WITNESS_PROGRAM_WITNESS_EMPTY');
 
-  // Failure on version=0 (bad program data length)
-  if (!program.type) {
-    bcoin.debug('Malformed witness program.');
-    return false;
-  }
+      witnessScript = stack.pop();
 
-  if (program.version > 0) {
+      if (!utils.equals(utils.sha256(witnessScript), program.data))
+        throw new ScriptError('WITNESS_PROGRAM_MISMATCH');
+
+      redeem = new Script(witnessScript);
+    } else if (program.data.length === 20) {
+      if (stack.length !== 2)
+        throw new ScriptError('WITNESS_PROGRAM_MISMATCH');
+
+      redeem = Script.createPubkeyhash(program.data);
+    } else {
+      // Failure on version=0 (bad program data length)
+      throw new ScriptError('WITNESS_PROGRAM_WRONG_LENGTH');
+    }
+  } else {
     bcoin.debug('Unknown witness program version: %s', program.version);
     // Anyone can spend (we can return true here
     // if we want to always relay these transactions).
@@ -3967,45 +3954,24 @@ Script.verifyProgram = function verifyProgram(witness, output, flags, tx, i) {
     // succeed in a block, but fail in the mempool
     // due to VERIFY_CLEANSTACK.
     if (flags &amp; constants.flags.VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM)
-      return false;
+      throw new ScriptError('DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM');
     return true;
-  }
-
-  stack = witness.toStack();
-
-  if (program.type === 'witnesspubkeyhash') {
-    if (stack.length !== 2)
-      return false;
-
-    redeem = Script.createPubkeyhash(program.data);
-  } else if (program.type === 'witnessscripthash') {
-    if (stack.length === 0)
-      return false;
-
-    witnessScript = stack.pop();
-
-    if (!utils.equals(utils.sha256(witnessScript), program.data))
-      return false;
-
-    redeem = new Script(witnessScript);
-  } else {
-    assert(false);
   }
 
   for (j = 0; j &lt; stack.length; j++) {
     if (stack.get(j).length > constants.script.MAX_PUSH)
-      return false;
+      throw new ScriptError('PUSH_SIZE');
   }
 
-  res = redeem.execute(stack, flags, tx, i, 1);
+  redeem.execute(stack, flags, tx, i, 1);
 
   // Verify the script did not fail as well as the stack values
-  if (!res || stack.length === 0 || !Script.bool(stack.pop()))
-    return false;
+  if (stack.length === 0 || !Script.bool(stack.pop()))
+    throw new ScriptError('EVAL_FALSE');
 
   // Witnesses always require cleanstack
   if (stack.length !== 0)
-    return false;
+    throw new ScriptError('EVAL_FALSE');
 
   return true;
 };
@@ -4045,14 +4011,12 @@ Script.concat = function concat(scripts) {
 
 Script.checksig = function checksig(msg, sig, key, flags) {
   var historical = false;
+  var high = false;
 
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
 
   if (!Buffer.isBuffer(sig))
-    return false;
-
-  if (sig.length === 0)
     return false;
 
   // Attempt to normalize the signature
@@ -4065,7 +4029,10 @@ Script.checksig = function checksig(msg, sig, key, flags) {
     historical = true;
   }
 
-  return bcoin.ec.verify(msg, sig.slice(0, -1), key, historical);
+  if (!(flags &amp; constants.flags.VERIFY_LOW_S))
+    high = true;
+
+  return bcoin.ec.verify(msg, sig.slice(0, -1), key, historical, high);
 };
 
 /**
@@ -4306,35 +4273,49 @@ Script.isScript = function isScript(obj) {
  * @global
  * @constructor
  * @extends Error
- * @param {String} msg - Error message.
+ * @param {String} code - Error code.
  * @param {(Number|String)?} op - Opcode.
  * @param {Number?} ip - Instruction pointer.
  * @property {String} message - Error message.
+ * @property {String} code - Original code passed in.
  * @property {String?} op - Symbolic opcode.
  * @property {Number?} ip - Instruction pointer.
  */
 
-function ScriptError(msg, op, ip) {
+function ScriptError(code, op, ip) {
   Error.call(this);
+
   if (Error.captureStackTrace)
     Error.captureStackTrace(this, ScriptError);
+
   this.type = 'ScriptError';
-  if (Buffer.isBuffer(op))
-    op = 'PUSHDATA[' + op.length + ']';
-  if (op || ip != null) {
-    msg += '(';
-    if (op) {
-      op = constants.opcodesByVal[op] || op;
-      msg += 'op=' + op;
+  this.code = code;
+
+  if (typeof op !== 'string') {
+    if (Buffer.isBuffer(op))
+      op = 'PUSHDATA[' + op.length + ']';
+
+    if (op || ip != null) {
+      code += ' (';
+      if (op) {
+        op = constants.opcodesByVal[op] || op;
+        code += 'op=' + op;
+        if (ip != null)
+          code += ', ';
+      }
       if (ip != null)
-        msg += ', ';
+        code += 'ip=' + ip;
+      code += ')';
     }
-    if (ip != null)
-      msg += 'ip=' + ip;
+
+    this.message = code;
+    this.op = op || '';
+    this.ip = ip != null ? ip : -1;
+  } else {
+    this.message = op;
+    this.op = '';
+    this.ip = -1;
   }
-  this.message = msg;
-  this.op = op;
-  this.ip = ip;
 }
 
 utils.inherits(ScriptError, Error);
@@ -4361,7 +4342,7 @@ return Script;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Apr 19 2016 12:03:03 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Apr 20 2016 02:34:27 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
