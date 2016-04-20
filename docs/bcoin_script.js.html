@@ -40,6 +40,7 @@ var constants = bcoin.protocol.constants;
 var utils = require('./utils');
 var assert = utils.assert;
 var BufferWriter = require('./writer');
+var BufferReader = require('./reader');
 var opcodes = constants.opcodes;
 var STACK_TRUE = new Buffer([1]);
 var STACK_FALSE = new Buffer([]);
@@ -97,11 +98,13 @@ function Witness(items, mutable) {
 
 /**
  * Inspect a Witness object.
+ * @method
  * @returns {String} Human-readable script.
  */
 
+Witness.prototype.toString =
 Witness.prototype.inspect = function inspect() {
-  return Script.format(this.items);
+  return Witness.format(this.items);
 };
 
 /**
@@ -265,75 +268,6 @@ Witness.fromRaw = function fromRaw(data, enc) {
 };
 
 /**
- * Parse a formatted script
- * string into a witness object. _Must_
- * contain only stack items (no non-push
- * opcodes).
- * @param {String} items - Script string.
- * @returns {Witness}
- * @throws Parse error.
- */
-
-Witness.fromString = function fromString(items) {
-  var i, op, symbol;
-
-  if (typeof items !== 'string')
-    return new Witness();
-
-  items = items.trim();
-
-  if (items.length === 0)
-    return new Witness();
-
-  items = items.split(/\s+/);
-
-  for (i = 0; i &lt; items.length; i++) {
-    op = items[i].toLowerCase();
-
-    if (op.indexOf('op_') === 0)
-      op = op.slice(3);
-
-    if (op === '-1' || op === '1negate') {
-      op = STACK_NEGATE;
-    } else if (op === '0' || op === 'false') {
-      op = STACK_FALSE;
-    } else if (op === 'true') {
-      op = STACK_TRUE;
-    } else if (+op >= 1 &amp;&amp; +op &lt;= 16) {
-      op = new Buffer([+op]);
-    } else {
-      symbol = 'OP_' + op.toUpperCase();
-      if (opcodes[symbol] == null) {
-        if (op[0] === '\'' || op[0] === '"') {
-          op = op.slice(1, -1);
-          op = new Buffer(op, 'ascii');
-          items[i] = op;
-          continue;
-        }
-        if (/^-?\d+$/.test(op)) {
-          op = new bn(op, 10);
-          op = Script.array(op);
-          items[i] = op;
-          continue;
-        }
-        if (op[0] === '[')
-          op = op.slice(1, -1);
-        if (op.indexOf('0x') === 0)
-          op = op.slice(2);
-        assert(utils.isHex(op), 'Non-stack item in witness string.');
-        op = new Buffer(op, 'hex');
-      } else {
-        assert(false, 'Non-stack item in witness string.');
-      }
-    }
-
-    items[i] = op;
-  }
-
-  return new Witness(items);
-};
-
-/**
  * Parse a test script/array
  * string into a witness object. _Must_
  * contain only stack items (no non-push
@@ -343,14 +277,14 @@ Witness.fromString = function fromString(items) {
  * @throws Parse error.
  */
 
-Witness.fromTestString = function fromTestString(items) {
+Witness.fromString = function fromString(items) {
   var result;
 
   if (!Array.isArray(items)) {
     if (typeof items !== 'string')
       return new Witness();
 
-    items = items.trim();
+    items = items.trim().split(/\s+/);
   }
 
   if (items.length === 0)
@@ -409,6 +343,18 @@ Witness.fromSymbolic = function fromSymbolic(items) {
 };
 
 /**
+ * Format script code into a human readable-string.
+ * @param {Array} code
+ * @returns {String} Human-readable string.
+ */
+
+Witness.format = function format(items) {
+  return items.map(function(chunk) {
+    return chunk.toString('hex');
+  }).join(' ');
+};
+
+/**
  * Test an object to see if it is a Witness.
  * @param {Object} obj
  * @returns {Boolean}
@@ -441,11 +387,13 @@ function Stack(items) {
 
 /**
  * Inspect the stack.
+ * @method
  * @returns {String} Human-readable stack.
  */
 
+Stack.prototype.toString =
 Stack.prototype.inspect = function inspect() {
-  return Script.format(this.items);
+  return Witness.format(this.items);
 };
 
 Stack.prototype.__defineGetter__('length', function() {
@@ -966,9 +914,11 @@ Script.prototype.clone = function clone(mutable) {
 
 /**
  * Inspect the script.
+ * @method
  * @returns {String} Human-readable script code.
  */
 
+Script.prototype.toString =
 Script.prototype.inspect = function inspect() {
   return Script.format(this.code);
 };
@@ -1073,9 +1023,10 @@ Script.prototype.execute = function execute(stack, flags, tx, index, version) {
   for (ip = 0; ip &lt; this.code.length; ip++) {
     op = this.code[ip];
 
+    if (Script.isBadPush(op))
+      throw new ScriptError('BAD_OPCODE', op, ip);
+
     if (Buffer.isBuffer(op)) {
-      if (!Script.checkPush(op))
-        throw new ScriptError('BAD_OPCODE', op, ip);
       if (op.length > constants.script.MAX_PUSH)
         throw new ScriptError('PUSH_SIZE', op, ip);
       // Note that minimaldata is not checked
@@ -2008,18 +1959,18 @@ Script.array = function(value) {
 
 Script.prototype.removeData = function removeData(data) {
   var total = 0;
-  var pushdata = data.pushdata;
-  var sig, raw, i, a, b;
+  var opcode, sig, raw, i, a, b;
 
   if (!this.raw)
     return this.removeDataFast(data);
 
   // We need to reserialize
   // the signature as minimaldata.
-  delete data.pushdata;
-  sig = new Script([data]).encode();
-  if (pushdata)
-    utils.hidden(data, 'pushdata', pushdata);
+  opcode = data.opcode;
+  delete data.opcode;
+  sig = Script.encode([data]);
+  if (opcode != null)
+    data.opcode = opcode;
 
   raw = this.encode();
 
@@ -2092,38 +2043,6 @@ Script.prototype.indexOf = function indexOf(data) {
 };
 
 /**
- * Test whether an op is a buffer, also
- * check for buffer underflows.
- * @param {Buffer?} value
- * @returns {Boolean}
- */
-
-Script.isPush = function isPush(value) {
-  return Buffer.isBuffer(value) &amp;&amp; Script.checkPush(value);
-};
-
-/**
- * Perform some range checking on the pushdatas
- * (exactly what GetOp2 does). Note that this
- * _must_ be done during execution, not parsing.
- * @see GetOp2
- * @param {Buffer} value - Pushdata op from script code
- * (must be from a deserialized script).
- * @returns {Boolean}
- */
-
-Script.checkPush = function checkPush(value) {
-  var pushdata = value.pushdata;
-
-  if (!pushdata)
-    return true;
-
-  // The pushdata size can never
-  // be greater than the buffer.
-  return pushdata.size === value.length;
-};
-
-/**
  * Check to see if a pushdata Buffer abides by minimaldata.
  * @param {Buffer} value - Pushdata op from script code
  * (must be from a deserialized script).
@@ -2132,15 +2051,13 @@ Script.checkPush = function checkPush(value) {
  */
 
 Script.checkMinimal = function checkMinimal(value, flags) {
-  var pushdata = value.pushdata;
-
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
 
   if (!(flags &amp; constants.flags.VERIFY_MINIMALDATA))
     return true;
 
-  if (!pushdata)
+  if (value.opcode == null)
     return true;
 
   if (value.length === 1 &amp;&amp; value[0] >= 1 &amp;&amp; value[0] &lt;= 16)
@@ -2150,38 +2067,40 @@ Script.checkMinimal = function checkMinimal(value, flags) {
     return false;
 
   if (value.length &lt;= 75)
-    return pushdata.opcode == null &amp;&amp; pushdata.size === value.length;
+    return value.opcode === value.length;
 
   if (value.length &lt;= 255)
-    return pushdata.opcode === opcodes.OP_PUSHDATA1;
+    return value.opcode === opcodes.OP_PUSHDATA1;
 
   if (value.length &lt;= 65535)
-    return pushdata.opcode === opcodes.OP_PUSHDATA2;
+    return value.opcode === opcodes.OP_PUSHDATA2;
 
   return true;
 };
 
 /**
  * Test a buffer to see if it is valid script code (no non-existent opcodes).
- * @param {Buffer} buf
+ * @param {Buffer} raw
  * @returns {Boolean}
  */
 
-Script.isCode = function isCode(buf) {
+Script.isCode = function isCode(raw) {
   var i, op, code;
 
-  if (!buf)
+  if (!raw)
     return false;
 
-  if (!Buffer.isBuffer(buf))
+  if (!Buffer.isBuffer(raw))
     return false;
 
-  code = Script.decode(buf);
+  code = Script.decode(raw);
 
   for (i = 0; i &lt; code.length; i++) {
     op = code[i];
     if (Buffer.isBuffer(op))
       continue;
+    if (Script.isBadPush(op))
+      return false;
     if (constants.opcodesByVal[op] == null)
       return false;
   }
@@ -2337,7 +2256,7 @@ Script.prototype.getRedeem = function getRedeem() {
 Script.getRedeem = function getRedeem(code) {
   var redeem = code[code.length - 1];
 
-  if (!Script.isPush(redeem))
+  if (!Buffer.isBuffer(redeem))
     return;
 
   return new Script(redeem);
@@ -2407,34 +2326,30 @@ Script.prototype.isStandard = function isStandard() {
  */
 
 Script.prototype.isStandardProgram = function isStandardProgram(witness, flags) {
-  var program, witnessScript, i;
+  var program = this.getWitnessProgram();
+  var i;
 
+  assert(program);
   assert((flags &amp; constants.flags.VERIFY_WITNESS) !== 0);
-  assert(this.isWitnessProgram());
 
-  program = this.getWitnessProgram();
-
-  if (!program.type)
-    return false;
-
-  if (program.version > 0) {
+  if (program.version === 0) {
+    if (program.data.length === 32) {
+      if (witness.items.length === 0)
+        return false;
+    } else if (program.data.length === 20) {
+      if (witness.items.length !== 2)
+        return false;
+    } else {
+      return false;
+    }
+  } else {
     if (flags &amp; constants.flags.VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM)
       return false;
     return true;
   }
 
-  if (program.type === 'witnesspubkeyhash') {
-    if (witness.items.length !== 2)
-      return false;
-  } else if (program.type === 'witnessscripthash') {
-    if (witness.items.length === 0)
-      return false;
-  } else {
-    assert(false);
-  }
-
   for (i = 0; i &lt; witness.items.length; i++) {
-    if (witness.items[i].length > constants.script.MAX_SIZE)
+    if (witness.items[i].length > constants.script.MAX_PUSH)
       return false;
   }
 
@@ -2691,12 +2606,11 @@ Script.prototype.isNulldata = function isNulldata() {
 
   for (i = 1; i &lt; this.code.length; i++) {
     op = this.code[i];
-    if (Buffer.isBuffer(op)) {
-      if (!Script.checkPush(op))
-        return false;
+    if (Buffer.isBuffer(op))
       continue;
-    }
     if (op > opcodes.OP_16)
+      return false;
+    if (Script.isBadPush(op))
       return false;
   }
 
@@ -2726,7 +2640,7 @@ Script.prototype.isCommitment = function isCommitment() {
   }
   return this.code.length >= 2
     &amp;&amp; this.code[0] === opcodes.OP_RETURN
-    &amp;&amp; Script.isPush(this.code[1])
+    &amp;&amp; Buffer.isBuffer(this.code[1])
     &amp;&amp; this.code[1].length === 36
     &amp;&amp; utils.readU32BE(this.code[1], 0) === 0xaa21a9ed;
 };
@@ -2773,7 +2687,7 @@ Script.prototype.isWitnessProgram = function isWitnessProgram() {
   if (typeof this.code[0] !== 'number')
     return false;
 
-  if (!Script.isPush(this.code[1]))
+  if (!Buffer.isBuffer(this.code[1]))
     return false;
 
   return (this.code[0] === opcodes.OP_0
@@ -3071,7 +2985,7 @@ Script.isScripthashInput = function isScripthashInput(code, isWitness) {
 
   // Last data element should be an array
   // for the redeem script.
-  if (!Script.isPush(raw))
+  if (!Buffer.isBuffer(raw))
     return false;
 
   // Testing for scripthash inputs requires
@@ -3128,9 +3042,6 @@ Script.getCoinbaseHeight = function getCoinbaseHeight(code) {
   if (!Buffer.isBuffer(code[0]))
     return -1;
 
-  if (!Script.checkPush(code[0]))
-    return -1;
-
   if (!Script.checkMinimal(code[0]))
     return -1;
 
@@ -3179,7 +3090,7 @@ Script.prototype.getCoinbaseData = function getCoinbaseData() {
  */
 
 Script.isHash = function isHash(hash) {
-  return Script.isPush(hash) &amp;&amp; hash.length === 20;
+  return Buffer.isBuffer(hash) &amp;&amp; hash.length === 20;
 };
 
 /**
@@ -3190,7 +3101,7 @@ Script.isHash = function isHash(hash) {
  */
 
 Script.isKey = function isKey(key) {
-  return Script.isPush(key) &amp;&amp; key.length >= 33 &amp;&amp; key.length &lt;= 65;
+  return Buffer.isBuffer(key) &amp;&amp; key.length >= 33 &amp;&amp; key.length &lt;= 65;
 };
 
 /**
@@ -3201,7 +3112,7 @@ Script.isKey = function isKey(key) {
  */
 
 Script.isSignature = function isSignature(sig) {
-  return Script.isPush(sig) &amp;&amp; sig.length >= 9 &amp;&amp; sig.length &lt;= 73;
+  return Buffer.isBuffer(sig) &amp;&amp; sig.length >= 9 &amp;&amp; sig.length &lt;= 73;
 };
 
 /**
@@ -3211,7 +3122,7 @@ Script.isSignature = function isSignature(sig) {
  */
 
 Script.isDummy = function isDummy(data) {
-  return Script.isPush(data) &amp;&amp; data.length === 0;
+  return Buffer.isBuffer(data) &amp;&amp; data.length === 0;
 };
 
 /**
@@ -3240,7 +3151,7 @@ Script.validateKey = function validateKey(key, flags) {
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
 
-  if (!Script.isPush(key))
+  if (!Buffer.isBuffer(key))
     throw new ScriptError('BAD_OPCODE');
 
   if (flags &amp; constants.flags.VERIFY_STRICTENC) {
@@ -3258,7 +3169,7 @@ Script.validateKey = function validateKey(key, flags) {
  */
 
 Script.isKeyEncoding = function isKeyEncoding(key) {
-  if (!Script.isPush(key))
+  if (!Buffer.isBuffer(key))
     return false;
 
   if (key.length &lt; 33)
@@ -3293,7 +3204,7 @@ Script.validateSignature = function validateSignature(sig, flags) {
   if (flags == null)
     flags = constants.flags.STANDARD_VERIFY_FLAGS;
 
-  if (!Script.isPush(sig))
+  if (!Buffer.isBuffer(sig))
     throw new ScriptError('BAD_OPCODE');
 
   // Allow empty sigs
@@ -3330,7 +3241,7 @@ Script.validateSignature = function validateSignature(sig, flags) {
 Script.isSignatureEncoding = function isSignatureEncoding(sig) {
   var lenR, lenS;
 
-  if (!Script.isPush(sig))
+  if (!Buffer.isBuffer(sig))
     return false;
 
   // Format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S] [sighash]
@@ -3421,7 +3332,7 @@ Script.isSignatureEncoding = function isSignatureEncoding(sig) {
 Script.isHashType = function isHashType(sig) {
   var type;
 
-  if (!Script.isPush(sig))
+  if (!Buffer.isBuffer(sig))
     return false;
 
   if (sig.length === 0)
@@ -3443,7 +3354,7 @@ Script.isHashType = function isHashType(sig) {
 
 Script.isLowDER = function isLowDER(sig) {
   if (!sig.s) {
-    if (!Script.isPush(sig))
+    if (!Buffer.isBuffer(sig))
       return false;
 
     if (!Script.isSignatureEncoding(sig))
@@ -3462,32 +3373,48 @@ Script.isLowDER = function isLowDER(sig) {
  */
 
 Script.format = function format(code) {
-  var scripts = [];
+  return code.map(function(chunk) {
+    var op, size;
 
-  if (Array.isArray(code)) {
-    scripts.push({ code: code });
-  } else if (code instanceof Stack) {
-    scripts.push({ code: code.items });
-  } else if (code instanceof Witness) {
-    scripts.push({ code: code.items });
-  } else if (code instanceof Script) {
-    scripts.push(code);
-  } else if (code instanceof bcoin.input) {
-    scripts.push(code.script);
-    if (code.witness.length > 0)
-      scripts.push({ code: code.witness.items });
-    if (code.coin) {
-      scripts.push(code.coin.script);
-      if (code.coin.script.isScripthash())
-        scripts.push(code.coin.script.getRedeem());
+    if (Buffer.isBuffer(chunk)) {
+      op = chunk.op;
+      if (op == null) {
+        if (chunk.length === 0) {
+          op = opcodes.OP_0;
+        } else if (chunk.length &lt;= 0x4b) {
+          if (chunk.length === 1) {
+            if (chunk[0] === 0) {
+              op = opcodes.OP_0;
+              return constants.opcodesByVal[op];
+            } else if (chunk[0] >= 1 &amp;&amp; chunk[0] &lt;= 16) {
+              op = chunk[0] + 0x50;
+              return constants.opcodesByVal[op];
+            } else if (chunk[0] === 0x81) {
+              op = opcodes.OP_1NEGATE;
+              return constants.opcodesByVal[op];
+            }
+          }
+          op = chunk.length;
+        } else if (chunk.length &lt;= 0xff) {
+          op = opcodes.OP_PUSHDATA1;
+        } else if (chunk.length &lt;= 0xffff) {
+          op = opcodes.OP_PUSHDATA2;
+        } else if (chunk.length &lt;= 0xffffffff) {
+          op = opcodes.OP_PUSHDATA4;
+        }
+      }
+      size = chunk.length.toString(16);
+      if (size.length &lt; 2)
+        size = '0' + size;
+      if (!constants.opcodesByVal[op]) {
+        op = op.toString(16);
+        if (op.length &lt; 2)
+          op = '0' + op;
+        return '0x' + op + ' 0x' + chunk.toString('hex');
+      }
+      op = constants.opcodesByVal[op];
+      return op + ' 0x' + size + ' 0x' + chunk.toString('hex');
     }
-  } else if (code instanceof bcoin.output) {
-    scripts.push(code.script);
-  }
-
-  return Script.concat(scripts).map(function(chunk) {
-    if (Buffer.isBuffer(chunk))
-      return '[' + chunk.toString('hex') + ']';
 
     assert(typeof chunk === 'number');
 
@@ -3498,7 +3425,7 @@ Script.format = function format(code) {
     if (chunk.length &lt; 2)
       chunk = '0' + chunk;
 
-    return 'UNKNOWN(' + chunk + ')';
+    return '0x' + chunk;
   }).join(' ');
 };
 
@@ -3512,12 +3439,11 @@ Script.prototype.isPushOnly = function isPushOnly() {
   var i, op;
   for (i = 0; i &lt; this.code.length; i++) {
     op = this.code[i];
-    if (Buffer.isBuffer(op)) {
-      if (!Script.checkPush(op))
-        return false;
+    if (Buffer.isBuffer(op))
       continue;
-    }
     if (op > opcodes.OP_16)
+      return false;
+    if (Script.isBadPush(op))
       return false;
   }
   return true;
@@ -3538,11 +3464,11 @@ Script.prototype.getSigops = function getSigops(accurate) {
   for (i = 0; i &lt; this.code.length; i++) {
     op = this.code[i];
 
-    if (Script.isPush(op))
+    if (Buffer.isBuffer(op))
       continue;
 
-    if (constants.opcodesByVal[op] == null)
-      return 0;
+    if (Script.isBadPush(op))
+      break;
 
     if (op === opcodes.OP_CHECKSIG || op === opcodes.OP_CHECKSIGVERIFY) {
       total++;
@@ -3599,63 +3525,6 @@ Script.prototype.getArgs = function getArgs() {
 };
 
 /**
- * Parse a formatted script
- * string into a script object.
- * @param {String} items - Script string.
- * @returns {Script}
- * @throws Parse error.
- */
-
-Script.fromString = function fromString(code) {
-  var i, op, symbol;
-
-  if (typeof code !== 'string')
-    return new Script();
-
-  code = code.trim();
-
-  if (code.length === 0)
-    return new Script();
-
-  code = code.split(/\s+/);
-
-  for (i = 0; i &lt; code.length; i++) {
-    op = code[i];
-
-    symbol = op.toUpperCase();
-    if (symbol.indexOf('OP_') !== 0)
-      symbol = 'OP_' + symbol;
-
-    if (opcodes[symbol] == null) {
-      if (op[0] === '\'' || op[0] === '"') {
-        op = op.slice(1, -1);
-        op = new Buffer(op, 'ascii');
-        code[i] = op;
-        continue;
-      }
-      if (/^-?\d+$/.test(op)) {
-        op = new bn(op, 10);
-        op = Script.array(op);
-        code[i] = op;
-        continue;
-      }
-      if (op[0] === '[')
-        op = op.slice(1, -1);
-      if (op.indexOf('0x') === 0)
-        op = op.slice(2);
-      assert(utils.isHex(op), 'Unknown opcode.');
-      op = new Buffer(op, 'hex');
-      code[i] = op;
-      continue;
-    }
-
-    code[i] = opcodes[symbol];
-  }
-
-  return new Script(code);
-};
-
-/**
  * Parse a bitcoind test script
  * string into a script object.
  * @param {String} items - Script string.
@@ -3663,7 +3532,7 @@ Script.fromString = function fromString(code) {
  * @throws Parse error.
  */
 
-Script.fromTestString = function fromTestString(code) {
+Script.fromString = function fromString(code) {
   var i, op, symbol, p;
 
   if (typeof code !== 'string')
@@ -4086,74 +3955,116 @@ Script.fromRaw = function fromRaw(data, enc) {
  * Decode a serialized script into script code.
  * Note that the serialized script must _not_
  * include the varint size before it. Note that
- * this will apply hidden `pushdata` properties
+ * this will apply hidden `opcode` properties
  * to each Buffer if the buffer was created from
- * a non-standard pushdata.
+ * a non-minimal pushdata.
  *
- * This function does not do bounds checking
- * on buffers because some jackass could do a
- * direct push of 30 bytes with only 20 bytes
- * after it. That script would be perfectly
- * fine _until_ it is executed. There are
- * output scripts on the blockchain that can
- * never be redeemed due to this, but they are
- * in valid blocks, therefore we cannot fail
- * parsing them.
+ * BCoin parses scripts "differently" because it
+ * parses them _before they're executed_. This
+ * lends itself to some interesting edge cases.
  *
+ * If bitcoind comes across a bad push, it
+ * will return an invalid opcode. The problem
+ * is bitcoind parses scripts _as_ they are
+ * executing, which can be slow for us because
+ * now every function that needs to test the
+ * script needs to parse the raw data. It's
+ * also impossible to read a script
+ * _backwards_ making testing for things like
+ * multisig outputs even more difficult.
+ *
+ * If this function comes accross a bad push
+ * in its parsing, it simply will _not
+ * consider the pushdata to be a pushdata_
+ * but just another opcode in the code array
+ * (all of the data after the pushdata op
+ * will also be considered opcodes rather
+ * than data).
+
  * Also note that this function uses reference
  * Buffer slices. Larger buffer slices should
  * _never_ be passed in here.
- * @param {Buffer} buf - Serialized script.
+ * @param {Buffer} raw - Serialized script.
  * @returns {Array} Script code.
  */
 
-Script.decode = function decode(buf) {
+Script.decode = function decode(raw) {
+  var p = new BufferReader(raw, true);
   var code = [];
-  var off = 0;
-  var op, size;
+  var op, size, data;
 
-  assert(Buffer.isBuffer(buf));
+  assert(Buffer.isBuffer(raw));
 
-  while (off &lt; buf.length) {
-    op = buf[off++];
+  while (p.left()) {
+    op = p.readU8();
     if (op >= 0x01 &amp;&amp; op &lt;= 0x4b) {
-      code.push(buf.slice(off, off + op));
-      off += op;
-      // if (off > buf.length) {
-      utils.hidden(code[code.length - 1], 'pushdata', {
-        opcode: null,
-        size: op
-      });
+      if (p.left() &lt; op) {
+        code.push(op);
+        while (p.left())
+          code.push(p.readU8());
+        continue;
+      }
+      data = p.readBytes(op);
+      data.opcode = op;
+      code.push(data);
     } else if (op === opcodes.OP_PUSHDATA1) {
-      size = buf[off];
-      off += 1;
-      code.push(buf.slice(off, off + size));
-      off += size;
-      // if (size &lt;= 0x4b || off > buf.length) {
-      utils.hidden(code[code.length - 1], 'pushdata', {
-        opcode: op,
-        size: size
-      });
+      if (p.left() &lt; 1) {
+        code.push(op);
+        while (p.left())
+          code.push(p.readU8());
+        continue;
+      }
+      size = p.readU8();
+      if (p.left() &lt; size) {
+        code.push(op);
+        code.push(size);
+        while (p.left())
+          code.push(p.readU8());
+        continue;
+      }
+      data = p.readBytes(size);
+      data.opcode = op;
+      code.push(data);
     } else if (op === opcodes.OP_PUSHDATA2) {
-      size = utils.readU16(buf, off);
-      off += 2;
-      code.push(buf.slice(off, off + size));
-      off += size;
-      // if (size &lt;= 0xff || off > buf.length) {
-      utils.hidden(code[code.length - 1], 'pushdata', {
-        opcode: op,
-        size: size
-      });
+      if (p.left() &lt; 2) {
+        code.push(op);
+        while (p.left())
+          code.push(p.readU8());
+        continue;
+      }
+      size = p.readU16();
+      if (p.left() &lt; size) {
+        code.push(op);
+        code.push(size &amp; 0xff);
+        code.push((size >>> 8) &amp; 0xff);
+        while (p.left())
+          code.push(p.readU8());
+        continue;
+      }
+      data = p.readBytes(size);
+      data.opcode = op;
+      code.push(data);
     } else if (op === opcodes.OP_PUSHDATA4) {
-      size = utils.readU32(buf, off);
-      off += 4;
-      code.push(buf.slice(off, off + size));
-      off += size;
-      // if (size &lt;= 0xffff || off > buf.length) {
-      utils.hidden(code[code.length - 1], 'pushdata', {
-        opcode: op,
-        size: size
-      });
+      if (p.left() &lt; 4) {
+        code.push(op);
+        while (p.left())
+          code.push(p.readU8());
+        continue;
+      }
+      size = p.readU32();
+      if (p.left() &lt; size) {
+        code.push(op);
+        code.push(size &amp; 0xff);
+        code.push((size >>> 8) &amp; 0xff);
+        code.push((size >>> 16) &amp; 0xff);
+        code.push((size >>> 24) &amp; 0xff);
+        while (p.left())
+          code.push(p.readU8());
+        continue;
+      }
+      data = p.readBytes(size);
+      data.opcode = op;
+      code.push(data);
     } else {
       code.push(op);
     }
@@ -4187,21 +4098,21 @@ Script.encode = function encode(code, writer) {
     if (Buffer.isBuffer(op)) {
       // Check for nonstandard pushdatas that
       // may have been decoded from before.
-      if (op.pushdata) {
-        if (op.pushdata.opcode === null) {
-          p.writeU8(op.pushdata.size);
+      if (op.opcode != null) {
+        if (op.opcode &lt;= 0x4b) {
+          p.writeU8(op.length);
           p.writeBytes(op);
-        } else if (op.pushdata.opcode === opcodes.OP_PUSHDATA1) {
+        } else if (op.opcode === opcodes.OP_PUSHDATA1) {
           p.writeU8(opcodes.OP_PUSHDATA1);
-          p.writeU8(op.pushdata.size);
+          p.writeU8(op.length);
           p.writeBytes(op);
-        } else if (op.pushdata.opcode === opcodes.OP_PUSHDATA2) {
+        } else if (op.opcode === opcodes.OP_PUSHDATA2) {
           p.writeU8(opcodes.OP_PUSHDATA2);
-          p.writeU16(op.pushdata.size);
+          p.writeU16(op.length);
           p.writeBytes(op);
-        } else if (op.pushdata.opcode === opcodes.OP_PUSHDATA4) {
+        } else if (op.opcode === opcodes.OP_PUSHDATA4) {
           p.writeU8(opcodes.OP_PUSHDATA4);
-          p.writeU32(op.pushdata.size);
+          p.writeU32(op.length);
           p.writeBytes(op);
         } else {
           assert(false, 'Bad pushdata op.');
@@ -4253,6 +4164,31 @@ Script.encode = function encode(code, writer) {
     p = p.render();
 
   return p;
+};
+
+/**
+ * Determine whether GetOp2 should fail
+ * on a given op due to a bad push (either
+ * not enough size bytes after a PUSHDATA,
+ * or not enough data after the size.
+ *
+ * This function checks to see if an op
+ * is a direct push, or PUSHDATA1 to
+ * PUSHDATA4 -- these opcodes cannot exist
+ * in the code array of valid parsed
+ * scripts.
+ * @param {Number|Buffer} op
+ * @returns {Boolean}
+ */
+
+Script.isBadPush = function isBadPush(op) {
+  if (Buffer.isBuffer(op))
+    return false;
+  if (op >= 0x01 &amp;&amp; op &lt;= 0x4b)
+    return true;
+  if (op >= opcodes.OP_PUSHDATA1 &amp;&amp; op &lt;= opcodes.OP_PUSHDATA4)
+    return true;
+  return false;
 };
 
 /**
@@ -4342,7 +4278,7 @@ return Script;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Apr 20 2016 03:53:44 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Apr 20 2016 14:31:48 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
