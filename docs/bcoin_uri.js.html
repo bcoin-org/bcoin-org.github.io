@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: bcoin/compactblock.js</title>
+    <title>JSDoc: Source: bcoin/uri.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: bcoin/compactblock.js</h1>
+    <h1 class="page-title">Source: bcoin/uri.js</h1>
 
     
 
@@ -26,114 +26,95 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/*!
- * compactblock.js - compact block object for bcoin
+            <pre class="prettyprint source linenums"><code>/**
+ * bitcoin uri parsing
+ * @module uri
+ * @license
  * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
  * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
  * https://github.com/indutny/bcoin
  */
 
-module.exports = function(bcoin) {
-
-var bn = require('bn.js');
+var url = require('url');
+var querystring = require('querystring');
 var utils = require('./utils');
-var assert = utils.assert;
 
 /**
- * A block object which is essentially a "placeholder"
- * for a full {@link Block} object. The v8 garbage
- * collector's head will explode if there is too much
- * data on the javascript heap. Blocks can currently
- * be up to 1mb in size. In the future, they may be
- * 2mb, 8mb, or maybe 20mb, who knows? A CompactBlock
- * is an optimization in BCoin which defers parsing of
- * the serialized transactions (the block Buffer) until
- * the block has passed through the chain queue and
- * is about to enter the chain. This keeps a lot data
- * off of the javascript heap for most of the time a
- * block even exists in memory, and manages to keep a
- * lot of strain off of the garbage collector. Having
- * 500mb of blocks on the js heap would not be a good
- * thing.
- * @exports CompactBlock
- * @constructor
- * @param {Object} data
- * @property {Number} version - Block version. Note
- * that BCoin reads versions as unsigned despite
- * them being signed on the protocol level. This
- * number will never be negative.
- * @property {Hash} prevBlock - Previous block hash.
- * @property {Hash} merkleRoot - Merkle root hash.
- * @property {Number} ts - Timestamp.
- * @property {Number} bits
- * @property {Number} nonce
- * @property {Number} totalTX - Transaction count.
- * @property {Number} height - Block height (-1 if not present).
- * @property {Number} coinbaseHeight - The coinbase height which
- * was extracted by the parser (the coinbase is the only
- * transaction we parse ahead of time).
- * @property {Buffer} _raw - The raw block data.
- * @property {ReversedHash} rhash - Reversed block hash (uint256le).
+ * Parse a bitcoin URI.
+ * @param {String} uri - Bitcoin URI.
+ * @returns {ParsedURI}
+ * @throws on non-bitcoin uri
  */
 
-function CompactBlock(data) {
-  if (!(this instanceof CompactBlock))
-    return new CompactBlock(data);
+exports.parse = function parse(uri) {
+  var data = url.parse(uri);
+  var query = querystring.parse(data.query || '');
 
-  bcoin.abstractblock.call(this, data);
+  assert(data.protocol === 'bitcoin:', 'Not a bitcoin URI.');
+  assert(data.hostname, 'No address present.');
 
-  this.compact = true;
-  this.coinbaseHeight = data.coinbaseHeight;
-}
-
-utils.inherits(CompactBlock, bcoin.abstractblock);
+  return {
+    address: data.hostname,
+    amount: query.amount ? utils.satoshi(query.amount) : null,
+    label: query.label || null,
+    message: query.message || null,
+    request: query.r || null
+  };
+};
 
 /**
- * Verify the block headers.
- * @alias verify
- * @param {Object?} ret - Return object, may be
- * set with properties `reason` and `score`.
+ * Test whether an object is a bitcoin URI.
+ * @param {String} uri
  * @returns {Boolean}
  */
 
-CompactBlock.prototype._verify = function _verify(ret) {
-  return this.verifyHeaders(ret);
+exports.validate = function validate(uri) {
+  try {
+    exports.parse(uri);
+    return true;
+  } catch (e) {
+    return false;
+  }
 };
 
 /**
- * Retrieve the coinbase height from the coinbase input script (already
- * extracted in actuality).
- * @returns {Number} height (-1 if not present).
+ * Encode data as a bitcoin URI.
+ * @param {ParsedURI|Base58Address} data/address
+ * @param {BN?} amount
+ * @returns {String} URI
+ * @throws when no address provided
  */
 
-CompactBlock.prototype.getCoinbaseHeight = function getCoinbaseHeight() {
-  return this.coinbaseHeight;
-};
+exports.stringify = function stringify(address, amount) {
+  var query = {};
+  var data = address;
+  var uri;
 
-/**
- * Parse the serialized block data and create an actual {@link Block}.
- * @returns {Block}
- * @throws Parse error
- */
+  if (typeof address === 'string')
+    data = { address: address, amount: amount };
 
-CompactBlock.prototype.toBlock = function toBlock() {
-  var data = bcoin.protocol.parser.parseBlock(this._raw);
-  delete this._raw;
-  assert(!data._raw);
-  return new bcoin.block(data);
-};
+  assert(data.address, 'Address is required for a bitcoin URI.');
 
-/**
- * Test an object to see if it is a CompactBlock.
- * @param {Object} obj
- * @returns {Boolean}
- */
+  uri = 'bitcoin:' + data.address;
 
-CompactBlock.isCompactBlock = function isCompactBlock(obj) {
-  return obj &amp;&amp; typeof obj.toBlock === 'function';
-};
+  if (data.amount)
+    query.amount = utils.btc(data.amount);
 
-return CompactBlock;
+  if (data.label)
+    query.label = data.label;
+
+  if (data.message)
+    query.message = data.message;
+
+  if (data.request)
+    query.r = data.request;
+
+  query = querystring.stringify(query);
+
+  if (query.length === 0)
+    return uri;
+
+  return uri + '?' + query;
 };
 </code></pre>
         </article>

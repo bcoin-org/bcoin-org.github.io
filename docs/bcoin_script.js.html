@@ -47,18 +47,6 @@ var STACK_FALSE = new Buffer([]);
 var STACK_NEGATE = new Buffer([0x81]);
 
 /**
- * A big number (bn.js)
- * @global
- * @typedef {Object} BN
- */
-
-/**
- * A bitfield containing script verify flags.
- * @global
- * @typedef {Number} VerifyFlags
- */
-
-/**
  * Refers to the witness field of segregated witness transactions.
  * @exports Witness
  * @constructor
@@ -955,9 +943,6 @@ Script.prototype.toRaw = function toRaw(enc) {
 
 /**
  * Get the script's "subscript" starting at a separator.
- * Remove all OP_CODESEPARATORs if present. This bizarre
- * behavior is necessary for signing and verification when
- * code separators are present.
  * @param {Number?} lastSep - The last separator to sign/verify beyond.
  * @returns {Script} Subscript.
  */
@@ -966,12 +951,36 @@ Script.prototype.getSubscript = function getSubscript(lastSep) {
   var code = [];
   var i;
 
-  if (lastSep == null)
-    lastSep = -1;
+  // Optimization: avoid re-rendering
+  // of the script in 99.9% of cases.
+  if (lastSep === 0) {
+    code = this.clone();
+    code.raw = this.raw;
+    return code;
+  }
 
-  assert(lastSep &lt;= 0 || this.code[lastSep] === opcodes.OP_CODESEPARATOR);
+  for (i = lastSep; i &lt; this.code.length; i++) {
+    if (Script.isBadPush(this.code[i]))
+      break;
+    code.push(this.code[i]);
+  }
 
-  for (i = lastSep + 1; i &lt; this.code.length; i++) {
+  return new Script(code);
+};
+
+/**
+ * Get the script's "subscript" starting at a separator.
+ * Remove all OP_CODESEPARATORs if present. This bizarre
+ * behavior is necessary for signing and verification when
+ * code separators are present.
+ * @returns {Script} Subscript.
+ */
+
+Script.prototype.removeSeparators = function removeSeparators() {
+  var code = [];
+  var i;
+
+  for (i = 0; i &lt; this.code.length; i++) {
     if (Script.isBadPush(this.code[i]))
       break;
     if (this.code[i] !== opcodes.OP_CODESEPARATOR)
@@ -1002,7 +1011,7 @@ Script.prototype.getSubscript = function getSubscript(lastSep) {
 
 Script.prototype.execute = function execute(stack, flags, tx, index, version) {
   var ip = 0;
-  var lastSep = -1;
+  var lastSep = 0;
   var opCount = 0;
   var op, val, v1, v2, v3;
   var n, n1, n2, n3;
@@ -1961,7 +1970,7 @@ Script.array = function(value) {
 
 Script.prototype.removeData = function removeData(data) {
   var total = 0;
-  var p, sig, raw, i, a, b;
+  var p, sig, raw, i, a, b, op, size;
 
   // We need to reserialize the
   // signature as a minimal push
@@ -1998,15 +2007,45 @@ Script.prototype.removeData = function removeData(data) {
   // Compare on the byte level.
   raw = this.encode();
 
-  // Note that this is _faster_ than Buffer#indexOf.
-  for (i = 0; i &lt; raw.length; i++) {
-    if (raw.length - i &lt; sig.length)
-      break;
-    if (utils.icmp(raw, sig, i) === 0) {
-      a = raw.slice(0, i);
-      b = raw.slice(i + sig.length);
+  p = new BufferReader(raw, true);
+
+  while (p.left() >= sig.length) {
+    if (utils.icmp(raw, sig, p.offset) === 0) {
+      a = raw.slice(0, p.offset);
+      b = raw.slice(p.offset + sig.length);
       raw = Buffer.concat([a, b]);
+      p.data = raw;
       total++;
+    }
+
+    if (p.left() === 0)
+      break;
+
+    op = p.readU8();
+    if (op >= 0x01 &amp;&amp; op &lt;= 0x4b) {
+      if (p.left() &lt; op)
+        break;
+    } else if (op === opcodes.OP_PUSHDATA1) {
+      if (p.left() &lt; 1)
+        break;
+      size = p.readU8();
+      if (p.left() &lt; size)
+        break;
+      p.seek(size);
+    } else if (op === opcodes.OP_PUSHDATA2) {
+      if (p.left() &lt; 2)
+        break;
+      size = p.readU16();
+      if (p.left() &lt; size)
+        break;
+      p.seek(size);
+    } else if (op === opcodes.OP_PUSHDATA4) {
+      if (p.left() &lt; 4)
+        break;
+      size = p.readU32();
+      if (p.left() &lt; size)
+        break;
+      p.seek(size);
     }
   }
 
@@ -2215,10 +2254,12 @@ Script.createWitnessProgram = function createWitnessProgram(version, data) {
  */
 
 Script.createCommitment = function createCommitment(hash) {
-  assert(hash.length === 32);
+  var p = new BufferWriter();
+  p.writeU32BE(0xaa21a9ed);
+  p.writeHash(hash);
   return new Script([
     opcodes.OP_RETURN,
-    Buffer.concat([new Buffer([0xaa, 0x21, 0xa9, 0xed]), hash])
+    p.render()
   ]);
 };
 
@@ -2231,8 +2272,11 @@ Script.prototype.getRedeem = function getRedeem() {
   if (this.mutable)
     return Script.getRedeem(this.code);
 
-  if (!this.redeem)
+  if (!this.redeem) {
+    if (!this.isPushOnly())
+      return;
     this.redeem = Script.getRedeem(this.code);
+  }
 
   return this.redeem;
 };
@@ -2245,6 +2289,15 @@ Script.prototype.getRedeem = function getRedeem() {
 
 Script.getRedeem = function getRedeem(code) {
   var redeem = code[code.length - 1];
+
+  if (typeof redeem === 'number') {
+    if (redeem > opcodes.OP_16)
+      return;
+    return new Script([redeem]);
+  }
+
+  if (Script.isBadPush(redeem))
+    return;
 
   if (!Buffer.isBuffer(redeem))
     return;
@@ -2684,15 +2737,6 @@ Script.prototype.isWitnessProgram = function isWitnessProgram() {
     || (this.code[0] >= opcodes.OP_1 &amp;&amp; this.code[0] &lt;= opcodes.OP_16))
     &amp;&amp; this.code[1].length >= 2 &amp;&amp; this.code[1].length &lt;= 32;
 };
-
-/**
- * @typedef {Object} Program
- * @property {Number} version - Ranges from 0 to 16.
- * @property {String|null} type - Null if malformed. `unknown` if unknown
- * version (treated as anyone-can-spend). Otherwise one of `witnesspubkeyhash`
- * or `witnessscripthash`.
- * @property {Buffer} data - Usually the hash.
- */
 
 /**
  * Get the witness program if present.
@@ -3367,16 +3411,13 @@ Script.format = function format(code) {
     var op, size;
 
     if (Buffer.isBuffer(chunk)) {
-      op = chunk.op;
+      op = chunk.opcode;
       if (op == null) {
         if (chunk.length === 0) {
           op = opcodes.OP_0;
         } else if (chunk.length &lt;= 0x4b) {
           if (chunk.length === 1) {
-            if (chunk[0] === 0) {
-              op = opcodes.OP_0;
-              return constants.opcodesByVal[op];
-            } else if (chunk[0] >= 1 &amp;&amp; chunk[0] &lt;= 16) {
+            if (chunk[0] >= 1 &amp;&amp; chunk[0] &lt;= 16) {
               op = chunk[0] + 0x50;
               return constants.opcodesByVal[op];
             } else if (chunk[0] === 0x81) {
@@ -3394,7 +3435,7 @@ Script.format = function format(code) {
         }
       }
       size = chunk.length.toString(16);
-      if (size.length &lt; 2)
+      while (size.length % 2 !== 0)
         size = '0' + size;
       if (!constants.opcodesByVal[op]) {
         op = op.toString(16);
@@ -3473,6 +3514,100 @@ Script.prototype.getSigops = function getSigops(accurate) {
   }
 
   return total;
+};
+
+/**
+ * Count the sigops in the script, taking into account redeem scripts.
+ * @param {Script} input - Input script, needed for access to redeem script.
+ * @returns {Number} sigop count
+ */
+
+Script.prototype.getScripthashSigops = function getScripthashSigops(input) {
+  var i, op, redeem;
+
+  if (!this.isScripthash())
+    return this.getSigops(true);
+
+  for (i = 0; i &lt; input.code.length; i++) {
+    op = input.code[i];
+    if (Buffer.isBuffer(op))
+      continue;
+    if (Script.isBadPush(op))
+      return 0;
+    if (op > opcodes.OP_16)
+      return 0;
+  }
+
+  if (typeof op === 'number')
+    return 0;
+
+  redeem = new Script(op);
+
+  return redeem.getSigops(true);
+};
+
+/**
+ * Count the sigops for a program.
+ * @param {Program} program
+ * @param {Witness} witness
+ * @param {VerifyFlags} flags
+ * @returns {Number} sigop count
+ */
+
+Script.witnessSigops = function witnessSigops(program, witness, flags) {
+  if (flags == null)
+    flags = constants.flags.STANDARD_VERIFY_FLAGS;
+
+  if (program.version === 0) {
+    if (program.data.length === 20)
+      return 1;
+
+    if (program.data.length === 32 &amp;&amp; witness.items.length > 0) {
+      redeem = witness.getRedeem();
+      return redeem.getSigops(true);
+    }
+  }
+
+  return 0;
+};
+
+/**
+ * Count the sigops in a script, taking into account witness programs.
+ * @param {Script} input
+ * @param {Script} output
+ * @param {Witness} witness
+ * @param {VerifyFlags} flags
+ * @returns {Number} sigop count
+ */
+
+Script.getWitnessSigops = function getWitnessSigops(input, output, witness, flags) {
+  var redeem;
+
+  if (flags == null)
+    flags = constants.flags.STANDARD_VERIFY_FLAGS;
+
+  if ((flags &amp; constants.flags.VERIFY_WITNESS) === 0)
+    return 0;
+
+  assert((flags &amp; constants.flags.VERIFY_P2SH) !== 0);
+
+  if (output.isWitnessProgram())
+    return Script.witnessSigops(output.getWitnessProgram(), witness, flags);
+
+  // This is a unique situation in terms of consensus
+  // rules. We can just grab the redeem script without
+  // "parsing" (i.e. checking for pushdata parse errors)
+  // the script. This is because isPushOnly is called
+  // which checks for parse errors and will return
+  // false if one is found. Even the bitcoind code
+  // does not check the return value of GetOp.
+  if (output.isScripthash() &amp;&amp; input.isPushOnly()) {
+    redeem = input.getRedeem();
+    if (redeem.isWitnessProgram())
+      return Script.witnessSigops(redeem.getWitnessProgram(), witness, flags);
+  }
+
+  return 0;
 };
 
 /**
@@ -3756,7 +3891,7 @@ Script.verify = function verify(input, witness, output, tx, i, flags) {
   // If we had a witness but no witness program, fail.
   if (flags &amp; constants.flags.VERIFY_WITNESS) {
     assert((flags &amp; constants.flags.VERIFY_P2SH) !== 0);
-    if (!hadWitness &amp;&amp; witness.length > 0)
+    if (!hadWitness &amp;&amp; witness.items.length > 0)
       throw new ScriptError('WITNESS_UNEXPECTED');
   }
 
@@ -4114,10 +4249,7 @@ Script.encode = function encode(code, writer) {
         p.writeU8(opcodes.OP_0);
       } else if (op.length &lt;= 0x4b) {
         if (op.length === 1) {
-          if (op[0] === 0) {
-            p.writeU8(opcodes.OP_0);
-            continue;
-          } else if (op[0] >= 1 &amp;&amp; op[0] &lt;= 16) {
+          if (op[0] >= 1 &amp;&amp; op[0] &lt;= 16) {
             p.writeU8(op[0] + 0x50);
             continue;
           } else if (op[0] === 0x81) {
@@ -4262,13 +4394,13 @@ return Script;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 21 2016 14:40:19 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 28 2016 15:02:42 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

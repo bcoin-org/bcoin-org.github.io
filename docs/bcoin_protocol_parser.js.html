@@ -187,14 +187,6 @@ Parser.parseMempool = function parseMempool(p) {
 };
 
 /**
- * @typedef {Object} SubmitOrderPacket
- * @global
- * @property {Hash} hash
- * @property {NakedTX} tx
- * @property {Number} _size
- */
-
-/**
  * Parse submitorder packet.
  * @param {Buffer|BufferReader} p
  * @returns {SubmitOrderPacket}
@@ -220,15 +212,6 @@ Parser.parseSubmitOrder = function parseSubmitOrder(p) {
 Parser.parseCheckOrder = function parseCheckOrder(p) {
   return Parser.parseSubmitOrder(p);
 };
-
-/**
- * @typedef {Object} ReplyPacket
- * @global
- * @property {Hash} hash
- * @property {Number} code
- * @property {Buffer} publicKey
- * @property {Number} _size
- */
 
 /**
  * Parse reply packet.
@@ -279,17 +262,6 @@ Parser.parseGetAddr = function parseGetAddr(p) {
 };
 
 /**
- * @typedef {Object} FilterLoadPacket
- * @global
- * @see Bloom
- * @property {Buffer} filter - Serialized bloom filter.
- * @property {Number} n - Number of hash functions.
- * @property {Number} tweak - Bloom filter seed.
- * @property {String|Number} update (See {@link constants.filterFlags}).
- * @property {Number} _size
- */
-
-/**
  * Parse filterload packet.
  * @param {Buffer|BufferReader} p
  * @returns {Object}
@@ -316,14 +288,6 @@ Parser.parseFilterLoad = function parseFilterLoad(p) {
     _size: p.end()
   };
 };
-
-/**
- * @typedef {Object} FilterAddPacket
- * @global
- * @see Bloom
- * @property {Buffer} data - Data to add to filter.
- * @property {Number} _size
- */
 
 /**
  * Parse filteradd packet.
@@ -422,14 +386,6 @@ Parser.prototype.parsePayload = function parsePayload(cmd, p) {
 };
 
 /**
- * @typedef {Object} GetUTXOsPacket
- * @global
- * @property {Boolean} mempool - Check mempool.
- * @property {Outpoint[]} prevout - Outpoints.
- * @property {Number} _size
- */
-
-/**
  * Parse getutxos packet.
  * @param {Buffer|BufferReader} p
  * @returns {GetUTXOsPacket}
@@ -458,31 +414,6 @@ Parser.parseGetUTXOs = function parseGetUTXOs(p) {
     _size: p.end()
   };
 };
-
-/**
- * @typedef {Object} NakedCoin
- * @global
- * @property {Number} version - Transaction version.
- * @property {Number} height - Transaction height (-1 if unconfirmed).
- * @property {BN} value - Output value in satoshis.
- * @property {Script} script - Output script.
- * @property {Boolean} coinbase - Whether the containing
- * transaction is a coinbase.
- * @property {Hash} hash - Transaction hash.
- * @property {Number} index - Output index.
- */
-
-/**
- * @typedef {Object} UTXOsPacket
- * @global
- * @property {Array?} data.hits - Hits (array of
- * 1s and 0s representing a bit mask).
- * @property {Buffer?} data.map - Hit map.
- * @property {Object} data.height - Chain height.
- * @property {Hash} data.tip - Chain tip hash.
- * @property {NakedCoin[]} data.coins
- * @property {Number} _size
- */
 
 /**
  * Parse utxos packet.
@@ -533,13 +464,6 @@ Parser.parseUTXOs = function parseUTXOs(p) {
 };
 
 /**
- * @typedef {Object} PingPacket
- * @global
- * @property {BN} nonce
- * @property {Number} _size
- */
-
-/**
  * Parse ping packet.
  * @param {Buffer|BufferReader} p
  * @returns {PingPacket}
@@ -570,37 +494,6 @@ Parser.parsePong = function parsePong(p) {
     _size: p.end()
   };
 };
-
-/**
- * @typedef {Object} NetworkAddress
- * @global
- * @property {Number?} ts - Timestamp.
- * @property {Number?} services - Service bits.
- * @property {Buffer?} ipv4 - IPv4 address.
- * @property {Buffer?} ipv6 - IPv6 address.
- * @property {Number?} port - Port.
- * @property {Boolean?} network - Whether network services are enabled.
- * @property {Boolean?} getutxo - Whether peer supports getutxos.
- * @property {Boolean?} bloom - Whether peer supports serving FILTERED_BLOCKs.
- * @property {Boolean?} witness - Whether peer supports segwit.
- * @property {Number} _size
- */
-
-/**
- * @typedef {Object} VersionPacket
- * @global
- * @property {Number} version - Protocol version.
- * @property {Number} services - Service bits.
- * @property {Number} ts - Timestamp of discovery.
- * @property {NetworkAddress} local - Our address.
- * @property {NetworkAddress} remote - Their address.
- * @property {BN} nonce
- * @property {String} agent - User agent string.
- * @property {Number} height - Chain height.
- * @property {Boolean} relay - Whether transactions
- * should be relayed immediately.
- * @property {Number} _size
- */
 
 /**
  * Parse version packet.
@@ -679,15 +572,6 @@ Parser.parseNotFound = function parseNotFound(p) {
 Parser.parseGetData = function parseGetData(p) {
   return Parser.parseInv(p);
 };
-
-/**
- * @typedef {Object} GetBlocksPacket
- * @global
- * @property {Number} version - Protocol version.
- * @property {Hash[]} locator - Chain locator.
- * @property {Hash} stop - Hash to stop at.
- * @property {Number} _size
- */
 
 Parser._parseGetBlocks = function _parseGetBlocks(p) {
   var version, count, locator, i, stop;
@@ -874,7 +758,6 @@ Parser.parseBlockHeaders = function parseBlockHeaders(p) {
 
 Parser.parseBlock = function parseBlock(p) {
   var txs = [];
-  var witnessSize = 0;
   var version, prevBlock, merkleRoot, ts, bits, nonce;
   var i, totalTX, tx;
 
@@ -891,9 +774,10 @@ Parser.parseBlock = function parseBlock(p) {
 
   for (i = 0; i &lt; totalTX; i++) {
     tx = Parser.parseTX(p);
-    witnessSize += tx._witnessSize;
     txs.push(tx);
   }
+
+  p.end();
 
   return {
     version: version,
@@ -902,31 +786,9 @@ Parser.parseBlock = function parseBlock(p) {
     ts: ts,
     bits: bits,
     nonce: nonce,
-    txs: txs,
-    _witnessSize: witnessSize,
-    _size: p.end()
+    txs: txs
   };
 };
-
-/**
- * @typedef {Object} NakedBlock
- * @global
- * @property {Number} version - Transaction version. Note that BCoin reads
- * versions as unsigned even though they are signed at the protocol level.
- * This value will never be negative.
- * @property {Hash} prevBlock
- * @property {Hash} merkleRoot
- * @property {Number} ts
- * @property {Number} bits
- * @property {Number} nonce
- * @property {Number} height
- * @property {Number} totalTX
- * @property {NakedTX[]?} txs - Only present on blocks.
- * @property {Hash[]?} hashes - Only present on merkleblocks.
- * @property {Buffer?} flags - Only present on merkleblocks.
- * @property {Number?} coinbaseHeight - Only present on compactblocks.
- * @property {Number} _size
- */
 
 /**
  * Parse block packet.
@@ -990,16 +852,6 @@ Parser.parseBlockCompact = function parseBlockCompact(p) {
 };
 
 /**
- * @typedef {Object} NakedInput
- * @global
- * @property {Outpoint} prevout
- * @property {NakedScript} script - Input script.
- * @property {Number} sequence - nSequence.
- * @property {NakedWitness} witness - Witness.
- * @property {Number} _size
- */
-
-/**
  * Parse serialized input.
  * @param {Buffer|BufferReader} p
  * @returns {NakedInput}
@@ -1029,14 +881,6 @@ Parser.parseInput = function parseInput(p) {
 };
 
 /**
- * @typedef {Object} NakedOutput
- * @global
- * @property {BN} value - Value in satoshis.
- * @property {NakedScript} script - Output script.
- * @property {Number} _size
- */
-
-/**
  * Parse serialized output.
  * @param {Buffer|BufferReader} p
  * @returns {NakedOutput}
@@ -1057,20 +901,6 @@ Parser.parseOutput = function parseOutput(p) {
     _size: p.end()
   };
 };
-
-/**
- * @typedef {Object} NakedCoin
- * @global
- * @property {Number} version - Transaction version.
- * @property {Number} height - Transaction height (-1 if unconfirmed).
- * @property {BN} value - Output value in satoshis.
- * @property {Script} script - Output script.
- * @property {Boolean} coinbase - Whether the containing
- * transaction is a coinbase.
- * @property {Hash} hash - Transaction hash.
- * @property {Number} index - Output index.
- * @property {Number} _size
- */
 
 /**
  * Parse serialized coin.
@@ -1112,17 +942,6 @@ Parser.parseCoin = function parseCoin(p, extended) {
 };
 
 /**
- * @typedef {Object} NakedTX
- * @global
- * @property {Number} version
- * @property {Number} flag
- * @property {NakedInput[]} inputs
- * @property {NakedOutput[]} outputs
- * @property {Number} locktime
- * @property {Number} _size
- */
-
-/**
  * Parse tx packet (will automatically switch to witness
  * parsing if a witness transaction is detected).
  * @param {Buffer|BufferReader} p
@@ -1133,7 +952,6 @@ Parser.parseTX = function parseTX(p) {
   var inCount, inputs;
   var outCount, outputs;
   var version, locktime, i;
-  var raw;
 
   if (Parser.isWitnessTX(p))
     return Parser.parseWitnessTX(p);
@@ -1157,18 +975,14 @@ Parser.parseTX = function parseTX(p) {
 
   locktime = p.readU32();
 
-  raw = p.endData();
+  p.end();
 
   return {
     version: version,
     flag: 1,
     inputs: inputs,
     outputs: outputs,
-    locktime: locktime,
-    _witnessSize: 0,
-    _raw: raw,
-    _size: raw.length
-    // _size: p.end()
+    locktime: locktime
   };
 };
 
@@ -1203,8 +1017,6 @@ Parser.parseWitnessTX = function parseWitnessTX(p) {
   var outCount, outputs;
   var marker, flag;
   var version, locktime, i;
-  var witnessSize = 0;
-  var raw;
 
   p = new BufferReader(p);
   p.start();
@@ -1235,33 +1047,20 @@ Parser.parseWitnessTX = function parseWitnessTX(p) {
   for (i = 0; i &lt; inCount; i++) {
     witness = Parser.parseWitness(p);
     inputs[i].witness = witness;
-    witnessSize += witness._size;
   }
 
   locktime = p.readU32();
 
-  raw = p.endData();
+  p.end();
 
   return {
     version: version,
     flag: flag,
     inputs: inputs,
     outputs: outputs,
-    locktime: locktime,
-    _raw: raw,
-    _size: raw.length,
-    // _size: p.end(),
-    _witnessSize: witnessSize + 2
+    locktime: locktime
   };
 };
-
-/**
- * @typedef {Object} NakedScript
- * @global
- * @property {Buffer} raw - Raw code.
- * @property {Array} code - Parsed code.
- * @property {Number} _size
- */
 
 /**
  * Parse serialized script (with varint length).
@@ -1282,13 +1081,6 @@ Parser.parseScript = function parseScript(p) {
     _size: p.end()
   };
 };
-
-/**
- * @typedef {Object} NakedWitness
- * @global
- * @param {Buffer[]} items - Stack items.
- * @property {Number} _size
- */
 
 /**
  * Parse serialized witness.
@@ -1313,17 +1105,6 @@ Parser.parseWitness = function parseWitness(p) {
     _size: p.end()
   };
 };
-
-/**
- * @typedef {Object} RejectPacket
- * @global
- * @param {(Number|String)?} ccode - Code
- * (see {@link constants.reject}).
- * @param {String?} msg - Message.
- * @param {String?} reason - Reason.
- * @param {(Hash|Buffer)?} data - Transaction or block hash.
- * @property {Number} _size
- */
 
 /**
  * Parse reject packet.
@@ -1426,28 +1207,6 @@ Parser.parseMempool = function parseMempool(p) {
 };
 
 /**
- * @typedef {Object} AlertPacket
- * @global
- * @property {Number} version
- * @property {Number} relayUntil
- * @property {Number} expiration
- * @property {Number} id
- * @property {Number} cancel
- * @property {Number[]} cancels
- * @property {Number} minVer
- * @property {Number} maxVer
- * @property {String[]} subVers
- * @property {Number} priority
- * @property {String} comment
- * @property {String} statusBar
- * @property {String?} reserved
- * @property {Buffer?} payload - Payload.
- * @property {Buffer?} signature - Payload signature.
- * @property {Buffer?} key - Private key to sign with.
- * @property {Number} _size
- */
-
-/**
  * Parse alert packet.
  * @param {Buffer|BufferReader} p
  * @returns {AlertPacket}
@@ -1521,13 +1280,13 @@ return Parser;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 21 2016 14:40:19 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 28 2016 15:02:42 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

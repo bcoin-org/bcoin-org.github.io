@@ -318,6 +318,17 @@ TX.prototype.getRaw = function getRaw() {
  */
 
 TX.prototype.getVirtualSize = function getVirtualSize() {
+  var scale = constants.WITNESS_SCALE_FACTOR;
+  return (this.getCost() + scale - 1) / scale | 0;
+};
+
+/**
+ * Calculate the cost of the transaction.
+ * Note that this is cached.
+ * @returns {Number} cost
+ */
+
+TX.prototype.getCost = function getCost() {
   var size, witnessSize, base;
 
   this.getRaw();
@@ -326,7 +337,7 @@ TX.prototype.getVirtualSize = function getVirtualSize() {
   witnessSize = this._witnessSize;
   base = size - witnessSize;
 
-  return (base * 4 + witnessSize + 3) / 4 | 0;
+  return base * (constants.WITNESS_SCALE_FACTOR - 1) + size;
 };
 
 /**
@@ -419,6 +430,9 @@ TX.prototype.signatureHashV0 = function signatureHashV0(index, prev, type) {
   for (i = 0; i &lt; copy.inputs.length; i++)
     copy.inputs[i].script = new Script([]);
 
+  // Remove all code separators.
+  prev = prev.removeSeparators();
+
   // Set our input to previous output's script
   copy.inputs[index].script = prev;
 
@@ -482,13 +496,19 @@ TX.prototype.signatureHashV1 = function signatureHashV1(index, prev, type) {
   assert(prev instanceof Script);
 
   if (!(type &amp; constants.hashType.ANYONECANPAY)) {
-    hashPrevouts = new BufferWriter();
-    for (i = 0; i &lt; this.inputs.length; i++) {
-      prevout = this.inputs[i].prevout;
-      hashPrevouts.writeHash(prevout.hash);
-      hashPrevouts.writeU32(prevout.index);
+    if (this._hashPrevouts) {
+      hashPrevouts = this._hashPrevouts;
+    } else {
+      hashPrevouts = new BufferWriter();
+      for (i = 0; i &lt; this.inputs.length; i++) {
+        prevout = this.inputs[i].prevout;
+        hashPrevouts.writeHash(prevout.hash);
+        hashPrevouts.writeU32(prevout.index);
+      }
+      hashPrevouts = utils.dsha256(hashPrevouts.render());
+      if (!this.mutable)
+        this._hashPrevouts = hashPrevouts;
     }
-    hashPrevouts = utils.dsha256(hashPrevouts.render());
   } else {
     hashPrevouts = utils.slice(constants.ZERO_HASH);
   }
@@ -496,20 +516,32 @@ TX.prototype.signatureHashV1 = function signatureHashV1(index, prev, type) {
   if (!(type &amp; constants.hashType.ANYONECANPAY)
       &amp;&amp; (type &amp; 0x1f) !== constants.hashType.SINGLE
       &amp;&amp; (type &amp; 0x1f) !== constants.hashType.NONE) {
-    hashSequence = new BufferWriter();
-    for (i = 0; i &lt; this.inputs.length; i++)
-      hashSequence.writeU32(this.inputs[i].sequence);
-    hashSequence = utils.dsha256(hashSequence.render());
+    if (this._hashSequence) {
+      hashSequence = this._hashSequence;
+    } else {
+      hashSequence = new BufferWriter();
+      for (i = 0; i &lt; this.inputs.length; i++)
+        hashSequence.writeU32(this.inputs[i].sequence);
+      hashSequence = utils.dsha256(hashSequence.render());
+      if (!this.mutable)
+        this._hashSequence = hashSequence;
+    }
   } else {
     hashSequence = utils.slice(constants.ZERO_HASH);
   }
 
   if ((type &amp; 0x1f) !== constants.hashType.SINGLE
       &amp;&amp; (type &amp; 0x1f) !== constants.hashType.NONE) {
-    hashOutputs = new BufferWriter();
-    for (i = 0; i &lt; this.outputs.length; i++)
-      bcoin.protocol.framer.output(this.outputs[i], hashOutputs);
-    hashOutputs = utils.dsha256(hashOutputs.render());
+    if (this._hashOutputs) {
+      hashOutputs = this._hashOutputs;
+    } else {
+      hashOutputs = new BufferWriter();
+      for (i = 0; i &lt; this.outputs.length; i++)
+        bcoin.protocol.framer.output(this.outputs[i], hashOutputs);
+      hashOutputs = utils.dsha256(hashOutputs.render());
+      if (!this.mutable)
+        this._hashOutputs = hashOutputs;
+    }
   } else if ((type &amp; 0x1f) === constants.hashType.SINGLE &amp;&amp; index &lt; this.outputs.length) {
     hashOutputs = bcoin.protocol.framer.output(this.outputs[index]);
     hashOutputs = utils.dsha256(hashOutputs);
@@ -905,57 +937,67 @@ TX.prototype.isFinal = function isFinal(height, ts) {
   return true;
 };
 
-TX.prototype._getSigops = function _getSigops(scriptHash, accurate) {
+/**
+ * Calculate legacy (inaccurate) sigop count.
+ * @returns {Number} sigop count
+ */
+
+TX.prototype.getLegacySigops = function getLegacySigops() {
   var total = 0;
-  var i, input, output, prev;
+  var i;
+
+  for (i = 0; i &lt; this.inputs.length; i++)
+    total += this.inputs[i].script.getSigops(false);
+
+  for (i = 0; i &lt; this.outputs.length; i++)
+    total += this.outputs[i].script.getSigops(false);
+
+  return total;
+};
+
+/**
+ * Calculate accurate sigop count, taking into account redeem scripts.
+ * @returns {Number} sigop count
+ */
+
+TX.prototype.getScripthashSigops = function getScripthashSigops() {
+  var total = 0;
+  var i, input;
+
+  if (this.isCoinbase())
+    return 0;
 
   for (i = 0; i &lt; this.inputs.length; i++) {
     input = this.inputs[i];
 
-    total += input.script.getSigops(accurate);
-
     if (!input.coin)
       continue;
 
-    prev = input.coin.script;
-
-    if (scriptHash &amp;&amp; !this.isCoinbase()) {
-      if (!prev.isScripthash())
-        continue;
-
-      if (!input.script.isPushOnly())
-        continue;
-
-      prev = input.script.getRedeem();
-
-      if (!prev)
-        continue;
-
-      total += prev.getSigops(true);
-    }
-  }
-
-  for (i = 0; i &lt; this.outputs.length; i++) {
-    output = this.outputs[i];
-    total += output.script.getSigops(accurate);
+    if (input.coin.script.isScripthash())
+      total += input.coin.script.getSigops(input.script);
   }
 
   return total;
 };
 
 /**
- * Calculate virtual sigop count. First calculates
- * the traditional amount of sigops as cost and takes
- * into account sigops for witness programs.
- * @param {Boolean?} scriptHash - Whether to count redeem script sigops.
- * @param {Boolean?} accurate - Whether to count CHECKMULTISIG(VERIFY)
- * ops accurately.
- * @returns {Number} sigop count
+ * Calculate sigops cost, taking into account witness programs.
+ * @param {VerifyFlags?} flags
+ * @returns {Number} sigop cost
  */
 
-TX.prototype.getSigops = function getSigops(scriptHash, accurate) {
-  var cost = this._getSigops(scriptHash, accurate) * 4;
-  var i, input, output, prev;
+TX.prototype.getSigopsCost = function getSigopsCost(flags) {
+  var cost = this.getLegacySigops() * constants.WITNESS_SCALE_FACTOR;
+  var input, i;
+
+  if (flags == null)
+    flags = constants.flags.STANDARD_VERIFY_FLAGS;
+
+  if (this.isCoinbase())
+    return cost;
+
+  if (flags &amp; constants.flags.VERIFY_P2SH)
+    cost += this.getScripthashSigops() * constants.WITNESS_SCALE_FACTOR;
 
   for (i = 0; i &lt; this.inputs.length; i++) {
     input = this.inputs[i];
@@ -963,25 +1005,27 @@ TX.prototype.getSigops = function getSigops(scriptHash, accurate) {
     if (!input.coin)
       continue;
 
-    prev = input.coin.script;
-
-    if (prev.isScripthash())
-      prev = input.script.getRedeem();
-
-    if (prev &amp;&amp; prev.isWitnessScripthash()) {
-      prev = input.witness.getRedeem();
-      if (prev)
-        cost += prev.getSigops(true);
-    }
+    cost += Script.getWitnessSigops(
+      input.script,
+      input.coin.script,
+      input.witness,
+      flags);
   }
 
-  for (i = 0; i &lt; this.outputs.length; i++) {
-    output = this.outputs[i];
-    if (output.script.isWitnessPubkeyhash())
-      cost += 1;
-  }
+  return cost;
+};
 
-  return (cost + 3) / 4 | 0;
+/**
+ * Calculate virtual sigop count.
+ * @param {VerifyFlags?} flags
+ * @returns {Number} sigop count
+ */
+
+TX.prototype.getSigops = function getSigops(flags) {
+  if (flags == null)
+    flags = constants.flags.STANDARD_VERIFY_FLAGS;
+
+  return (this.getSigopsCost(flags) + 3) / 4 | 0;
 };
 
 /**
@@ -1013,7 +1057,7 @@ TX.prototype.isSane = function isSane(ret) {
     return false;
   }
 
-  if (this.getVirtualSize() > constants.block.MAX_SIZE) {
+  if (this.getSize() > constants.block.MAX_SIZE) {
     ret.reason = 'bad-txns-oversize';
     ret.score = 100;
     return false;
@@ -1103,7 +1147,7 @@ TX.prototype.isStandard = function isStandard(flags, ret) {
     return false;
   }
 
-  if (this.getVirtualSize() > constants.tx.MAX_SIZE) {
+  if (this.getCost() > constants.tx.MAX_COST) {
     ret.reason = 'tx-size';
     return false;
   }
@@ -1186,11 +1230,7 @@ TX.prototype.hasStandardInputs = function hasStandardInputs(flags) {
 
     if ((flags &amp; constants.flags.VERIFY_P2SH)
         &amp;&amp; input.coin.script.isScripthash()) {
-      // Not accurate:
-      // Failsafe to avoid getting dos'd in case we ever
-      // call hasStandardInputs before isStandard.
-      if (!input.script.isPushOnly())
-        return false;
+      assert(input.script.isPushOnly());
 
       stack = new Stack();
 
@@ -1501,6 +1541,8 @@ TX.prototype.isWatched = function isWatched(bloom) {
 
     for (i = 0; i &lt; code.length; i++) {
       chunk = code[i];
+      if (Script.isBadPush(chunk))
+        break;
       if (!Buffer.isBuffer(chunk) || chunk.length === 0)
         continue;
       if (bloom.test(chunk))
@@ -1898,13 +1940,13 @@ return TX;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 21 2016 14:40:19 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 28 2016 15:02:42 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
