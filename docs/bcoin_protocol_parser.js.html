@@ -195,11 +195,9 @@ Parser.parseMempool = function parseMempool(p) {
 Parser.parseSubmitOrder = function parseSubmitOrder(p) {
   var hash, tx;
   p = new BufferReader(p);
-  p.start();
   return {
     hash: p.readHash('hex'),
-    tx: Parser.parseTX(p),
-    _size: p.end()
+    tx: Parser.parseTX(p)
   };
 };
 
@@ -222,12 +220,10 @@ Parser.parseCheckOrder = function parseCheckOrder(p) {
 Parser.parseReply = function parseReply(p) {
   var hash, code, publicKey;
   p = new BufferReader(p);
-  p.start();
   return {
     hash: p.readHash('hex'),
     code: p.readU32(),
-    publicKey: p.readVarBytes(),
-    _size: p.end()
+    publicKey: p.readVarBytes()
   };
 };
 
@@ -271,7 +267,6 @@ Parser.parseFilterLoad = function parseFilterLoad(p) {
   var filter, n, tweak, update;
 
   p = new BufferReader(p);
-  p.start();
 
   filter = p.readVarBytes();
   n = p.readU32();
@@ -284,8 +279,7 @@ Parser.parseFilterLoad = function parseFilterLoad(p) {
     filter: filter,
     n: n,
     tweak: tweak,
-    update: update,
-    _size: p.end()
+    update: update
   };
 };
 
@@ -297,10 +291,8 @@ Parser.parseFilterLoad = function parseFilterLoad(p) {
 
 Parser.parseFilterAdd = function parseFilterAdd(p) {
   p = new BufferReader(p);
-  p.start();
   return {
-    data: p.readVarBytes(),
-    _size: p.end()
+    data: p.readVarBytes()
   };
 };
 
@@ -395,7 +387,6 @@ Parser.parseGetUTXOs = function parseGetUTXOs(p) {
   var mempool, prevout, count, i;
 
   p = new BufferReader(p);
-  p.start();
 
   mempool = p.readU8() === 1;
   prevout = [];
@@ -410,8 +401,7 @@ Parser.parseGetUTXOs = function parseGetUTXOs(p) {
 
   return {
     mempool: mempool,
-    prevout: prevout,
-    _size: p.end()
+    prevout: prevout
   };
 };
 
@@ -426,7 +416,6 @@ Parser.parseUTXOs = function parseUTXOs(p) {
   var coin, version, height, i, hits, ch, j;
 
   p = new BufferReader(p);
-  p.start();
 
   chainHeight = p.readU32();
   tip = p.readHash('hex');
@@ -458,8 +447,7 @@ Parser.parseUTXOs = function parseUTXOs(p) {
     tip: tip,
     map: map,
     coins: coins,
-    hits: hits,
-    _size: p.end()
+    hits: hits
   };
 };
 
@@ -471,11 +459,9 @@ Parser.parseUTXOs = function parseUTXOs(p) {
 
 Parser.parsePing = function parsePing(p) {
   p = new BufferReader(p);
-  p.start();
 
   return {
-    nonce: p.readU64(),
-    _size: p.end()
+    nonce: p.readU64()
   };
 };
 
@@ -487,11 +473,9 @@ Parser.parsePing = function parsePing(p) {
 
 Parser.parsePong = function parsePong(p) {
   p = new BufferReader(p);
-  p.start();
 
   return {
-    nonce: p.readU64(),
-    _size: p.end()
+    nonce: p.readU64()
   };
 };
 
@@ -505,7 +489,6 @@ Parser.parseVersion = function parseVersion(p) {
   var version, services, ts, recv, from, nonce, agent, height, relay;
 
   p = new BufferReader(p);
-  p.start();
 
   version = p.read32();
   services = p.readU53();
@@ -538,8 +521,7 @@ Parser.parseVersion = function parseVersion(p) {
     nonce: nonce,
     agent: agent,
     height: height,
-    relay: relay,
-    _size: p.end()
+    relay: relay
   };
 };
 
@@ -577,7 +559,6 @@ Parser._parseGetBlocks = function _parseGetBlocks(p) {
   var version, count, locator, i, stop;
 
   p = new BufferReader(p);
-  p.start();
 
   version = p.readU32();
   count = p.readVarint();
@@ -594,8 +575,7 @@ Parser._parseGetBlocks = function _parseGetBlocks(p) {
   return {
     version: version,
     locator: locator,
-    stop: stop,
-    _size: p.end()
+    stop: stop
   };
 };
 
@@ -635,7 +615,6 @@ Parser.parseInv = function parseInv(p) {
   var i, count;
 
   p = new BufferReader(p);
-  p.start();
 
   count = p.readVarint();
 
@@ -647,8 +626,6 @@ Parser.parseInv = function parseInv(p) {
       hash: p.readHash('hex')
     });
   }
-
-  items._size = p.end();
 
   return items;
 };
@@ -664,7 +641,6 @@ Parser.parseMerkleBlock = function parseMerkleBlock(p) {
   var i, hashCount, hashes, flags;
 
   p = new BufferReader(p);
-  p.start();
 
   version = p.readU32();
   prevBlock = p.readHash('hex');
@@ -692,8 +668,7 @@ Parser.parseMerkleBlock = function parseMerkleBlock(p) {
     nonce: nonce,
     totalTX: totalTX,
     hashes: hashes,
-    flags: flags,
-    _size: p.end()
+    flags: flags
   };
 };
 
@@ -708,7 +683,6 @@ Parser.parseHeaders = function parseHeaders(p) {
   var i, count;
 
   p = new BufferReader(p);
-  p.start();
 
   count = p.readVarint();
 
@@ -724,8 +698,6 @@ Parser.parseHeaders = function parseHeaders(p) {
     });
   }
 
-  headers._size = p.end();
-
   return headers;
 };
 
@@ -737,7 +709,6 @@ Parser.parseHeaders = function parseHeaders(p) {
 
 Parser.parseBlockHeaders = function parseBlockHeaders(p) {
   p = new BufferReader(p);
-  p.start();
 
   return {
     version: p.readU32(), // Technically signed
@@ -745,8 +716,7 @@ Parser.parseBlockHeaders = function parseBlockHeaders(p) {
     merkleRoot: p.readHash('hex'),
     ts: p.readU32(),
     bits: p.readU32(),
-    nonce: p.readU32(),
-    _size: p.end()
+    nonce: p.readU32()
   }
 };
 
@@ -762,7 +732,6 @@ Parser.parseBlock = function parseBlock(p) {
   var i, totalTX, tx;
 
   p = new BufferReader(p);
-  p.start();
 
   version = p.readU32(); // Technically signed
   prevBlock = p.readHash('hex');
@@ -776,8 +745,6 @@ Parser.parseBlock = function parseBlock(p) {
     tx = Parser.parseTX(p);
     txs.push(tx);
   }
-
-  p.end();
 
   return {
     version: version,
@@ -797,12 +764,11 @@ Parser.parseBlock = function parseBlock(p) {
  */
 
 Parser.parseBlockCompact = function parseBlockCompact(p) {
-  var version, prevBlock, merkleRoot, ts, bits, nonce;
-  var totalTX, height;
-  var inCount, input, raw;
+  var version, prevBlock, merkleRoot;
+  var ts, bits, nonce, totalTX, height;
+  var inCount, input;
 
   p = new BufferReader(p);
-  p.start();
 
   version = p.readU32(); // Technically signed
   prevBlock = p.readHash('hex');
@@ -832,10 +798,6 @@ Parser.parseBlockCompact = function parseBlockCompact(p) {
   else
     height = -1;
 
-  raw = p.data;
-
-  p.end();
-
   return {
     version: version,
     prevBlock: prevBlock,
@@ -846,8 +808,7 @@ Parser.parseBlockCompact = function parseBlockCompact(p) {
     totalTX: totalTX,
     coinbaseHeight: height,
     txs: [],
-    _raw: raw,
-    _size: raw.length
+    raw: p.data
   };
 };
 
@@ -861,7 +822,6 @@ Parser.parseInput = function parseInput(p) {
   var hash, index, script, sequence;
 
   p = new BufferReader(p);
-  p.start();
 
   hash = p.readHash('hex');
   index = p.readU32();
@@ -875,8 +835,7 @@ Parser.parseInput = function parseInput(p) {
     },
     coin: null,
     script: script,
-    sequence: sequence,
-    _size: p.end()
+    sequence: sequence
   };
 };
 
@@ -890,15 +849,13 @@ Parser.parseOutput = function parseOutput(p) {
   var value, script;
 
   p = new BufferReader(p);
-  p.start();
 
   value = p.read64();
   script = Parser.parseScript(p);
 
   return {
     value: value,
-    script: script,
-    _size: p.end()
+    script: script
   };
 };
 
@@ -913,7 +870,6 @@ Parser.parseCoin = function parseCoin(p, extended) {
   var version, height, value, script, hash, index, coinbase;
 
   p = new BufferReader(p);
-  p.start();
 
   version = p.readU32();
   height = p.readU32();
@@ -936,8 +892,7 @@ Parser.parseCoin = function parseCoin(p, extended) {
     script: script,
     coinbase: coinbase,
     hash: hash,
-    index: index,
-    _size: p.end()
+    index: index
   };
 };
 
@@ -957,7 +912,6 @@ Parser.parseTX = function parseTX(p) {
     return Parser.parseWitnessTX(p);
 
   p = new BufferReader(p);
-  p.start();
 
   version = p.readU32(); // Technically signed
   inCount = p.readVarint();
@@ -974,8 +928,6 @@ Parser.parseTX = function parseTX(p) {
     outputs[i] = Parser.parseOutput(p);
 
   locktime = p.readU32();
-
-  p.end();
 
   return {
     version: version,
@@ -1019,7 +971,6 @@ Parser.parseWitnessTX = function parseWitnessTX(p) {
   var version, locktime, i;
 
   p = new BufferReader(p);
-  p.start();
 
   version = p.readU32(); // Technically signed
   marker = p.readU8();
@@ -1051,8 +1002,6 @@ Parser.parseWitnessTX = function parseWitnessTX(p) {
 
   locktime = p.readU32();
 
-  p.end();
-
   return {
     version: version,
     flag: flag,
@@ -1072,13 +1021,11 @@ Parser.parseScript = function parseScript(p) {
   var data;
 
   p = new BufferReader(p);
-  p.start();
   data = p.readVarBytes();
 
   return {
     raw: data,
-    code: bcoin.script.decode(data),
-    _size: p.end()
+    code: bcoin.script.decode(data)
   };
 };
 
@@ -1093,7 +1040,6 @@ Parser.parseWitness = function parseWitness(p) {
   var chunkCount, i;
 
   p = new BufferReader(p);
-  p.start();
 
   chunkCount = p.readVarint();
 
@@ -1101,8 +1047,7 @@ Parser.parseWitness = function parseWitness(p) {
     items.push(p.readVarBytes());
 
   return {
-    items: items,
-    _size: p.end()
+    items: items
   };
 };
 
@@ -1116,7 +1061,6 @@ Parser.parseReject = function parseReject(p) {
   var message, ccode, reason, data;
 
   p = new BufferReader(p);
-  p.start();
 
   message = p.readVarString('ascii');
   ccode = p.readU8();
@@ -1131,8 +1075,7 @@ Parser.parseReject = function parseReject(p) {
     message: message,
     ccode: constants.rejectByVal[ccode] || ccode,
     reason: reason,
-    data: data,
-    _size: p.end()
+    data: data
   };
 };
 
@@ -1146,7 +1089,6 @@ Parser.parseAddress = function parseAddress(p, full) {
   var ts, services, ip, port;
 
   p = new BufferReader(p);
-  p.start();
 
   if (full) // only version >= 31402
     ts = p.readU32();
@@ -1168,8 +1110,7 @@ Parser.parseAddress = function parseAddress(p, full) {
     witness: (services &amp; constants.services.WITNESS) !== 0,
     ipv6: utils.array2ip(ip, 6),
     ipv4: utils.array2ip(ip, 4),
-    port: port,
-    _size: p.end()
+    port: port
   };
 };
 
@@ -1184,14 +1125,11 @@ Parser.parseAddr = function parseAddr(p) {
   var i, count;
 
   p = new BufferReader(p);
-  p.start();
 
   count = p.readVarint();
 
   for (i = 0; i &lt; count; i++)
     addrs.push(Parser.parseAddress(p, true));
-
-  addrs._size = p.end();
 
   return addrs;
 };
@@ -1216,17 +1154,15 @@ Parser.parseAlert = function parseAlert(p) {
   var version, relayUntil, expiration, id, cancel;
   var cancels, count, i, minVer, maxVer, subVers;
   var priority, comment, statusBar, reserved;
-  var payload, size;
+  var payload;
 
   p = new BufferReader(p);
-  p.start();
 
   payload = p.readVarBytes();
   signature = p.readVarBytes();
-  size = p.end();
 
   p = new BufferReader(payload);
-  p.start();
+
   version = p.read32();
   relayUntil = p.read53();
   expiration = p.read53();
@@ -1246,7 +1182,6 @@ Parser.parseAlert = function parseAlert(p) {
   comment = p.readVarString('ascii');
   statusBar = p.readVarString('ascii');
   reserved = p.readVarString('ascii');
-  p.end();
 
   return {
     version: version,
@@ -1263,8 +1198,7 @@ Parser.parseAlert = function parseAlert(p) {
     statusBar: statusBar,
     reserved: reserved,
     payload: payload,
-    signature: signature,
-    _size: size
+    signature: signature
   };
 };
 
@@ -1280,13 +1214,13 @@ return Parser;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 28 2016 15:02:42 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 30 2016 20:32:22 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

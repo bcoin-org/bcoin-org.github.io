@@ -333,7 +333,7 @@ MTX.prototype.scriptInput = function scriptInput(index, addr) {
   // with segwit: figuring out where the redeem script and witness
   // redeem scripts go.
   if (prev.isScripthash()) {
-    if (addr.program &amp;&amp; utils.equals(prev.code[1], addr.programHash)) {
+    if (addr.program &amp;&amp; utils.equal(prev.code[1], addr.programHash)) {
       // Witness program nested in regular P2SH.
       redeemScript = addr.program.encode();
       vector = input.witness.items;
@@ -349,7 +349,7 @@ MTX.prototype.scriptInput = function scriptInput(index, addr) {
       } else {
         assert(false, 'Unknown program.');
       }
-    } else if (addr.script &amp;&amp; utils.equals(prev.code[1], addr.scriptHash160)) {
+    } else if (addr.script &amp;&amp; utils.equal(prev.code[1], addr.scriptHash160)) {
       // Regular P2SH.
       redeemScript = addr.script.encode();
       vector = input.script.code;
@@ -365,14 +365,14 @@ MTX.prototype.scriptInput = function scriptInput(index, addr) {
 
     if (prev.isWitnessScripthash()) {
       // Bare P2WSH.
-      if (!addr.script || !utils.equals(prev.code[1], addr.scriptHash256))
+      if (!addr.script || !utils.equal(prev.code[1], addr.scriptHash256))
         return false;
 
       witnessScript = addr.script.encode();
       prev = addr.script;
     } else if (prev.isWitnessPubkeyhash()) {
       // Bare P2WPKH.
-      if (!utils.equals(prev.code[1], addr.keyHash))
+      if (!utils.equal(prev.code[1], addr.keyHash))
         return false;
 
       prev = Script.createPubkeyhash(prev.code[1]);
@@ -388,7 +388,7 @@ MTX.prototype.scriptInput = function scriptInput(index, addr) {
 
   if (prev.isPubkey()) {
     // P2PK
-    if (!utils.equals(prev.code[0], addr.publicKey))
+    if (!utils.equal(prev.code[0], addr.publicKey))
       return false;
 
     // Already has a script template (at least)
@@ -398,7 +398,7 @@ MTX.prototype.scriptInput = function scriptInput(index, addr) {
     vector[0] = dummy;
   } else if (prev.isPubkeyhash()) {
     // P2PKH
-    if (!utils.equals(prev.code[2], addr.keyHash))
+    if (!utils.equal(prev.code[2], addr.keyHash))
       return false;
 
     // Already has a script template (at least)
@@ -563,7 +563,7 @@ MTX.prototype.signInput = function signInput(index, addr, type) {
       return true;
 
     // Make sure the pubkey is ours.
-    if (!utils.equals(addr.publicKey, prev.code[0]))
+    if (!utils.equal(addr.publicKey, prev.code[0]))
       return false;
 
     vector[0] = signature;
@@ -578,7 +578,7 @@ MTX.prototype.signInput = function signInput(index, addr, type) {
       return true;
 
     // Make sure the pubkey hash is ours.
-    if (!utils.equals(addr.keyHash, prev.code[2]))
+    if (!utils.equal(addr.keyHash, prev.code[2]))
       return false;
 
     vector[0] = signature;
@@ -898,7 +898,8 @@ MTX.prototype.isScripted = function isScripted() {
  */
 
 MTX.prototype.maxSize = function maxSize(options, force) {
-  var i, j, input, total, size, prev, m, n;
+  var scale = constants.WITNESS_SCALE_FACTOR;
+  var i, j, input, total, size, prev, m, n, sz;
   var witness, hadWitness, redeem, wallet;
 
   if (!force &amp;&amp; this.isScripted())
@@ -952,8 +953,9 @@ MTX.prototype.maxSize = function maxSize(options, force) {
 
       if (redeem) {
         prev = redeem;
-        size += utils.sizePush(prev.getSize());
-        size += prev.getSize();
+        sz = prev.getSize();
+        size += utils.sizePush(sz);
+        size += sz;
       }
     }
 
@@ -978,8 +980,9 @@ MTX.prototype.maxSize = function maxSize(options, force) {
 
         if (redeem) {
           prev = redeem;
-          size += utils.sizePush(prev.getSize());
-          size += prev.getSize();
+          sz = prev.getSize();
+          size += utils.sizeVarint(sz);
+          size += sz;
         }
       } else if (prev.isWitnessPubkeyhash()) {
         prev = Script.createPubkeyhash(prev.code[1]);
@@ -1047,7 +1050,7 @@ MTX.prototype.maxSize = function maxSize(options, force) {
     if (witness) {
       // Add one byte back for the 0-byte input script.
       size += 1 * 4;
-      size = (size + 3) / 4 | 0;
+      size = (size + scale - 1) / scale | 0;
     }
 
     total += size;
@@ -1071,12 +1074,7 @@ MTX.prototype.maxSize = function maxSize(options, force) {
  * @param {BN?} options.fee - Use a hard fee rather than calculating one.
  * @param {Number|Boolean} options.subtractFee - Whether to subtract the
  * fee from * existing outputs rather than adding more inputs.
- * @returns {Object} {
- *   chosen: {@link Coin}[],
- *   change: {@link BN},
- *   fee: {@link BN},
- *   total: {@link BN}
- * }
+ * @returns {CoinSelection}
  * @throws on not enough funds available.
  * @throws on unable to subtract fee.
  */
@@ -1124,7 +1122,7 @@ MTX.prototype.selectCoins = function selectCoins(coins, options) {
     var coin;
 
     while (index &lt; coins.length) {
-      coin = coins[index];
+      coin = coins[index++];
 
       if (options.confirmed &amp;&amp; coin.height === -1)
         continue;
@@ -1139,7 +1137,6 @@ MTX.prototype.selectCoins = function selectCoins(coins, options) {
       // and fee.
       tx.addInput(coin);
       chosen.push(coin);
-      index++;
 
       if (options.selection === 'all')
         continue;
@@ -1441,13 +1438,13 @@ return MTX;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 28 2016 15:02:42 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 30 2016 20:32:22 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -40,6 +40,7 @@ var utils = require('./utils');
 var assert = utils.assert;
 var network = bcoin.protocol.network;
 var constants = bcoin.protocol.constants;
+var VerifyError = bcoin.errors.VerifyError;
 
 /**
  * A pool of peers for handling all network activity.
@@ -307,8 +308,6 @@ Pool.prototype._init = function _init() {
 
   this.chain.on('orphan', function(block, data, peer) {
     self.emit('orphan', data, peer);
-    // Resolve orphan chain
-    // self.resolveOrphan(self.peers.load, null, data.hash);
   });
 
   this.chain.on('full', function() {
@@ -370,18 +369,6 @@ Pool.prototype.resolveOrphan = function resolveOrphan(peer, top, orphan, callbac
       bcoin.debug('Orphan root was already resolved.');
       return callback();
     }
-
-    // If we're already processing the block
-    // that would resolve this, ignore.
-    // if (self.request.map[orphan.soil]) {
-    //   bcoin.debug('Already requested orphan "soil".');
-    //   return callback();
-    // }
-
-    // if (self.chain.hasPending(orphan.soil)) {
-    //   bcoin.debug('Already processing orphan "soil".');
-    //   return callback();
-    // }
 
     peer.getBlocks(locator, orphan.root);
 
@@ -822,14 +809,6 @@ Pool.prototype._handleInv = function _handleInv(hashes, peer, callback) {
   });
 };
 
-Pool.prototype._prehandleTX = function _prehandleTX(tx, peer, callback) {
-  return callback(null, tx);
-};
-
-Pool.prototype._prehandleBlock = function _prehandleBlock(block, peer, callback) {
-  return callback(null, block);
-};
-
 Pool.prototype._handleBlock = function _handleBlock(block, peer, callback) {
   var self = this;
   var requested;
@@ -848,52 +827,47 @@ Pool.prototype._handleBlock = function _handleBlock(block, peer, callback) {
     return callback();
   }
 
-  this._prehandleBlock(block, peer, function(err) {
-    if (err)
-      return callback(err);
+  this.chain.add(block, function(err) {
+    if (err) {
+      if (err.type === 'VerifyError') {
+        if (err.score >= 0)
+          peer.sendReject(block, err.code, err.reason, err.score);
 
-    self.chain.add(block, function(err) {
-      if (err) {
-        if (err.type === 'VerifyError') {
-          if (err.score >= 0)
-            peer.sendReject(block, err.code, err.reason, err.score);
-
-          if (err.reason === 'bad-prevblk') {
-            if (peer === self.peers.load)
-              self.resolveOrphan(peer, null, block.hash('hex'));
-          }
-
-          self.scheduleRequests(peer);
-
-          return callback(err);
+        if (err.reason === 'bad-prevblk') {
+          if (peer === self.peers.load)
+            self.resolveOrphan(peer, null, block.hash('hex'));
         }
+
+        self.scheduleRequests(peer);
+
         return callback(err);
       }
+      return callback(err);
+    }
 
-      self.scheduleRequests(peer);
+    self.scheduleRequests(peer);
 
-      self.emit('chain-progress', self.chain.getProgress(), peer);
+    self.emit('chain-progress', self.chain.getProgress(), peer);
 
-      if (self.chain.total % 20 === 0) {
-        bcoin.debug(
-          'Status: tip=%s ts=%s height=%d blocks=%d orphans=%d active=%d'
-          + ' queue=%d target=%s peers=%d pending=%d highest=%d jobs=%d',
-          block.rhash,
-          utils.date(block.ts),
-          self.chain.height,
-          self.chain.total,
-          self.chain.orphan.count,
-          self.request.activeBlocks,
-          peer.queue.block.length,
-          block.bits,
-          self.peers.all.length,
-          self.chain.locker.pending.length,
-          self.chain.bestHeight,
-          self.chain.locker.jobs.length);
-      }
+    if (self.chain.total % 20 === 0) {
+      bcoin.debug(
+        'Status: tip=%s ts=%s height=%d blocks=%d orphans=%d active=%d'
+        + ' queue=%d target=%s peers=%d pending=%d highest=%d jobs=%d',
+        block.rhash,
+        utils.date(block.ts),
+        self.chain.height,
+        self.chain.total,
+        self.chain.orphan.count,
+        self.request.activeBlocks,
+        peer.queue.block.length,
+        block.bits,
+        self.peers.all.length,
+        self.chain.locker.pending.length,
+        self.chain.bestHeight,
+        self.chain.locker.jobs.length);
+    }
 
-      return callback();
-    });
+    return callback();
   });
 };
 
@@ -1018,7 +992,7 @@ Pool.prototype._createPeer = function _createPeer(options) {
 
     for (i = 0; i &lt; txs.length; i++) {
       hash = txs[i];
-      if (self.markTX(hash, 0))
+      if (self._markTX(hash, 0))
         self.getData(peer, self.tx.type, hash);
     }
   });
@@ -1046,7 +1020,7 @@ Pool.prototype._handleTX = function _handleTX(tx, peer, callback) {
   callback = utils.asyncify(callback);
 
   requested = this.fulfill(tx);
-  updated = this.markTX(tx, 1);
+  updated = this._markTX(tx, 1);
 
   function addMempool(tx, callback) {
     if (!self.mempool)
@@ -1058,27 +1032,22 @@ Pool.prototype._handleTX = function _handleTX(tx, peer, callback) {
     self.mempool.addTX(tx, callback);
   }
 
-  this._prehandleTX(tx, peer, function(err) {
-    if (err)
-      return callback(err);
-
-    addMempool(tx, function(err) {
-      if (err) {
-        if (err.type === 'VerifyError') {
-          if (err.score >= 0)
-            peer.sendReject(tx, err.code, err.reason, err.score);
-          return callback();
-        }
+  addMempool(tx, function(err) {
+    if (err) {
+      if (err.type === 'VerifyError') {
+        if (err.score >= 0)
+          peer.sendReject(tx, err.code, err.reason, err.score);
+        return callback();
       }
+    }
 
-      if (updated || tx.block)
-        self.emit('tx', tx, peer);
+    if (updated || tx.block)
+      self.emit('tx', tx, peer);
 
-      if (self.options.spv &amp;&amp; tx.block)
-        self.emit('watched', tx, peer);
+    if (self.options.spv &amp;&amp; tx.block)
+      self.emit('watched', tx, peer);
 
-      return callback();
-    });
+    return callback();
   });
 };
 
@@ -1240,7 +1209,7 @@ Pool.prototype._addPeer = function _addPeer() {
   });
 };
 
-Pool.prototype.markTX = function(hash, state) {
+Pool.prototype._markTX = function(hash, state) {
   if (hash.hash)
     hash = hash.hash('hex');
 
@@ -2363,13 +2332,13 @@ return Pool;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 28 2016 15:02:42 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 30 2016 20:32:22 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

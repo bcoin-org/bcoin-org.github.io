@@ -77,10 +77,12 @@ BufferReader.prototype.start = function start() {
  */
 
 BufferReader.prototype.end = function end() {
+  var start, end;
+
   assert(this.stack.length > 0);
 
-  var start = this.stack.pop();
-  var end = this.offset;
+  start = this.stack.pop();
+  end = this.offset;
 
   if (this.stack.length === 0)
     this.destroy();
@@ -98,12 +100,14 @@ BufferReader.prototype.end = function end() {
  */
 
 BufferReader.prototype.endData = function endData() {
+  var start, end, size, data;
+
   assert(this.stack.length > 0);
 
-  var start = this.stack.pop();
-  var end = this.offset;
-  var size = end - start;
-  var data = this.data;
+  start = this.stack.pop();
+  end = this.offset;
+  size = end - start;
+  data = this.data;
 
   if (this.stack.length === 0)
     this.destroy();
@@ -111,8 +115,8 @@ BufferReader.prototype.endData = function endData() {
   if (size === data.length)
     return data;
 
-  // if (this.zeroCopy)
-  //   return data.slice(start, end);
+  if (this.zeroCopy)
+    return data.slice(start, end);
 
   return utils.slice(data, start, end);
 };
@@ -133,8 +137,9 @@ BufferReader.prototype.destroy = function destroy() {
  */
 
 BufferReader.prototype.readU8 = function readU8() {
+  var ret;
   assert(this.offset + 1 &lt;= this.data.length);
-  var ret = utils.readU8(this.data, this.offset);
+  ret = utils.readU8(this.data, this.offset);
   this.offset += 1;
   return ret;
 };
@@ -145,8 +150,9 @@ BufferReader.prototype.readU8 = function readU8() {
  */
 
 BufferReader.prototype.readU16 = function readU16() {
+  var ret;
   assert(this.offset + 2 &lt;= this.data.length);
-  var ret = utils.readU16(this.data, this.offset);
+  ret = utils.readU16(this.data, this.offset);
   this.offset += 2;
   return ret;
 };
@@ -157,8 +163,9 @@ BufferReader.prototype.readU16 = function readU16() {
  */
 
 BufferReader.prototype.readU16BE = function readU16BE() {
+  var ret;
   assert(this.offset + 2 &lt;= this.data.length);
-  var ret = utils.readU16BE(this.data, this.offset);
+  ret = utils.readU16BE(this.data, this.offset);
   this.offset += 2;
   return ret;
 };
@@ -169,8 +176,9 @@ BufferReader.prototype.readU16BE = function readU16BE() {
  */
 
 BufferReader.prototype.readU32 = function readU32() {
+  var ret;
   assert(this.offset + 4 &lt;= this.data.length);
-  var ret = utils.readU32(this.data, this.offset);
+  ret = utils.readU32(this.data, this.offset);
   this.offset += 4;
   return ret;
 };
@@ -181,8 +189,9 @@ BufferReader.prototype.readU32 = function readU32() {
  */
 
 BufferReader.prototype.readU32BE = function readU32BE() {
+  var ret;
   assert(this.offset + 4 &lt;= this.data.length);
-  var ret = utils.readU32BE(this.data, this.offset);
+  ret = utils.readU32BE(this.data, this.offset);
   this.offset += 4;
   return ret;
 };
@@ -193,8 +202,9 @@ BufferReader.prototype.readU32BE = function readU32BE() {
  */
 
 BufferReader.prototype.readU64 = function readU64() {
+  var ret;
   assert(this.offset + 8 &lt;= this.data.length);
-  var ret = utils.readU64(this.data, this.offset);
+  ret = utils.readU64(this.data, this.offset);
   this.offset += 8;
   return ret;
 };
@@ -205,8 +215,9 @@ BufferReader.prototype.readU64 = function readU64() {
  */
 
 BufferReader.prototype.readU64BE = function readU64BE() {
+  var ret;
   assert(this.offset + 8 &lt;= this.data.length);
-  var ret = utils.readU64BE(this.data, this.offset);
+  ret = utils.readU64BE(this.data, this.offset);
   this.offset += 8;
   return ret;
 };
@@ -218,8 +229,9 @@ BufferReader.prototype.readU64BE = function readU64BE() {
  */
 
 BufferReader.prototype.readU64N = function readU64N(force53) {
+  var ret;
   assert(this.offset + 8 &lt;= this.data.length);
-  var ret = utils.readU64N(this.data, this.offset, force53);
+  ret = utils.readU64N(this.data, this.offset, force53);
   this.offset += 8;
   return ret;
 };
@@ -231,8 +243,9 @@ BufferReader.prototype.readU64N = function readU64N(force53) {
  */
 
 BufferReader.prototype.readU64NBE = function readU64NBE(force53) {
+  var ret;
   assert(this.offset + 8 &lt;= this.data.length);
-  var ret = utils.readU64NBE(this.data, this.offset, force53);
+  ret = utils.readU64NBE(this.data, this.offset, force53);
   this.offset += 8;
   return ret;
 };
@@ -263,8 +276,9 @@ BufferReader.prototype.readU53BE = function readU53BE() {
  */
 
 BufferReader.prototype.read8 = function read8() {
+  var ret;
   assert(this.offset + 1 &lt;= this.data.length);
-  var ret = utils.read8(this.data, this.offset);
+  ret = utils.read8(this.data, this.offset);
   this.offset += 1;
   return ret;
 };
@@ -275,8 +289,9 @@ BufferReader.prototype.read8 = function read8() {
  */
 
 BufferReader.prototype.read16 = function read16() {
+  var ret;
   assert(this.offset + 2 &lt;= this.data.length);
-  var ret = utils.read16(this.data, this.offset);
+  ret = utils.read16(this.data, this.offset);
   this.offset += 2;
   return ret;
 };
@@ -287,8 +302,9 @@ BufferReader.prototype.read16 = function read16() {
  */
 
 BufferReader.prototype.read16BE = function read16BE() {
+  var ret;
   assert(this.offset + 2 &lt;= this.data.length);
-  var ret = utils.read16BE(this.data, this.offset);
+  ret = utils.read16BE(this.data, this.offset);
   this.offset += 2;
   return ret;
 };
@@ -299,8 +315,9 @@ BufferReader.prototype.read16BE = function read16BE() {
  */
 
 BufferReader.prototype.read32 = function read32() {
+  var ret;
   assert(this.offset + 4 &lt;= this.data.length);
-  var ret = utils.read32(this.data, this.offset);
+  ret = utils.read32(this.data, this.offset);
   this.offset += 4;
   return ret;
 };
@@ -311,8 +328,9 @@ BufferReader.prototype.read32 = function read32() {
  */
 
 BufferReader.prototype.read32BE = function read32BE() {
+  var ret;
   assert(this.offset + 4 &lt;= this.data.length);
-  var ret = utils.read32BE(this.data, this.offset);
+  ret = utils.read32BE(this.data, this.offset);
   this.offset += 4;
   return ret;
 };
@@ -323,8 +341,9 @@ BufferReader.prototype.read32BE = function read32BE() {
  */
 
 BufferReader.prototype.read64 = function read64() {
+  var ret;
   assert(this.offset + 8 &lt;= this.data.length);
-  var ret = utils.read64(this.data, this.offset);
+  ret = utils.read64(this.data, this.offset);
   this.offset += 8;
   return ret;
 };
@@ -335,8 +354,9 @@ BufferReader.prototype.read64 = function read64() {
  */
 
 BufferReader.prototype.read64BE = function read64BE() {
+  var ret;
   assert(this.offset + 8 &lt;= this.data.length);
-  var ret = utils.read64BE(this.data, this.offset);
+  ret = utils.read64BE(this.data, this.offset);
   this.offset += 8;
   return ret;
 };
@@ -348,8 +368,9 @@ BufferReader.prototype.read64BE = function read64BE() {
  */
 
 BufferReader.prototype.read64N = function read64N(force53) {
+  var ret;
   assert(this.offset + 8 &lt;= this.data.length);
-  var ret = utils.read64N(this.data, this.offset, force53);
+  ret = utils.read64N(this.data, this.offset, force53);
   this.offset += 8;
   return ret;
 };
@@ -361,8 +382,9 @@ BufferReader.prototype.read64N = function read64N(force53) {
  */
 
 BufferReader.prototype.read64NBE = function read64NBE(force53) {
+  var ret;
   assert(this.offset + 8 &lt;= this.data.length);
-  var ret = utils.read64NBE(this.data, this.offset, force53);
+  ret = utils.read64NBE(this.data, this.offset, force53);
   this.offset += 8;
   return ret;
 };
@@ -417,9 +439,10 @@ BufferReader.prototype.readBytes = function readBytes(size) {
  */
 
 BufferReader.prototype.readString = function readString(enc, size) {
+  var ret;
   assert(size >= 0);
   assert(this.offset + size &lt;= this.data.length);
-  var ret = this.data.toString(enc, this.offset, this.offset + size);
+  ret = this.data.toString(enc, this.offset, this.offset + size);
   this.offset += size;
   return ret;
 };
@@ -462,13 +485,14 @@ BufferReader.prototype.readVarBytes = function readVarBytes() {
  */
 
 BufferReader.prototype.readNullString = function readNullString(enc) {
+  var i, ret;
   assert(this.offset + 1 &lt;= this.data.length);
-  for (var i = this.offset; i &lt; this.data.length; i++) {
+  for (i = this.offset; i &lt; this.data.length; i++) {
     if (this.data[i] === 0)
       break;
   }
   assert(i !== this.data.length);
-  var ret = this.readString(enc, i - this.offset);
+  ret = this.readString(enc, i - this.offset);
   this.offset = i + 1;
   return ret;
 };
@@ -480,8 +504,9 @@ BufferReader.prototype.readNullString = function readNullString(enc) {
  */
 
 BufferReader.prototype.readVarint = function readVarint(big) {
+  var result;
   assert(this.offset + 1 &lt;= this.data.length);
-  var result = utils.readVarint(this.data, this.offset, big);
+  result = utils.readVarint(this.data, this.offset, big);
   assert(result.off &lt;= this.data.length);
   assert(result.r >= 0);
   this.offset = result.off;
@@ -554,13 +579,13 @@ module.exports = BufferReader;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 28 2016 15:02:42 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 30 2016 20:32:22 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -39,9 +39,10 @@
 
 var utils = exports;
 
+var assert = require('assert');
 var bn = require('bn.js');
 var util = require('util');
-var crypto, hash;
+var crypto, hash, aes;
 
 /**
  * Whether we're in a browser or not.
@@ -52,10 +53,12 @@ utils.isBrowser =
   (typeof process !== 'undefined' &amp;&amp; process.browser)
   || typeof window !== 'undefined';
 
-if (!utils.isBrowser)
+if (!utils.isBrowser) {
   crypto = require('cry' + 'pto');
-else
+} else {
   hash = require('hash.js');
+  aes = require('./aes');
+}
 
 /**
  * Global NOP function.
@@ -77,21 +80,21 @@ utils.gc = !utils.isBrowser &amp;&amp; typeof gc === 'function' ? gc : utils.nop
 
 /**
  * A slow buffer slice (will allocate a new buffer).
- * @param {Buffer} buf
+ * @param {Buffer} data
  * @param {Number?} start
  * @param {Number?} end
  * @returns {Buffer}
  */
 
-utils.slice = function slice(buf, start, end) {
+utils.slice = function slice(data, start, end) {
   var clone;
 
   if (start != null)
-    buf = buf.slice(start, end);
+    data = data.slice(start, end);
 
-  clone = new Buffer(buf.length);
+  clone = new Buffer(data.length);
 
-  buf.copy(clone, 0, 0, buf.length);
+  data.copy(clone, 0, 0, data.length);
 
   return clone;
 };
@@ -100,38 +103,40 @@ utils.slice = function slice(buf, start, end) {
  * Base58
  */
 
-var base58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+var base58 = ''
+  + '123456789'
+  + 'ABCDEFGHJKLMNPQRSTUVWXYZ'
   + 'abcdefghijkmnopqrstuvwxyz';
 
-var unbase58 = base58.split('').reduce(function(out, ch, i) {
-  out[ch] = i;
-  return out;
-}, {});
+var unbase58 = {};
+
+for (var i = 0; i &lt; base58.length; i++)
+  unbase58[base58[i]] = i;
 
 /**
  * Encode a base58 string.
  * @see https://github.com/bitcoin/bitcoin/blob/master/src/base58.cpp
- * @param {Buffer} buf
+ * @param {Buffer} data
  * @returns {Base58String}
  */
 
-utils.toBase58 = function toBase58(buf) {
+utils.toBase58 = function toBase58(data) {
   var zeroes = 0;
   var length = 0;
   var str = '';
   var i, b58, carry, j, k;
 
-  for (i = 0; i &lt; buf.length; i++) {
-    if (buf[i] !== 0)
+  for (i = 0; i &lt; data.length; i++) {
+    if (data[i] !== 0)
       break;
     zeroes++;
   }
 
-  b58 = new Buffer(((buf.length * 138 / 100) | 0) + 1);
+  b58 = new Buffer(((data.length * 138 / 100) | 0) + 1);
   b58.fill(0);
 
-  for (; i &lt; buf.length; i++) {
-    carry = buf[i];
+  for (; i &lt; data.length; i++) {
+    carry = data[i];
     j = 0;
     for (k = b58.length - 1; k >= 0; k--, j++) {
       if (carry === 0 &amp;&amp; j >= length)
@@ -212,12 +217,27 @@ utils.fromBase58 = function fromBase58(str) {
 /**
  * Test whether a string is base58 (note that you
  * may get a false positive on a hex string).
- * @param {String?} msg
+ * @param {String?} obj
  * @returns {Boolean}
  */
 
-utils.isBase58 = function isBase58(msg) {
-  return typeof msg === 'string' &amp;&amp; /^[1-9a-zA-Z]+$/.test(msg);
+utils.isBase58 = function isBase58(obj) {
+  return typeof obj === 'string' &amp;&amp; /^[1-9a-zA-Z]+$/.test(obj);
+};
+
+/**
+ * Hash with chosen algorithm.
+ * @param {String} alg
+ * @param {Buffer|String} data
+ * @param {String?} enc - Any buffer-supported encoding.
+ * @returns {Buffer}
+ */
+
+utils.hash = function _hash(alg, data, enc) {
+  if (!crypto)
+    return new Buffer(hash[alg]().update(data, enc).digest());
+
+  return crypto.createHash(alg).update(data, enc).digest();
 };
 
 /**
@@ -228,10 +248,7 @@ utils.isBase58 = function isBase58(msg) {
  */
 
 utils.ripemd160 = function ripemd160(data, enc) {
-  if (!crypto)
-    return new Buffer(hash.ripemd160().update(data, enc).digest());
-
-  return crypto.createHash('ripemd160').update(data, enc).digest();
+  return utils.hash('ripemd160', data, enc);
 };
 
 /**
@@ -242,10 +259,18 @@ utils.ripemd160 = function ripemd160(data, enc) {
  */
 
 utils.sha1 = function sha1(data, enc) {
-  if (!crypto)
-    return new Buffer(hash.sha1().update(data, enc).digest());
+  return utils.hash('sha1', data, enc);
+};
 
-  return crypto.createHash('sha1').update(data, enc).digest();
+/**
+ * Hash with sha256.
+ * @param {Buffer|String} data
+ * @param {String?} enc - Any buffer-supported encoding.
+ * @returns {Buffer}
+ */
+
+utils.sha256 = function sha256(data, enc) {
+  return utils.hash('sha256', data, enc);
 };
 
 /**
@@ -260,31 +285,6 @@ utils.ripesha = function ripesha(data, enc) {
 };
 
 /**
- * Create a sha256 checksum (common in bitcoin).
- * @param {Buffer|String} data
- * @param {String?} enc - Any buffer-supported encoding.
- * @returns {Buffer}
- */
-
-utils.checksum = function checksum(data, enc) {
-  return utils.dsha256(data, enc).slice(0, 4);
-};
-
-/**
- * Hash with sha256.
- * @param {Buffer|String} data
- * @param {String?} enc - Any buffer-supported encoding.
- * @returns {Buffer}
- */
-
-utils.sha256 = function sha256(data, enc) {
-  if (!crypto)
-    return new Buffer(hash.sha256().update(data, enc).digest());
-
-  return crypto.createHash('sha256').update(data, enc).digest();
-};
-
-/**
  * Hash with sha256 twice (OP_HASH256).
  * @param {Buffer|String} data
  * @param {String?} enc - Any buffer-supported encoding.
@@ -296,24 +296,34 @@ utils.dsha256 = function dsha256(data, enc) {
 };
 
 /**
- * Create a sha512 HMAC.
+ * Create a sha256 checksum (common in bitcoin).
+ * @param {Buffer|String} data
+ * @param {String?} enc - Any buffer-supported encoding.
+ * @returns {Buffer}
+ */
+
+utils.checksum = function checksum(data, enc) {
+  return utils.dsha256(data, enc).slice(0, 4);
+};
+
+/**
+ * Create an HMAC.
+ * @param {String} alg
  * @param {Buffer} data
  * @param {Buffer} salt
  * @returns {Buffer} HMAC
  */
 
-utils.sha512hmac = function sha512hmac(data, salt) {
-  var hmac, result;
+utils.hmac = function hmac(alg, data, salt) {
+  var hmac;
 
   if (!crypto) {
-    hmac = hash.hmac(hash.sha512, salt);
+    hmac = hash.hmac(hash[alg], salt);
     return new Buffer(hmac.update(data).digest());
   }
 
-  hmac = crypto.createHmac('sha512', salt);
-  result = hmac.update(data).digest();
-
-  return result;
+  hmac = crypto.createHmac(alg, salt);
+  return hmac.update(data).digest();
 };
 
 /**
@@ -322,6 +332,7 @@ utils.sha512hmac = function sha512hmac(data, salt) {
  * @param {Buffer} salt
  * @param {Number} iterations
  * @param {Number} dkLen - Output size.
+ * @param {String?} alg
  */
 
 /*!
@@ -331,53 +342,54 @@ utils.sha512hmac = function sha512hmac(data, salt) {
  * Copyright (c) 2014, JP Richardson
  */
 
-utils.pbkdf2 = function pbkdf2(key, salt, iterations, dkLen) {
-  'use strict';
-
-  if (crypto &amp;&amp; crypto.pbkdf2Sync)
-    return crypto.pbkdf2Sync(key, salt, iterations, dkLen, 'sha512');
-
-  var hLen = 64;
-
-  if (dkLen > (Math.pow(2, 32) - 1) * hLen)
-    throw Error('Requested key length too long');
-
-  if (typeof key !== 'string' &amp;&amp; typeof key.length !== 'number')
-    throw new TypeError('key must a string or array');
-
-  if (typeof salt !== 'string' &amp;&amp; typeof salt.length !== 'number')
-    throw new TypeError('salt must a string or array');
-
-  if (typeof key === 'string')
-    key = new Buffer(key, 'ascii');
-
-  if (typeof salt === 'string')
-    salt = new Buffer(salt, 'ascii');
-
-  var DK = new Buffer(dkLen);
-  var U = new Buffer(hLen);
-  var T = new Buffer(hLen);
-  var block1 = new Buffer(salt.length + 4);
-
-  var l = Math.ceil(dkLen / hLen);
-  var r = dkLen - (l - 1) * hLen;
-
+utils.pbkdf2 = function pbkdf2(key, salt, iterations, dkLen, alg) {
+  var hLen, DK, U, T, block, l, r;
   var i, j, k, destPos, len;
 
-  salt.copy(block1);
+  if (typeof key === 'string')
+    key = new Buffer(key, 'utf8');
+
+  if (typeof salt === 'string')
+    salt = new Buffer(salt, 'utf8');
+
+  if (!alg)
+    alg = 'sha512';
+
+  if (crypto &amp;&amp; crypto.pbkdf2Sync)
+    return crypto.pbkdf2Sync(key, salt, iterations, dkLen, alg);
+
+  if (alg === 'sha512')
+    hLen = 64;
+  else if (alg === 'sha256')
+    hLen = 32;
+  else if (alg === 'sha1' || alg === 'ripemd160')
+    hLen = 20;
+  else if (alg === 'md5')
+    hLen = 16;
+
+  assert(dkLen &lt;= 0xffffffff * hLen, 'Requested key length too long');
+
+  DK = new Buffer(dkLen);
+  T = new Buffer(hLen);
+  block = new Buffer(salt.length + 4);
+
+  l = Math.ceil(dkLen / hLen);
+  r = dkLen - (l - 1) * hLen;
+
+  salt.copy(block, 0, 0, salt.length);
 
   for (i = 1; i &lt;= l; i++) {
-    block1[salt.length + 0] = i >> 24 &amp; 0xff;
-    block1[salt.length + 1] = i >> 16 &amp; 0xff;
-    block1[salt.length + 2] = i >> 8 &amp; 0xff;
-    block1[salt.length + 3] = i >> 0 &amp; 0xff;
+    block[salt.length + 0] = (i >>> 24) &amp; 0xff;
+    block[salt.length + 1] = (i >>> 16) &amp; 0xff;
+    block[salt.length + 2] = (i >>> 8) &amp; 0xff;
+    block[salt.length + 3] = (i >>> 0) &amp; 0xff;
 
-    U = utils.sha512hmac(block1, key);
+    U = utils.hmac(alg, block, key);
 
     U.copy(T, 0, 0, hLen);
 
     for (j = 1; j &lt; iterations; j++) {
-      U = utils.sha512hmac(U, key);
+      U = utils.hmac(alg, U, key);
 
       for (k = 0; k &lt; hLen; k++)
         T[k] ^= U[k];
@@ -385,97 +397,104 @@ utils.pbkdf2 = function pbkdf2(key, salt, iterations, dkLen) {
 
     destPos = (i - 1) * hLen;
     len = i === l ? r : hLen;
-    T.copy(DK, 0, 0, len);
+    T.copy(DK, destPos, 0, len);
   }
 
   return DK;
 };
 
 /**
- * Encryption salt.
- * @type String
- * @const
- */
-
-utils.salt = 'bcoin:';
-
-/**
- * Encrypt a string.
- * @param {String} data
- * @param {String} passphrase
- * @returns {String} Hex string.
- * @throws on no passphrase
+ * Encrypt with aes-256-cbc.
+ * @param {Buffer|String} data
+ * @param {Buffer|String} passphrase
+ * @returns {Buffer}
  */
 
 utils.encrypt = function encrypt(data, passphrase) {
-  var cipher, out;
+  var key, cipher;
+
+  assert(crypto, 'No crypto module available.');
+  assert(passphrase, 'No passphrase.');
+
+  if (typeof data === 'string')
+    data = new Buffer(data, 'utf8');
+
+  if (typeof passphrase === 'string')
+    passphrase = new Buffer(passphrase, 'utf8');
+
+  key = utils.pbkdf2key(passphrase, null, 2048, 32, 16);
 
   if (!crypto)
-    return data;
+    return aes.cbc.encrypt(data, key.key, key.iv);
 
-  if (data[0] === ':')
-    return data;
+  cipher = crypto.createCipheriv('aes-256-cbc', key.key, key.iv);
 
-  if (!passphrase)
-    throw new Error('No passphrase.');
-
-  cipher = crypto.createCipher('aes-256-cbc', passphrase);
-
-  out = '';
-  out += cipher.update(utils.salt + data, 'utf8', 'hex');
-  out += cipher.final('hex');
-
-  return ':' + out;
+  return Buffer.concat([
+    cipher.update(data),
+    cipher.final()
+  ]);
 };
 
 /**
- * Decrypt an encrypted hex string.
- * @param {String} data - Hex string.
- * @param {String} passphrase
- * @returns {String}
- * @throws on bad decrypt.
+ * Decrypt from aes-256-cbc.
+ * @param {Buffer|String} data
+ * @param {Buffer|String} passphrase
+ * @returns {Buffer}
  */
 
 utils.decrypt = function decrypt(data, passphrase) {
-  var decipher, out;
+  var key, decipher;
 
-  if (!crypto) {
-    if (data[0] === ':')
-      throw new Error('Cannot decrypt.');
-    return data;
-  }
+  assert(crypto, 'No crypto module available.');
+  assert(passphrase, 'No passphrase.');
 
-  if (data[0] !== ':')
-    return data;
+  if (typeof data === 'string')
+    data = new Buffer(data, 'hex');
 
-  if (!passphrase)
-    throw new Error('No passphrase.');
+  if (typeof passphrase === 'string')
+    passphrase = new Buffer(passphrase, 'utf8');
 
-  data = data.substring(1);
+  key = utils.pbkdf2key(passphrase, null, 2048, 32, 16);
 
-  decipher = crypto.createDecipher('aes-256-cbc', passphrase);
+  if (!crypto)
+    return aes.cbc.decrypt(data, key.key, key.iv);
 
-  out = '';
-  out += decipher.update(data, 'hex', 'utf8');
-  out += decipher.final('utf8');
+  decipher = crypto.createDecipheriv('aes-256-cbc', key.key, key.iv);
 
-  if (out.indexOf(utils.salt) !== 0)
-    throw new Error('Decrypt failed.');
+  return Buffer.concat([
+    decipher.update(data),
+    decipher.final()
+  ]);
+};
 
-  out = out.substring(utils.salt.length);
+/**
+ * Generate a key and IV using pbkdf2.
+ * @param {Buffer|String} passphrase
+ * @param {(Buffer|String)?} salt
+ * @param {Number} iterations
+ * @param {Number} dkLen
+ * @param {Number} ivLen
+ * @param {String?} alg
+ * @returns {Buffer}
+ */
 
-  return out;
+utils.pbkdf2key = function pbkdf2key(passphrase, salt, iterations, dkLen, ivLen, alg) {
+  var key = utils.pbkdf2(passphrase, salt || '', iterations, dkLen + ivLen, alg);
+  return {
+    key: key.slice(0, dkLen),
+    iv: key.slice(dkLen)
+  };
 };
 
 /**
  * Test whether a string is hex. Note that this
  * may yield a false positive on base58 strings.
- * @param {String?} msg
+ * @param {String?} obj
  * @returns {Boolean}
  */
 
-utils.isHex = function isHex(msg) {
-  return typeof msg === 'string' &amp;&amp; /^[0-9a-f]+$/i.test(msg);
+utils.isHex = function isHex(obj) {
+  return typeof obj === 'string' &amp;&amp; /^[0-9a-f]+$/i.test(obj);
 };
 
 /**
@@ -485,7 +504,7 @@ utils.isHex = function isHex(msg) {
  * @returns {Boolean}
  */
 
-utils.equals = function equals(a, b) {
+utils.equal = function equal(a, b) {
   var i;
 
   if (!Buffer.isBuffer(a))
@@ -580,77 +599,91 @@ utils.revHex = function revHex(s) {
   return r;
 };
 
-function assert(val, msg) {
-  if (!val)
-    throw new Error(msg || 'Assertion failed');
-}
+/**
+ * Shallow merge between multiple objects.
+ * @param {Object} target
+ * @param {...Object} args
+ * @returns {Object} target
+ */
 
-assert.fatal = function fatal(l, r, msg) {
-  if (!val) {
-    if (!msg)
-      msg = 'Assertion failed (fatal exception)';
-    msg = new Error(msg);
-    console.error(msg.stack + '');
-    if (process.exit)
-      process.exit(1);
-    else
-      throw msg;
-  }
-};
-
-assert.equal = function assertEqual(l, r, msg) {
-  if (l != r)
-    throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
-};
-
-assert.noError = function noError(err) {
-  if (err)
-    throw err;
+utils.merge = function merge(target) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  args.forEach(function(obj) {
+    Object.keys(obj).forEach(function(key) {
+      target[key] = obj[key];
+    });
+  });
+  return target;
 };
 
 /**
  * Assertion.
- * @function
- * @param {Boolean} val - Expression.
- * @param {String?} msg - Optional error message.
+ * @param {Boolean} value - Expression.
+ * @param {String?} message - Optional error message.
  */
 
-utils.assert = assert;
+utils.assert = function assert(value, message) {
+  return assert.ok(value, message);
+};
+
+utils.merge(utils.assert, assert);
+
+utils.assert.fatal = function fatal(value, message) {
+  var err;
+
+  if (!value) {
+    if (!message)
+      message = 'Assertion failed (fatal exception)';
+
+    err = new assert.AssertionError({
+      message: message,
+      actual: value,
+      expected: true,
+      operator: '==',
+      stackStartFunction: fatal
+    });
+
+    if (process.exit) {
+      console.error(err.stack + '');
+      process.exit(1);
+    } else {
+      throw err;
+    }
+  }
+};
+
+/**
+ * One bitcoin in satoshis.
+ * @const {BN}
+ * @default
+ */
+
+utils.COIN = new bn(10000000).muln(10);
 
 /**
  * Convert satoshis to a BTC string. Note that
  * BTC strings _always_ have a decimal point.
- * @name btc
- * @function
  * @param {BN|Number} satoshi
- * @param {Boolean?} strict - Throw if `satoshi`
- * is not a {@link BN}.
  * @returns {String} BTC string.
  */
 
-utils.btc =
-utils.toBTC = function toBTC(satoshi, strict) {
-  var m = new bn(10000000).mul(new bn(10));
+utils.btc = function btc(satoshi) {
   var neg = false;
-  var lo;
+  var btc, hi, lo;
 
   if (utils.isBTC(satoshi))
-    return utils.isBTC(satoshi);
+    return satoshi;
 
-  if (!strict &amp;&amp; utils.isFinite(satoshi))
-    satoshi = new bn(Math.floor(satoshi) + '', 10);
-
-  satoshi = utils.isSatoshi(satoshi);
-
-  if (!satoshi)
-    throw new Error('Could not calculate BTC');
+  assert(utils.isSatoshi(satoshi), 'Non-satoshi value for conversion.');
 
   if (satoshi.isNeg()) {
     satoshi = satoshi.neg();
     neg = true;
   }
 
-  lo = satoshi.mod(m);
+  hi = satoshi.div(utils.COIN).toString(10);
+
+  lo = satoshi.mod(utils.COIN);
 
   if (lo.cmpn(0) !== 0) {
     lo = lo.toString(10);
@@ -665,37 +698,33 @@ utils.toBTC = function toBTC(satoshi, strict) {
   if (lo === '.')
     lo += '0';
 
-  return (neg ? '-' : '') + satoshi.div(m).toString(10) + lo;
+  btc = hi + lo;
+
+  if (neg)
+    btc = '-' + btc;
+
+  return btc;
 };
 
 /**
  * Convert BTC string to satoshis.
- * @name satoshi
- * @function
  * @param {String|Number} btc
- * @param {Boolean?} strict - Throw if `btc`
- * is not a string.
  * @returns {BN} Satoshis.
  */
 
-utils.satoshi =
-utils.toSatoshi =
-utils.fromBTC = function fromBTC(btc, strict) {
+utils.satoshi = function satoshi(btc) {
+  var neg = false;
   var satoshi, parts, hi, lo;
 
   if (utils.isSatoshi(btc))
-    return utils.isSatoshi(btc);
+    return btc;
 
-  if (!strict &amp;&amp; utils.isFinite(btc)) {
-    btc = btc + '';
-    if (utils.isInt(btc))
-      btc += '.0';
+  assert(utils.isBTC(btc), 'Non-BTC value for conversion.');
+
+  if (btc[0] === '-') {
+    neg = true;
+    btc = btc.substring(1);
   }
-
-  btc = utils.isBTC(btc);
-
-  if (!btc)
-    throw new Error('Could not calculate satoshis');
 
   parts = btc.split('.');
   hi = parts[0] || '0';
@@ -706,27 +735,12 @@ utils.fromBTC = function fromBTC(btc, strict) {
 
   satoshi = (hi + lo).replace(/^0+/, '');
 
-  return new bn(satoshi, 10);
-};
+  satoshi = new bn(satoshi, 10);
 
-/**
- * Test whether a string is an int (no decimal point).
- * @param {String?} val
- * @returns {Boolean}
- */
+  if (neg)
+    satoshi.ineg();
 
-utils.isInt = function isInt(val) {
-  return typeof val === 'string' &amp;&amp; /^\d+$/.test(val);
-};
-
-/**
- * Test whether a string is a float (decimal point).
- * @param {String?} val
- * @returns {Boolean}
- */
-
-utils.isFloat = function isFloat(val) {
-  return typeof val === 'string' &amp;&amp; /^-?\d+\.\d+$/.test(val);
+  return satoshi;
 };
 
 /**
@@ -735,7 +749,7 @@ utils.isFloat = function isFloat(val) {
  * @returns {Boolean}
  */
 
-utils.isFinite = function _isFinite(val) {
+utils.isNumber = function isNumber(val) {
   return typeof val === 'number' &amp;&amp; isFinite(val);
 };
 
@@ -746,13 +760,7 @@ utils.isFinite = function _isFinite(val) {
  */
 
 utils.isSatoshi = function isSatoshi(val) {
-  if (bn.isBN(val))
-    return val;
-  if (utils.isInt(val))
-    return new bn(val, 10);
-  if (Buffer.isBuffer(val))
-    return new bn(val);
-  return false;
+  return bn.isBN(val);
 };
 
 /**
@@ -762,25 +770,7 @@ utils.isSatoshi = function isSatoshi(val) {
  */
 
 utils.isBTC = function isBTC(val) {
-  if (utils.isFloat(val))
-    return val;
-  return false;
-};
-
-/**
- * Ensure number string is a float
- * string (with a decimal point).
- * @param {String} val
- * @returns {String}
- * @throws on non-number string
- */
-
-utils.toFloat = function toFloat(val) {
-  if (utils.isFloat(val))
-    return val;
-  if (utils.isInt(val))
-    return val + '.0';
-  throw new Error('Could not convert ' + val + ' to float');
+  return typeof val === 'string' &amp;&amp; /^-?\d+\.\d+$/.test(val);
 };
 
 /**
@@ -1057,23 +1047,6 @@ utils.error = function error() {
 };
 
 /**
- * Shallow merge between multiple objects.
- * @param {Object} target
- * @param {...Object} args
- * @returns {Object} target
- */
-
-utils.merge = function merge(target) {
-  var args = Array.prototype.slice.call(arguments, 1);
-  args.forEach(function(obj) {
-    Object.keys(obj).forEach(function(key) {
-      target[key] = obj[key];
-    });
-  });
-  return target;
-};
-
-/**
  * Sort public keys lexicographically.
  * @param {Buffer[]} keys
  * @returns {Buffer[]} Sorted keys.
@@ -1112,30 +1085,12 @@ utils.sortTX = function sortTX(txs) {
 };
 
 /**
- * Unique-ify an array.
- * @param {Array} obj
- * @returns {Array}
- */
-
-utils.uniq = function uniq(obj) {
-  var out = [];
-  var i = 0;
-
-  for (; i &lt; obj.length; i++) {
-    if (out.indexOf(obj[i]) === -1)
-      out.push(obj[i]);
-  }
-
-  return out;
-};
-
-/**
  * Unique-ify an array of strings.
  * @param {String[]} obj
  * @returns {String[]}
  */
 
-utils.uniqs = function uniqs(obj) {
+utils.uniq = function uniq(obj) {
   var table = {};
   var out = [];
   var i = 0;
@@ -1242,7 +1197,7 @@ utils.now = function now() {
 
 /**
  * Create a Date ISO string from time in unix time (seconds).
- * @param {Number?} - Seconds in unix time.
+ * @param {Number?} ts - Seconds in unix time.
  * @returns {String}
  */
 
@@ -1320,187 +1275,187 @@ utils.nonce = function nonce() {
 
 /**
  * Read uint8.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.readU8 = function readU8(arr, off) {
+utils.readU8 = function readU8(data, off) {
   off = off >>> 0;
-  return arr[off];
+  return data[off];
 };
 
 /**
  * Read uint16le.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.readU16 = function readU16(arr, off) {
+utils.readU16 = function readU16(data, off) {
   off = off >>> 0;
-  return arr[off] | (arr[off + 1] &lt;&lt; 8);
+  return data[off] | (data[off + 1] &lt;&lt; 8);
 };
 
 /**
  * Read uint16be.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.readU16BE = function readU16BE(arr, off) {
+utils.readU16BE = function readU16BE(data, off) {
   off = off >>> 0;
-  return (arr[off] &lt;&lt; 8) | arr[off + 1];
+  return (data[off] &lt;&lt; 8) | data[off + 1];
 };
 
 /**
  * Read uint32le.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.readU32 = function readU32(arr, off) {
+utils.readU32 = function readU32(data, off) {
   off = off >>> 0;
 
-  return ((arr[off])
-    | (arr[off + 1] &lt;&lt; 8)
-    | (arr[off + 2] &lt;&lt; 16))
-    + (arr[off + 3] * 0x1000000);
+  return ((data[off])
+    | (data[off + 1] &lt;&lt; 8)
+    | (data[off + 2] &lt;&lt; 16))
+    + (data[off + 3] * 0x1000000);
 };
 
 /**
  * Read uint32be.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.readU32BE = function readU32BE(arr, off) {
+utils.readU32BE = function readU32BE(data, off) {
   off = off >>> 0;
 
-  return (arr[off] * 0x1000000)
-    + ((arr[off + 1] &lt;&lt; 16)
-    | (arr[off + 2] &lt;&lt; 8)
-    | arr[off + 3]);
+  return (data[off] * 0x1000000)
+    + ((data[off + 1] &lt;&lt; 16)
+    | (data[off + 2] &lt;&lt; 8)
+    | data[off + 3]);
 };
 
 /**
  * Read uint64le.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {BN}
  */
 
-utils.readU64 = function readU64(arr, off) {
+utils.readU64 = function readU64(data, off) {
   var num;
   off = off >>> 0;
-  num = arr.slice(off, off + 8);
+  num = data.slice(off, off + 8);
   return new bn(num, 'le');
 };
 
 /**
  * Read uint64be.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {BN}
  */
 
-utils.readU64BE = function readU64BE(arr, off) {
+utils.readU64BE = function readU64BE(data, off) {
   var num;
   off = off >>> 0;
-  num = arr.slice(off, off + 8);
+  num = data.slice(off, off + 8);
   return new bn(num, 'be');
 };
 
 /**
  * Read int8.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.read8 = function read8(arr, off) {
+utils.read8 = function read8(data, off) {
   var num;
   off = off >>> 0;
-  num = arr[off];
+  num = data[off];
   return !(num &amp; 0x80) ? num : (0xff - num + 1) * -1;
 };
 
 /**
  * Read int16le.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.read16 = function read16(arr, off) {
+utils.read16 = function read16(data, off) {
   var num;
   off = off >>> 0;
-  num = arr[off] | (arr[off + 1] &lt;&lt; 8);
+  num = data[off] | (data[off + 1] &lt;&lt; 8);
   return (num &amp; 0x8000) ? num | 0xffff0000 : num;
 };
 
 /**
  * Read int16be.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.read16BE = function read16BE(arr, off) {
+utils.read16BE = function read16BE(data, off) {
   var num;
   off = off >>> 0;
-  num = arr[off + 1] | (arr[off] &lt;&lt; 8);
+  num = data[off + 1] | (data[off] &lt;&lt; 8);
   return (num &amp; 0x8000) ? num | 0xffff0000 : num;
 };
 
 /**
  * Read int32le.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.read32 = function read32(arr, off) {
+utils.read32 = function read32(data, off) {
   off = off >>> 0;
 
-  return (arr[off])
-    | (arr[off + 1] &lt;&lt; 8)
-    | (arr[off + 2] &lt;&lt; 16)
-    | (arr[off + 3] &lt;&lt; 24);
+  return (data[off])
+    | (data[off + 1] &lt;&lt; 8)
+    | (data[off + 2] &lt;&lt; 16)
+    | (data[off + 3] &lt;&lt; 24);
 };
 
 /**
  * Read int32be.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.read32BE = function read32BE(arr, off) {
+utils.read32BE = function read32BE(data, off) {
   off = off >>> 0;
 
-  return (arr[off] &lt;&lt; 24)
-    | (arr[off + 1] &lt;&lt; 16)
-    | (arr[off + 2] &lt;&lt; 8)
-    | (arr[off + 3]);
+  return (data[off] &lt;&lt; 24)
+    | (data[off + 1] &lt;&lt; 16)
+    | (data[off + 2] &lt;&lt; 8)
+    | (data[off + 3]);
 };
 
 /**
  * Read int64le.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {BN}
  */
 
-utils.read64 = function read64(arr, off) {
+utils.read64 = function read64(data, off) {
   var num;
 
   off = off >>> 0;
 
-  num = arr.slice(off, off + 8);
+  num = data.slice(off, off + 8);
 
   if (num[num.length - 1] &amp; 0x80)
     return new bn(num, 'le').notn(64).addn(1).neg();
@@ -1510,17 +1465,17 @@ utils.read64 = function read64(arr, off) {
 
 /**
  * Read int64be.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {BN}
  */
 
-utils.read64BE = function read64BE(arr, off) {
+utils.read64BE = function read64BE(data, off) {
   var num;
 
   off = off >>> 0;
 
-  num = arr.slice(off, off + 8);
+  num = data.slice(off, off + 8);
 
   if (num[0] &amp; 0x80)
     return new bn(num, 'be').notn(64).addn(1).neg();
@@ -1746,17 +1701,17 @@ utils.write64NBE = function write64NBE(dst, num, off) {
 
 /**
  * Read uint64le as a js number.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @param {Boolean} force53 - Read only 53 bits, but maintain the sign.
  * @returns {Number}
  * @throws on num > MAX_SAFE_INTEGER
  */
 
-utils.readU64N = function readU64N(dst, off, force53) {
+utils.readU64N = function readU64N(data, off, force53) {
   off = off >>> 0;
-  var hi = utils.readU32(dst, off + 4);
-  var lo = utils.readU32(dst, off);
+  var hi = utils.readU32(data, off + 4);
+  var lo = utils.readU32(data, off);
   if (force53)
     hi &amp;= utils.MAX_SAFE_HI;
   assert(hi &lt;= utils.MAX_SAFE_HI, 'Number exceeds 2^53-1');
@@ -1765,17 +1720,17 @@ utils.readU64N = function readU64N(dst, off, force53) {
 
 /**
  * Read uint64be as a js number.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @param {Boolean} force53 - Read only 53 bits, but maintain the sign.
  * @returns {Number}
  * @throws on num > MAX_SAFE_INTEGER
  */
 
-utils.readU64NBE = function readU64NBE(dst, off, force53) {
+utils.readU64NBE = function readU64NBE(data, off, force53) {
   off = off >>> 0;
-  var hi = utils.readU32BE(dst, off);
-  var lo = utils.readU32BE(dst, off + 4);
+  var hi = utils.readU32BE(data, off);
+  var lo = utils.readU32BE(data, off + 4);
   if (force53)
     hi &amp;= utils.MAX_SAFE_HI;
   assert(hi &lt;= utils.MAX_SAFE_HI, 'Number exceeds 2^53-1');
@@ -1784,17 +1739,17 @@ utils.readU64NBE = function readU64NBE(dst, off, force53) {
 
 /**
  * Read int64le as a js number.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @param {Boolean} force53 - Read only 53 bits, but maintain the sign.
  * @returns {Number}
  * @throws on num > MAX_SAFE_INTEGER
  */
 
-utils.read64N = function read64N(dst, off, force53) {
+utils.read64N = function read64N(data, off, force53) {
   off = off >>> 0;
-  var hi = utils.readU32(dst, off + 4);
-  var lo = utils.readU32(dst, off);
+  var hi = utils.readU32(data, off + 4);
+  var lo = utils.readU32(data, off);
   if (hi &amp; 0x80000000) {
     hi = ~hi + 1;
     lo = ~lo + 1;
@@ -1811,17 +1766,17 @@ utils.read64N = function read64N(dst, off, force53) {
 
 /**
  * Read int64be as a js number.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @param {Boolean} force53 - Read only 53 bits, but maintain the sign.
  * @returns {Number}
  * @throws on num > MAX_SAFE_INTEGER
  */
 
-utils.read64NBE = function read64NBE(dst, off, force53) {
+utils.read64NBE = function read64NBE(data, off, force53) {
   off = off >>> 0;
-  var hi = utils.readU32BE(dst, off);
-  var lo = utils.readU32BE(dst, off + 4);
+  var hi = utils.readU32BE(data, off);
+  var lo = utils.readU32BE(data, off + 4);
   if (hi &amp; 0x80000000) {
     hi = ~hi + 1;
     lo = ~lo + 1;
@@ -1839,49 +1794,49 @@ utils.read64NBE = function read64NBE(dst, off, force53) {
 /**
  * Read first least significant 53 bits of
  * a uint64le as a js number. Maintain the sign.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.readU53 = function readU53(dst, off) {
-  return utils.readU64N(dst, off, true);
+utils.readU53 = function readU53(data, off) {
+  return utils.readU64N(data, off, true);
 };
 
 /**
  * Read first least significant 53 bits of
  * a uint64be as a js number. Maintain the sign.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.readU53BE = function readU53BE(dst, off) {
-  return utils.readU64NBE(dst, off, true);
+utils.readU53BE = function readU53BE(data, off) {
+  return utils.readU64NBE(data, off, true);
 };
 
 /**
  * Read first least significant 53 bits of
  * a uint64le as a js number. Maintain the sign.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.read53 = function read53(dst, off) {
-  return utils.read64N(dst, off, true);
+utils.read53 = function read53(data, off) {
+  return utils.read64N(data, off, true);
 };
 
 /**
  * Read first least significant 53 bits of
  * a int64be as a js number. Maintain the sign.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @returns {Number}
  */
 
-utils.read53BE = function read53BE(dst, off) {
-  return utils.read64NBE(dst, off, true);
+utils.read53BE = function read53BE(data, off) {
+  return utils.read64NBE(data, off, true);
 };
 
 /**
@@ -2029,42 +1984,42 @@ utils.write64BE = function write64BE(dst, num, off) {
 
 /**
  * Read a varint.
- * @param {Buffer} arr
+ * @param {Buffer} data
  * @param {Number} off
  * @param {Boolean?} big - Whether to read as a big number.
  * @returns {Number}
  */
 
-utils.readVarint = function readVarint(arr, off, big) {
+utils.readVarint = function readVarint(data, off, big) {
   var r, bytes;
 
   off = off >>> 0;
 
-  assert(off &lt; arr.length);
+  assert(off &lt; data.length);
 
-  if (arr[off] &lt; 0xfd) {
-    r = arr[off];
+  if (data[off] &lt; 0xfd) {
+    r = data[off];
     if (big)
       r = new bn(r);
     bytes = 1;
-  } else if (arr[off] === 0xfd) {
-    assert(off + 2 &lt; arr.length);
-    r = arr[off + 1] | (arr[off + 2] &lt;&lt; 8);
+  } else if (data[off] === 0xfd) {
+    assert(off + 2 &lt; data.length);
+    r = data[off + 1] | (data[off + 2] &lt;&lt; 8);
     if (big)
       r = new bn(r);
     bytes = 3;
-  } else if (arr[off] === 0xfe) {
-    assert(off + 4 &lt; arr.length);
-    r = utils.readU32(arr, off + 1);
+  } else if (data[off] === 0xfe) {
+    assert(off + 4 &lt; data.length);
+    r = utils.readU32(data, off + 1);
     if (big)
       r = new bn(r);
     bytes = 5;
-  } else if (arr[off] === 0xff) {
-    assert(off + 8 &lt; arr.length);
+  } else if (data[off] === 0xff) {
+    assert(off + 8 &lt; data.length);
     if (big)
-      r = utils.readU64(arr, off + 1);
+      r = utils.readU64(data, off + 1);
     else
-      r = utils.readU64N(arr, off + 1);
+      r = utils.readU64N(data, off + 1);
     bytes = 9;
   } else {
     assert(false, 'Malformed varint.');
@@ -2282,13 +2237,13 @@ utils.forRange = function forRange(from, to, iter, callback) {
 
 /**
  * Asynchronously iterate over an array in parallel.
- * @param {Array} arr
+ * @param {Array} obj
  * @param {Function} iter
  * @param {Function} callback
  */
 
-utils.forEach = function forEach(arr, iter, callback) {
-  var pending = arr.length;
+utils.forEach = function forEach(obj, iter, callback) {
+  var pending = obj.length;
   var error;
 
   callback = utils.asyncify(callback);
@@ -2304,7 +2259,7 @@ utils.forEach = function forEach(arr, iter, callback) {
       callback(error);
   }
 
-  arr.forEach(function(item, i) {
+  obj.forEach(function(item, i) {
     iter(item, next, i);
   });
 };
@@ -2341,12 +2296,12 @@ utils.forRangeSerial = function forRangeSerial(from, to, iter, callback) {
 
 /**
  * Asynchronously iterate over an array in serial.
- * @param {Array} arr
+ * @param {Array} obj
  * @param {Function} iter
  * @param {Function} callback
  */
 
-utils.forEachSerial = function forEachSerial(arr, iter, callback) {
+utils.forEachSerial = function forEachSerial(obj, iter, callback) {
   var i = 0;
   var called = false;
 
@@ -2359,11 +2314,11 @@ utils.forEachSerial = function forEachSerial(arr, iter, callback) {
       called = true;
       return callback(err);
     }
-    if (i >= arr.length) {
+    if (i >= obj.length) {
       called = true;
       return callback();
     }
-    item = arr[i];
+    item = obj[i];
     i++;
     utils.nextTick(function() {
       iter(item, next, i - 1);
@@ -2374,13 +2329,13 @@ utils.forEachSerial = function forEachSerial(arr, iter, callback) {
 /**
  * Asynchronously apply a truth test to every
  * member of an array in parallel.
- * @param {Array} arr
+ * @param {Array} obj
  * @param {Function} iter
  * @param {Function} callback
  */
 
-utils.every = function every(arr, iter, callback) {
-  var pending = arr.length;
+utils.every = function every(obj, iter, callback) {
+  var pending = obj.length;
   var result = true;
   var error;
 
@@ -2402,7 +2357,7 @@ utils.every = function every(arr, iter, callback) {
     }
   }
 
-  arr.forEach(function(item, i) {
+  obj.forEach(function(item, i) {
     iter(item, next, i);
   });
 };
@@ -2410,12 +2365,12 @@ utils.every = function every(arr, iter, callback) {
 /**
  * Asynchronously apply a truth test to every
  * member of an array in serial.
- * @param {Array} arr
+ * @param {Array} obj
  * @param {Function} iter
  * @param {Function} callback
  */
 
-utils.everySerial = function everySerial(arr, iter, callback) {
+utils.everySerial = function everySerial(obj, iter, callback) {
   var i = 0;
   var called = false;
 
@@ -2432,11 +2387,11 @@ utils.everySerial = function everySerial(arr, iter, callback) {
       called = true;
       return callback(null, false);
     }
-    if (i >= arr.length) {
+    if (i >= obj.length) {
       called = true;
       return callback(null, true);
     }
-    item = arr[i];
+    item = obj[i];
     i++;
     utils.nextTick(function() {
       iter(item, next, i - 1);
@@ -2534,7 +2489,7 @@ utils.buildMerkleTree = function buildMerkleTree(leaves) {
     for (i = 0; i &lt; size; i += 2) {
       i2 = Math.min(i + 1, size - 1);
       if (i2 === i + 1 &amp;&amp; i2 + 1 === size
-          &amp;&amp; utils.equals(tree[j + i], tree[j + i2])) {
+          &amp;&amp; utils.equal(tree[j + i], tree[j + i2])) {
         return;
       }
       hash = Buffer.concat([tree[j + i], tree[j + i2]]);
@@ -2621,21 +2576,21 @@ utils.checkMerkleBranch = function checkMerkleBranch(hash, branch, index) {
 
 /**
  * Find index of a buffer in an array of buffers.
- * @param {Buffer[]} arr
- * @param {Buffer} buf - Target buffer to find.
+ * @param {Buffer[]} obj
+ * @param {Buffer} data - Target buffer to find.
  * @returns {Number} Index (-1 if not found).
  */
 
-utils.indexOf = function indexOf(arr, buf) {
+utils.indexOf = function indexOf(obj, data) {
   var i;
 
-  assert(Array.isArray(arr));
-  assert(Buffer.isBuffer(buf));
+  assert(Array.isArray(obj));
+  assert(Buffer.isBuffer(data));
 
-  for (i = 0; i &lt; arr.length; i++) {
-    if (!Buffer.isBuffer(arr[i]))
+  for (i = 0; i &lt; obj.length; i++) {
+    if (!Buffer.isBuffer(obj[i]))
       continue;
-    if (utils.equals(arr[i], buf))
+    if (utils.equal(obj[i], data))
       return i;
   }
 
@@ -2750,13 +2705,13 @@ utils.serial = function serial(stack, callback) {
 
 /**
  * Convert an array to a map.
- * @param {String[]} arr
+ * @param {String[]} obj
  * @returns {Object} Map.
  */
 
-utils.toMap = function toMap(arr) {
+utils.toMap = function toMap(obj) {
   var map = {};
-  arr.forEach(function(value) {
+  obj.forEach(function(value) {
     map[value] = true;
   });
   return map;
@@ -2811,55 +2766,6 @@ utils.binarySearch = function binarySearch(items, key, insert, compare) {
 
   return start - 1;
 };
-
-/**
- * An error thrown during verification. Can be either
- * a mempool transaction validation error or a blockchain
- * block verification error. Ultimately used to send
- * `reject` packets to peers.
- * @global
- * @constructor
- * @extends Error
- * @param {Block|TX} object
- * @param {String} code - Reject packet ccode.
- * @param {String} reason - Reject packet reason.
- * @param {Number} score - Ban score increase
- * (can be -1 for no reject packet).
- * @property {String} code
- * @property {Buffer} hash
- * @property {Number} height (will be the coinbase height if not present).
- * @property {Number} score
- * @property {String} message
- */
-
-function VerifyError(object, code, reason, score) {
-  Error.call(this);
-
-  if (Error.captureStackTrace)
-    Error.captureStackTrace(this, VerifyError);
-
-  this.type = 'VerifyError';
-
-  this.hash = object.hash();
-  this.height = object.height;
-
-  if (object.getCoinbaseHeight &amp;&amp; this.height === -1)
-    this.height = object.getCoinbaseHeight();
-
-  this.code = code;
-  this.reason = score === -1 ? null : reason;
-  this.score = score;
-  this.message = 'Verification failure: '
-    + reason
-    + ' (code=' + code
-    + ', score=' + score
-    + ', height=' + this.height
-    + ', hash=' + utils.revHex(this.hash.toString('hex')) + ')';
-}
-
-utils.inherits(VerifyError, Error);
-
-utils.VerifyError = VerifyError;
 </code></pre>
         </article>
     </section>
@@ -2870,13 +2776,13 @@ utils.VerifyError = VerifyError;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 28 2016 15:02:42 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 30 2016 20:32:22 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

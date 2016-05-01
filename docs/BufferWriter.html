@@ -47,7 +47,15 @@
 
 
 <div class="description">
-    <p>An object that allows writing of buffers in a sane manner.</p>
+    <p>An object that allows writing of buffers in a
+sane manner. This buffer writer is extremely
+optimized since it does not actually write
+anything until <code>render</code> is called. It makes
+one allocation: at the end, once it knows the
+size of the buffer to be allocated. Because
+of this, it can also act as a size calculator
+which is useful for guaging block size
+without actually serializing any data.</p>
 </div>
 
 
@@ -155,7 +163,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line18">line 18</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line26">line 26</a>
     </li></ul></dd>
     
 
@@ -255,7 +263,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line75">line 75</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line84">line 84</a>
     </li></ul></dd>
     
 
@@ -409,7 +417,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line324">line 324</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line341">line 341</a>
     </li></ul></dd>
     
 
@@ -491,7 +499,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line236">line 236</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line245">line 245</a>
     </li></ul></dd>
     
 
@@ -652,7 +660,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line35">line 35</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line43">line 43</a>
     </li></ul></dd>
     
 
@@ -805,7 +813,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line156">line 156</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line165">line 165</a>
     </li></ul></dd>
     
 
@@ -936,7 +944,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line166">line 166</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line175">line 175</a>
     </li></ul></dd>
     
 
@@ -1067,7 +1075,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line176">line 176</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line185">line 185</a>
     </li></ul></dd>
     
 
@@ -1198,7 +1206,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line186">line 186</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line195">line 195</a>
     </li></ul></dd>
     
 
@@ -1329,7 +1337,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line196">line 196</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line205">line 205</a>
     </li></ul></dd>
     
 
@@ -1463,7 +1471,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line206">line 206</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line215">line 215</a>
     </li></ul></dd>
     
 
@@ -1597,7 +1605,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line216">line 216</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line225">line 225</a>
     </li></ul></dd>
     
 
@@ -1728,7 +1736,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line226">line 226</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line235">line 235</a>
     </li></ul></dd>
     
 
@@ -1810,7 +1818,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line313">line 313</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line330">line 330</a>
     </li></ul></dd>
     
 
@@ -1944,7 +1952,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line257">line 257</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line267">line 267</a>
     </li></ul></dd>
     
 
@@ -2121,7 +2129,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line293">line 293</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line310">line 310</a>
     </li></ul></dd>
     
 
@@ -2298,7 +2306,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line246">line 246</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line255">line 255</a>
     </li></ul></dd>
     
 
@@ -2429,7 +2437,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line86">line 86</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line95">line 95</a>
     </li></ul></dd>
     
 
@@ -2560,7 +2568,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line96">line 96</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line105">line 105</a>
     </li></ul></dd>
     
 
@@ -2691,7 +2699,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line106">line 106</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line115">line 115</a>
     </li></ul></dd>
     
 
@@ -2822,7 +2830,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line116">line 116</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line125">line 125</a>
     </li></ul></dd>
     
 
@@ -2953,7 +2961,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line126">line 126</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line135">line 135</a>
     </li></ul></dd>
     
 
@@ -3087,7 +3095,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line136">line 136</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line145">line 145</a>
     </li></ul></dd>
     
 
@@ -3221,7 +3229,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line146">line 146</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line155">line 155</a>
     </li></ul></dd>
     
 
@@ -3352,7 +3360,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line280">line 280</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line297">line 297</a>
     </li></ul></dd>
     
 
@@ -3486,7 +3494,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line303">line 303</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line320">line 320</a>
     </li></ul></dd>
     
 
@@ -3663,7 +3671,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line269">line 269</a>
+        <a href="bcoin_writer.js.html">bcoin/writer.js</a>, <a href="bcoin_writer.js.html#line277">line 277</a>
     </li></ul></dd>
     
 
@@ -3705,13 +3713,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="HDSeed.html">HDSeed</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Apr 28 2016 15:02:42 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 30 2016 20:32:22 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
