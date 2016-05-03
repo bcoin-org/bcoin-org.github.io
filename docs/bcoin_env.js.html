@@ -132,6 +132,7 @@ try {
  * @property {Function} http.server - {@link HTTPServer} constructor.
  * @property {Object} workers - See {@link module:workers}.
  * @property {TimeData} time - For adjusted time.
+ * @property {Workers?} workerPool - Default global worker pool.
  */
 
 function Environment(options) {
@@ -149,27 +150,28 @@ function Environment(options) {
   this._ensured = false;
   this._debug = null;
 
-  this.isBrowser =
-    (typeof process !== 'undefined' &amp;&amp; process.browser)
-    || typeof window !== 'undefined';
+  this.isBrowser = utils.isBrowser;
 
-  this.prefix = process.env.BCOIN_PREFIX
-    || options.prefix
+  this.prefix = options.prefix
+    || process.env.BCOIN_PREFIX
     || process.env.HOME + '/.bcoin';
 
-  this.db = options.db;
+  this.networkType = options.network
+    || process.env.BCOIN_NETWORK
+    || 'main';
 
-  if (process.env.BCOIN_DB != null)
-    this.db = process.env.BCOIN_DB;
-
+  this.db = options.db || process.env.BCOIN_DB;
   this.debugLogs = options.debug;
+  this.debugFile = options.debugFile;
+  this.profile = options.profile;
+  this.useWorkers = options.useWorkers;
+  this.maxWorkers = options.maxWorkers;
+  this.workerTimeout = options.workerTimeout;
 
-  if (process.env.BCOIN_DEBUG != null)
+  if (this.debugLogs == null &amp;&amp; process.env.BCOIN_DEBUG != null)
     this.debugLogs = +process.env.BCOIN_DEBUG === 1;
 
-  this.debugFile = options.debugFile;
-
-  if (process.env.BCOIN_DEBUGFILE != null) {
+  if (this.debugFile == null &amp;&amp; process.env.BCOIN_DEBUGFILE != null) {
     if (process.env.BCOIN_DEBUGFILE === '0'
         || process.env.BCOIN_DEBUGFILE === '1') {
       this.debugFile = +process.env.BCOIN_DEBUGFILE !== 0;
@@ -181,29 +183,17 @@ function Environment(options) {
   if (this.debugFile &amp;&amp; typeof this.debugFile !== 'string')
     this.debugFile = this.prefix + '/debug.log'
 
-  this.profile = options.profile;
-
-  if (process.env.BCOIN_PROFILE != null)
+  if (this.profile == null &amp;&amp; process.env.BCOIN_PROFILE != null)
     this.profile = +process.env.BCOIN_PROFILE === 1;
 
-  this.useWorkers = options.useWorkers;
-
-  if (process.env.BCOIN_USE_WORKERS != null)
+  if (this.useWorkers == null &amp;&amp; process.env.BCOIN_USE_WORKERS != null)
     this.useWorkers = +process.env.BCOIN_USE_WORKERS === 1;
 
-  this.useWorkers = options.maxWorkers;
-
-  if (process.env.BCOIN_MAX_WORKERS != null)
+  if (this.maxWorkers == null &amp;&amp; process.env.BCOIN_MAX_WORKERS != null)
     this.maxWorkers = +process.env.BCOIN_MAX_WORKERS;
 
-  this.workerTimeout = options.workerTimeout;
-
-  if (process.env.BCOIN_WORKER_TIMEOUT != null)
+  if (this.workerTime == null &amp;&amp; process.env.BCOIN_WORKER_TIMEOUT != null)
     this.workerTimeout = +process.env.BCOIN_WORKER_TIMEOUT;
-
-  this.networkType = process.env.BCOIN_NETWORK
-    || options.network
-    || 'main';
 
   this.bn = require('bn.js');
   this.utils = require('./utils');
@@ -261,6 +251,14 @@ function Environment(options) {
     : null;
 
   this.time = new this.timedata();
+  this.workerPool = null;
+
+  if (this.workers) {
+    this.workerPool = new this.workers({
+      size: this.maxWorkers,
+      timeout: this.workerTimeout
+    });
+  }
 }
 
 /**
@@ -298,9 +296,9 @@ Environment.prototype.debug = function debug() {
 
   if (this.isBrowser) {
     if (this.debugLogs) {
-      msg = typeof args[0] === 'object'
-        ? args[0]
-        : utils.format(args, false).slice(0, -1);
+      msg = typeof args[0] !== 'object'
+        ? utils.format(args, false)
+        : args[0];
       console.error(msg);
     }
     return;
@@ -308,7 +306,7 @@ Environment.prototype.debug = function debug() {
 
   if (this.debugLogs) {
     msg = utils.format(args, true);
-    process.stderr.write(msg);
+    process.stderr.write(msg + '\n');
   }
 
   if (this.debugFile) {
@@ -317,7 +315,7 @@ Environment.prototype.debug = function debug() {
       this._debug = fs.createWriteStream(this.debugFile, { flags: 'a' });
     }
     msg = utils.format(args, false);
-    this._debug.write(process.pid + ': ' + msg);
+    this._debug.write(process.pid + ': ' + msg + '\n');
   }
 };
 
@@ -341,13 +339,13 @@ module.exports = Environment;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="module.exports-Framer.html">Framer</a></li><li><a href="module.exports-Parser.html">Parser</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 30 2016 20:32:22 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 03 2016 03:54:42 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

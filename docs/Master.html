@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: Locker</title>
+    <title>JSDoc: Class: Master</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: Locker</h1>
+    <h1 class="page-title">Class: Master</h1>
 
     
 
@@ -28,7 +28,7 @@
 
 <header>
     
-        <h2>Locker</h2>
+        <h2>Master</h2>
         
     
 </header>
@@ -40,14 +40,14 @@
 
     
 
-    <h4 class="name" id="Locker"><span class="type-signature"></span>new Locker<span class="signature">(parent, add<span class="signature-attributes">nullable</span>, limit<span class="signature-attributes">nullable</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Master"><span class="type-signature"></span>new Master<span class="signature">(id)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Represents a mutex lock for locking asynchronous object methods.</p>
+    <p>Represents the master process.</p>
 </div>
 
 
@@ -71,7 +71,59 @@
         <th>Type</th>
 
         
-        <th>Attributes</th>
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Worker ID.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
         
 
         
@@ -85,71 +137,7 @@
 
         <tr>
             
-                <td class="name"><code>parent</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Parent constructor.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>add</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p><code>add</code> method (whichever method is queuing data).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>limit</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
@@ -162,27 +150,15 @@
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
 
             
 
-            <td class="description last"><p>Limit in bytes of data that can be queued.</p></td>
+            <td class="description last"></td>
         </tr>
 
     
     </tbody>
 </table>
-
-
 
 
 
@@ -216,7 +192,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_locker.js.html">bcoin/locker.js</a>, <a href="bcoin_locker.js.html#line21">line 21</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line357">line 357</a>
     </li></ul></dd>
     
 
@@ -265,97 +241,14 @@
 
     
 
-    <h4 class="name" id="destroy"><span class="type-signature"></span>destroy<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".listen"><span class="type-signature">(static) </span>listen<span class="signature">(id)</span><span class="type-signature"> &rarr; {<a href="Master.html">Master</a>}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Destroy the locker. Purge all pending calls.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_locker.js.html">bcoin/locker.js</a>, <a href="bcoin_locker.js.html#line122">line 122</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="hasPending"><span class="type-signature"></span>hasPending<span class="signature">(key)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Test whether the locker has a pending
-object by key (usually a <a href="global.html#Hash">Hash</a>).</p>
+    <p>Listen for messages from master process (only if worker).</p>
 </div>
 
 
@@ -391,16 +284,13 @@ object by key (usually a <a href="global.html#Hash">Hash</a>).</p>
 
         <tr>
             
-                <td class="name"><code>key</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
-|
-
-<span class="param-type">String</span>
+<span class="param-type">Number</span>
 
 
             
@@ -410,7 +300,7 @@ object by key (usually a <a href="global.html#Hash">Hash</a>).</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Worker id.</p></td>
         </tr>
 
     
@@ -451,7 +341,7 @@ object by key (usually a <a href="global.html#Hash">Hash</a>).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_locker.js.html">bcoin/locker.js</a>, <a href="bcoin_locker.js.html#line45">line 45</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line474">line 474</a>
     </li></ul></dd>
     
 
@@ -485,7 +375,7 @@ object by key (usually a <a href="global.html#Hash">Hash</a>).</p>
     </dt>
     <dd>
         
-<span class="param-type">Boolean</span>
+<span class="param-type"><a href="Master.html">Master</a></span>
 
 
     </dd>
@@ -500,15 +390,97 @@ object by key (usually a <a href="global.html#Hash">Hash</a>).</p>
 
     
 
-    <h4 class="name" id="lock"><span class="type-signature"></span>lock<span class="signature">(func, args, force<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {function}</span></h4>
+    <h4 class="name" id="destroy"><span class="type-signature"></span>destroy<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Lock the parent object and all its methods
-which use the locker. Begin to queue calls.</p>
+    <p>Destroy the worker.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line462">line 462</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="log"><span class="type-signature"></span>log<span class="signature">(&hellip;args)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Write a debug message, prefixing
+it with the worker ID.</p>
 </div>
 
 
@@ -546,44 +518,13 @@ which use the locker. Begin to queue calls.</p>
 
         <tr>
             
-                <td class="name"><code>func</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>The method being called.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
                 <td class="name"><code>args</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Array</span>
+<span class="param-type">String</span>
 
 
             
@@ -596,45 +537,14 @@ which use the locker. Begin to queue calls.</p>
                 
 
                 
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Arguments passed to the method.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>force</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
+                    &lt;repeatable><br>
                 
                 </td>
             
 
             
 
-            <td class="description last"><p>Force a call.</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -675,7 +585,7 @@ which use the locker. Begin to queue calls.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_locker.js.html">bcoin/locker.js</a>, <a href="bcoin_locker.js.html#line60">line 60</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line451">line 451</a>
     </li></ul></dd>
     
 
@@ -698,30 +608,6 @@ which use the locker. Begin to queue calls.</p>
 
 
 
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <p>unlock - Unlocker - must be
-called once the method finishes executing in order
-to resolve the queue.</p>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">function</span>
-
-
-    </dd>
-</dl>
-
-    
 
 
 
@@ -730,14 +616,14 @@ to resolve the queue.</p>
 
     
 
-    <h4 class="name" id="onFlush"><span class="type-signature"></span>onFlush<span class="signature">(callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="send"><span class="type-signature"></span>send<span class="signature">(job, name, items)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Wait for a flush (empty queue).</p>
+    <p>Frame and send a packet.</p>
 </div>
 
 
@@ -773,13 +659,59 @@ to resolve the queue.</p>
 
         <tr>
             
-                <td class="name"><code>callback</code></td>
+                <td class="name"><code>job</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>items</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
 
 
             
@@ -830,7 +762,7 @@ to resolve the queue.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_locker.js.html">bcoin/locker.js</a>, <a href="bcoin_locker.js.html#line160">line 160</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line430">line 430</a>
     </li></ul></dd>
     
 
@@ -861,14 +793,14 @@ to resolve the queue.</p>
 
     
 
-    <h4 class="name" id="purgePending"><span class="type-signature"></span>purgePending<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="sendEvent"><span class="type-signature"></span>sendEvent<span class="signature">(event, &hellip;arg)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Purge all pending calls (called once <code>add</code> has hit <code>limit</code>).</p>
+    <p>Emit an event on the worker side.</p>
 </div>
 
 
@@ -877,6 +809,98 @@ to resolve the queue.</p>
 
 
 
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>event</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>arg</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                    &lt;repeatable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -912,7 +936,7 @@ to resolve the queue.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_locker.js.html">bcoin/locker.js</a>, <a href="bcoin_locker.js.html#line132">line 132</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line440">line 440</a>
     </li></ul></dd>
     
 
@@ -935,6 +959,155 @@ to resolve the queue.</p>
 
 
 
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="write"><span class="type-signature"></span>write<span class="signature">(data)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Send data to worker.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line410">line 410</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Boolean</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 

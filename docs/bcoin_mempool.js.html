@@ -35,6 +35,13 @@
 
 module.exports = function(bcoin) {
 
+/*
+ * Database Layout:
+ *  (inherits all from txdb)
+ *  o/[hash] -> orphan/waiting hashes
+ *  O/[hash] -> orphan tx
+ */
+
 var EventEmitter = require('events').EventEmitter;
 var bn = require('bn.js');
 var constants = bcoin.protocol.constants;
@@ -155,7 +162,7 @@ Mempool.prototype._init = function _init() {
     self.db = bcoin.ldb(options);
 
     // Use the txdb object for its get methods.
-    self.tx = new bcoin.txdb('m', self.db);
+    self.tx = new bcoin.txdb(self.db);
 
     self.db.open(function(err) {
       if (err) {
@@ -350,7 +357,7 @@ Mempool.prototype.purgeOrphans = function purgeOrphans(callback) {
 
   callback = utils.ensure(callback);
 
-  utils.forEachSerial(['m/D', 'm/d'], function(type, callback) {
+  utils.forEachSerial(['O', 'o'], function(type, callback) {
     var iter = self.db.iterator({
       gte: type,
       lte: type + '~',
@@ -899,7 +906,7 @@ Mempool.prototype.storeOrphan = function storeOrphan(tx, callback, force) {
 
       p.writeHash(hash);
 
-      batch.put('m/d/' + prev, p.render());
+      batch.put('o/' + prev, p.render());
 
       next();
     });
@@ -909,7 +916,7 @@ Mempool.prototype.storeOrphan = function storeOrphan(tx, callback, force) {
 
     self.orphans++;
 
-    batch.put('m/D/' + hash, tx.toExtended(true));
+    batch.put('O/' + hash, tx.toExtended(true));
 
     if (self.orphans > constants.mempool.MAX_ORPHAN_TX) {
       return self.purgeOrphans(function(err) {
@@ -952,7 +959,7 @@ Mempool.prototype.getWaiting = function getWaiting(hash, callback) {
   var hashes = [];
   var p;
 
-  this.db.get('m/d/' + hash, function(err, buf) {
+  this.db.get('o/' + hash, function(err, buf) {
     if (err &amp;&amp; err.type !== 'NotFoundError')
       return callback(err);
 
@@ -981,7 +988,7 @@ Mempool.prototype.getWaiting = function getWaiting(hash, callback) {
 Mempool.prototype.getOrphan = function getOrphan(orphanHash, callback) {
   var self = this;
 
-  this.db.get('m/D/' + orphanHash, function(err, orphan) {
+  this.db.get('O/' + orphanHash, function(err, orphan) {
     if (err &amp;&amp; err.type !== 'NotFoundError')
       return next(err);
 
@@ -1043,12 +1050,12 @@ Mempool.prototype.resolveOrphans = function resolveOrphans(tx, callback, force) 
 
         if (orphan.hasCoins()) {
           self.orphans--;
-          batch.del('m/D/' + orphanHash);
+          batch.del('O/' + orphanHash);
           resolved.push(orphan);
           return next();
         }
 
-        batch.put('m/D/' + orphanHash, orphan.toExtended(true));
+        batch.put('O/' + orphanHash, orphan.toExtended(true));
         next();
       });
     }, function(err) {
@@ -1062,7 +1069,7 @@ Mempool.prototype.resolveOrphans = function resolveOrphans(tx, callback, force) 
         return callback(null, resolved);
       }
 
-      batch.del('m/d/' + hash);
+      batch.del('o/' + hash);
 
       return batch.write(done);
     });
@@ -1097,7 +1104,7 @@ Mempool.prototype.removeOrphan = function removeOrphan(tx, callback) {
     hash = tx.hash('hex');
     prevout = tx.getPrevout();
 
-    batch.del('m/D/' + hash);
+    batch.del('O/' + hash);
 
     utils.forEach(prevout, function(prev, next) {
       var i, p;
@@ -1113,7 +1120,7 @@ Mempool.prototype.removeOrphan = function removeOrphan(tx, callback) {
           hashes.splice(i, 1);
 
         if (hashes.length === 0) {
-          batch.del('m/d/' + prev);
+          batch.del('o/' + prev);
           return next();
         }
 
@@ -1122,7 +1129,7 @@ Mempool.prototype.removeOrphan = function removeOrphan(tx, callback) {
         for (i = 0; i &lt; hashes.length; i++)
           p.writeHash(hashes[i]);
 
-        batch.put('m/d/' + prev, p.render());
+        batch.put('o/' + prev, p.render());
 
         next();
       });
@@ -1381,7 +1388,6 @@ Mempool.prototype.getConfidence = function getConfidence(hash, callback) {
 
 Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
   var self = this;
-  var prefix = 'm/';
   var hash = tx.hash('hex');
   var i, addresses, address, input, output, key, coin, batch;
 
@@ -1393,13 +1399,13 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
 
   batch = this.db.batch();
 
-  batch.put(prefix + 't/t/' + hash, tx.toExtended());
-  batch.put(prefix + 't/s/s/' + pad32(tx.ps) + '/' + hash, DUMMY);
+  batch.put('t/' + hash, tx.toExtended());
+  batch.put('m/' + pad32(tx.ps) + '/' + hash, DUMMY);
 
   addresses = tx.getAddresses();
 
   for (i = 0; i &lt; addresses.length; i++)
-    batch.put(prefix + 't/a/' + addresses[i] + '/' + hash, DUMMY);
+    batch.put('T/' + addresses[i] + '/' + hash, DUMMY);
 
   for (i = 0; i &lt; tx.inputs.length; i++) {
     input = tx.inputs[i];
@@ -1412,11 +1418,11 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
 
     address = input.getAddress();
 
-    batch.del(prefix + 'u/t/' + key);
-    batch.put(prefix + 's/t/' + key, tx.hash());
+    batch.del('c/' + key);
+    batch.put('s/' + key, tx.hash());
 
     if (address)
-      batch.del(prefix + 'u/a/' + address + '/' + key);
+      batch.del('C/' + address + '/' + key);
   }
 
   for (i = 0; i &lt; tx.outputs.length; i++) {
@@ -1425,10 +1431,10 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
     address = output.getAddress();
     coin = bcoin.coin(tx, i).toRaw();
 
-    batch.put(prefix + 'u/t/' + key, coin);
+    batch.put('c/' + key, coin);
 
     if (address)
-      batch.put(prefix + 'u/a/' + address + '/' + key, DUMMY);
+      batch.put('C/' + address + '/' + key, DUMMY);
   }
 
   return batch.write(callback);
@@ -1444,7 +1450,6 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
 
 Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, force) {
   var self = this;
-  var prefix = 'm/';
   var batch, i, addresses, output;
 
   var unlock = this.writeLock.lock(removeUnchecked, [hash, callback], force);
@@ -1465,13 +1470,13 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
 
     batch = self.db.batch();
 
-    batch.del(prefix + 't/t/' + hash);
-    batch.del(prefix + 't/s/s/' + pad32(tx.ps) + '/' + hash);
+    batch.del('t/' + hash);
+    batch.del('m/' + pad32(tx.ps) + '/' + hash);
 
     addresses = tx.getAddresses();
 
     for (i = 0; i &lt; addresses.length; i++)
-      batch.del(prefix + 't/a/' + addresses[i] + '/' + hash);
+      batch.del('T/' + addresses[i] + '/' + hash);
 
     utils.forEachSerial(tx.inputs, function(input, next) {
       var key = input.prevout.hash + '/' + input.prevout.index;
@@ -1485,20 +1490,20 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
 
       address = input.getAddress();
 
-      batch.del(prefix + 's/t/' + key);
+      batch.del('s/' + key);
 
       self.hasTX(input.prevout.hash, function(err, result) {
         if (err)
           return next(err);
 
         if (result) {
-          batch.put(prefix + 'u/t/' + key, input.coin.toRaw());
+          batch.put('c/' + key, input.coin.toRaw());
           if (address)
-            batch.put(prefix + 'u/a/' + address + '/' + key, DUMMY);
+            batch.put('C/' + address + '/' + key, DUMMY);
         } else {
-          batch.del(prefix + 'u/t/' + key);
+          batch.del('c/' + key);
           if (address)
-            batch.del(prefix + 'u/a/' + address + '/' + key);
+            batch.del('C/' + address + '/' + key);
         }
 
         next();
@@ -1512,10 +1517,10 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
         key = hash + '/' + i;
         address = output.getAddress();
 
-        batch.del(prefix + 'u/t/' + key);
+        batch.del('c/' + key);
 
         if (address)
-          batch.del(prefix + 'u/a/' + address + '/' + key);
+          batch.del('C/' + address + '/' + key);
       }
 
       return batch.write(callback);
@@ -1535,13 +1540,13 @@ return Mempool;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-workers.html">workers</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="module.exports-Framer.html">Framer</a></li><li><a href="module.exports-Parser.html">Parser</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3><a href="global.html">Global</a></h3>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat Apr 30 2016 20:32:22 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 03 2016 03:54:42 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
