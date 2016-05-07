@@ -311,7 +311,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line919">line 919</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line970">line 970</a>
     </li></ul></dd>
     
 
@@ -463,7 +463,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1095">line 1095</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1146">line 1146</a>
     </li></ul></dd>
     
 
@@ -615,7 +615,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1060">line 1060</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1111">line 1111</a>
     </li></ul></dd>
     
 
@@ -767,7 +767,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1125">line 1125</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1176">line 1176</a>
     </li></ul></dd>
     
 
@@ -919,7 +919,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line701">line 701</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line752">line 752</a>
     </li></ul></dd>
     
 
@@ -1071,7 +1071,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line738">line 738</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line789">line 789</a>
     </li></ul></dd>
     
 
@@ -1550,7 +1550,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line841">line 841</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line892">line 892</a>
     </li></ul></dd>
     
 
@@ -1585,6 +1585,238 @@
     <dd>
         
 <span class="param-type"><a href="global.html#NakedCoin">NakedCoin</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".parseExtendedTX"><span class="type-signature">(static) </span>parseExtendedTX<span class="signature">(p, saveCoins<span class="signature-attributes">nullable</span>, enc<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="global.html#NakedTX">NakedTX</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Parse a transaction in &quot;extended&quot; serialization format.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>p</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>saveCoins</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>If true, the function will
+attempt to parse the coins.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>enc</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>One of <code>&quot;hex&quot;</code> or <code>null</code>.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line704">line 704</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>A &quot;naked&quot; transaction object.</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="global.html#NakedTX">NakedTX</a></span>
 
 
     </dd>
@@ -3222,7 +3454,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line793">line 793</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line844">line 844</a>
     </li></ul></dd>
     
 
@@ -3526,7 +3758,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1115">line 1115</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1166">line 1166</a>
     </li></ul></dd>
     
 
@@ -4134,7 +4366,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line820">line 820</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line871">line 871</a>
     </li></ul></dd>
     
 
@@ -4590,7 +4822,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1032">line 1032</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1083">line 1083</a>
     </li></ul></dd>
     
 
@@ -4894,7 +5126,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line992">line 992</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1043">line 1043</a>
     </li></ul></dd>
     
 
@@ -5351,7 +5583,7 @@ parsing if a witness transaction is detected).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line878">line 878</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line929">line 929</a>
     </li></ul></dd>
     
 
@@ -5959,7 +6191,7 @@ parsing if a witness transaction is detected).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1010">line 1010</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line1061">line 1061</a>
     </li></ul></dd>
     
 
@@ -6111,7 +6343,7 @@ parsing if a witness transaction is detected).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line939">line 939</a>
+        <a href="bcoin_protocol_parser.js.html">bcoin/protocol/parser.js</a>, <a href="bcoin_protocol_parser.js.html#line990">line 990</a>
     </li></ul></dd>
     
 
@@ -6896,7 +7128,7 @@ of <code>{cmd:String, length:Number, checksum:Number}</code>.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 03 2016 03:57:09 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:13:57 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

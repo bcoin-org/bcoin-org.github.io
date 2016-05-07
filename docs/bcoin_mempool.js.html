@@ -233,36 +233,72 @@ Mempool.prototype.addBlock = function addBlock(block, callback, force) {
 
   callback = utils.wrap(callback, unlock);
 
-  utils.forEachSerial(block.txs, function(tx, next) {
-    var hash = tx.hash('hex');
-    var copy;
+  // We add the txs we haven't seen to
+  // the mempool first to potentially
+  // resolve orphans.
+  utils.forEachSerial(block.txs,  function(tx, next) {
+    var hash, copy;
+
+    if (!self.chain.isFull())
+      return next();
 
     if (tx.isCoinbase())
       return next();
 
-    self.getTX(hash, function(err, existing) {
+    hash = tx.hash('hex');
+
+    self.hasTX(hash, function(err, exists) {
       if (err)
-        return callback(err);
+        return next(err);
 
-      if (!existing)
-        return self.removeOrphan(hash, next);
+      if (exists)
+        return next();
 
-      copy = tx.clone();
-      copy.ts = existing.ts;
-      copy.block = existing.block;
-      copy.height = existing.height;
-      copy.ps = existing.ps;
-
-      self.removeUnchecked(copy, function(err) {
+      self.removeOrphan(hash, function(err) {
         if (err)
           return next(err);
 
-        self.emit('confirmed', tx, block);
+        copy = tx.clone();
+        copy.unsetBlock();
 
-        return next();
+        self.addUnchecked(tx, next);
       });
     });
-  }, callback);
+  }, function(err) {
+    if (err)
+      return callback(err);
+
+    utils.forEachSerial(block.txs.slice().reverse(), function(tx, next) {
+      var hash = tx.hash('hex');
+      var copy;
+
+      if (tx.isCoinbase())
+        return next();
+
+      self.getTX(hash, function(err, existing) {
+        if (err)
+          return next(err);
+
+        if (!existing)
+          return self.removeOrphan(hash, next);
+
+        copy = tx.clone();
+        copy.ts = existing.ts;
+        copy.block = existing.block;
+        copy.height = existing.height;
+        copy.ps = existing.ps;
+
+        self.removeUnchecked(copy, function(err) {
+          if (err)
+            return next(err);
+
+          self.emit('confirmed', tx, block);
+
+          return next();
+        });
+      });
+    }, callback);
+  });
 };
 
 /**
@@ -281,7 +317,7 @@ Mempool.prototype.removeBlock = function removeBlock(block, callback, force) {
 
   callback = utils.wrap(callback, unlock);
 
-  utils.forEachSerial(block.txs.slice().reverse(), function(tx, next) {
+  utils.forEachSerial(block.txs, function(tx, next) {
     var copy;
 
     if (tx.isCoinbase())
@@ -497,6 +533,25 @@ Mempool.prototype.hasTX = function hasTX(hash, callback) {
 };
 
 /**
+ * Test the mempool to see if it contains a transaction or an orphan.
+ * @param {Hash} hash
+ * @param {Function} callback - Returns [Error, Boolean].
+ */
+
+Mempool.prototype.hasAny = function hasAny(hash, callback) {
+  var self = this;
+  return this.hasTX(hash, function(err, exists) {
+    if (err)
+      return callback(err);
+
+    if (exists)
+      return callback(null, true);
+
+    self.hasOrphan(hash, callback);
+  });
+};
+
+/**
  * Add a transaction to the mempool. Note that this
  * will lock the mempool until the transaction is
  * fully processed.
@@ -585,15 +640,12 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
             return callback(err);
 
           if (!tx.hasCoins()) {
-            // if (tx.getSize() > 5000)
-            //   return callback();
             if (self.totalSize > constants.mempool.MAX_MEMPOOL_SIZE) {
               return callback(new VerifyError(tx,
                 'insufficientfee',
                 'mempool full',
                 0));
             }
-            bcoin.debug('Added orphan %s to mempool.', tx.rhash);
             return self.storeOrphan(tx, callback);
           }
 
@@ -651,7 +703,7 @@ Mempool.prototype.addUnchecked = function addUnchecked(tx, callback) {
         self.verify(tx, function(err) {
           if (err) {
             if (err.type === 'VerifyError') {
-              bcoin.debug('Could not resolved orphan %s: %s.',
+              bcoin.debug('Could not resolve orphan %s: %s.',
                 tx.rhash,
                 err.message);
               return next();
@@ -990,7 +1042,7 @@ Mempool.prototype.getOrphan = function getOrphan(orphanHash, callback) {
 
   this.db.get('O/' + orphanHash, function(err, orphan) {
     if (err &amp;&amp; err.type !== 'NotFoundError')
-      return next(err);
+      return callback(err);
 
     if (!orphan)
       return callback();
@@ -1011,11 +1063,11 @@ Mempool.prototype.getOrphan = function getOrphan(orphanHash, callback) {
  */
 
 Mempool.prototype.hasOrphan = function hasOrphan(orphanHash, callback) {
-  return this.getOrphan(orphanHash, function(err, tx) {
-    if (err)
+  this.db.get('O/' + orphanHash, function(err, orphan) {
+    if (err &amp;&amp; err.type !== 'NotFoundError')
       return callback(err);
 
-    return callback(null, tx != null);
+    return callback(null, orphan != null);
   });
 };
 
@@ -1268,22 +1320,7 @@ Mempool.prototype.getSnapshot = function getSnapshot(callback) {
  */
 
 Mempool.prototype.checkLocks = function checkLocks(tx, flags, callback) {
-  var self = this;
-  var tip = this.chain.tip;
-
-  var index = new bcoin.chainblock(this.chain, {
-    hash: constants.NULL_HASH,
-    version: tip.version,
-    prevBlock: tip.hash,
-    merkleRoot: constants.NULL_HASH,
-    ts: utils.now(),
-    bits: 0,
-    nonce: 0,
-    height: tip.height + 1,
-    chainwork: tip.chainwork
-  });
-
-  return this.chain.checkLocks(tx, flags, index, callback);
+  return this.chain.checkLocks(this.chain.tip, tx, flags, callback);
 };
 
 /**
@@ -1402,10 +1439,11 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
   batch.put('t/' + hash, tx.toExtended());
   batch.put('m/' + pad32(tx.ps) + '/' + hash, DUMMY);
 
-  addresses = tx.getAddresses();
-
-  for (i = 0; i &lt; addresses.length; i++)
-    batch.put('T/' + addresses[i] + '/' + hash, DUMMY);
+  if (this.options.indexAddress) {
+    addresses = tx.getAddresses();
+    for (i = 0; i &lt; addresses.length; i++)
+      batch.put('T/' + addresses[i] + '/' + hash, DUMMY);
+  }
 
   for (i = 0; i &lt; tx.inputs.length; i++) {
     input = tx.inputs[i];
@@ -1416,25 +1454,32 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
 
     assert(input.coin);
 
-    address = input.getAddress();
-
     batch.del('c/' + key);
     batch.put('s/' + key, tx.hash());
 
-    if (address)
-      batch.del('C/' + address + '/' + key);
+    if (this.options.indexAddress) {
+      address = input.getAddress();
+      if (address)
+        batch.del('C/' + address + '/' + key);
+    }
   }
 
   for (i = 0; i &lt; tx.outputs.length; i++) {
     output = tx.outputs[i];
     key = hash + '/' + i;
-    address = output.getAddress();
+
+    if (output.script.isUnspendable())
+      continue;
+
     coin = bcoin.coin(tx, i).toRaw();
 
     batch.put('c/' + key, coin);
 
-    if (address)
-      batch.put('C/' + address + '/' + key, DUMMY);
+    if (this.options.indexAddress) {
+      address = output.getAddress();
+      if (address)
+        batch.put('C/' + address + '/' + key, DUMMY);
+    }
   }
 
   return batch.write(callback);
@@ -1473,10 +1518,11 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
     batch.del('t/' + hash);
     batch.del('m/' + pad32(tx.ps) + '/' + hash);
 
-    addresses = tx.getAddresses();
-
-    for (i = 0; i &lt; addresses.length; i++)
-      batch.del('T/' + addresses[i] + '/' + hash);
+    if (self.options.indexAddress) {
+      addresses = tx.getAddresses();
+      for (i = 0; i &lt; addresses.length; i++)
+        batch.del('T/' + addresses[i] + '/' + hash);
+    }
 
     utils.forEachSerial(tx.inputs, function(input, next) {
       var key = input.prevout.hash + '/' + input.prevout.index;
@@ -1488,8 +1534,6 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
       if (!input.coin)
         return next();
 
-      address = input.getAddress();
-
       batch.del('s/' + key);
 
       self.hasTX(input.prevout.hash, function(err, result) {
@@ -1498,12 +1542,18 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
 
         if (result) {
           batch.put('c/' + key, input.coin.toRaw());
-          if (address)
-            batch.put('C/' + address + '/' + key, DUMMY);
+          if (self.options.indexAddress) {
+            address = input.getAddress();
+            if (address)
+              batch.put('C/' + address + '/' + key, DUMMY);
+          }
         } else {
           batch.del('c/' + key);
-          if (address)
-            batch.del('C/' + address + '/' + key);
+          if (self.options.indexAddress) {
+            address = input.getAddress();
+            if (address)
+              batch.del('C/' + address + '/' + key);
+          }
         }
 
         next();
@@ -1515,12 +1565,17 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
       for (i = 0; i &lt; tx.outputs.length; i++) {
         output = tx.outputs[i];
         key = hash + '/' + i;
-        address = output.getAddress();
+
+        if (output.script.isUnspendable())
+          continue;
 
         batch.del('c/' + key);
 
-        if (address)
-          batch.del('C/' + address + '/' + key);
+        if (self.options.indexAddress) {
+          address = output.getAddress();
+          if (address)
+            batch.del('C/' + address + '/' + key);
+        }
       }
 
       return batch.write(callback);
@@ -1546,7 +1601,7 @@ return Mempool;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 03 2016 03:57:07 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:13:55 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

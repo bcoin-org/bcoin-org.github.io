@@ -378,8 +378,6 @@ TX.prototype.hasWitness = function hasWitness() {
  */
 
 TX.prototype.signatureHash = function signatureHash(index, prev, type, version) {
-  assert(version >= 0 &amp;&amp; version &lt;= 1);
-
   // Traditional sighashing
   if (version === 0)
     return this.signatureHashV0(index, prev, type);
@@ -387,6 +385,8 @@ TX.prototype.signatureHash = function signatureHash(index, prev, type, version) 
   // Segwit sighashing
   if (version === 1)
     return this.signatureHashV1(index, prev, type);
+
+  assert(false, 'Unknown sighash version.');
 };
 
 TX.prototype.signatureHashV0 = function signatureHashV0(index, prev, type) {
@@ -570,7 +570,7 @@ TX.prototype.signatureHashV1 = function signatureHashV1(index, prev, type) {
  * verified. If not present, all outputs will be verified.
  * @param {Boolean?} force - Force the transaction to
  * be verified, even if it has been confirmed.
- * @param {module.script~VerifyFlags?} flags
+ * @param {VerifyFlags?} flags
  * @returns {Boolean} Whether the inputs are valid.
  */
 
@@ -614,11 +614,10 @@ TX.prototype.verify = function verify(index, force, flags) {
         flags
       );
     } catch (e) {
-      if (e.type === 'ScriptError') {
+      if (e.type === 'ScriptError')
         bcoin.debug('Script verification error: %s', e.message);
-      } else {
+      else
         bcoin.debug('Script interpreter threw: %s', e.stack + '');
-      }
       return false;
     }
   }
@@ -633,7 +632,7 @@ TX.prototype.verify = function verify(index, force, flags) {
  * verified. If not present, all outputs will be verified.
  * @param {Boolean?} force - Force the transaction to
  * be verified, even if it has been confirmed.
- * @param {module.script~VerifyFlags?} flags
+ * @param {VerifyFlags?} flags
  * @param {Function} callback
  * @returns {Boolean} Whether the inputs are valid.
  */
@@ -1218,7 +1217,7 @@ TX.prototype.isStandard = function isStandard(flags, ret) {
  * Perform contextual checks to verify coin and input
  * script standardness (including the redeem script).
  * @see AreInputsStandard()
- * @param {module.script~VerifyFlags?}
+ * @param {VerifyFlags?}
  * @returns {Boolean}
  */
 
@@ -1790,11 +1789,7 @@ TX.fromRaw = function fromRaw(data, enc) {
  */
 
 TX.prototype.toExtended = function toExtended(saveCoins, enc) {
-  var height = this.height;
-  var index = this.index;
-  var changeIndex = this.changeIndex != null ? this.changeIndex : -1;
-  var p = new BufferWriter();
-  var i, input, tmp;
+  var data;
 
   if (typeof saveCoins === 'string') {
     tmp = saveCoins;
@@ -1802,57 +1797,24 @@ TX.prototype.toExtended = function toExtended(saveCoins, enc) {
     enc = tmp;
   }
 
-  if (height === -1)
-    height = 0x7fffffff;
-
-  if (index === -1)
-    index = 0x7fffffff;
-
-  if (changeIndex === -1)
-    changeIndex = 0x7fffffff;
-
-  bcoin.protocol.framer.renderTX(this, true, p);
-  p.writeU32(height);
-  p.writeHash(this.block || constants.ZERO_HASH);
-  p.writeU32(index);
-  p.writeU32(this.ts);
-  p.writeU32(this.ps);
-  // p.writeU32(changeIndex);
-
-  if (saveCoins) {
-    p.writeVarint(this.inputs.length);
-    for (i = 0; i &lt; this.inputs.length; i++) {
-      input = this.inputs[i];
-
-      if (!input.coin) {
-        p.writeVarint(0);
-        continue;
-      }
-
-      p.writeVarBytes(bcoin.protocol.framer.coin(input.coin, false));
-    }
-  }
-
-  p = p.render();
+  data = bcoin.protocol.framer.extendedTX(this, saveCoins);
 
   if (enc === 'hex')
-    p = p.toString('hex');
+    data = data.toString('hex');
 
-  return p;
+  return data;
 };
 
 /**
  * Parse a transaction in "extended" serialization format.
- * @param {Buffer} buf
+ * @param {Buffer} data
  * @param {Boolean?} saveCoins - If true, the function will
  * attempt to parse the coins.
  * @param {String?} enc - One of `"hex"` or `null`.
  * @returns {NakedTX} - A "naked" transaction object.
  */
 
-TX.parseExtended = function parseExtended(buf, saveCoins, enc) {
-  var p, tx, coinCount, coin, i, tmp;
-
+TX.parseExtended = function parseExtended(data, saveCoins, enc) {
   if (typeof saveCoins === 'string') {
     tmp = saveCoins;
     saveCoins = enc;
@@ -1860,59 +1822,23 @@ TX.parseExtended = function parseExtended(buf, saveCoins, enc) {
   }
 
   if (enc === 'hex')
-    buf = new Buffer(buf, 'hex');
+    data = new Buffer(data, 'hex');
 
-  p = new BufferReader(buf);
-
-  tx = bcoin.protocol.parser.parseTX(p);
-
-  tx.height = p.readU32();
-  tx.block = p.readHash('hex');
-  tx.index = p.readU32();
-  tx.ts = p.readU32();
-  tx.ps = p.readU32();
-  // tx.changeIndex = p.readU32();
-
-  if (tx.block === constants.NULL_HASH)
-    tx.block = null;
-
-  if (tx.height === 0x7fffffff)
-    tx.height = -1;
-
-  if (tx.index === 0x7fffffff)
-    tx.index = -1;
-
-  if (tx.changeIndex === 0x7fffffff)
-    tx.changeIndex = -1;
-
-  if (saveCoins) {
-    coinCount = p.readVarint();
-    for (i = 0; i &lt; coinCount; i++) {
-      coin = p.readVarBytes();
-      if (coin.length === 0)
-        continue;
-      coin = bcoin.protocol.parser.parseCoin(coin, false);
-      coin.hash = tx.inputs[i].prevout.hash;
-      coin.index = tx.inputs[i].prevout.index;
-      tx.inputs[i].coin = coin;
-    }
-  }
-
-  return tx;
+  return bcoin.protocol.parser.parseExtendedTX(data, saveCoins);
 };
 
 /**
  * Instantiate a transaction from a Buffer
  * in "extended" serialization format.
- * @param {Buffer} buf
+ * @param {Buffer} data
  * @param {Boolean?} saveCoins - If true, the function will
  * attempt to parse the coins.
  * @param {String?} enc - One of `"hex"` or `null`.
  * @returns {TX}
  */
 
-TX.fromExtended = function fromExtended(buf, saveCoins, enc) {
-  return new TX(TX.parseExtended(buf, saveCoins, enc));
+TX.fromExtended = function fromExtended(data, saveCoins, enc) {
+  return new TX(TX.parseExtended(data, saveCoins, enc));
 };
 
 /**
@@ -1955,7 +1881,7 @@ return TX;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 03 2016 03:57:07 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:13:55 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

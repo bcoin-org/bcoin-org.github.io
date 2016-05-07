@@ -2000,93 +2000,41 @@ Script.array = function(value) {
  */
 
 Script.prototype.removeData = function removeData(data) {
-  var total = 0;
-  var p, sig, raw, i, a, b, op, size;
+  var index = [];
+  var i, op;
 
-  // We need to reserialize the
-  // signature as a minimal push
-  // Note that this is _NOT_
-  // minimaldata completely. It
-  // _always_ encodes a pushdata
-  // op!
-  p = new BufferWriter();
-  if (data.length &lt;= 0x4b) {
-    p.writeU8(data.length);
-    p.writeBytes(data);
-  } else if (data.length &lt;= 0xff) {
-    p.writeU8(opcodes.OP_PUSHDATA1);
-    p.writeU8(data.length);
-    p.writeBytes(data);
-  } else if (data.length &lt;= 0xffff) {
-    p.writeU8(opcodes.OP_PUSHDATA2);
-    p.writeU16(data.length);
-    p.writeBytes(data);
-  } else if (data.length &lt;= 0xffffffff) {
-    p.writeU8(opcodes.OP_PUSHDATA4);
-    p.writeU32(data.length);
-    p.writeBytes(data);
-  } else {
-    assert(false, 'Bad pushdata op.');
-  }
-  sig = p.render();
+  // We need to go forward first. We can't go
+  // backwards (this is consensus code and we
+  // need to be aware of bad pushes).
+  for (i = 0; i &lt; this.code.length; i++) {
+    op = this.code[i];
 
-  // Should never happen, but
-  // bitcoind does this anyway.
-  if (sig.length === 0)
-    return total;
-
-  // Compare on the byte level.
-  raw = this.encode();
-
-  p = new BufferReader(raw, true);
-
-  while (p.left() >= sig.length) {
-    if (utils.icmp(raw, sig, p.offset) === 0) {
-      a = raw.slice(0, p.offset);
-      b = raw.slice(p.offset + sig.length);
-      raw = Buffer.concat([a, b]);
-      p.data = raw;
-      total++;
-    }
-
-    if (p.left() === 0)
+    if (Script.isBadPush(op))
       break;
 
-    op = p.readU8();
-    if (op >= 0x01 &amp;&amp; op &lt;= 0x4b) {
-      if (p.left() &lt; op)
-        break;
-    } else if (op === opcodes.OP_PUSHDATA1) {
-      if (p.left() &lt; 1)
-        break;
-      size = p.readU8();
-      if (p.left() &lt; size)
-        break;
-      p.seek(size);
-    } else if (op === opcodes.OP_PUSHDATA2) {
-      if (p.left() &lt; 2)
-        break;
-      size = p.readU16();
-      if (p.left() &lt; size)
-        break;
-      p.seek(size);
-    } else if (op === opcodes.OP_PUSHDATA4) {
-      if (p.left() &lt; 4)
-        break;
-      size = p.readU32();
-      if (p.left() &lt; size)
-        break;
-      p.seek(size);
-    }
+    if (!Buffer.isBuffer(op))
+      continue;
+
+    if (!Script.checkMinimal(op))
+      continue;
+
+    if (utils.equal(op, data))
+      index.push(i);
   }
 
-  if (total > 0) {
-    this.code = Script.decode(raw);
-    if (this.raw)
-      this.raw = raw;
+  if (index.length === 0)
+    return 0;
+
+  // Go backwards and splice out the data.
+  for (i = index.length - 1; i >= 0; i--)
+    this.code.splice(index[i], 1);
+
+  if (this.raw) {
+    delete this.raw;
+    this.encode();
   }
 
-  return total;
+  return index.length;
 };
 
 /**
@@ -3131,28 +3079,28 @@ Script.getCoinbaseHeight = function getCoinbaseHeight(code) {
  * `extraNonce`, `flags`, and `text`.
  */
 
-Script.prototype.getCoinbaseData = function getCoinbaseData() {
+Script.prototype.getCoinbaseFlags = function getCoinbaseFlags() {
   var coinbase = {};
-  var flags;
+  var index = 0;
+  var nonce;
 
   coinbase.height = this.getCoinbaseHeight();
 
-  if (Buffer.isBuffer(this.code[1]))
-    coinbase.extraNonce = new bn(this.code[1], 'le');
-  else
-    coinbase.extraNonce = new bn(0);
+  if (coinbase.height !== -1)
+    index++;
 
-  flags = this.code.slice(2).filter(function(chunk) {
-    return Buffer.isBuffer(chunk) &amp;&amp; chunk.length !== 0;
-  });
+  if (Buffer.isBuffer(this.code[1]) &amp;&amp; this.code[1].length &lt;= 6) {
+    coinbase.extraNonce = new bn(this.code[1], 'le').toNumber();
+  } else {
+    nonce = Script.getSmall(this.code[1]);
+    coinbase.extraNonce = nonce == null ? -1 : nonce;
+  }
 
-  coinbase.flags = flags;
+  coinbase.flags = Script.encode(this.code.slice(index));
 
-  flags = flags.map(function(flag) {
-    return flag.toString('utf8');
-  });
-
-  coinbase.text = flags.join('').replace(/[\u0000-\u0019\u007f-\u00ff]/g, '');
+  coinbase.text = coinbase.flags
+    .toString('utf8')
+    .replace(/[\u0000-\u0019\u007f-\u00ff]/g, '');
 
   return coinbase;
 };
@@ -3963,8 +3911,11 @@ Script.verify = function verify(input, witness, output, tx, i, flags) {
       hadWitness = true;
 
       // Input script must be exactly one push of the redeem script.
-      if (!(input.code.length === 1 &amp;&amp; utils.equal(input.code[0], raw)))
-        throw new ScriptError('WITNESS_MALLEATED');
+      if (!(input.code.length === 1
+          &amp;&amp; utils.equal(input.code[0], raw)
+          &amp;&amp; Script.checkMinimal(input.code[0]))) {
+        throw new ScriptError('WITNESS_MALLEATED_P2SH');
+      }
 
       // Verify the program in the redeem script
       Script.verifyProgram(witness, redeem, flags, tx, i);
@@ -4054,11 +4005,7 @@ Script.verifyProgram = function verifyProgram(witness, output, flags, tx, i) {
   redeem.execute(stack, flags, tx, i, 1);
 
   // Verify the script did not fail as well as the stack values
-  if (stack.length === 0 || !Script.bool(stack.pop()))
-    throw new ScriptError('EVAL_FALSE');
-
-  // Witnesses always require cleanstack
-  if (stack.length !== 0)
+  if (stack.length !== 1 || !Script.bool(stack.pop()))
     throw new ScriptError('EVAL_FALSE');
 
   return true;
@@ -4444,7 +4391,7 @@ return Script;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 03 2016 03:57:07 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:13:55 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

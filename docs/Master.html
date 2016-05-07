@@ -40,7 +40,7 @@
 
     
 
-    <h4 class="name" id="Master"><span class="type-signature"></span>new Master<span class="signature">(id)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Master"><span class="type-signature"></span>new Master<span class="signature">(id, options<span class="signature-attributes">nullable</span>)</span><span class="type-signature"></span></h4>
 
     
 
@@ -71,6 +71,8 @@
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -96,10 +98,51 @@
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last"><p>Worker ID.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
         </tr>
 
     
@@ -192,7 +235,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line357">line 357</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line410">line 410</a>
     </li></ul></dd>
     
 
@@ -241,7 +284,7 @@
 
     
 
-    <h4 class="name" id=".listen"><span class="type-signature">(static) </span>listen<span class="signature">(id)</span><span class="type-signature"> &rarr; {<a href="Master.html">Master</a>}</span></h4>
+    <h4 class="name" id=".listen"><span class="type-signature">(static) </span>listen<span class="signature">(id, options<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="Master.html">Master</a>}</span></h4>
 
     
 
@@ -272,6 +315,8 @@
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -297,10 +342,51 @@
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
             <td class="description last"><p>Worker id.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
         </tr>
 
     
@@ -341,7 +427,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line474">line 474</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line546">line 546</a>
     </li></ul></dd>
     
 
@@ -441,7 +527,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line462">line 462</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line533">line 533</a>
     </li></ul></dd>
     
 
@@ -585,7 +671,7 @@ it with the worker ID.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line451">line 451</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line507">line 507</a>
     </li></ul></dd>
     
 
@@ -616,7 +702,7 @@ it with the worker ID.</p>
 
     
 
-    <h4 class="name" id="send"><span class="type-signature"></span>send<span class="signature">(job, name, items)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="send"><span class="type-signature"></span>send<span class="signature">(job, name, items)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
 
     
 
@@ -762,7 +848,7 @@ it with the worker ID.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line430">line 430</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line485">line 485</a>
     </li></ul></dd>
     
 
@@ -785,6 +871,24 @@ it with the worker ID.</p>
 
 
 
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Boolean</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -793,7 +897,7 @@ it with the worker ID.</p>
 
     
 
-    <h4 class="name" id="sendEvent"><span class="type-signature"></span>sendEvent<span class="signature">(event, &hellip;arg)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="sendEvent"><span class="type-signature"></span>sendEvent<span class="signature">(event, &hellip;arg)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
 
     
 
@@ -936,7 +1040,7 @@ it with the worker ID.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line440">line 440</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line496">line 496</a>
     </li></ul></dd>
     
 
@@ -959,6 +1063,24 @@ it with the worker ID.</p>
 
 
 
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Boolean</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -1067,7 +1189,7 @@ it with the worker ID.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line410">line 410</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line464">line 464</a>
     </li></ul></dd>
     
 
@@ -1133,7 +1255,7 @@ it with the worker ID.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 03 2016 03:57:08 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:13:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -257,9 +257,23 @@ Pool.prototype.connect = function connect() {
   if (this.connected)
     return;
 
-  if (this.mempool &amp;&amp; this.options.broadcast) {
-    this.mempool.on('tx', function(tx) {
-      self.broadcast(tx);
+  if (this.options.broadcast) {
+    if (this.mempool) {
+      this.mempool.on('tx', function(tx) {
+        self.broadcast(tx);
+      });
+    }
+
+    // Normally we would also broadcast
+    // competing chains, but we want to
+    // avoid getting banned if an evil
+    // miner sends us an invalid competing
+    // chain that we can't connect and
+    // verify yet.
+    this.chain.on('block', function(block) {
+      if (!self.synced)
+        return;
+      self.broadcast(block);
     });
   }
 
@@ -495,10 +509,11 @@ Pool.prototype._startInterval = function _startInterval() {
     if (self.chain.isFull())
       return;
 
-    if (self.chain.locker.pending.length > 0)
+    if (self.chain.isBusy())
       return self._startTimer();
 
     bcoin.debug('Stall recovery: loading again.');
+
     // self._load();
   }
 
@@ -755,26 +770,30 @@ Pool.prototype._handleBlocks = function _handleBlocks(hashes, peer, callback) {
     // Resolve orphan chain.
     if (self.chain.hasOrphan(hash)) {
       bcoin.debug('Peer sent a hash that is already a known orphan.');
-      self.resolveOrphan(peer, null, hash, next);
-      return;
+      return self.resolveOrphan(peer, null, hash, next);
     }
 
-    // Normally we request the hashContinue.
-    // In the odd case where we already have
-    // it, we can do one of two things: either
-    // force re-downloading of the block to
-    // continue the sync, or do a getblocks
-    // from the last hash.
-    if (i === hashes.length - 1) {
-      // Request more hashes:
-      // self.getBlocks(peer, hash, null, next);
-      // Re-download the block (traditional method):
-      self.getData(peer, self.block.type, hash, { force: true }, next);
-      return;
-    }
+    self.getData(peer, self.block.type, hash, function(err, exists) {
+      if (err)
+        return next(err);
 
-    // Request block.
-    self.getData(peer, self.block.type, hash, next);
+      // Normally we request the hashContinue.
+      // In the odd case where we already have
+      // it, we can do one of two things: either
+      // force re-downloading of the block to
+      // continue the sync, or do a getblocks
+      // from the last hash (this will reset
+      // the hashContinue on the remote node).
+      if (exists &amp;&amp; i === hashes.length - 1) {
+        // Request more hashes:
+        self.getBlocks(peer, hash, null, next);
+        // Re-download the block (traditional method):
+        // self.getData(peer, self.block.type, hash, true, next);
+        return;
+      }
+
+      next();
+    });
   }, function(err) {
     if (err)
       return callback(err);
@@ -1589,7 +1608,7 @@ Pool.prototype.getData = function getData(peer, type, hash, options, callback) {
 
   if (typeof options === 'function') {
     callback = options;
-    options = {};
+    options = null;
   }
 
   callback = utils.ensure(callback);
@@ -1597,23 +1616,26 @@ Pool.prototype.getData = function getData(peer, type, hash, options, callback) {
   if (this.destroyed)
     return callback();
 
-  if (!options)
+  if (options == null)
     options = {};
+
+  if (typeof options === 'boolean')
+    options = { force: options };
 
   function done(err, exists) {
     if (err)
       return callback(err);
 
     if (exists)
-      return callback();
+      return callback(null, true);
 
     if (self.request.map[hash])
-      return callback();
+      return callback(null, true);
 
     item = new LoadRequest(self, peer, type, hash);
 
     if (options.noQueue)
-      return callback();
+      return callback(null, false);
 
     if (type === self.tx.type) {
       if (peer.queue.tx.length === 0) {
@@ -1631,20 +1653,27 @@ Pool.prototype.getData = function getData(peer, type, hash, options, callback) {
 
       peer.queue.tx.push(item.start());
 
-      return callback();
+      return callback(null, false);
     }
 
     peer.queue.block.push(item);
 
-    return callback();
+    return callback(null, false);
   }
 
-  if (!options.force &amp;&amp; type !== self.tx.type)
-    return self.chain.has(hash, done);
+  if (options.force) {
+    return utils.nextTick(function() {
+      return done(null, false);
+    });
+  }
 
-  return utils.nextTick(function() {
-    return done(null, false);
-  });
+  if (type === this.tx.type) {
+    if (!this.mempool)
+      return utils.asyncify(done)(null, false);
+    return this.mempool.hasAny(hash, done);
+  }
+
+  return this.chain.has(hash, done);
 };
 
 /**
@@ -1671,7 +1700,7 @@ Pool.prototype.scheduleRequests = function scheduleRequests(peer) {
 Pool.prototype._sendRequests = function _sendRequests(peer) {
   var size, items;
 
-  if (this.chain.locker.pending.length > 0)
+  if (this.chain.isBusy())
     return;
 
   if (peer.queue.block.length === 0)
@@ -1741,7 +1770,7 @@ Pool.prototype.getBlock = function getBlock(hash, callback) {
   if (!this.peers.load)
     return setTimeout(this.getBlock.bind(this, hash, callback), 1000);
 
-  this.getData(this.peers.load, this.block.type, hash, { force: true }, function(block) {
+  this.getData(this.peers.load, this.block.type, hash, true, function(block) {
     callback(null, block);
   });
 
@@ -2338,7 +2367,7 @@ return Pool;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 03 2016 03:57:07 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:13:55 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -647,7 +647,7 @@ advocate for IsSuperMajority and retargeting.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line491">line 491</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line456">line 456</a>
     </li></ul></dd>
     
 
@@ -819,7 +819,7 @@ advocate for IsSuperMajority and retargeting.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line447">line 447</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line412">line 412</a>
     </li></ul></dd>
     
 
@@ -968,7 +968,7 @@ advocate for IsSuperMajority and retargeting.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line516">line 516</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line479">line 479</a>
     </li></ul></dd>
     
 
@@ -1009,377 +1009,6 @@ advocate for IsSuperMajority and retargeting.</p></td>
 </dl>
 
     
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="alloc"><span class="type-signature"></span>alloc<span class="signature">(max, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Allocate ancestors.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>max</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Number of ancestors.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line120">line 120</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="ensureAncestors"><span class="type-signature"></span>ensureAncestors<span class="signature">(callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Allocate ancestors based on retarget interval and
-majority window. These ancestors will be stored
-in the <code>ancestors</code> array and enable use of synchronous
-ChainBlock methods.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line102">line 102</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="free"><span class="type-signature"></span>free<span class="signature">()</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Free up ancestors. This is very important because
-chain entries are cached in the ChainDB's LRU cache.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line194">line 194</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1490,7 +1119,7 @@ bitcoind functions to BCoin.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line241">line 241</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line212">line 212</a>
     </li></ul></dd>
     
 
@@ -1666,7 +1295,7 @@ bitcoind functions to BCoin.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line213">line 213</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line174">line 174</a>
     </li></ul></dd>
     
 
@@ -1820,7 +1449,7 @@ bitcoind functions to BCoin.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line145">line 145</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line118">line 118</a>
     </li></ul></dd>
     
 
@@ -1903,7 +1532,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line81">line 81</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line80">line 80</a>
     </li></ul></dd>
     
 
@@ -2056,7 +1685,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line288">line 288</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line259">line 259</a>
     </li></ul></dd>
     
 
@@ -2216,7 +1845,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line310">line 310</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line278">line 278</a>
     </li></ul></dd>
     
 
@@ -2347,7 +1976,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line268">line 268</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line239">line 239</a>
     </li></ul></dd>
     
 
@@ -2478,7 +2107,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line259">line 259</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line230">line 230</a>
     </li></ul></dd>
     
 
@@ -2560,7 +2189,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line68">line 68</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line67">line 67</a>
     </li></ul></dd>
     
 
@@ -2605,6 +2234,140 @@ adding proof to previous chainwork.</p>
 </dl>
 
     
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getRetargetAncestors"><span class="type-signature"></span>getRetargetAncestors<span class="signature">(callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Allocate ancestors based on retarget interval and
+majority window. These ancestors will be stored
+in the <code>ancestors</code> array and enable use of synchronous
+ChainBlock methods.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line101">line 101</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2664,7 +2427,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line504">line 504</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line469">line 469</a>
     </li></ul></dd>
     
 
@@ -2764,7 +2527,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line90">line 90</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line89">line 89</a>
     </li></ul></dd>
     
 
@@ -2913,7 +2676,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line203">line 203</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line164">line 164</a>
     </li></ul></dd>
     
 
@@ -3067,7 +2830,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line328">line 328</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line296">line 296</a>
     </li></ul></dd>
     
 
@@ -3239,7 +3002,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line339">line 339</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line307">line 307</a>
     </li></ul></dd>
     
 
@@ -3434,7 +3197,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line379">line 379</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line347">line 347</a>
     </li></ul></dd>
     
 
@@ -3629,7 +3392,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line405">line 405</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line370">line 370</a>
     </li></ul></dd>
     
 
@@ -3801,7 +3564,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line353">line 353</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line321">line 321</a>
     </li></ul></dd>
     
 
@@ -3973,7 +3736,7 @@ adding proof to previous chainwork.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line364">line 364</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line332">line 332</a>
     </li></ul></dd>
     
 
@@ -4074,7 +3837,7 @@ suitable for JSON serialization.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line470">line 470</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line435">line 435</a>
     </li></ul></dd>
     
 
@@ -4174,7 +3937,7 @@ suitable for JSON serialization.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line425">line 425</a>
+        <a href="bcoin_chainblock.js.html">bcoin/chainblock.js</a>, <a href="bcoin_chainblock.js.html#line390">line 390</a>
     </li></ul></dd>
     
 
@@ -4240,7 +4003,7 @@ suitable for JSON serialization.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 03 2016 03:57:07 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:13:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
