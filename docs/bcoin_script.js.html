@@ -33,8 +33,7 @@
  * https://github.com/indutny/bcoin
  */
 
-module.exports = function(bcoin) {
-
+var bcoin = require('./env');
 var bn = require('bn.js');
 var constants = bcoin.protocol.constants;
 var utils = require('./utils');
@@ -87,12 +86,19 @@ function Witness(items, mutable) {
 
 /**
  * Inspect a Witness object.
- * @method
  * @returns {String} Human-readable script.
  */
 
-Witness.prototype.toString =
 Witness.prototype.inspect = function inspect() {
+  return '&lt;Witness: ' + this.toString() + '>';
+};
+
+/**
+ * Convert a Witness object to a String.
+ * @returns {String} Human-readable script.
+ */
+
+Witness.prototype.toString = function toString() {
   return Witness.format(this.items);
 };
 
@@ -145,12 +151,8 @@ Witness.prototype.getInputType = function getInputType() {
  * @returns {String|null}
  */
 
-Witness.prototype.getInputAddress = function getInputAddress() {
-  return Script.getInputAddress(this.items, true);
-};
-
-Witness.prototype.getInputHash = function getInputHash() {
-  return Script.getInputHash(this.items, true);
+Witness.prototype.getInputAddress = function getInputAddress(network) {
+  return bcoin.address.fromWitness(this);
 };
 
 /**
@@ -190,7 +192,7 @@ Witness.prototype.isMultisigInput = function isMultisigInput() {
  */
 
 Witness.prototype.isScripthashInput = function isScripthashInput() {
-  return Script.isScripthashInput(this.items, true);
+  return Script.isScripthashInput(this.items);
 };
 
 /**
@@ -386,12 +388,19 @@ function Stack(items) {
 
 /**
  * Inspect the stack.
- * @method
  * @returns {String} Human-readable stack.
  */
 
-Stack.prototype.toString =
 Stack.prototype.inspect = function inspect() {
+  return '&lt;Stack: ' + this.toString() + '>';
+};
+
+/**
+ * Convert the stack to a string.
+ * @returns {String} Human-readable stack.
+ */
+
+Stack.prototype.toString = function toString() {
   return Witness.format(this.items);
 };
 
@@ -923,12 +932,19 @@ Script.prototype.clone = function clone(mutable) {
 
 /**
  * Inspect the script.
- * @method
  * @returns {String} Human-readable script code.
  */
 
-Script.prototype.toString =
 Script.prototype.inspect = function inspect() {
+  return '&lt;Script: ' + this.toString() + '>';
+};
+
+/**
+ * Convert the script to a bitcoind test string.
+ * @returns {String} Human-readable script code.
+ */
+
+Script.prototype.toString = function toString() {
   return Script.format(this.code);
 };
 
@@ -2269,15 +2285,6 @@ Script.prototype.getRedeem = function getRedeem() {
 Script.getRedeem = function getRedeem(code) {
   var redeem = code[code.length - 1];
 
-  if (typeof redeem === 'number') {
-    if (redeem > opcodes.OP_16)
-      return;
-    return new Script([redeem]);
-  }
-
-  if (Script.isBadPush(redeem))
-    return;
-
   if (!Buffer.isBuffer(redeem))
     return;
 
@@ -2397,35 +2404,7 @@ Script.prototype.getSize = function getSize() {
  */
 
 Script.prototype.getInputAddress = function getInputAddress() {
-  return Script.getInputAddress(this.code, false);
-};
-
-Script.getInputAddress = function getInputAddress(code, isWitness) {
-  if (Script.isPubkeyInput(code))
-    return;
-
-  if (Script.isPubkeyhashInput(code)) {
-    if (isWitness) {
-      return bcoin.address.compileData(
-        code[1],
-        'witnesspubkeyhash',
-        0);
-    }
-    return bcoin.address.compileData(code[1], 'pubkeyhash');
-  }
-
-  if (Script.isMultisigInput(code, isWitness))
-    return;
-
-  if (Script.isScripthashInput(code, isWitness)) {
-    if (isWitness) {
-      return bcoin.address.compileData(
-        code[code.length - 1],
-        'witnessscripthash',
-        0);
-    }
-    return bcoin.address.compileData(code[code.length - 1], 'scripthash');
-  }
+  return bcoin.address.fromInputScript(this);
 };
 
 /**
@@ -2436,88 +2415,7 @@ Script.getInputAddress = function getInputAddress(code, isWitness) {
  */
 
 Script.prototype.getAddress = function getAddress() {
-  var program;
-
-  if (this.isWitnessProgram()) {
-    program = this.getWitnessProgram();
-    if (!program.type || program.type === 'unknown')
-      return;
-    return bcoin.address.compileHash(
-      program.data,
-      program.type,
-      program.version);
-  }
-
-  // Convert p2pk to p2pkh addresses
-  if (this.isPubkey())
-    return bcoin.address.compileData(this.code[0], 'pubkeyhash');
-
-  if (this.isPubkeyhash())
-    return bcoin.address.compileHash(this.code[2], 'pubkeyhash');
-
-  // Convert bare multisig to scripthash address
-  if (this.isMultisig())
-    return bcoin.address.compileData(this.encode(), 'scripthash');
-
-  if (this.isScripthash())
-    return bcoin.address.compileHash(this.code[1], 'scripthash');
-};
-
-/**
- * "Guess" the address hash of the input script.
- * This method is not 100% reliable.
- * @returns {Hash|null}
- */
-
-Script.prototype.getInputHash = function getInputHash() {
-  return Script.getInputHash(this.code, false);
-};
-
-Script.getInputHash = function getInputHash(isWitness) {
-  if (Script.isPubkeyInput(code))
-    return;
-
-  if (Script.isPubkeyhashInput(code))
-    return utils.ripesha(code[1]).toString('hex');
-
-  if (Script.isMultisigInput(code, isWitness))
-    return;
-
-  if (Script.isScripthashInput(code, isWitness)) {
-    return isWitness
-      ? utils.sha256(code[code.length - 1]).toString('hex')
-      : utils.ripesha(code[code.length - 1]).toString('hex')
-  }
-};
-
-/**
- * Get the address hash of the script if present. Note that
- * pubkey and multisig scripts will be treated as though
- * they are pubkeyhash and scripthashes respectively.
- * @returns {Hash|null}
- */
-
-Script.prototype.getHash = function getHash() {
-  var program;
-
-  if (this.isWitnessProgram()) {
-    program = this.getWitnessProgram();
-    if (!program.type || program.type === 'unknown')
-      return;
-    return program.data.toString('hex');
-  }
-
-  if (this.isPubkey())
-    return utils.ripesha(this.code[0]).toString('hex');
-
-  if (this.isPubkeyhash())
-    return this.code[2].toString('hex');
-
-  if (this.isMultisig())
-    return utils.ripesha(this.encode()).toString('hex');
-
-  if (this.isScripthash())
-    return this.code[1].toString('hex');
+  return bcoin.address.fromScript(this);
 };
 
 /**
@@ -2797,7 +2695,7 @@ Script.getInputType = function getInputType(code, isWitness) {
   var type = (Script.isPubkeyInput(code) &amp;&amp; 'pubkey')
     || (Script.isPubkeyhashInput(code) &amp;&amp; 'pubkeyhash')
     || (Script.isMultisigInput(code, isWitness) &amp;&amp; 'multisig')
-    || (Script.isScripthashInput(code, isWitness) &amp;&amp; 'scripthash')
+    || (Script.isScripthashInput(code) &amp;&amp; 'scripthash')
     || 'unknown';
 
   if (isWitness) {
@@ -2846,7 +2744,8 @@ Script.createOutputScript = function createOutputScript(options) {
     options = {};
 
   if (options.address) {
-    address = bcoin.address.parse(options.address);
+    if (typeof options.address === 'string')
+      address = bcoin.address.parseBase58(options.address);
 
     if (address.type === 'pubkeyhash')
       script = Script.createPubkeyhash(address.hash);
@@ -2957,7 +2856,7 @@ Script.isMultisigInput = function isMultisigInput(code, isWitness) {
 
   // We need to rule out scripthash
   // because it may look like multisig.
-  if (Script.isScripthashInput(code, isWitness))
+  if (Script.isScripthashInput(code))
     return false;
 
   if (code.length &lt; 3)
@@ -2989,21 +2888,11 @@ Script.prototype.isScripthashInput = function isScripthashInput() {
   return Script.isScripthashInput(this.code);
 };
 
-Script.isScripthashInput = function isScripthashInput(code, isWitness) {
+Script.isScripthashInput = function isScripthashInput(code) {
   var raw;
 
   // Grab the raw redeem script.
   raw = code[code.length - 1];
-
-  // Need at least one data element with
-  // the redeem script. NOTE: NOT THE CASE FOR SEGWIT!
-  if (isWitness) {
-    if (code.length &lt; 1)
-      return false;
-  } else {
-    if (code.length &lt; 2)
-      return false;
-  }
 
   // Last data element should be an array
   // for the redeem script.
@@ -3580,7 +3469,7 @@ Script.prototype.getScripthashSigops = function getScripthashSigops(input) {
       return 0;
   }
 
-  if (typeof op === 'number')
+  if (!Buffer.isBuffer(op))
     return 0;
 
   redeem = new Script(op);
@@ -3645,7 +3534,7 @@ Script.getWitnessSigops = function getWitnessSigops(input, output, witness, flag
   // does not check the return value of GetOp.
   if (output.isScripthash() &amp;&amp; input.isPushOnly()) {
     redeem = input.getRedeem();
-    if (redeem.isWitnessProgram())
+    if (redeem &amp;&amp; redeem.isWitnessProgram())
       return Script.witnessSigops(redeem.getWitnessProgram(), witness, flags);
   }
 
@@ -4370,11 +4259,10 @@ Script.isScript = function isScript(obj) {
     &amp;&amp; typeof obj.getSubscript === 'function';
 };
 
-Script.witness = Witness;
-Script.stack = Stack;
+Script.Witness = Witness;
+Script.Stack = Stack;
 
-return Script;
-};
+module.exports = Script;
 </code></pre>
         </article>
     </section>
@@ -4385,13 +4273,13 @@ return Script;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="module.exports-Framer.html">Framer</a></li><li><a href="module.exports-Parser.html">Parser</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:32:51 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 14:23:38 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

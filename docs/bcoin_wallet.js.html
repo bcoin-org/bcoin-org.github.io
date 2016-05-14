@@ -33,13 +33,11 @@
  * https://github.com/indutny/bcoin
  */
 
-module.exports = function(bcoin) {
-
+var bcoin = require('./env');
 var EventEmitter = require('events').EventEmitter;
 var utils = require('./utils');
 var assert = utils.assert;
 var constants = bcoin.protocol.constants;
-var network = bcoin.protocol.network;
 var BufferWriter = require('./writer');
 
 /**
@@ -87,19 +85,21 @@ function Wallet(options) {
 
   options = utils.merge({}, options);
 
+  this.options = options;
+  this.network = bcoin.network.get(options.network);
+
   if (typeof options.master === 'string')
     options.master = { xkey: options.master };
 
   if (options.master
       &amp;&amp; typeof options.master === 'object'
       &amp;&amp; !(options.master instanceof bcoin.hd)) {
-    options.master = bcoin.hd.fromAny(options.master);
+    options.master = bcoin.hd.fromAny(options.master, this.network);
   }
 
   if (!options.master)
-    options.master = bcoin.hd.fromSeed();
+    options.master = bcoin.hd.fromMnemonic(null, this.network);
 
-  this.options = options;
   this.provider = options.provider || null;
   this.master = options.master || null;
   this.addressMap = options.addressMap || {};
@@ -401,7 +401,7 @@ Wallet.prototype.getID = function getID() {
 
 /**
  * Create a new receiving address (increments receiveDepth).
- * @returns {Address}
+ * @returns {KeyRing}
  */
 
 Wallet.prototype.createReceive = function createReceive() {
@@ -410,7 +410,7 @@ Wallet.prototype.createReceive = function createReceive() {
 
 /**
  * Create a new change address (increments receiveDepth).
- * @returns {Address}
+ * @returns {KeyRing}
  */
 
 Wallet.prototype.createChange = function createChange() {
@@ -420,7 +420,7 @@ Wallet.prototype.createChange = function createChange() {
 /**
  * Create a new address (increments depth).
  * @param {Boolean} change
- * @returns {Address}
+ * @returns {KeyRing}
  */
 
 Wallet.prototype.createAddress = function createAddress(change) {
@@ -452,7 +452,7 @@ Wallet.prototype.createAddress = function createAddress(change) {
 /**
  * Derive a receiving address at `index`. Do not increment depth.
  * @param {Number} index
- * @returns {Address}
+ * @returns {KeyRing}
  */
 
 Wallet.prototype.deriveReceive = function deriveReceive(index) {
@@ -465,7 +465,7 @@ Wallet.prototype.deriveReceive = function deriveReceive(index) {
 /**
  * Derive a change address at `index`. Do not increment depth.
  * @param {Number} index
- * @returns {Address}
+ * @returns {KeyRing}
  */
 
 Wallet.prototype.deriveChange = function deriveChange(index) {
@@ -479,7 +479,7 @@ Wallet.prototype.deriveChange = function deriveChange(index) {
  * Derive an address at `index`. Do not increment depth.
  * @param {Boolean} change - Whether the address on the change branch.
  * @param {Number} index
- * @returns {Address}
+ * @returns {KeyRing}
  */
 
 Wallet.prototype.deriveAddress = function deriveAddress(change, index) {
@@ -515,6 +515,7 @@ Wallet.prototype.deriveAddress = function deriveAddress(change, index) {
   key = this.accountKey.derive(data.path);
 
   options = {
+    network: this.network,
     key: key,
     change: data.change,
     index: data.index,
@@ -533,15 +534,15 @@ Wallet.prototype.deriveAddress = function deriveAddress(change, index) {
     options.keys.push(key.publicKey);
   }, this);
 
-  address = new bcoin.address(options);
+  address = new bcoin.keyring(options);
 
-  this.addressMap[address.getKeyAddress()] = data.path;
+  this.addressMap[address.getKeyHash('hex')] = data.path;
 
   if (this.type === 'multisig')
-    this.addressMap[address.getScriptAddress()] = data.path;
+    this.addressMap[address.getScriptHash('hex')] = data.path;
 
   if (this.witness)
-    this.addressMap[address.getProgramAddress()] = data.path;
+    this.addressMap[address.getProgramHash('hex')] = data.path;
 
   // Update the DB with the new address.
   if (this.provider &amp;&amp; this.provider.update)
@@ -740,6 +741,8 @@ Wallet.prototype.fill = function fill(tx, options, callback) {
         fee: options.fee,
         subtractFee: options.subtractFee,
         changeAddress: self.changeAddress.getAddress(),
+        height: self.network.height,
+        rate: self.network.getMinRelay(),
         wallet: self,
         m: self.m,
         n: self.n
@@ -857,7 +860,7 @@ Wallet.prototype.createTX = function createTX(options, outputs, callback) {
  * Derive an address for a single transaction input.
  * @param {TX} tx
  * @param {Number} index
- * @returns {Address}
+ * @returns {KeyRing}
  */
 
 Wallet.prototype.deriveInput = function deriveInput(tx, index) {
@@ -868,7 +871,7 @@ Wallet.prototype.deriveInput = function deriveInput(tx, index) {
  * Derive necessary addresses for signing a transaction.
  * @param {TX|Input} tx
  * @param {Number?} index - Input index.
- * @returns {Address[]}
+ * @returns {KeyRing[]}
  */
 
 Wallet.prototype.deriveInputs = function deriveInputs(tx, index) {
@@ -905,7 +908,7 @@ Wallet.prototype.getInputPaths = function getInputPaths(tx, index) {
   var i, input, address, path;
 
   if (tx instanceof bcoin.input) {
-    path = this.getPath(tx.coin.getAddress());
+    path = this.getPath(tx.coin.getHash());
     if (path)
       paths.push(path);
     return paths;
@@ -919,7 +922,7 @@ Wallet.prototype.getInputPaths = function getInputPaths(tx, index) {
 
     assert(input.coin, 'Not all coins available.');
 
-    address = input.coin.getAddress();
+    address = input.coin.getHash();
     path = this.getPath(address);
 
     if (!path)
@@ -943,7 +946,7 @@ Wallet.prototype.getOutputPaths = function getOutputPaths(tx, index) {
   var i, output, address, path;
 
   if (tx instanceof bcoin.output) {
-    path = this.getPath(tx.getAddress());
+    path = this.getPath(tx.getHash());
     if (path)
       paths.push(path);
     return paths;
@@ -955,7 +958,7 @@ Wallet.prototype.getOutputPaths = function getOutputPaths(tx, index) {
     if (index != null &amp;&amp; i !== index)
       continue;
 
-    address = output.getAddress();
+    address = output.getHash();
     path = this.getPath(address);
 
     if (!path)
@@ -1029,17 +1032,7 @@ Wallet.prototype.getRedeem = function getRedeem(hash, prefix) {
   if (typeof hash === 'string')
     hash = new Buffer(hash, 'hex');
 
-  if (!prefix) {
-    if (hash.length === 20)
-      prefix = 'scripthash';
-    else if (hash.length === 32)
-      prefix = 'witnessscripthash';
-    else
-      return;
-  }
-
-  addr = bcoin.address.compileHash(hash, prefix);
-  address = this.deriveAddress(addr);
+  address = this.deriveAddress(hash.toString('hex'));
 
   if (!address)
     return;
@@ -1549,7 +1542,7 @@ Wallet.prototype.inspect = function inspect() {
   return {
     id: this.id,
     type: this.type,
-    network: network.type,
+    network: this.network.type,
     m: this.m,
     n: this.n,
     keyAddress: this._initialized
@@ -1587,7 +1580,7 @@ Wallet.prototype.toJSON = function toJSON() {
   return {
     v: 3,
     name: 'wallet',
-    network: network.type,
+    network: this.network.type,
     id: this.id,
     type: this.type,
     m: this.m,
@@ -1622,10 +1615,8 @@ Wallet.parseJSON = function parseJSON(json, passphrase) {
   assert.equal(json.v, 3);
   assert.equal(json.name, 'wallet');
 
-  if (json.network)
-    assert.equal(json.network, network.type);
-
   return {
+    network: json.network,
     id: json.id,
     type: json.type,
     m: json.m,
@@ -1661,9 +1652,6 @@ Wallet._syncDepth = function _syncDepth(json, options) {
 
   assert.equal(json.v, 3);
   assert.equal(json.name, 'wallet');
-
-  if (json.network)
-    assert.equal(json.network, network.type);
 
   master = json.master;
   json.master = json.accountKey;
@@ -1765,9 +1753,6 @@ Wallet._addKey = function _addKey(json, keys, remove) {
   if (!Array.isArray(keys))
     keys = [keys];
 
-  if (json.network)
-    assert.equal(json.network, network.type);
-
   master = json.master;
   json.master = json.accountKey;
   wallet = new Wallet(json);
@@ -1821,8 +1806,7 @@ Wallet.isWallet = function isWallet(obj) {
     &amp;&amp; obj.deriveAddress === 'function';
 };
 
-return Wallet;
-};
+module.exports = Wallet;
 </code></pre>
         </article>
     </section>
@@ -1833,13 +1817,13 @@ return Wallet;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="module.exports-Framer.html">Framer</a></li><li><a href="module.exports-Parser.html">Parser</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:32:51 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 14:23:38 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

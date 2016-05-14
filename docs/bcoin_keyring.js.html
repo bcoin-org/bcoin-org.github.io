@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: bcoin/keyring.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: bcoin/keyring.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * keyring.js - keyring object for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
+ * https://github.com/indutny/bcoin
+ */
+
+var bcoin = require('./env');
+var utils = bcoin.utils;
+var assert = utils.assert;
+var networks = bcoin.protocol.network;
+var BufferWriter = require('./writer');
+var BufferReader = require('./reader');
+
+/**
+ * Represents a key ring which amounts to an address. Used for {@link Wallet}.
+ * @exports KeyRing
+ * @constructor
+ * @param {Object} options
+ * @param {String?} options.label
+ * @param {Boolean?} options.derived
+ * @param {HDPrivateKey|HDPublicKey} options.key
+ * @param {String?} options.path
+ * @param {Boolean?} options.change
+ * @param {Number?} options.index
+ * @param {String?} options.type - `"pubkeyhash"` or `"multisig"`.
+ * @param {Buffer[]} options.keys - Shared multisig keys.
+ * @param {Number?} options.m - Multisig `m` value.
+ * @param {Number?} options.n - Multisig `n` value.
+ * @param {Boolean?} options.witness - Whether witness programs are enabled.
+ */
+
+function KeyRing(options) {
+  var i;
+
+  if (!(this instanceof KeyRing))
+    return new KeyRing(options);
+
+  if (options instanceof KeyRing)
+    return options;
+
+  if (!options)
+    options = {};
+
+  this.options = options;
+  this.label = options.label || '';
+  this.derived = !!options.derived;
+  this.addressMap = null;
+
+  this.key = options.key || bcoin.keypair(options);
+  this.path = options.path;
+  this.change = !!options.change;
+  this.index = options.index;
+
+  this.type = options.type || 'pubkeyhash';
+  this.keys = [];
+  this.m = options.m || 1;
+  this.n = options.n || 1;
+  this.witness = options.witness || false;
+
+  if (this.n > 1)
+    this.type = 'multisig';
+
+  assert(this.type === 'pubkeyhash' || this.type === 'multisig');
+
+  if (this.m &lt; 1 || this.m > this.n)
+    throw new Error('m ranges between 1 and n');
+
+  this.addKey(this.getPublicKey());
+
+  if (options.keys) {
+    for (i = 0; i &lt; options.keys.length; i++)
+      this.addKey(options.keys[i]);
+  }
+}
+
+/**
+ * Test an object to see if it is an KeyRing.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+KeyRing.isKeyRing = function isKeyRing(obj) {
+  return obj
+    &amp;&amp; Array.isArray(obj.keys)
+    &amp;&amp; typeof obj._getAddressMap === 'function';
+};
+
+/**
+ * Return address ID (pubkeyhash address of pubkey).
+ * @returns {Base58Address}
+ */
+
+KeyRing.prototype.getID = function getID() {
+  return this.getKeyAddress();
+};
+
+/**
+ * Add a key to shared keys.
+ * @param {Buffer} key
+ */
+
+KeyRing.prototype.addKey = function addKey(key) {
+  if (utils.indexOf(this.keys, key) !== -1)
+    return;
+
+  this.keys.push(key);
+
+  this.keys = utils.sortKeys(this.keys);
+};
+
+/**
+ * Remove a key from shared keys.
+ * @param {Buffer} key
+ */
+
+KeyRing.prototype.removeKey = function removeKey(key) {
+  var index = utils.indexOf(this.keys, key);
+
+  if (index === -1)
+    return;
+
+  this.keys.splice(index, 1);
+
+  this.keys = utils.sortKeys(this.keys);
+};
+
+/**
+ * Get private key.
+ * @param {String?} enc - `"hex"` or `null`.
+ * @returns {Buffer}
+ */
+
+KeyRing.prototype.getPrivateKey = function getPrivateKey(enc) {
+  return this.key.getPrivateKey(enc);
+};
+
+/**
+ * Get public key.
+ * @param {String?} enc - `"hex"` or `null`.
+ * @returns {Buffer}
+ */
+
+KeyRing.prototype.getPublicKey = function getPublicKey(enc) {
+  return this.key.getPublicKey(enc);
+};
+
+/**
+ * Get redeem script.
+ * @returns {Script}
+ */
+
+KeyRing.prototype.getScript = function getScript() {
+  var redeem;
+
+  if (this.type !== 'multisig')
+    return;
+
+  if (!this._script) {
+    assert(this.keys.length === this.n, 'Not all keys have been added.');
+
+    redeem = bcoin.script.createMultisig(this.keys, this.m, this.n);
+
+    if (redeem.getSize() > 520)
+      throw new Error('Redeem script too large (520 byte limit).');
+
+    this._script = redeem;
+  }
+
+  return this._script;
+};
+
+/**
+ * Get witness program.
+ * @returns {Buffer}
+ */
+
+KeyRing.prototype.getProgram = function getProgram() {
+  var hash, program;
+
+  if (!this.witness)
+    return;
+
+  if (!this._program) {
+    if (this.type === 'pubkeyhash') {
+      hash = utils.ripesha(this.getPublicKey());
+      program = bcoin.script.createWitnessProgram(0, hash);
+    } else if (this.type === 'multisig') {
+      hash = utils.sha256(this.getScript().encode());
+      program = bcoin.script.createWitnessProgram(0, hash);
+    } else {
+      assert(false, 'Unknown address type.');
+    }
+    this._program = program;
+  }
+
+  return this._program;
+};
+
+/**
+ * Get address' ripemd160 program scripthash
+ * (for witness programs behind a scripthash).
+ * @param {String?} enc - `"hex"` or `null`.
+ * @returns {Buffer}
+ */
+
+KeyRing.prototype.getProgramHash = function getProgramHash(enc) {
+  if (!this.witness)
+    return;
+
+  if (!this._programHash)
+    this._programHash = utils.ripesha(this.getProgram().encode());
+
+  return enc === 'hex'
+    ? this._programHash.toString('hex')
+    : this._programHash;
+};
+
+/**
+ * Get address' scripthash address for witness program.
+ * @returns {Base58Address}
+ */
+
+KeyRing.prototype.getProgramAddress = function getProgramAddress() {
+  var hash, address;
+
+  if (!this.witness)
+    return;
+
+  if (!this._programAddress) {
+    hash = this.getProgramHash();
+    address = this.compile(hash, 'scripthash');
+    this._programAddress = address;
+  }
+
+  return this._programAddress;
+};
+
+/**
+ * Get scripthash.
+ * @param {String?} enc - `"hex"` or `null`.
+ * @returns {Buffer}
+ */
+
+KeyRing.prototype.getScriptHash = function getScriptHash(enc) {
+  if (this.witness)
+    return this.getScriptHash256(enc);
+  return this.getScriptHash160(enc);
+};
+
+/**
+ * Get ripemd160 scripthash.
+ * @param {String?} enc - `"hex"` or `null`.
+ * @returns {Buffer}
+ */
+
+KeyRing.prototype.getScriptHash160 = function getScriptHash256(enc) {
+  if (this.type !== 'multisig')
+    return;
+
+  if (!this._scriptHash160)
+    this._scriptHash160 = utils.ripesha(this.getScript().encode());
+
+  return enc === 'hex'
+    ? this._scriptHash160.toString('hex')
+    : this._scriptHash160;
+};
+
+/**
+ * Get sha256 scripthash.
+ * @param {String?} enc - `"hex"` or `null`.
+ * @returns {Buffer}
+ */
+
+KeyRing.prototype.getScriptHash256 = function getScriptHash256(enc) {
+  if (this.type !== 'multisig')
+    return;
+
+  if (!this._scriptHash256)
+    this._scriptHash256 = utils.sha256(this.getScript().encode());
+
+  return enc === 'hex'
+    ? this._scriptHash256.toString('hex')
+    : this._scriptHash256;
+};
+
+/**
+ * Get scripthash address.
+ * @returns {Base58Address}
+ */
+
+KeyRing.prototype.getScriptAddress = function getScriptAddress() {
+  var hash, address;
+
+  if (this.type !== 'multisig')
+    return;
+
+  if (!this._scriptAddress) {
+    if (this.witness) {
+      hash = this.getScriptHash256();
+      address = this.compile(hash, 'witnessscripthash', 0);
+    } else {
+      hash = this.getScriptHash160();
+      address = this.compile(hash, 'scripthash');
+    }
+    this._scriptAddress = address;
+  }
+
+  return this._scriptAddress;
+};
+
+/**
+ * Get public key hash.
+ * @param {String?} enc - `"hex"` or `null`.
+ * @returns {Buffer}
+ */
+
+KeyRing.prototype.getKeyHash = function getKeyHash(enc) {
+  if (!this._hash)
+    this._hash = utils.ripesha(this.getPublicKey());
+
+  return enc === 'hex'
+    ? this._hash.toString('hex')
+    : this._hash;
+};
+
+/**
+ * Get pubkeyhash address.
+ * @returns {Base58Address}
+ */
+
+KeyRing.prototype.getKeyAddress = function getKeyAddress() {
+  var hash, address;
+
+  if (!this._address) {
+    hash = this.getKeyHash();
+    if (this.witness)
+      address = this.compile(hash, 'witnesspubkeyhash', 0);
+    else
+      address = this.compile(hash, 'pubkeyhash');
+    this._address = address;
+  }
+
+  return this._address;
+};
+
+/**
+ * Compile a hash to an address.
+ * @param {Hash|Buffer} hash
+ * @param {AddressType?} type
+ * @param {Number?} version - Witness version.
+ * @returns {Base58Address}
+ * @throws Error on bad hash/prefix.
+ */
+
+KeyRing.prototype.compile = function compile(hash, type, version) {
+  return bcoin.address.toBase58(hash, type, version, this.network);
+};
+
+/**
+ * Get hash.
+ * @param {String?} enc - `"hex"` or `null`.
+ * @returns {Buffer}
+ */
+
+KeyRing.prototype.getHash = function getHash(enc) {
+  if (this.type === 'multisig')
+    return this.getScriptHash(enc);
+  return this.getKeyHash(enc);
+};
+
+/**
+ * Get base58 address.
+ * @returns {Base58Address}
+ */
+
+KeyRing.prototype.getAddress = function getAddress() {
+  if (this.type === 'multisig')
+    return this.getScriptAddress();
+  return this.getKeyAddress();
+};
+
+KeyRing.prototype._getAddressMap = function _getAddressMap() {
+  if (!this.addressMap) {
+    this.addressMap = {};
+
+    this.addressMap[this.getKeyHash('hex')] = true;
+
+    if (this.type === 'multisig')
+      this.addressMap[this.getScriptHash('hex')] = true;
+
+    if (this.witness)
+      this.addressMap[this.getProgramHash('hex')] = true;
+  }
+
+  return this.addressMap;
+};
+
+/**
+ * Check whether transaction input belongs to this address.
+ * @param {TX|Output} tx - Transaction or Output.
+ * @param {Number?} index - Output index.
+ * @returns {Boolean}
+ */
+
+KeyRing.prototype.ownInput = function ownInput(tx, index) {
+  var addressMap = this._getAddressMap();
+
+  if (tx instanceof bcoin.input)
+    return tx.test(addressMap);
+
+  return tx.testInputs(addressMap, index);
+};
+
+/**
+ * Check whether transaction output belongs to this address.
+ * @param {TX|Output} tx - Transaction or Output.
+ * @param {Number?} index - Output index.
+ * @returns {Boolean}
+ */
+
+KeyRing.prototype.ownOutput = function ownOutput(tx, index) {
+  var addressMap = this._getAddressMap();
+
+  if (tx instanceof bcoin.output)
+    return tx.test(addressMap);
+
+  return tx.testOutputs(addressMap, index);
+};
+
+/**
+ * Build input scripts templates for a transaction (does not
+ * sign, only creates signature slots). Only builds scripts
+ * for inputs that are redeemable by this address.
+ * @param {MTX} tx
+ * @param {Number?} index - Index of input. If not present,
+ * it will attempt to sign all redeemable inputs.
+ * @returns {Number} Total number of scripts built.
+ */
+
+KeyRing.prototype.scriptInputs = function scriptInputs(tx, index) {
+  var total = 0;
+  var i, input;
+
+  if (index &amp;&amp; typeof index === 'object')
+    index = tx.inputs.indexOf(index);
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+
+    if (index != null &amp;&amp; index !== i)
+      continue;
+
+    if (!input.coin)
+      continue;
+
+    if (!this.ownOutput(input.coin))
+      continue;
+
+    if (tx.scriptInput(i, this))
+      total++;
+  }
+
+  return total;
+};
+
+/**
+ * Sign inputs for a transaction. Only attempts to sign inputs
+ * that are redeemable by this address.
+ * @param {MTX} tx
+ * @param {Number?} index - Index of input. If not present,
+ * it will attempt to sign all redeemable inputs.
+ * @param {SighashType?} type
+ * @returns {Number} Total number of inputs signed.
+ */
+
+KeyRing.prototype.signInputs = function signInputs(tx, index, type) {
+  var total = 0;
+  var i, input;
+
+  if (index &amp;&amp; typeof index === 'object')
+    index = tx.inputs.indexOf(index);
+
+  if (!this.key.privateKey)
+    return 0;
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+
+    if (index != null &amp;&amp; index !== i)
+      continue;
+
+    if (!input.coin)
+      continue;
+
+    if (!this.ownOutput(input.coin))
+      continue;
+
+    if (tx.signInput(i, this, type))
+      total++;
+  }
+
+  return total;
+};
+
+/**
+ * Build input scripts and sign inputs for a transaction. Only attempts
+ * to build/sign inputs that are redeemable by this address.
+ * @param {MTX} tx
+ * @param {Number?} index - Index of input. If not present,
+ * it will attempt to build and sign all redeemable inputs.
+ * @param {SighashType?} type
+ * @returns {Number} Total number of inputs scripts built and signed.
+ */
+
+KeyRing.prototype.sign = function sign(tx, index, type) {
+  var total = 0;
+  var i, input;
+
+  if (index &amp;&amp; typeof index === 'object')
+    index = tx.inputs.indexOf(index);
+
+  if (!this.key.privateKey)
+    return 0;
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+
+    if (index != null &amp;&amp; index !== i)
+      continue;
+
+    if (!input.coin)
+      continue;
+
+    if (!this.ownOutput(input.coin))
+      continue;
+
+    if (tx.sign(i, this, type))
+      total++;
+  }
+
+  return total;
+};
+
+KeyRing.prototype.__defineGetter__('privateKey', function() {
+  return this.getPrivateKey();
+});
+
+KeyRing.prototype.__defineGetter__('publicKey', function() {
+  return this.getPublicKey();
+});
+
+KeyRing.prototype.__defineGetter__('script', function() {
+  return this.getScript();
+});
+
+KeyRing.prototype.__defineGetter__('scriptHash', function() {
+  return this.getScriptHash();
+});
+
+KeyRing.prototype.__defineGetter__('scriptHash160', function() {
+  return this.getScriptHash160();
+});
+
+KeyRing.prototype.__defineGetter__('scriptHash256', function() {
+  return this.getScriptHash256();
+});
+
+KeyRing.prototype.__defineGetter__('scriptAddress', function() {
+  return this.getScriptAddress();
+});
+
+KeyRing.prototype.__defineGetter__('program', function() {
+  return this.getProgram();
+});
+
+KeyRing.prototype.__defineGetter__('programHash', function() {
+  return this.getProgramHash();
+});
+
+KeyRing.prototype.__defineGetter__('programAddress', function() {
+  return this.getProgramAddress();
+});
+
+KeyRing.prototype.__defineGetter__('keyHash', function() {
+  return this.getKeyHash();
+});
+
+KeyRing.prototype.__defineGetter__('keyAddress', function() {
+  return this.getKeyAddress();
+});
+
+KeyRing.prototype.__defineGetter__('hash', function() {
+  return this.getHash();
+});
+
+KeyRing.prototype.__defineGetter__('address', function() {
+  return this.getAddress();
+});
+
+/**
+ * Convert an KeyRing to a more json-friendly object.
+ * @param {String?} passphrase - KeyRing passphrase
+ * @returns {Object}
+ */
+
+KeyRing.prototype.toJSON = function toJSON(passphrase) {
+  var key = this.key;
+
+  if (!(key instanceof bcoin.keypair))
+    key = new bcoin.keypair({ privateKey: key.getPrivateKey() });
+
+  return {
+    v: 1,
+    name: 'address',
+    network: this.network.type,
+    label: this.label,
+    change: this.change,
+    derived: this.derived,
+    index: this.index,
+    path: this.path,
+    address: this.getAddress(),
+    key: key.toJSON(passphrase),
+    type: this.type,
+    witness: this.witness,
+    keys: this.keys.map(utils.toBase58),
+    m: this.m,
+    n: this.n
+  };
+};
+
+/**
+ * Instantiate an KeyRing from a jsonified transaction object.
+ * @param {Object} json - The jsonified transaction object.
+ * @param {String?} passphrase - KeyRing passphrase
+ * @returns {KeyRing}
+ */
+
+KeyRing.fromJSON = function fromJSON(json, passphrase) {
+  var w;
+
+  assert.equal(json.v, 1);
+  assert.equal(json.name, 'address');
+
+  w = new KeyRing({
+    label: json.label,
+    change: json.change,
+    derived: json.derived,
+    index: json.index,
+    path: json.path,
+    key: bcoin.keypair.fromJSON(json.key, passphrase),
+    type: json.type,
+    witness: json.witness,
+    keys: json.keys.map(utils.fromBase58),
+    m: json.m,
+    n: json.n
+  });
+
+  return w;
+};
+
+module.exports = KeyRing;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 14:23:38 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

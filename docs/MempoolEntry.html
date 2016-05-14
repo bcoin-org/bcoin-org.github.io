@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: CoinView</title>
+    <title>JSDoc: Class: MempoolEntry</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: CoinView</h1>
+    <h1 class="page-title">Class: MempoolEntry</h1>
 
     
 
@@ -28,7 +28,7 @@
 
 <header>
     
-        <h2>CoinView</h2>
+        <h2>MempoolEntry</h2>
         
     
 </header>
@@ -40,14 +40,14 @@
 
     
 
-    <h4 class="name" id="CoinView"><span class="type-signature"></span>new CoinView<span class="signature">(coins)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="MempoolEntry"><span class="type-signature"></span>new MempoolEntry<span class="signature">(options)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>A collections of <a href="Coins.html">Coins</a> objects.</p>
+    <p>Represents a mempool entry.</p>
 </div>
 
 
@@ -83,7 +83,7 @@
 
         <tr>
             
-                <td class="name"><code>coins</code></td>
+                <td class="name"><code>options</code></td>
             
 
             <td class="type">
@@ -99,7 +99,217 @@
 
             
 
-            <td class="description last"><p>A hash-to-coins map.</p></td>
+            <td class="description last">
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>tx</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="TX.html">TX</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Transaction in mempool.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>height</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Entry height.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>priority</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#BN">BN</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Entry priority.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>ts</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Entry time.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>chainValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#BN">BN</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Value of on-chain coins.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>count</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Number of descendants (includes tx).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>size</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>TX and descendant modified size.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>fees</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#BN">BN</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>TX and descendant delta-applied fees.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -137,13 +347,174 @@
 
         <tr>
             
-                <td class="name"><code>coins</code></td>
+                <td class="name"><code>tx</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Object</span>
+<span class="param-type"><a href="TX.html">TX</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>height</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>priority</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#BN">BN</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>ts</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>chainValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#BN">BN</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>count</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>size</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>fees</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="global.html#BN">BN</a></span>
 
 
             
@@ -192,7 +563,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_coinview.js.html">bcoin/coinview.js</a>, <a href="bcoin_coinview.js.html#line21">line 21</a>
+        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1808">line 1808</a>
     </li></ul></dd>
     
 
@@ -241,14 +612,14 @@
 
     
 
-    <h4 class="name" id="add"><span class="type-signature"></span>add<span class="signature">(tx/coins, index<span class="signature-attributes">nullable</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".fromRaw"><span class="type-signature">(static) </span>fromRaw<span class="signature">(data)</span><span class="type-signature"> &rarr; {<a href="MempoolEntry.html">MempoolEntry</a>}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Add a coin to the collection.</p>
+    <p>Create a mempool entry from serialized data.</p>
 </div>
 
 
@@ -272,8 +643,6 @@
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
         
 
@@ -286,188 +655,16 @@
 
         <tr>
             
-                <td class="name"><code>tx/coins</code></td>
+                <td class="name"><code>data</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="Coins.html">Coins</a></span>
+<span class="param-type">Buffer</span>
 |
 
-<span class="param-type"><a href="TX.html">TX</a></span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>index</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_coinview.js.html">bcoin/coinview.js</a>, <a href="bcoin_coinview.js.html#line34">line 34</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="count"><span class="type-signature"></span>count<span class="signature">(hash)</span><span class="type-signature"> &rarr; {Number}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Count number of available coins.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>hash</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
+<span class="param-type"><a href="BufferReader.html">BufferReader</a></span>
 
 
             
@@ -518,7 +715,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_coinview.js.html">bcoin/coinview.js</a>, <a href="bcoin_coinview.js.html#line77">line 77</a>
+        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1871">line 1871</a>
     </li></ul></dd>
     
 
@@ -544,10 +741,6 @@
 <h5>Returns:</h5>
 
         
-<div class="param-desc">
-    <p>Total.</p>
-</div>
-
 
 
 <dl>
@@ -556,7 +749,7 @@
     </dt>
     <dd>
         
-<span class="param-type">Number</span>
+<span class="param-type"><a href="MempoolEntry.html">MempoolEntry</a></span>
 
 
     </dd>
@@ -571,14 +764,14 @@
 
     
 
-    <h4 class="name" id="fill"><span class="type-signature"></span>fill<span class="signature">(tx, spend<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
+    <h4 class="name" id=".fromTX"><span class="type-signature">(static) </span>fromTX<span class="signature">(tx, height)</span><span class="type-signature"> &rarr; {<a href="MempoolEntry.html">MempoolEntry</a>}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Fill transaction(s) with coins.</p>
+    <p>Create a mempool entry from a TX.</p>
 </div>
 
 
@@ -601,8 +794,6 @@
 
         <th>Type</th>
 
-        
-        <th>Attributes</th>
         
 
         
@@ -623,22 +814,11 @@
             
                 
 <span class="param-type"><a href="TX.html">TX</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="TX.html">TX</a>></span>
 
 
             
             </td>
 
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
             
 
             
@@ -650,34 +830,23 @@
 
         <tr>
             
-                <td class="name"><code>spend</code></td>
+                <td class="name"><code>height</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Boolean</span>
+<span class="param-type">Number</span>
 
 
             
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
 
             
 
-            <td class="description last"><p>Whether the coins should
-be spent when filling.</p></td>
+            <td class="description last"><p>Entry height.</p></td>
         </tr>
 
     
@@ -718,7 +887,158 @@ be spent when filling.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_coinview.js.html">bcoin/coinview.js</a>, <a href="bcoin_coinview.js.html#line133">line 133</a>
+        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1827">line 1827</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="MempoolEntry.html">MempoolEntry</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getPriority"><span class="type-signature"></span>getPriority<span class="signature">(height)</span><span class="type-signature"> &rarr; {<a href="global.html#BN">BN</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Calculate priority, taking into account
+the entry height delta, modified size,
+and chain value.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>height</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1893">line 1893</a>
     </li></ul></dd>
     
 
@@ -745,7 +1065,7 @@ be spent when filling.</p></td>
 
         
 <div class="param-desc">
-    <p>True if any inputs were filled.</p>
+    <p>Priority.</p>
 </div>
 
 
@@ -756,7 +1076,7 @@ be spent when filling.</p></td>
     </dt>
     <dd>
         
-<span class="param-type">Boolean</span>
+<span class="param-type"><a href="global.html#BN">BN</a></span>
 
 
     </dd>
@@ -771,14 +1091,16 @@ be spent when filling.</p></td>
 
     
 
-    <h4 class="name" id="get"><span class="type-signature"></span>get<span class="signature">(hash, index)</span><span class="type-signature"> &rarr; {<a href="Coin.html">Coin</a>}</span></h4>
+    <h4 class="name" id="isFree"><span class="type-signature"></span>isFree<span class="signature">(height)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Get a coin.</p>
+    <p>Test whether the entry is free with
+the current priority (calculated by
+current height).</p>
 </div>
 
 
@@ -814,30 +1136,7 @@ be spent when filling.</p></td>
 
         <tr>
             
-                <td class="name"><code>hash</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>index</code></td>
+                <td class="name"><code>height</code></td>
             
 
             <td class="type">
@@ -894,179 +1193,7 @@ be spent when filling.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_coinview.js.html">bcoin/coinview.js</a>, <a href="bcoin_coinview.js.html#line64">line 64</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type"><a href="Coin.html">Coin</a></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="has"><span class="type-signature"></span>has<span class="signature">(hash, index)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Test whether the collection has a coin.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>hash</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>index</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_coinview.js.html">bcoin/coinview.js</a>, <a href="bcoin_coinview.js.html#line91">line 91</a>
+        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1911">line 1911</a>
     </li></ul></dd>
     
 
@@ -1115,14 +1242,17 @@ be spent when filling.</p></td>
 
     
 
-    <h4 class="name" id="remove"><span class="type-signature"></span>remove<span class="signature">(hash, index)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="toRaw"><span class="type-signature"></span>toRaw<span class="signature">(tx, height)</span><span class="type-signature"> &rarr; {<a href="MempoolEntry.html">MempoolEntry</a>}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Remove a coin.</p>
+    <p>Serialize a mempool entry. Note that this
+can still be parsed as a regular tx since
+the mempool entry data comes after the
+serialized transaction.</p>
 </div>
 
 
@@ -1158,13 +1288,13 @@ be spent when filling.</p></td>
 
         <tr>
             
-                <td class="name"><code>hash</code></td>
+                <td class="name"><code>tx</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
+<span class="param-type"><a href="TX.html">TX</a></span>
 
 
             
@@ -1181,7 +1311,7 @@ be spent when filling.</p></td>
 
         <tr>
             
-                <td class="name"><code>index</code></td>
+                <td class="name"><code>height</code></td>
             
 
             <td class="type">
@@ -1197,7 +1327,7 @@ be spent when filling.</p></td>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Entry height.</p></td>
         </tr>
 
     
@@ -1238,161 +1368,7 @@ be spent when filling.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_coinview.js.html">bcoin/coinview.js</a>, <a href="bcoin_coinview.js.html#line104">line 104</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="spend"><span class="type-signature"></span>spend<span class="signature">(hash, index)</span><span class="type-signature"> &rarr; {<a href="Coin.html">Coin</a>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Remove a coin and return it.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>hash</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>index</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_coinview.js.html">bcoin/coinview.js</a>, <a href="bcoin_coinview.js.html#line118">line 118</a>
+        <a href="bcoin_mempool.js.html">bcoin/mempool.js</a>, <a href="bcoin_mempool.js.html#line1852">line 1852</a>
     </li></ul></dd>
     
 
@@ -1426,107 +1402,7 @@ be spent when filling.</p></td>
     </dt>
     <dd>
         
-<span class="param-type"><a href="Coin.html">Coin</a></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="toArray"><span class="type-signature"></span>toArray<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Coins.html">Coins</a>>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Convert collection to an array.</p>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_coinview.js.html">bcoin/coinview.js</a>, <a href="bcoin_coinview.js.html#line151">line 151</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Array.&lt;<a href="Coins.html">Coins</a>></span>
+<span class="param-type"><a href="MempoolEntry.html">MempoolEntry</a></span>
 
 
     </dd>
@@ -1558,7 +1434,7 @@ be spent when filling.</p></td>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 14:23:38 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 14:23:39 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

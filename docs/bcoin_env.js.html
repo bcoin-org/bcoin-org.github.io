@@ -44,18 +44,20 @@ try {
 }
 
 /**
- * A BCoin "environment" which is tied to the
- * network type among other options. It exposes all
- * constructors for primitives, the blockchain,
- * mempool, wallet, etc. BCoin is _not_ usable
- * without an environment.
+ * A BCoin "environment" which is used for
+ * bootstrapping the initial `bcoin` module.
+ * It exposes all constructors for primitives,
+ * the blockchain, mempool, wallet, etc. It
+ * also sets the default network if there is
+ * one. It exposes a global {@link TimeData}
+ * object for adjusted time, as well as a
+ * global worker pool.
  *
  * @exports Environment
  * @constructor
  *
- * @param {Object|String} options - Options object or network type.
- * @param {String?} options.network - One of `main`, `testnet`,
- * `regtest`, `segnet3`, `segnet4`.
+ * @param {(Object|NetworkType)?} options - Options object or network type.
+ * @param {(Network|NetworkType)?} options.network
  * @param {String?} options.prefix - Prefix for filesystem (default=~/.bcoin).
  * @param {String?} options.db - Database backend (default=leveldb).
  * @param {Boolean?} options.debug - Whether to display debug output.
@@ -67,7 +69,7 @@ try {
  * the worker pool (default=6).
  *
  * @property {Boolean} isBrowser
- * @property {String} networkType
+ * @property {NetworkType} networkType
  *
  * @property {Function} bn - Big number constructor
  * (see {@link https://github.com/indutny/bn.js} for docs).
@@ -110,10 +112,11 @@ try {
  * @property {Function} node - {@link Node} constructor.
  * @property {Function} spvnode - {@link SPVNode} constructor.
  * @property {Function} fullnode - {@link Fullnode} constructor.
- * @property {Function} chainblock - {@link ChainBlock} constructor.
+ * @property {Function} chainentry - {@link ChainEntry} constructor.
  * @property {Function} chaindb - {@link ChainDB} constructor.
  * @property {Function} chain - {@link Chain} constructor.
  * @property {Function} mempool - {@link Mempool} constructor.
+ * @property {Function} mempoolentry - {@link MempoolEntry} constructor.
  * @property {Function} keypair - {@link KeyPair} constructor.
  * @property {Function} hd - {@link HD} constructor.
  * @property {Function} address - {@link Address} constructor.
@@ -136,9 +139,6 @@ try {
  */
 
 function Environment(options) {
-  if (!(this instanceof Environment))
-    return new Environment(options);
-
   if (!options)
     options = {};
 
@@ -152,49 +152,7 @@ function Environment(options) {
 
   this.isBrowser = utils.isBrowser;
 
-  this.prefix = options.prefix
-    || process.env.BCOIN_PREFIX
-    || process.env.HOME + '/.bcoin';
-
-  this.networkType = options.network
-    || process.env.BCOIN_NETWORK
-    || 'main';
-
-  this.db = options.db || process.env.BCOIN_DB;
-  this.debugLogs = options.debug;
-  this.debugFile = options.debugFile;
-  this.profile = options.profile;
-  this.useWorkers = options.useWorkers;
-  this.maxWorkers = options.maxWorkers;
-  this.workerTimeout = options.workerTimeout;
-
-  if (this.debugLogs == null &amp;&amp; process.env.BCOIN_DEBUG != null)
-    this.debugLogs = +process.env.BCOIN_DEBUG === 1;
-
-  if (this.debugFile == null &amp;&amp; process.env.BCOIN_DEBUGFILE != null) {
-    if (process.env.BCOIN_DEBUGFILE === '0'
-        || process.env.BCOIN_DEBUGFILE === '1') {
-      this.debugFile = +process.env.BCOIN_DEBUGFILE !== 0;
-    } else {
-      this.debugFile = process.env.BCOIN_DEBUGFILE;
-    }
-  }
-
-  if (this.debugFile &amp;&amp; typeof this.debugFile !== 'string')
-    this.debugFile = this.prefix + '/debug.log'
-
-  if (this.profile == null &amp;&amp; process.env.BCOIN_PROFILE != null)
-    this.profile = +process.env.BCOIN_PROFILE === 1;
-
-  if (this.useWorkers == null &amp;&amp; process.env.BCOIN_USE_WORKERS != null)
-    this.useWorkers = +process.env.BCOIN_USE_WORKERS === 1;
-
-  if (this.maxWorkers == null &amp;&amp; process.env.BCOIN_MAX_WORKERS != null)
-    this.maxWorkers = +process.env.BCOIN_MAX_WORKERS;
-
-  if (this.workerTime == null &amp;&amp; process.env.BCOIN_WORKER_TIMEOUT != null)
-    this.workerTimeout = +process.env.BCOIN_WORKER_TIMEOUT;
-
+  this.env = Environment;
   this.bn = require('bn.js');
   this.utils = require('./utils');
   this.locker = require('./locker');
@@ -207,59 +165,134 @@ function Environment(options) {
   this.lowlevelup = require('./lowlevelup');
   this.uri = require('./uri');
 
-  this.protocol = require('./protocol')(this);
-  this.errors = require('./errors')(this);
-  this.profiler = require('./profiler')(this);
-  this.ldb = require('./ldb')(this);
-  this.timedata = require('./timedata')(this);
-  this.script = require('./script')(this);
-  this.stack = this.script.stack;
-  this.witness = this.script.witness;
-  this.input = require('./input')(this);
-  this.output = require('./output')(this);
-  this.coin = require('./coin')(this);
-  this.coins = require('./coins')(this);
-  this.coinview = require('./coinview')(this);
-  this.tx = require('./tx')(this);
-  this.mtx = require('./mtx')(this);
-  this.txdb = require('./txdb')(this);
-  this.abstractblock = require('./abstractblock')(this);
-  this.compactblock = require('./compactblock')(this);
-  this.block = require('./block')(this);
-  this.merkleblock = require('./merkleblock')(this);
-  this.headers = require('./headers')(this);
-  this.node = require('./node')(this);
-  this.spvnode = require('./spvnode')(this);
-  this.fullnode = require('./fullnode')(this);
-  this.chainblock = require('./chainblock')(this);
-  this.chaindb = require('./chaindb')(this);
-  this.chain = require('./chain')(this);
-  this.mempool = require('./mempool')(this);
-  this.keypair = require('./keypair')(this);
-  this.hd = require('./hd')(this);
-  this.address = require('./address')(this);
-  this.wallet = require('./wallet')(this);
-  this.walletdb = require('./walletdb')(this);
-  this.provider = this.walletdb.provider;
-  this.peer = require('./peer')(this);
-  this.pool = require('./pool')(this);
-  this.miner = require('./miner')(this);
-  this.minerblock = this.miner.minerblock;
-  this.http = require('./http')(this);
-  this.workers = this.useWorkers &amp;&amp; !this.isBrowser
-    ? require('./work' + 'ers')(this)
-    : null;
+  this.network = require('./network');
+  this.protocol = require('./protocol');
+  this.errors = require('./errors');
+  this.ldb = require('./ldb');
+  this.profiler = require('./profiler');
+  this.timedata = require('./timedata');
+  this.script = require('./script');
+  this.stack = this.script.Stack;
+  this.witness = this.script.Witness;
+  this.address = require('./address');
+  this.input = require('./input');
+  this.output = require('./output');
+  this.coin = require('./coin');
+  this.coins = require('./coins');
+  this.coinview = require('./coinview');
+  this.tx = require('./tx');
+  this.mtx = require('./mtx');
+  this.txdb = require('./txdb');
+  this.abstractblock = require('./abstractblock');
+  this.compactblock = require('./compactblock');
+  this.block = require('./block');
+  this.merkleblock = require('./merkleblock');
+  this.headers = require('./headers');
+  this.node = require('./node');
+  this.spvnode = require('./spvnode');
+  this.fullnode = require('./fullnode');
+  this.chainentry = require('./chainentry');
+  this.chaindb = require('./chaindb');
+  this.chain = require('./chain');
+  this.mempool = require('./mempool');
+  this.mempoolentry = this.mempool.MempoolEntry;
+  this.keypair = require('./keypair');
+  this.hd = require('./hd');
+  this.keyring = require('./keyring');
+  this.wallet = require('./wallet');
+  this.walletdb = require('./walletdb');
+  this.provider = this.walletdb.Provider;
+  this.peer = require('./peer');
+  this.pool = require('./pool');
+  this.miner = require('./miner');
+  this.minerblock = this.miner.MinerBlock;
+  this.http = require('./http');
 
-  this.time = new this.timedata();
+  this.workers = null;
   this.workerPool = null;
 
-  if (this.workers) {
+  this.prefix = null;
+  this.networkType = null;
+  this.db = null;
+  this.debugLogs = null;
+  this.debugFile = null;
+  this.profile = null;
+  this.useWorkers = null;
+  this.maxWorkers = null;
+  this.workerTimeout = null;
+
+  this.time = new this.timedata();
+
+  this.set(options);
+}
+
+Environment.prototype.set = function set(options) {
+  if (typeof options === 'string')
+    options = { network: options };
+
+  options = utils.merge({}, options);
+
+  options.prefix = options.prefix
+    || process.env.BCOIN_PREFIX
+    || process.env.HOME + '/.bcoin';
+
+  options.network = options.network
+    || process.env.BCOIN_NETWORK
+    || 'main';
+
+  if (!options.db)
+    options.db = process.env.BCOIN_DB;
+
+  if (options.debug == null &amp;&amp; process.env.BCOIN_DEBUG != null)
+    options.debug = +process.env.BCOIN_DEBUG === 1;
+
+  if (options.debugFile == null &amp;&amp; process.env.BCOIN_DEBUGFILE != null) {
+    if (process.env.BCOIN_DEBUGFILE === '0'
+        || process.env.BCOIN_DEBUGFILE === '1') {
+      options.debugFile = +process.env.BCOIN_DEBUGFILE !== 0;
+    } else {
+      options.debugFile = process.env.BCOIN_DEBUGFILE;
+    }
+  }
+
+  if (options.profile == null &amp;&amp; process.env.BCOIN_PROFILE != null)
+    options.profile = +process.env.BCOIN_PROFILE === 1;
+
+  if (options.useWorkers == null &amp;&amp; process.env.BCOIN_USE_WORKERS != null)
+    options.useWorkers = +process.env.BCOIN_USE_WORKERS === 1;
+
+  if (options.maxWorkers == null &amp;&amp; process.env.BCOIN_MAX_WORKERS != null)
+    options.maxWorkers = +process.env.BCOIN_MAX_WORKERS;
+
+  if (options.workerTime == null &amp;&amp; process.env.BCOIN_WORKER_TIMEOUT != null)
+    options.workerTimeout = +process.env.BCOIN_WORKER_TIMEOUT;
+
+  if (options.debugFile &amp;&amp; typeof options.debugFile !== 'string')
+    options.debugFile = options.prefix + '/debug.log'
+
+  this.prefix = options.prefix;
+  this.networkType = options.network;
+  this.db = options.db;
+  this.debugLogs = !!options.debug;
+  this.debugFile = options.debugFile;
+  this.profile = options.profile;
+  this.useWorkers = !!options.useWorkers;
+  this.maxWorkers = options.maxWorkers;
+  this.workerTimeout = options.workerTimeout;
+
+  this.network.set(this.networkType);
+
+  if (this.useWorkers) {
+    this.workers = require('./workers');
     this.workerPool = new this.workers({
       size: this.maxWorkers,
-      timeout: this.workerTimeout
+      timeout: this.workerTimeout,
+      network: this.network.get(this.network.primary)
     });
   }
-}
+
+  return this;
+};
 
 /**
  * Ensure the `prefix`.
@@ -328,7 +361,14 @@ Environment.prototype.now = function now() {
   return this.time.now();
 };
 
-module.exports = Environment;
+/*
+ * Expose by converting `exports` to an
+ * Environment.
+ */
+
+utils.merge(exports, Environment.prototype);
+
+Environment.call(exports);
 </code></pre>
         </article>
     </section>
@@ -339,13 +379,13 @@ module.exports = Environment;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="module.exports-Framer.html">Framer</a></li><li><a href="module.exports-Parser.html">Parser</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:32:51 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 14:23:38 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -33,19 +33,15 @@
  * https://github.com/indutny/bcoin
  */
 
-module.exports = function(bcoin) {
-
 /*
  * Database Layout:
  *  (inherits all from txdb)
- *  o/[hash] -> orphan/waiting hashes
- *  O/[hash] -> orphan tx
  */
 
+var bcoin = require('./env');
 var EventEmitter = require('events').EventEmitter;
 var bn = require('bn.js');
 var constants = bcoin.protocol.constants;
-var network = bcoin.protocol.network;
 var utils = require('./utils');
 var assert = utils.assert;
 var BufferWriter = require('./writer');
@@ -66,16 +62,15 @@ var DUMMY = new Buffer([0]);
  * @param {Number?} options.limitFreeRelay
  * @param {Boolean?} options.relayPriority
  * @param {Boolean?} options.requireStandard
- * @param {Boolean?} options.rejectInsaneFees
+ * @param {Boolean?} options.rejectAbsurdFees
  * @param {Boolean?} options.relay
  * @property {Boolean} loaded
  * @property {Object} db
  * @property {Number} size
- * @property {Number} orphans
+ * @property {Number} totalOrphans
  * @property {Locker} locker
  * @property {Number} freeCount
  * @property {Number} lastTime
- * @property {String} backend
  * @emits Mempool#open
  * @emits Mempool#error
  * @emits Mempool#tx
@@ -97,15 +92,19 @@ function Mempool(options) {
 
   assert(this.chain, 'Mempool requires a blockchain.');
 
+  this.network = this.chain.network;
   this.loaded = false;
 
-  this.locker = new bcoin.locker(this, this.addTX, 20 &lt;&lt; 20);
+  this.locker = new bcoin.locker(this, this.addTX, 100 &lt;&lt; 20);
   this.writeLock = new bcoin.locker(this);
 
   this.db = null;
-  this.tx = null;
   this.size = 0;
-  this.orphans = 0;
+  this.waiting = {};
+  this.orphans = {};
+  this.totalOrphans = 0;
+  this.spent = 0;
+  this.total = 0;
 
   this.freeCount = 0;
   this.lastTime = 0;
@@ -115,11 +114,17 @@ function Mempool(options) {
   this.relayPriority = this.options.relayPriority !== false;
   this.requireStandard = this.options.requireStandard != null
     ? this.options.requireStandard
-    : network.requireStandard;
-  this.rejectInsaneFees = this.options.rejectInsaneFees !== false;
+    : this.network.requireStandard;
+  this.rejectAbsurdFees = this.options.rejectAbsurdFees !== false;
+  this.prematureWitness = !!this.options.prematureWitness;
+  this.accurateMemory = !!this.options.accurateMemory;
 
-  // Use an in-memory binary search tree by default
-  this.backend = this.options.memory === false ? 'leveldb' : 'memory';
+  this.maxSize = options.maxSize || constants.mempool.MAX_MEMPOOL_SIZE;
+  this.minFeeRate = 0;
+  this.blockSinceBump = false;
+  this.lastFeeUpdate = utils.now();
+  this.minReasonableFee = constants.tx.MIN_RELAY;
+  this.minRelayFee = constants.tx.MIN_RELAY;
 
   this._init();
 }
@@ -142,9 +147,10 @@ Mempool.prototype._init = function _init() {
   var self = this;
   var unlock = this._lock(utils.nop, []);
   var options = {
+    network: this.network,
     name: this.options.name || 'mempool',
     location: this.options.location,
-    db: this.options.db || this.backend
+    db: this.options.db || 'memory'
   };
 
   assert(unlock);
@@ -161,20 +167,16 @@ Mempool.prototype._init = function _init() {
 
     self.db = bcoin.ldb(options);
 
-    // Use the txdb object for its get methods.
-    self.tx = new bcoin.txdb(self.db);
-
     self.db.open(function(err) {
       if (err) {
         unlock();
         return self.emit('error', err);
       }
-      self.dynamicMemoryUsage(function(err, size) {
-        if (err)
-          self.emit('error', err);
-        else
-          self.size = size;
-
+      self.initialMemoryUsage(function(err) {
+        if (err) {
+          unlock();
+          return self.emit('error', err);
+        }
         self.chain.open(function(err) {
           if (err) {
             unlock();
@@ -189,8 +191,28 @@ Mempool.prototype._init = function _init() {
   });
 };
 
-Mempool.prototype.dynamicMemoryUsage = function dynamicMemoryUsage(callback) {
-  return this.db.approximateSize('m', 'm~', callback);
+/**
+ * Tally up total memory usage from database.
+ * @param {Function} callback - Returns [Error, Number].
+ */
+
+Mempool.prototype.initialMemoryUsage = function initialMemoryUsage(callback) {
+  var self = this;
+  var i, tx;
+
+  this.getHistory(function(err, txs) {
+    if (err)
+      return callback(err);
+
+    for (i = 0; i &lt; txs.length; i++) {
+      tx = txs[i];
+      self.size += self.memUsage(tx);
+      self.spent += tx.inputs.length;
+      self.total++;
+    }
+
+    return callback();
+  });
 };
 
 /**
@@ -228,76 +250,44 @@ Mempool.prototype.addBlock = function addBlock(block, callback, force) {
   var self = this;
   var txs = [];
   var unlock = this._lock(addBlock, [block, callback], force);
+  var entry;
+
   if (!unlock)
     return;
 
   callback = utils.wrap(callback, unlock);
 
-  // We add the txs we haven't seen to
-  // the mempool first to potentially
-  // resolve orphans.
-  utils.forEachSerial(block.txs,  function(tx, next) {
-    var hash, copy;
-
-    if (!self.chain.isFull())
-      return next();
+  utils.forEachSerial(block.txs.slice().reverse(), function(tx, next) {
+    var hash = tx.hash('hex');
+    var copy;
 
     if (tx.isCoinbase())
       return next();
 
-    hash = tx.hash('hex');
-
-    self.hasTX(hash, function(err, exists) {
+    self.getEntry(hash, function(err, entry) {
       if (err)
         return next(err);
 
-      if (exists)
-        return next();
+      if (!entry)
+        return self.removeOrphan(hash, next);
 
-      self.removeOrphan(hash, function(err) {
+      self.removeUnchecked(entry, false, function(err) {
         if (err)
           return next(err);
 
-        copy = tx.clone();
-        copy.unsetBlock();
+        self.emit('confirmed', tx, block);
 
-        self.addUnchecked(tx, next);
-      });
+        return next();
+      }, true);
     });
   }, function(err) {
     if (err)
       return callback(err);
 
-    utils.forEachSerial(block.txs.slice().reverse(), function(tx, next) {
-      var hash = tx.hash('hex');
-      var copy;
+    self.blockSinceBump = true;
+    self.lastFeeUpdate = utils.now();
 
-      if (tx.isCoinbase())
-        return next();
-
-      self.getTX(hash, function(err, existing) {
-        if (err)
-          return next(err);
-
-        if (!existing)
-          return self.removeOrphan(hash, next);
-
-        copy = tx.clone();
-        copy.ts = existing.ts;
-        copy.block = existing.block;
-        copy.height = existing.height;
-        copy.ps = existing.ps;
-
-        self.removeUnchecked(copy, function(err) {
-          if (err)
-            return next(err);
-
-          self.emit('confirmed', tx, block);
-
-          return next();
-        });
-      });
-    }, callback);
+    return callback();
   });
 };
 
@@ -311,6 +301,7 @@ Mempool.prototype.addBlock = function addBlock(block, callback, force) {
 Mempool.prototype.removeBlock = function removeBlock(block, callback, force) {
   var self = this;
   var unlock = this._lock(removeBlock, [block, callback], force);
+  var entry;
 
   if (!unlock)
     return;
@@ -318,8 +309,6 @@ Mempool.prototype.removeBlock = function removeBlock(block, callback, force) {
   callback = utils.wrap(callback, unlock);
 
   utils.forEachSerial(block.txs, function(tx, next) {
-    var copy;
-
     if (tx.isCoinbase())
       return next();
 
@@ -330,53 +319,81 @@ Mempool.prototype.removeBlock = function removeBlock(block, callback, force) {
       if (result)
         return next();
 
-      copy = tx.clone();
-      copy.ts = 0;
-      copy.block = null;
-      copy.height = -1;
-      copy.ps = utils.now();
+      entry = MempoolEntry.fromTX(tx, block.height);
 
-      self.addUnchecked(copy, function(err) {
+      self.addUnchecked(entry, function(err) {
         if (err)
           return next(err);
 
         self.emit('unconfirmed', tx, block);
 
         return next();
-      });
+      }, true);
     });
   }, callback);
 };
 
 /**
  * Ensure the size of the mempool stays below 300mb.
+ * @param {Hash} entryHash - TX that initiated the trim.
  * @param {Function} callback
  */
 
-Mempool.prototype.limitMempoolSize = function limitMempoolSize(callback) {
+Mempool.prototype.limitMempoolSize = function limitMempoolSize(entryHash, callback) {
   var self = this;
+  var trimmed = false;
 
-  if (this.size &lt;= constants.mempool.MAX_MEMPOOL_SIZE)
-    return callback(null, true);
+  if (this.getSize() &lt;= this.maxSize)
+    return callback(null, trimmed);
 
-  this.tx.getRange({
+  this.getRange({
     start: 0,
     end: utils.now() - constants.mempool.MEMPOOL_EXPIRY
-  }, function(err, txs) {
+  }, function(err, entries) {
     if (err)
       return callback(err);
 
-    utils.forEachSerial(function(tx, next) {
-      self.removeUnchecked(tx, next);
+    utils.forEachSerial(function(entry, next) {
+      if (self.getSize() &lt;= self.maxSize)
+        return callback(null, trimmed);
+
+      if (!trimmed)
+        trimmed = entry.tx.hash('hex') === entryHash;
+
+      self.removeUnchecked(entry, true, next, true);
     }, function(err) {
       if (err)
         return callback(err);
 
-      self.purgeOrphans(function(err) {
+      if (self.getSize() &lt;= self.maxSize)
+        return callback(null, trimmed);
+
+      self.getSnapshot(function(err, hashes) {
         if (err)
           return callback(err);
 
-        return callback(self.size &lt;= constants.mempool.MAX_MEMPOOL_SIZE);
+        utils.forEachSerial(hashes, function(hash, next) {
+          if (self.getSize() &lt;= self.maxSize)
+            return callback(null, trimmed);
+
+          self.getEntry(hash, function(err, entry) {
+            if (err)
+              return next(err);
+
+            if (!entry)
+              return next();
+
+            if (!trimmed)
+              trimmed = hash === entryHash;
+
+            self.removeUnchecked(entry, true, next, true);
+          });
+        }, function(err) {
+          if (err)
+            return callback(err);
+
+          return callback(null, trimmed);
+        });
       });
     });
   });
@@ -387,57 +404,23 @@ Mempool.prototype.limitMempoolSize = function limitMempoolSize(callback) {
  * @param {Function} callback
  */
 
-Mempool.prototype.purgeOrphans = function purgeOrphans(callback) {
+Mempool.prototype.limitOrphans = function limitOrphans(callback) {
   var self = this;
-  var batch = this.db.batch();
+  var orphans = Object.keys(this.orphans);
+  var i, hash;
 
-  callback = utils.ensure(callback);
+  (function next() {
+    if (self.totalOrphans &lt;= constants.mempool.MAX_ORPHAN_TX)
+      return callback();
 
-  utils.forEachSerial(['O', 'o'], function(type, callback) {
-    var iter = self.db.iterator({
-      gte: type,
-      lte: type + '~',
-      keys: true,
-      values: false,
-      fillCache: false,
-      keyAsBuffer: false
-    });
+    i = bcoin.ec.rand(0, orphans.length);
+    hash = orphans[i];
+    orphans.splice(i, 1);
 
-    (function next() {
-      iter.next(function(err, key, value) {
-        if (err) {
-          return iter.end(function() {
-            callback(err);
-          });
-        }
+    bcoin.debug('Removing orphan %s from mempool.', utils.revHex(hash));
 
-        if (key === undefined)
-          return iter.end(callback);
-
-        batch.del(key);
-
-        next();
-      });
-    })();
-  }, function(err) {
-    if (err)
-      return callback(err);
-
-    batch.write(function(err) {
-      if (err)
-        return callback(err);
-
-      self.dynamicMemoryUsage(function(err, size) {
-        if (err)
-          return callback(err);
-
-        self.size = size;
-        self.orphans = 0;
-
-        return callback();
-      });
-    });
-  });
+    self.removeOrphan(hash, next);
+  })();
 };
 
 /**
@@ -448,9 +431,22 @@ Mempool.prototype.purgeOrphans = function purgeOrphans(callback) {
  */
 
 Mempool.prototype.getTX = function getTX(hash, callback) {
-  if (hash instanceof bcoin.tx)
-    hash = hash.hash('hex');
-  return this.tx.getTX(hash, callback);
+  return this.db.fetch('t/' + hash, function(data) {
+    return bcoin.tx.fromRaw(data);
+  }, callback);
+};
+
+/**
+ * Retrieve a transaction from the mempool.
+ * Note that this will not be filled with coins.
+ * @param {TX|Hash} hash
+ * @param {Function} callback - Returns [Error, {@link TX}].
+ */
+
+Mempool.prototype.getEntry = function getEntry(hash, callback) {
+  return this.db.fetch('t/' + hash, function(data) {
+    return MempoolEntry.fromRaw(data);
+  }, callback);
 };
 
 /**
@@ -461,7 +457,12 @@ Mempool.prototype.getTX = function getTX(hash, callback) {
  */
 
 Mempool.prototype.getCoin = function getCoin(hash, index, callback) {
-  return this.tx.getCoin(hash, index, callback);
+  return this.db.fetch('c/' + hash + '/' + index, function(data) {
+    var coin = bcoin.coin.fromRaw(data);
+    coin.hash = hash;
+    coin.index = index;
+    return coin;
+  }, callback);
 };
 
 /**
@@ -475,27 +476,30 @@ Mempool.prototype.getCoin = function getCoin(hash, index, callback) {
  */
 
 Mempool.prototype.isSpent = function isSpent(hash, index, callback) {
-  return this.tx.isSpent(hash, index, callback);
+  return this.db.fetch('s/' + hash + '/' + index, function(data) {
+    assert(data.length === 32, 'Database corruption.');
+    return data.toString('hex');
+  }, callback);
 };
 
 /**
  * Find all coins pertaining to a certain address.
- * @param {Base58Address[]|Base58Address} addresses
+ * @param {Base58Address|Base58Address[]} addresses
  * @param {Function} callback - Returns [Error, {@link Coin}[]].
  */
 
 Mempool.prototype.getCoinsByAddress = function getCoinsByAddress(addresses, callback) {
-  return this.tx.getCoinsByAddress(addresses, callback);
+  return this.chain.db.getCoinsByAddress.call(this, addresses, callback);
 };
 
 /**
  * Find all transactions pertaining to a certain address.
- * @param {Base58Address[]|Base58Address} addresses
+ * @param {Base58Address|Base58Address[]} addresses
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
 Mempool.prototype.getTXByAddress = function getTXByAddress(addresses, callback) {
-  return this.tx.getTXByAddress(addresses, callback);
+  return this.chain.db.getTXByAddress.call(this, addresses, callback);
 };
 
 /**
@@ -508,7 +512,37 @@ Mempool.prototype.getTXByAddress = function getTXByAddress(addresses, callback) 
  */
 
 Mempool.prototype.fillHistory = function fillHistory(tx, callback) {
-  return this.tx.fillHistory(tx, callback);
+  var self = this;
+
+  if (Array.isArray(tx)) {
+    return utils.forEachSerial(tx, function(tx, next) {
+      self.fillHistory(tx, next);
+    }, callback);
+  }
+
+  callback = utils.asyncify(callback);
+
+  if (tx.isCoinbase())
+    return callback(null, tx);
+
+  utils.forEach(tx.inputs, function(input, next) {
+    if (input.coin)
+      return next();
+
+    self.getTX(input.prevout.hash, function(err, tx) {
+      if (err)
+        return next(err);
+
+      if (tx)
+        input.coin = bcoin.coin(tx, input.prevout.index);
+
+      next();
+    });
+  }, function(err) {
+    if (err)
+      return callback(err);
+    return callback(null, tx);
+  });
 };
 
 /**
@@ -519,7 +553,37 @@ Mempool.prototype.fillHistory = function fillHistory(tx, callback) {
  */
 
 Mempool.prototype.fillCoins = function fillCoins(tx, callback) {
-  return this.tx.fillCoins(tx, callback);
+  var self = this;
+
+  if (Array.isArray(tx)) {
+    return utils.forEachSerial(tx, function(tx, next) {
+      self.fillCoins(tx, next);
+    }, callback);
+  }
+
+  callback = utils.asyncify(callback);
+
+  if (tx.isCoinbase())
+    return callback(null, tx);
+
+  utils.forEach(tx.inputs, function(input, next) {
+    if (input.coin)
+      return next();
+
+    self.getCoin(input.prevout.hash, input.prevout.index, function(err, coin) {
+      if (err)
+        return callback(err);
+
+      if (coin)
+        input.coin = coin;
+
+      next();
+    });
+  }, function(err) {
+    if (err)
+      return callback(err);
+    return callback(null, tx);
+  });
 };
 
 /**
@@ -529,7 +593,28 @@ Mempool.prototype.fillCoins = function fillCoins(tx, callback) {
  */
 
 Mempool.prototype.hasTX = function hasTX(hash, callback) {
-  return this.tx.hasTX(hash, callback);
+  return this.db.has('t/' + hash, callback);
+};
+
+/**
+ * Find transactions within a range.
+ * @param {Object} range
+ * @param {Function} callback - Returns [Error, {@link TX}[]].
+ */
+
+Mempool.prototype.getRange = function getRange(options, callback) {
+  return this.db.lookup({
+    gte: 'm/' + pad32(options.start) + '/',
+    lte: 'm/' + pad32(options.end) + '/~',
+    transform: function(key) {
+      return 't/' + key.split('/')[2];
+    },
+    parse: function(data, key) {
+      return MempoolEntry.fromRaw(data);
+    },
+    limit: options.limit,
+    reverse: options.reverse
+  }, callback);
 };
 
 /**
@@ -538,8 +623,12 @@ Mempool.prototype.hasTX = function hasTX(hash, callback) {
  * @param {Function} callback - Returns [Error, Boolean].
  */
 
-Mempool.prototype.hasAny = function hasAny(hash, callback) {
+Mempool.prototype.has = function has(hash, callback) {
   var self = this;
+
+  if (this.locker.hasPending(hash))
+    return utils.asyncify(callback)(null, true);
+
   return this.hasTX(hash, function(err, exists) {
     if (err)
       return callback(err);
@@ -563,8 +652,9 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
   var self = this;
   var flags = constants.flags.STANDARD_VERIFY_FLAGS;
   var lockFlags = constants.flags.STANDARD_LOCKTIME_FLAGS;
+  var hash = tx.hash('hex');
   var ret = {};
-  var now;
+  var now, entry;
 
   var unlock = this._lock(addTX, [tx, callback], force);
   if (!unlock)
@@ -579,13 +669,8 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
   if (tx.ts !== 0) {
     return callback(new VerifyError(tx,
       'alreadyknown',
-      'txn-already-in-mempool',
+      'txn-already-known',
       0));
-  }
-
-  if (!this.chain.segwitActive) {
-    if (tx.hasWitness())
-      return callback(new VerifyError(tx, 'nonstandard', 'no-witness-yet', 0));
   }
 
   if (!tx.isSane(ret))
@@ -606,6 +691,11 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
     }
   }
 
+  if (!this.chain.segwitActive &amp;&amp; !this.prematureWitness) {
+    if (tx.hasWitness())
+      return callback(new VerifyError(tx, 'nonstandard', 'no-witness-yet', 0));
+  }
+
   this.chain.checkFinal(this.chain.tip, tx, lockFlags, function(err, isFinal) {
     if (err)
       return callback(err);
@@ -613,7 +703,7 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
     if (!isFinal)
       return callback(new VerifyError(tx, 'nonstandard', 'non-final', 0));
 
-    self.seenTX(tx, function(err, exists) {
+    self.has(hash, function(err, exists) {
       if (err)
         return callback(err);
 
@@ -624,47 +714,59 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
           0));
       }
 
-      self.isDoubleSpend(tx, function(err, doubleSpend) {
+      self.chain.db.isUnspentTX(hash, function(err, exists) {
         if (err)
           return callback(err);
 
-        if (doubleSpend) {
+        if (exists) {
           return callback(new VerifyError(tx,
-            'duplicate',
-            'bad-txns-inputs-spent',
+            'alreadyknown',
+            'txn-already-known',
             0));
         }
 
-        self.fillAllCoins(tx, function(err) {
+        self.isDoubleSpend(tx, function(err, doubleSpend) {
           if (err)
             return callback(err);
 
-          if (!tx.hasCoins()) {
-            if (self.totalSize > constants.mempool.MAX_MEMPOOL_SIZE) {
-              return callback(new VerifyError(tx,
-                'insufficientfee',
-                'mempool full',
-                0));
-            }
-            return self.storeOrphan(tx, callback);
+          if (doubleSpend) {
+            return callback(new VerifyError(tx,
+              'duplicate',
+              'bad-txns-inputs-spent',
+              0));
           }
 
-          self.verify(tx, function(err) {
+          self.fillAllCoins(tx, function(err) {
             if (err)
               return callback(err);
 
-            self.limitMempoolSize(function(err, result) {
+            if (!tx.hasCoins())
+              return self.storeOrphan(tx, callback);
+
+            entry = MempoolEntry.fromTX(tx, self.chain.height);
+
+            self.verify(entry, function(err) {
               if (err)
                 return callback(err);
 
-              if (!result) {
-                return callback(new VerifyError(tx,
-                  'insufficientfee',
-                  'mempool full',
-                  0));
-              }
+              self.addUnchecked(entry, function(err) {
+                if (err)
+                  return callback(err);
 
-              self.addUnchecked(tx, callback);
+                self.limitMempoolSize(hash, function(err, trimmed) {
+                  if (err)
+                    return callback(err);
+
+                  if (trimmed) {
+                    return callback(new VerifyError(tx,
+                      'insufficientfee',
+                      'mempool full',
+                      0));
+                  }
+
+                  return callback();
+                });
+              }, true);
             });
           });
         });
@@ -683,24 +785,34 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
  * @param {Function} callback - Returns [{@link VerifyError}].
  */
 
-Mempool.prototype.addUnchecked = function addUnchecked(tx, callback) {
+Mempool.prototype.addUnchecked = function addUnchecked(entry, callback, force) {
   var self = this;
-  this._addUnchecked(tx, function(err) {
+
+  var unlock = this._lock(addUnchecked, [entry, callback], force);
+  if (!unlock)
+    return;
+
+  callback = utils.wrap(callback, unlock);
+
+  this._addUnchecked(entry, function(err) {
     if (err)
       return callback(err);
 
-    self.size += tx.getSize();
-    self.emit('tx', tx);
-    self.emit('add tx', tx);
+    self.spent += entry.tx.inputs.length;
+    self.size += self.memUsage(entry.tx);
+    self.total++;
+    self.emit('tx', entry.tx);
+    self.emit('add tx', entry.tx);
 
-    bcoin.debug('Added tx %s to the mempool.', tx.rhash);
+    bcoin.debug('Added tx %s to the mempool.', entry.tx.rhash);
 
-    self.resolveOrphans(tx, function(err, resolved) {
+    self.resolveOrphans(entry.tx, function(err, resolved) {
       if (err)
         return callback(err);
 
       utils.forEachSerial(resolved, function(tx, next) {
-        self.verify(tx, function(err) {
+        var entry = MempoolEntry.fromTX(tx, self.chain.height);
+        self.verify(entry, function(err) {
           if (err) {
             if (err.type === 'VerifyError') {
               bcoin.debug('Could not resolve orphan %s: %s.',
@@ -711,14 +823,14 @@ Mempool.prototype.addUnchecked = function addUnchecked(tx, callback) {
             self.emit('error', err);
             return next();
           }
-          self.addUnchecked(tx, function(err) {
+          self.addUnchecked(entry, function(err) {
             if (err) {
               self.emit('error', err);
               return next();
             }
-            bcoin.debug('Resolved orphan %s in mempool.', tx.rhash);
+            bcoin.debug('Resolved orphan %s in mempool.', entry.tx.rhash);
             next();
-          });
+          }, true);
         });
       }, callback);
     });
@@ -732,25 +844,85 @@ Mempool.prototype.addUnchecked = function addUnchecked(tx, callback) {
  * @param {Function} callback
  */
 
-Mempool.prototype.removeUnchecked = function removeUnchecked(tx, callback) {
+Mempool.prototype.removeUnchecked = function removeUnchecked(entry, limit, callback, force) {
   var self = this;
-  this.fillAllHistory(tx, function(err, tx) {
+  var rate;
+
+  var unlock = this._lock(removeUnchecked, [entry, limit, callback], force);
+  if (!unlock)
+    return;
+
+  callback = utils.wrap(callback, unlock);
+
+  this.fillAllHistory(entry.tx, function(err, tx) {
     if (err)
       return callback(err);
 
-    self.removeOrphan(tx, function(err) {
+    self.removeOrphan(entry.tx, function(err) {
       if (err)
         return callback(err);
 
-      self._removeUnchecked(tx, function(err) {
+      self._removeUnchecked(entry, limit, function(err) {
         if (err)
           return callback(err);
-        self.size -= tx.getSize();
-        self.emit('remove tx', tx);
+
+        self.spent -= entry.tx.inputs.length;
+        self.size -= self.memUsage(entry.tx);
+        self.total--;
+
+        if (limit) {
+          rate = entry.fees.muln(1000).divn(entry.size).toNumber();
+          rate += self.minReasonableFee;
+          if (rate > self.minFeeRate) {
+            self.minFeeRate = rate;
+            self.blockSinceBump = false;
+          }
+        }
+
+        self.emit('remove tx', entry.tx);
+
         return callback();
       });
     });
   });
+};
+
+/**
+ * Calculate and update the minimum rolling fee rate.
+ * @returns {Number} Rate.
+ */
+
+Mempool.prototype.getMinRate = function getMinRate() {
+  var now, halflife, size;
+
+  if (!this.blockSinceBump || this.minFeeRate === 0)
+    return this.minFeeRate;
+
+  now = utils.now();
+
+  if (now > this.lastFeeUpdate + 10) {
+    halflife = constants.mempool.FEE_HALFLIFE;
+    size = this.getSize();
+
+    if (size &lt; this.maxSize / 4)
+      halflife >>>= 2;
+    else if (size &lt; this.maxSize / 2)
+      halflife >>>= 1;
+
+    this.minFeeRate /= Math.pow(2.0, (now - this.lastFeeUpdate) / halflife | 0);
+    this.minFeeRate |= 0;
+    this.lastFeeUpdate = now;
+
+    if (this.minFeeRate &lt; this.minReasonableFee / 2) {
+      this.minFeeRate = 0;
+      return 0;
+    }
+  }
+
+  if (this.minFeeRate > this.minReasonableFee)
+    return this.minFeeRate;
+
+  return this.minReasonableFee;
 };
 
 /**
@@ -759,14 +931,15 @@ Mempool.prototype.removeUnchecked = function removeUnchecked(tx, callback) {
  * @param {Function} callback - Returns [{@link VerifyError}].
  */
 
-Mempool.prototype.verify = function verify(tx, callback) {
+Mempool.prototype.verify = function verify(entry, callback) {
   var self = this;
   var height = this.chain.height + 1;
   var lockFlags = constants.flags.STANDARD_LOCKTIME_FLAGS;
   var flags = constants.flags.STANDARD_VERIFY_FLAGS;
   var mandatory = constants.flags.MANDATORY_VERIFY_FLAGS;
+  var tx = entry.tx;
   var ret = {};
-  var fee, now, free, minFee;
+  var fee, modFee, now, size, rejectFee, minRelayFee, minRate;
 
   if (this.chain.segwitActive)
     mandatory |= constants.flags.VERIFY_WITNESS;
@@ -796,37 +969,50 @@ Mempool.prototype.verify = function verify(tx, callback) {
         0));
     }
 
-    if (!tx.checkInputs(height, ret))
-      return callback(new VerifyError(tx, 'invalid', ret.reason, ret.score));
-
     fee = tx.getFee();
-    minFee = tx.getMinFee();
-    if (fee.cmp(minFee) &lt; 0) {
-      if (self.relayPriority) {
-        free = tx.isFree(height);
-        if (!free) {
-          return callback(new VerifyError(tx,
-            'insufficientfee',
-            'insufficient priority',
-            0));
-        }
-      } else {
+    modFee = entry.fees;
+    size = entry.size;
+    minRate = self.getMinRate();
+
+    if (minRate > self.minRelayFee)
+      self.network.updateMinRelay(minRate);
+
+    rejectFee = tx.getMinFee(size, minRate);
+    minRelayFee = tx.getMinFee(size, self.minRelayFee);
+
+    if (rejectFee.cmpn(0) > 0 &amp;&amp; modFee.cmp(rejectFee) &lt; 0) {
+      return callback(new VerifyError(tx,
+        'insufficientfee',
+        'mempool min fee not met',
+        0));
+    }
+
+    if (self.relayPriority &amp;&amp; modFee.cmp(minRelayFee) &lt; 0) {
+      if (!entry.isFree(height)) {
         return callback(new VerifyError(tx,
           'insufficientfee',
-          'insufficient fee',
+          'insufficient priority',
           0));
       }
     }
 
-    if (self.limitFree &amp;&amp; free) {
+    // Continuously rate-limit free (really, very-low-fee)
+    // transactions. This mitigates 'penny-flooding'. i.e.
+    // sending thousands of free transactions just to be
+    // annoying or make others' transactions take longer
+    // to confirm.
+    if (self.limitFree &amp;&amp; modFee.cmp(minRelayFee) &lt; 0) {
       now = utils.now();
 
       if (!self.lastTime)
         self.lastTime = now;
 
+      // Use an exponentially decaying ~10-minute window:
       self.freeCount *= Math.pow(1 - 1 / 600, now - self.lastTime);
       self.lastTime = now;
 
+      // The limitFreeRelay unit is thousand-bytes-per-minute
+      // At default rate it would take over a month to fill 1GB
       if (self.freeCount > self.limitFreeRelay * 10 * 1000) {
         return callback(new VerifyError(tx,
           'insufficientfee',
@@ -834,11 +1020,14 @@ Mempool.prototype.verify = function verify(tx, callback) {
           0));
       }
 
-      self.freeCount += tx.getSize();
+      self.freeCount += size;
     }
 
-    if (self.rejectInsaneFees &amp;&amp; fee.cmp(minFee.muln(10000)) > 0)
+    if (self.rejectAbsurdFees &amp;&amp; fee.cmp(minRelayFee.muln(10000)) > 0)
       return callback(new VerifyError(tx, 'highfee', 'absurdly-high-fee', 0));
+
+    if (!tx.checkInputs(height, ret))
+      return callback(new VerifyError(tx, 'invalid', ret.reason, ret.score));
 
     self.countAncestors(tx, function(err, count) {
       if (err)
@@ -932,9 +1121,14 @@ Mempool.prototype.countAncestors = function countAncestors(tx, callback) {
 Mempool.prototype.storeOrphan = function storeOrphan(tx, callback, force) {
   var self = this;
   var prevout = {};
-  var batch = this.db.batch();
-  var hash = tx.hash('hex');
-  var i, input, p;
+  var i, hash, batch, input, prev;
+
+  if (tx.getSize() > 5000) {
+    bcoin.debug('Ignoring large orphan: %s', tx.rhash);
+    return callback();
+  }
+
+  hash = tx.hash('hex');
 
   for (i = 0; i &lt; tx.inputs.length; i++) {
     input = tx.inputs[i];
@@ -946,40 +1140,22 @@ Mempool.prototype.storeOrphan = function storeOrphan(tx, callback, force) {
 
   assert(prevout.length > 0);
 
-  utils.forEachSerial(prevout, function(prev, next) {
-    self.getWaiting(prev, function(err, orphans, buf) {
-      if (err)
-        return next(err);
+  for (i = 0; i &lt; prevout.length; i++) {
+    prev = prevout[i];
+    if (!this.waiting[prev])
+      this.waiting[prev] = [];
+    this.waiting[prev].push(hash);
+  }
 
-      p = new BufferWriter();
+  this.orphans[hash] = tx.toExtended(true);
+  this.totalOrphans++;
 
-      if (buf)
-        p.writeBytes(buf);
+  bcoin.debug('Added orphan %s to mempool.', tx.rhash);
 
-      p.writeHash(hash);
+  if (this.totalOrphans > constants.mempool.MAX_ORPHAN_TX)
+    return this.limitOrphans(callback);
 
-      batch.put('o/' + prev, p.render());
-
-      next();
-    });
-  }, function(err) {
-    if (err)
-      return callback(err);
-
-    self.orphans++;
-
-    batch.put('O/' + hash, tx.toExtended(true));
-
-    if (self.orphans > constants.mempool.MAX_ORPHAN_TX) {
-      return self.purgeOrphans(function(err) {
-        if (err)
-          return callback(err);
-        batch.write(callback);
-      });
-    }
-
-    batch.write(callback);
-  });
+  return callback();
 };
 
 /**
@@ -988,7 +1164,29 @@ Mempool.prototype.storeOrphan = function storeOrphan(tx, callback, force) {
  */
 
 Mempool.prototype.getBalance = function getBalance(callback) {
-  return this.tx.getBalance(callback);
+  var total = new bn(0);
+  var i;
+
+  return this.db.iterate({
+    gte: 'c',
+    lte: 'c~',
+    values: true,
+    parse: function(data, key) {
+      return bcoin.coin.fromRaw(data);
+    }
+  }, function(err, coins) {
+    if (err)
+      return callback(err);
+
+    for (i = 0; i &lt; coins.length; i++)
+      total.iadd(coins[i].value);
+
+    return callback(null, {
+      confirmed: new bn(0),
+      unconfirmed: total,
+      total: total
+    });
+  });
 };
 
 /**
@@ -997,7 +1195,14 @@ Mempool.prototype.getBalance = function getBalance(callback) {
  */
 
 Mempool.prototype.getHistory = function getHistory(callback) {
-  return this.tx.getHistory(callback);
+  return this.db.iterate({
+    gte: 't',
+    lte: 't~',
+    values: true,
+    parse: function(data, key) {
+      return bcoin.tx.fromRaw(data);
+    }
+  }, callback);
 };
 
 /**
@@ -1007,28 +1212,7 @@ Mempool.prototype.getHistory = function getHistory(callback) {
  */
 
 Mempool.prototype.getWaiting = function getWaiting(hash, callback) {
-  var self = this;
-  var hashes = [];
-  var p;
-
-  this.db.get('o/' + hash, function(err, buf) {
-    if (err &amp;&amp; err.type !== 'NotFoundError')
-      return callback(err);
-
-    if (!buf)
-      return callback(null, hashes, buf);
-
-    p = new BufferReader(buf);
-
-    try {
-      while (p.left())
-        hashes.push(p.readHash('hex'));
-    } catch (e) {
-      return callback(e);
-    }
-
-    return callback(null, hashes, buf);
-  });
+  return callback(null, this.waiting[hash] || []);
 };
 
 /**
@@ -1039,22 +1223,18 @@ Mempool.prototype.getWaiting = function getWaiting(hash, callback) {
 
 Mempool.prototype.getOrphan = function getOrphan(orphanHash, callback) {
   var self = this;
+  var orphan = this.orphans[orphanHash];
 
-  this.db.get('O/' + orphanHash, function(err, orphan) {
-    if (err &amp;&amp; err.type !== 'NotFoundError')
-      return callback(err);
+  if (!orphan)
+    return callback();
 
-    if (!orphan)
-      return callback();
+  try {
+    orphan = bcoin.tx.fromExtended(orphan, true);
+  } catch (e) {
+    return callback(e);
+  }
 
-    try {
-      orphan = bcoin.tx.fromExtended(orphan, true);
-    } catch (e) {
-      return callback(e);
-    }
-
-    return callback(null, orphan);
-  });
+  return callback(null, orphan);
 };
 
 /**
@@ -1063,12 +1243,7 @@ Mempool.prototype.getOrphan = function getOrphan(orphanHash, callback) {
  */
 
 Mempool.prototype.hasOrphan = function hasOrphan(orphanHash, callback) {
-  this.db.get('O/' + orphanHash, function(err, orphan) {
-    if (err &amp;&amp; err.type !== 'NotFoundError')
-      return callback(err);
-
-    return callback(null, orphan != null);
-  });
+  return callback(null, this.orphans[orphanHash] != null);
 };
 
 /**
@@ -1084,7 +1259,6 @@ Mempool.prototype.resolveOrphans = function resolveOrphans(tx, callback, force) 
   var self = this;
   var hash = tx.hash('hex');
   var resolved = [];
-  var batch = this.db.batch();
 
   this.getWaiting(hash, function(err, hashes) {
     if (err)
@@ -1101,29 +1275,23 @@ Mempool.prototype.resolveOrphans = function resolveOrphans(tx, callback, force) 
         orphan.fillCoins(tx);
 
         if (orphan.hasCoins()) {
-          self.orphans--;
-          batch.del('O/' + orphanHash);
+          self.totalOrphans--;
+          delete self.orphans[orphanHash];
           resolved.push(orphan);
           return next();
         }
 
-        batch.put('O/' + orphanHash, orphan.toExtended(true));
+        self.orphans[orphanHash] = orphan.toExtended(true);
+
         next();
       });
     }, function(err) {
       if (err)
         return callback(err);
 
-      function done(err) {
-        if (err)
-          return callback(err);
+      delete self.waiting[hash];
 
-        return callback(null, resolved);
-      }
-
-      batch.del('o/' + hash);
-
-      return batch.write(done);
+      return callback(null, resolved);
     });
   });
 };
@@ -1136,7 +1304,7 @@ Mempool.prototype.resolveOrphans = function resolveOrphans(tx, callback, force) 
 
 Mempool.prototype.removeOrphan = function removeOrphan(tx, callback) {
   var self = this;
-  var batch, prevout, hash;
+  var i, prevout, hash;
 
   function getOrphan(tx, callback) {
     if (typeof tx === 'string')
@@ -1151,15 +1319,10 @@ Mempool.prototype.removeOrphan = function removeOrphan(tx, callback) {
     if (!tx)
       return callback();
 
-    batch = self.db.batch();
-
     hash = tx.hash('hex');
     prevout = tx.getPrevout();
 
-    batch.del('O/' + hash);
-
-    utils.forEach(prevout, function(prev, next) {
-      var i, p;
+    utils.forEachSerial(prevout, function(prev, next) {
       self.getWaiting(prev, function(err, hashes) {
         if (err)
           return next(err);
@@ -1172,55 +1335,22 @@ Mempool.prototype.removeOrphan = function removeOrphan(tx, callback) {
           hashes.splice(i, 1);
 
         if (hashes.length === 0) {
-          batch.del('o/' + prev);
+          delete self.waiting[prev];
           return next();
         }
 
-        p = new BufferWriter();
-
-        for (i = 0; i &lt; hashes.length; i++)
-          p.writeHash(hashes[i]);
-
-        batch.put('o/' + prev, p.render());
+        self.waiting[prev] = hashes;
 
         next();
       });
     }, function(err) {
       if (err)
         return callback(err);
-      batch.write(callback);
-    });
-  });
-};
 
-/**
- * Test a transaction hash to see if it has been seen as
- * an orphan, in the mempool, or in the blockchain. This
- * is the closest thing to a function
- * named "DoesThisTransactionExist()".
- * @param {TX} tx
- * @param {Function} callback - Returns [Error, Boolean].
- */
+      delete self.orphans[hash];
+      self.totalOrphans--;
 
-Mempool.prototype.seenTX = function seenTX(tx, callback) {
-  var self = this;
-  var hash = tx.hash('hex');
-
-  return this.hasOrphan(hash, function(err, result) {
-    if (err)
-      return callback(err);
-
-    if (result)
-      return callback(null, true);
-
-    return self.hasTX(hash, function(err, result) {
-      if (err)
-        return callback(err);
-
-      if (result)
-        return callback(null, true);
-
-      return self.chain.db.hasTX(hash, callback);
+      callback();
     });
   });
 };
@@ -1244,7 +1374,7 @@ Mempool.prototype.fillAllHistory = function fillAllHistory(tx, callback) {
     if (tx.hasCoins())
       return callback(null, tx);
 
-    self.chain.db.fillHistory(tx, callback);
+    self.chain.db.fillCoins(tx, callback);
   });
 };
 
@@ -1309,7 +1439,13 @@ Mempool.prototype.fillAllCoins = function fillAllCoins(tx, callback) {
  */
 
 Mempool.prototype.getSnapshot = function getSnapshot(callback) {
-  return this.tx.getHistoryHashes(callback);
+  return this.db.iterate({
+    gte: 't',
+    lte: 't~',
+    transform: function(key) {
+      return key.split('/')[1];
+    }
+  }, callback);
 };
 
 /**
@@ -1334,7 +1470,18 @@ Mempool.prototype.checkLocks = function checkLocks(tx, flags, callback) {
  */
 
 Mempool.prototype.isDoubleSpend = function isDoubleSpend(tx, callback) {
-  return this.tx.isDoubleSpend(tx, callback);
+  var self = this;
+  utils.everySerial(tx.inputs, function(input, next) {
+    self.isSpent(input.prevout.hash, input.prevout.index, function(err, spent) {
+      if (err)
+        return next(err);
+      return next(null, !spent);
+    });
+  }, function(err, result) {
+    if (err)
+      return callback(err);
+    return callback(null, !result);
+  });
 };
 
 /**
@@ -1346,53 +1493,46 @@ Mempool.prototype.isDoubleSpend = function isDoubleSpend(tx, callback) {
 
 Mempool.prototype.getConfidence = function getConfidence(hash, callback) {
   var self = this;
-  var tx;
 
   callback = utils.asyncify(callback);
 
-  function isDoubleSpend(callback) {
+  function getTX(callback) {
+    if (hash instanceof bcoin.tx)
+      return callback(null, hash, hash.hash('hex'));
+
+    return this.getTX(hash, function(err, tx) {
+      if (err)
+        return callback(err);
+      return callback(null, tx, hash);
+    });
+  }
+
+  function isDoubleSpend(tx, callback) {
     if (tx)
       return self.isDoubleSpend(tx, callback);
     return callback(null, false);
   }
 
-  function done(tx, hash) {
-    return isDoubleSpend(function(err, result) {
+  return getTX(function(err, tx, hash) {
+    if (err)
+      return callback(err);
+
+    return self.hasTX(hash, function(err, result) {
       if (err)
         return callback(err);
 
       if (result)
-        return callback(null, constants.confidence.INCONFLICT);
+        return callback(null, constants.confidence.PENDING);
 
-      return self.hasTX(hash, function(err, result) {
+      return isDoubleSpend(tx, function(err, result) {
         if (err)
           return callback(err);
 
         if (result)
-          return callback(null, constants.confidence.PENDING);
+          return callback(null, constants.confidence.INCONFLICT);
 
-        function getBlock(callback) {
-          if (tx &amp;&amp; tx.block)
-            return callback(null, tx.block);
-          return self.chain.db.getTX(hash, function(err, existing) {
-            if (err)
-              return callback(err);
-
-            if (!existing)
-              return callback();
-
-            return callback(null, existing.block);
-          });
-        }
-
-        return getBlock(function(err, block) {
-          if (err)
-            return callback(err);
-
-          if (!block)
-            return callback(null, constants.confidence.UNKNOWN);
-
-          self.chain.db.isMainChain(block, function(err, result) {
+        if (tx &amp;&amp; tx.block) {
+          return self.chain.db.isMainChain(tx.block, function(err, result) {
             if (err)
               return callback(err);
 
@@ -1401,18 +1541,19 @@ Mempool.prototype.getConfidence = function getConfidence(hash, callback) {
 
             return callback(null, constants.confidence.DEAD);
           });
+        }
+
+        return self.chain.db.isUnspentTX(hash, function(err, existing) {
+          if (err)
+            return callback(err);
+
+          if (existing)
+            return callback(null, constants.confidence.BUILDING);
+
+          return callback(null, constants.confidence.UNKNOWN);
         });
       });
     });
-  }
-
-  if (hash instanceof bcoin.tx)
-    return done(hash, hash.hash('hex'));
-
-  return this.getTX(hash, function(err, tx) {
-    if (err)
-      return callback(err);
-    done(tx, hash);
   });
 };
 
@@ -1423,24 +1564,19 @@ Mempool.prototype.getConfidence = function getConfidence(hash, callback) {
  * @param {Function} callback
  */
 
-Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
+Mempool.prototype._addUnchecked = function _addUnchecked(entry, callback) {
   var self = this;
+  var tx = entry.tx;
   var hash = tx.hash('hex');
   var i, addresses, address, input, output, key, coin, batch;
-
-  var unlock = this.writeLock.lock(addUnchecked, [tx, callback], force);
-  if (!unlock)
-    return;
-
-  callback = utils.wrap(callback, unlock);
 
   batch = this.db.batch();
 
   batch.put('t/' + hash, tx.toExtended());
-  batch.put('m/' + pad32(tx.ps) + '/' + hash, DUMMY);
+  batch.put('m/' + pad32(entry.ts) + '/' + hash, DUMMY);
 
   if (this.options.indexAddress) {
-    addresses = tx.getAddresses();
+    addresses = tx.getHashes();
     for (i = 0; i &lt; addresses.length; i++)
       batch.put('T/' + addresses[i] + '/' + hash, DUMMY);
   }
@@ -1458,7 +1594,7 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
     batch.put('s/' + key, tx.hash());
 
     if (this.options.indexAddress) {
-      address = input.getAddress();
+      address = input.getHash();
       if (address)
         batch.del('C/' + address + '/' + key);
     }
@@ -1476,7 +1612,7 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
     batch.put('c/' + key, coin);
 
     if (this.options.indexAddress) {
-      address = output.getAddress();
+      address = output.getHash();
       if (address)
         batch.put('C/' + address + '/' + key, DUMMY);
     }
@@ -1493,33 +1629,28 @@ Mempool.prototype._addUnchecked = function addUnchecked(tx, callback, force) {
  * @param {Function} callback
  */
 
-Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, force) {
+Mempool.prototype._removeUnchecked = function _removeUnchecked(hash, limit, callback) {
   var self = this;
-  var batch, i, addresses, output;
+  var batch, i, addresses, output, tx;
 
-  var unlock = this.writeLock.lock(removeUnchecked, [hash, callback], force);
-  if (!unlock)
-    return;
+  if (hash.tx)
+    hash = hash.tx.hash('hex');
 
-  callback = utils.wrap(callback, unlock);
-
-  if (hash.hash)
-    hash = hash.hash('hex');
-
-  this.getTX(hash, function(err, tx) {
+  this.getEntry(hash, function(err, entry) {
     if (err)
       return callback(err);
 
-    if (!tx)
+    if (!entry)
       return callback();
 
+    tx = entry.tx;
     batch = self.db.batch();
 
     batch.del('t/' + hash);
-    batch.del('m/' + pad32(tx.ps) + '/' + hash);
+    batch.del('m/' + pad32(entry.ts) + '/' + hash);
 
     if (self.options.indexAddress) {
-      addresses = tx.getAddresses();
+      addresses = tx.getHashes();
       for (i = 0; i &lt; addresses.length; i++)
         batch.del('T/' + addresses[i] + '/' + hash);
     }
@@ -1543,14 +1674,14 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
         if (result) {
           batch.put('c/' + key, input.coin.toRaw());
           if (self.options.indexAddress) {
-            address = input.getAddress();
+            address = input.getHash();
             if (address)
               batch.put('C/' + address + '/' + key, DUMMY);
           }
         } else {
           batch.del('c/' + key);
           if (self.options.indexAddress) {
-            address = input.getAddress();
+            address = input.getHash();
             if (address)
               batch.del('C/' + address + '/' + key);
           }
@@ -1562,29 +1693,292 @@ Mempool.prototype._removeUnchecked = function removeUnchecked(hash, callback, fo
       if (err)
         return callback(err);
 
-      for (i = 0; i &lt; tx.outputs.length; i++) {
-        output = tx.outputs[i];
+      utils.forEachSerial(tx.outputs, function(output, next, i) {
         key = hash + '/' + i;
 
         if (output.script.isUnspendable())
-          continue;
+          return next();
 
         batch.del('c/' + key);
 
         if (self.options.indexAddress) {
-          address = output.getAddress();
+          address = output.getHash();
           if (address)
             batch.del('C/' + address + '/' + key);
         }
-      }
 
-      return batch.write(callback);
+        if (!limit)
+          return next();
+
+        self.isSpent(hash, i, function(err, spender) {
+          if (err)
+            return next(err);
+
+          if (!spender)
+            return next();
+
+          self._removeUnchecked(spender, limit, next);
+        });
+      }, function(err) {
+        if (err)
+          return callback(err);
+
+        return batch.write(callback);
+      });
     });
   });
 };
 
-return Mempool;
+/**
+ * Calculate the memory usage of a transaction.
+ * @param {TX} tx
+ * @returns {Number} Usage in bytes.
+ */
+
+Mempool.prototype.memUsage = function memUsage(tx) {
+  if (this.accurateMemory)
+    return this.memUsageAccurate(tx);
+  return this.memUsageBitcoind(tx);
 };
+
+/**
+ * Calculate the memory usage of a transaction
+ * accurately (the amount bcoin is actually using).
+ * @param {TX} tx
+ * @returns {Number} Usage in bytes.
+ */
+
+Mempool.prototype.memUsageAccurate = function memUsageAccurate(tx) {
+  return 0
+    + (tx.getSize() + 4 + 32 + 4 + 4 + 4) // extended
+    + (2 + 64) // t
+    + (2 + 10 + 1 + 64) // m
+    + (tx.inputs.length * (2 + 64 + 1 + 2 + 32)) // s
+    + (tx.outputs.length * (2 + 64 + 1 + 2 + 80)); // c
+};
+
+/**
+ * Calculate the memory usage of a transaction based on
+ * bitcoind's memory estimation algorithm. This will
+ * _not_ be accurate to bcoin's actual memory usage,
+ * but it helps accurately replicate the bitcoind
+ * mempool.
+ * @see DynamicMemoryUsage()
+ * @param {TX} tx
+ * @returns {Number} Usage in bytes.
+ */
+
+Mempool.prototype.memUsageBitcoind = function memUsageBitcoind(tx) {
+  var mem = 0;
+  var i, input;
+
+  mem += mallocUsage(tx.inputs.length)
+  mem += mallocUsage(tx.outputs.length);
+
+  for (i = 0; i &lt; tx.inputs.length; i++)
+    mem += mallocUsage(tx.inputs[i].script.getSize());
+
+  for (i = 0; i &lt; tx.outputs.length; i++)
+    mem += mallocUsage(tx.outputs[i].script.getSize());
+
+  mem += mallocUsage(tx.inputs.length);
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+    mem += mallocUsage(input.witness.items.length);
+    for (j = 0; j &lt; input.witness.items.length; j++)
+      mem += mallocUsage(input.witness[j].items.length);
+  }
+
+  return mem;
+};
+
+/**
+ * Calculate the memory usage of the entire mempool.
+ * @see DynamicMemoryUsage()
+ * @returns {Number} Usage in bytes.
+ */
+
+Mempool.prototype.getSize = function getSize() {
+  if (this.accurateMemory)
+    return this.size;
+
+  return mallocUsage(162 + 15 * ptrSize) * this.total // entries
+    + mallocUsage(this.spent) // mapNextTx
+    + mallocUsage(this.total) // mapDeltas
+    + mallocUsage(this.total) // mapLinks
+    + this.size;
+};
+
+/**
+ * Represents a mempool entry.
+ * @exports MempoolEntry
+ * @constructor
+ * @param {Object} options
+ * @param {TX} options.tx - Transaction in mempool.
+ * @param {Number} options.height - Entry height.
+ * @param {BN} options.priority - Entry priority.
+ * @param {Number} options.ts - Entry time.
+ * @param {BN} options.chainValue - Value of on-chain coins.
+ * @param {Number} options.count - Number of descendants (includes tx).
+ * @param {Number} options.size - TX and descendant modified size.
+ * @param {BN} options.fees - TX and descendant delta-applied fees.
+ * @property {TX} tx
+ * @property {Number} height
+ * @property {BN} priority
+ * @property {Number} ts
+ * @property {BN} chainValue
+ * @property {Number} count
+ * @property {Number} size
+ * @property {BN} fees
+ */
+
+function MempoolEntry(options) {
+  this.tx = options.tx;
+  this.height = options.height;
+  this.priority = options.priority;
+  this.ts = options.ts;
+
+  this.chainValue = options.chainValue;
+  this.count = options.count;
+  this.size = options.size;
+  this.fees = options.fees;
+}
+
+/**
+ * Create a mempool entry from a TX.
+ * @param {TX} tx
+ * @param {Number} height - Entry height.
+ * @returns {MempoolEntry}
+ */
+
+MempoolEntry.fromTX = function fromTX(tx, height) {
+  var data = tx.getPriority(height);
+
+  return new MempoolEntry({
+    tx: tx,
+    height: height,
+    priority: data.priority,
+    chainValue: data.value,
+    ts: utils.now(),
+    count: 1,
+    size: tx.getVirtualSize(),
+    fees: tx.getFee()
+  });
+};
+
+/**
+ * Serialize a mempool entry. Note that this
+ * can still be parsed as a regular tx since
+ * the mempool entry data comes after the
+ * serialized transaction.
+ * @param {TX} tx
+ * @param {Number} height - Entry height.
+ * @returns {MempoolEntry}
+ */
+
+MempoolEntry.prototype.toRaw = function toRaw() {
+  var p = new BufferWriter();
+  bcoin.protocol.framer.tx(this.tx, p);
+  p.writeU32(this.height);
+  p.writeVarint(this.priority);
+  p.writeVarint(this.chainValue);
+  p.writeU32(this.ts);
+  p.writeU32(this.count);
+  p.writeU32(this.size);
+  p.writeVarint(this.fees);
+  return p.render();
+};
+
+/**
+ * Create a mempool entry from serialized data.
+ * @param {Buffer|BufferReader} data
+ * @returns {MempoolEntry}
+ */
+
+MempoolEntry.fromRaw = function fromRaw(data) {
+  var p = new BufferReader(data);
+  return new MempoolEntry({
+    tx: bcoin.tx.fromRaw(p),
+    height: p.readU32(),
+    priority: p.readVarint(true),
+    chainValue: p.readVarint(true),
+    ts: p.readU32(),
+    count: p.readU32(),
+    size: p.readU32(),
+    fees: p.readVarint(true)
+  });
+};
+
+/**
+ * Calculate priority, taking into account
+ * the entry height delta, modified size,
+ * and chain value.
+ * @param {Number} height
+ * @returns {BN} Priority.
+ */
+
+MempoolEntry.prototype.getPriority = function getPriority(height) {
+  var heightDelta = Math.max(0, height - this.height);
+  var modSize = this.tx.getModifiedSize(this.size);
+  var deltaPriority = new bn(heightDelta).mul(this.chainValue).divn(modSize);
+  var result = this.priority.add(deltaPriority);
+  if (result.cmpn(0) &lt; 0)
+    result = new bn(0);
+  return result;
+};
+
+/**
+ * Test whether the entry is free with
+ * the current priority (calculated by
+ * current height).
+ * @param {Number} height
+ * @returns {Boolean}
+ */
+
+MempoolEntry.prototype.isFree = function isFree(height) {
+  var priority = this.getPriority(height);
+  return priority.cmp(constants.tx.FREE_THRESHOLD) > 0;
+};
+
+/*
+ * Helpers
+ */
+
+/**
+ * "Guessed" pointer size based on ISA. This
+ * assumes 64 bit for arm since the arm
+ * version number is not exposed by node.js.
+ * @const {Number}
+ */
+
+var ptrSize = (process.platform == null
+  || process.platform === 'x64'
+  || process.platform === 'ia64'
+  || process.platform === 'arm') ? 8 : 4;
+
+/**
+ * Calculate malloc usage based on pointer size.
+ * If you're scratching your head as to why this
+ * function is here, it is only here to accurately
+ * replicate bitcoind's memory usage algorithm.
+ * (I know javascript doesn't have malloc or
+ * pointers).
+ * @param {Number} alloc - Size of Buffer object.
+ * @returns {Number} Allocated size.
+ */
+
+function mallocUsage(alloc) {
+  if (alloc === 0)
+    return 0;
+  if (ptrSize === 8)
+    return ((alloc + 31) >>> 4) &lt;&lt; 4;
+  return ((alloc + 15) >>> 3) &lt;&lt; 3;
+}
+
+Mempool.MempoolEntry = MempoolEntry;
+
+module.exports = Mempool;
 </code></pre>
         </article>
     </section>
@@ -1595,13 +1989,13 @@ return Mempool;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="module.exports-Framer.html">Framer</a></li><li><a href="module.exports-Parser.html">Parser</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:32:51 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 14:23:38 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: bcoin/locker.js</title>
+    <title>JSDoc: Source: bcoin/network.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: bcoin/locker.js</h1>
+    <h1 class="page-title">Source: bcoin/network.js</h1>
 
     
 
@@ -27,172 +27,169 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/*!
- * locker.js - lock and queue for bcoin
+ * network.js - network object for bcoin
  * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
  * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
  * https://github.com/indutny/bcoin
  */
 
-var EventEmitter = require('events').EventEmitter;
 var utils = require('./utils');
 var assert = utils.assert;
+var network = require('./protocol/network');
 
 /**
- * Represents a mutex lock for locking asynchronous object methods.
- * @exports Locker
+ * Represents a network.
+ * @exports Network
  * @constructor
- * @param {Function} parent - Parent constructor.
- * @param {Function?} add - `add` method (whichever method is queuing data).
- * @param {Number?} limit - Limit in bytes of data that can be queued.
+ * @param {Object|String} options - See {@link module:network}.
+ * @property {Number} height
+ * @property {Number} feeRate
+ * @property {Number} minRelay
  */
 
-function Locker(parent, add, limit) {
-  if (!(this instanceof Locker))
-    return Locker(parent, add, limit);
+function Network(options) {
+  var i, keys, key, value;
 
-  this.parent = parent;
-  this.jobs = [];
-  this.busy = false;
+  if (!(this instanceof Network))
+    return new Network(options);
 
-  this.pending = [];
-  this.pendingMap = {};
-  this.pendingSize = 0;
-  this.pendingLimit = limit || (20 &lt;&lt; 20);
-  this.add = add;
+  if (typeof options === 'string')
+    options = network[options];
+
+  assert(options, 'Unknown network.');
+
+  if (Network[options.type])
+    return Network[options.type];
+
+  keys = Object.keys(options);
+
+  for (i = 0; i &lt; keys.length; i++) {
+    key = keys[i];
+    value = options[key];
+    this[key] = value;
+  }
+
+  if (!Network[this.type])
+    Network[this.type] = this;
+
+  if (!Network.primary)
+    Network.primary = this.type;
 }
 
-utils.inherits(Locker, EventEmitter);
-
 /**
- * Test whether the locker has a pending
- * object by key (usually a {@link Hash}).
- * @param {Hash|String} key
- * @returns {Boolean}
+ * Default network.
+ * @type {String}
  */
 
-Locker.prototype.hasPending = function hasPending(key) {
-  return this.pendingMap[key] === true;
+Network.primary = null;
+
+/**
+ * Update the height of the network.
+ * @param {Number} height
+ */
+
+Network.prototype.updateHeight = function updateHeight(height) {
+  this.height = height;
 };
 
 /**
- * Lock the parent object and all its methods
- * which use the locker. Begin to queue calls.
- * @param {Function} func - The method being called.
- * @param {Array} args - Arguments passed to the method.
- * @param {Boolean?} force - Force a call.
- * @returns {Function} unlock - Unlocker - must be
- * called once the method finishes executing in order
- * to resolve the queue.
+ * Update the estimated fee rate of the network.
+ * @param {Number} rate
  */
 
-Locker.prototype.lock = function lock(func, args, force) {
-  var self = this;
-  var obj, called;
+Network.prototype.updateRate = function updateRate(rate) {
+  this.feeRate = rate;
+};
 
-  if (force) {
-    assert(this.busy);
-    return function unlock() {
-      assert(!called);
-      called = true;
-    };
+/**
+ * Update the minimum relay rate (reject rate) of the network.
+ * @param {Number} rate
+ */
+
+Network.prototype.updateMinRelay = function updateMinRelay(rate) {
+  this.minRelay = rate;
+};
+
+/**
+ * Calculate the minimum relay rate. If the network is
+ * inactive (height=-1), return the default minimum relay.
+ * @return {Number} Rate
+ */
+
+Network.prototype.getMinRelay = function getMinRelay() {
+  if (this.height === -1)
+    return this.minRate;
+
+  return Math.min(this.minRelay, this.maxRate);
+};
+
+/**
+ * Calculate the normal relay rate. If the network is
+ * inactive (height=-1), return the default rate.
+ * @return {Number} Rate
+ */
+
+Network.prototype.getRate = function getRate() {
+  if (this.height === -1)
+    return this.maxRate;
+
+  return Math.min(this.feeRate, this.maxRate);
+};
+
+/**
+ * Set the default network. This network will be used
+ * if nothing is passed as the `network` option for
+ * certain objects.
+ * @param {String} type - Network type.
+ * @returns {Network}
+ */
+
+Network.set = function set(type) {
+  assert(typeof type === 'string', 'Bad network.');
+  Network.primary = type;
+  return Network(network[type]);
+};
+
+/**
+ * Get a network with a string or a Network object.
+ * @param {String|Network} options - Network type.
+ * @returns {Network}
+ */
+
+Network.get = function get(options) {
+  if (!options) {
+    assert(Network.primary, 'No default network.');
+    return Network[Network.primary];
   }
 
-  if (this.busy) {
-    if (this.add &amp;&amp; func === this.add) {
-      obj = args[0];
-      this.pending.push(obj);
-      this.pendingMap[obj.hash('hex')] = true;
-      this.pendingSize += obj.getSize();
-      if (this.pendingSize > this.pendingLimit) {
-        this.purgePending();
-        return;
-      }
-    }
-    this.jobs.push([func, args]);
-    return;
-  }
+  if (options instanceof Network)
+    return options;
 
-  this.busy = true;
+  if (typeof options === 'string')
+    return Network(network[options]);
 
-  return function unlock() {
-    var item, obj;
-
-    assert(!called);
-    called = true;
-
-    self.busy = false;
-
-    if (self.add &amp;&amp; func === self.add) {
-      if (self.pending.length === 0)
-        self.emit('flush');
-    }
-
-    if (self.jobs.length === 0)
-      return;
-
-    item = self.jobs.shift();
-
-    if (self.add &amp;&amp; item[0] === self.add) {
-      obj = item[1][0];
-      assert(obj === self.pending.shift());
-      delete self.pendingMap[obj.hash('hex')];
-      self.pendingSize -= obj.getSize();
-    }
-
-    item[0].apply(self.parent, item[1]);
-  };
+  assert(false, 'Unknown network.');
 };
 
 /**
- * Destroy the locker. Purge all pending calls.
+ * Convert the network to a string.
+ * @returns {String}
  */
 
-Locker.prototype.destroy = function destroy() {
-  if (this.add)
-    this.purgePending();
-  this.jobs.length = 0;
+Network.prototype.toString = function toString() {
+  return this.type;
 };
 
 /**
- * Purge all pending calls (called once `add` has hit `limit`).
+ * Inspect the network.
+ * @returns {String}
  */
 
-Locker.prototype.purgePending = function purgePending() {
-  var self = this;
-  var total = this.pending.length;
-
-  assert(this.add);
-
-  this.emit('purge', total, this.pendingSize);
-
-  this.pending.forEach(function(obj) {
-    delete self.pendingMap[obj.hash('hex')];
-  });
-
-  this.pending.length = 0;
-  this.pendingSize = 0;
-
-  this.jobs = this.jobs.filter(function(item) {
-    return item[0] !== self.add;
-  });
-
-  if (total !== 0)
-    this.emit('flush');
+Network.prototype.inspect = function inspect() {
+  return '&lt;Network: ' + this.type + '>';
 };
 
-/**
- * Wait for a flush (empty queue).
- * @param {Function} callback
- */
-
-Locker.prototype.onFlush = function onFlush(callback) {
-  if (this.pending.length === 0)
-    return callback();
-
-  this.once('flush', callback);
-};
-
-module.exports = Locker;
+module.exports = Network;
 </code></pre>
         </article>
     </section>

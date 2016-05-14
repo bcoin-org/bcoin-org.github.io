@@ -143,7 +143,7 @@ or <a href="HDPrivateKey.html">HDPrivateKey</a> options.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line245">line 245</a>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line244">line 244</a>
     </li></ul></dd>
     
 
@@ -241,7 +241,7 @@ or <a href="HDPrivateKey.html">HDPrivateKey</a> options.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line335">line 335</a>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line403">line 403</a>
     </li></ul></dd>
     
 
@@ -268,7 +268,7 @@ or <a href="HDPrivateKey.html">HDPrivateKey</a> options.</p></td>
 
     
 
-    <h4 class="name" id=".fromAny"><span class="type-signature">(static) </span>fromAny<span class="signature">(options, networkType<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="HDPrivateKey.html">HDPrivateKey</a>|<a href="HDPublicKey.html">HDPublicKey</a>}</span></h4>
+    <h4 class="name" id=".fromAny"><span class="type-signature">(static) </span>fromAny<span class="signature">(options, network<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="HDPrivateKey.html">HDPrivateKey</a>|<a href="HDPublicKey.html">HDPublicKey</a>}</span></h4>
 
     
 
@@ -351,7 +351,7 @@ options, seed, or base58 key.</p></td>
 
         <tr>
             
-                <td class="name"><code>networkType</code></td>
+                <td class="name"><code>network</code></td>
             
 
             <td class="type">
@@ -418,7 +418,7 @@ options, seed, or base58 key.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line296">line 296</a>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line317">line 317</a>
     </li></ul></dd>
     
 
@@ -570,7 +570,7 @@ options, seed, or base58 key.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line257">line 257</a>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line256">line 256</a>
     </li></ul></dd>
     
 
@@ -622,7 +622,394 @@ options, seed, or base58 key.</p></td>
 
     
 
-    <h4 class="name" id=".fromSeed"><span class="type-signature">(static) </span>fromSeed<span class="signature">(options, networkType<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="HDPrivateKey.html">HDPrivateKey</a>}</span></h4>
+    <h4 class="name" id=".fromJSON"><span class="type-signature">(static) </span>fromJSON<span class="signature">(json, passphrase<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="HDPrivateKey.html">HDPrivateKey</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Instantiate an HD key from a jsonified key object.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>json</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>The jsonified transaction object.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>passphrase</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line305">line 305</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="HDPrivateKey.html">HDPrivateKey</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".fromMnemonic"><span class="type-signature">(static) </span>fromMnemonic<span class="signature">(mnemonic, network<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="HDPrivateKey.html">HDPrivateKey</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Instantiate an hd private key from a mnemonic.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>mnemonic</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="Mnemonic.html">Mnemonic</a></span>
+|
+
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>network</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line294">line 294</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="HDPrivateKey.html">HDPrivateKey</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".fromSeed"><span class="type-signature">(static) </span>fromSeed<span class="signature">(options, network<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="HDPrivateKey.html">HDPrivateKey</a>}</span></h4>
 
     
 
@@ -705,7 +1092,7 @@ mnemonic, mnemonic options.</p></td>
 
         <tr>
             
-                <td class="name"><code>networkType</code></td>
+                <td class="name"><code>network</code></td>
             
 
             <td class="type">
@@ -772,7 +1159,7 @@ mnemonic, mnemonic options.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line284">line 284</a>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line283">line 283</a>
     </li></ul></dd>
     
 
@@ -821,7 +1208,7 @@ mnemonic, mnemonic options.</p></td>
 
     
 
-    <h4 class="name" id=".generate"><span class="type-signature">(static) </span>generate<span class="signature">(options, networkType<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="HDPrivateKey.html">HDPrivateKey</a>}</span></h4>
+    <h4 class="name" id=".generate"><span class="type-signature">(static) </span>generate<span class="signature">(options, network<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="HDPrivateKey.html">HDPrivateKey</a>}</span></h4>
 
     
 
@@ -991,7 +1378,7 @@ mnemonic, mnemonic options.</p></td>
 
         <tr>
             
-                <td class="name"><code>networkType</code></td>
+                <td class="name"><code>network</code></td>
             
 
             <td class="type">
@@ -1058,7 +1445,7 @@ mnemonic, mnemonic options.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line272">line 272</a>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line271">line 271</a>
     </li></ul></dd>
     
 
@@ -1207,7 +1594,7 @@ mnemonic, mnemonic options.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line325">line 325</a>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line346">line 346</a>
     </li></ul></dd>
     
 
@@ -1356,7 +1743,7 @@ mnemonic, mnemonic options.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line343">line 343</a>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line411">line 411</a>
     </li></ul></dd>
     
 
@@ -1401,6 +1788,205 @@ mnemonic, mnemonic options.</p></td>
 
 
         
+            
+
+    
+
+    <h4 class="name" id=".parsePath"><span class="type-signature">(static) </span>parsePath<span class="signature">(path, max<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Array.&lt;Number>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Parse a derivation path and return an array of indexes.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>path</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>max</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Max index.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_hd.js.html">bcoin/hd.js</a>, <a href="bcoin_hd.js.html#line359">line 359</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki</a></li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Number></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
     
 
     
@@ -1416,13 +2002,13 @@ mnemonic, mnemonic options.</p></td>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainBlock.html">ChainBlock</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="module.exports-Framer.html">Framer</a></li><li><a href="module.exports-Parser.html">Parser</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3><a href="global.html">Global</a></h3>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 07 2016 04:32:51 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 14:23:38 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
