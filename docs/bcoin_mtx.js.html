@@ -90,8 +90,8 @@ function MTX(options) {
   if (!options)
     options = {};
 
-  this.type = 'tx';
   this.version = options.version || 1;
+  this.flag = options.flag || 1;
   this.inputs = [];
   this.outputs = [];
   this.locktime = 0;
@@ -106,8 +106,13 @@ function MTX(options) {
   this._hash = null;
   this._whash = null;
   this._raw = null;
-  this._size = 0;
-  this._witnessSize = 0;
+  this._size = null;
+  this._witnessSize = null;
+  this._outputValue = null;
+  this._inputValue = null;
+  this._hashPrevouts = null;
+  this._hashSequence = null;
+  this._hashOutputs = null;
 
   if (options.inputs) {
     for (i = 0; i &lt; options.inputs.length; i++)
@@ -139,123 +144,12 @@ MTX.prototype.clone = function clone() {
 };
 
 /**
- * Hash the transaction with the non-witness serialization.
- * Note that this is not cached.
- * @param {String?} enc - Can be `'hex'` or `null`.
- * @returns {Hash|Buffer} hash
- */
-
-MTX.prototype.hash = function hash(enc) {
-  var hash = utils.dsha256(this.renderNormal());
-  return enc === 'hex' ? hash.toString('hex') : hash;
-};
-
-/**
- * Hash the transaction with the witness
- * serialization, return the wtxid (normal
- * hash if no witness is present, all zeroes
- * if coinbase). Note that this is not cached.
- * @param {String?} enc - Can be `'hex'` or `null`.
- * @returns {Hash|Buffer} hash
- */
-
-MTX.prototype.witnessHash = function witnessHash(enc) {
-  var hash;
-
-  if (this.isCoinbase()) {
-    return enc === 'hex'
-      ? constants.NULL_HASH
-      : utils.slice(constants.ZERO_HASH);
-  }
-
-  if (!this.hasWitness())
-    return this.hash(enc);
-
-  hash = utils.dsha256(this.renderWitness());
-
-  return enc === 'hex' ? hash.toString('hex') : hash;
-};
-
-/**
- * Serialize the transaction. Note
- * that this is _not_ cached. This will use
- * the witness serialization if a
- * witness is present.
- * @returns {Buffer} Serialized transaction.
- */
-
-MTX.prototype.render = function render() {
-  return this.getRaw();
-};
-
-/**
- * Serialize the transaction without the
- * witness vector, regardless of whether it
- * is a witness transaction or not. Note
- * that this is _not_ cached.
- * @returns {Buffer} Serialized transaction.
- */
-
-MTX.prototype.renderNormal = function renderNormal() {
-  return bcoin.protocol.framer.tx(this);
-};
-
-/**
- * Serialize the transaction with the
- * witness vector, regardless of whether it
- * is a witness transaction or not. Note that
- * this is _not_ cached.
- * @returns {Buffer} Serialized transaction.
- */
-
-MTX.prototype.renderWitness = function renderWitness() {
-  return bcoin.protocol.framer.witnessTX(this);
-};
-
-/**
- * Serialize the transaction. Note
- * that this is cached. This will use
- * the witness serialization if a
- * witness is present. Note that this
- * is _not_ cached.
- * @returns {Buffer} Serialized transaction.
- */
-
-MTX.prototype.getRaw = function getRaw() {
-  if (this.hasWitness())
-    return bcoin.protocol.framer.witnessTX(this);
-
-  return bcoin.protocol.framer.tx(this);
-};
-
-/**
- * Calculate the real size of the transaction
- * with the witness included. Note that this
- * is _not_ cached.
- * @returns {Number} size
- */
-
-MTX.prototype.getSize = function getSize() {
-  return bcoin.protocol.framer.tx.witnessSize(this);
-};
-
-/**
- * Calculate the virtual size of the transaction.
- * Note that this is _not_ cached.
- * @returns {Number} vsize
- */
-
-MTX.prototype.getVirtualSize = function getVirtualSize() {
-  return bcoin.protocol.framer.tx.virtualSize(this);
-};
-
-/**
  * Add an input to the transaction.
  * @example
  * tx.addInput({ prevout: { hash: ... }, sequence: ... });
  * tx.addInput(prev, prevIndex);
  * tx.addInput(coin);
- * tx.addInput(bcoin.coin(prev, prevIndex));
+ * tx.addInput(bcoin.coin.fromTX(prev, prevIndex));
  * @param {Object|TX|Coin} options - Options object, transaction, or coin.
  * @param {Number?} index - Input of output if `options` is a TX.
  */
@@ -263,10 +157,8 @@ MTX.prototype.getVirtualSize = function getVirtualSize() {
 MTX.prototype.addInput = function addInput(options, index) {
   var input;
 
-  assert(this.ts === 0, 'Cannot modify a confirmed tx.');
-
   if (options instanceof bcoin.tx)
-    options = bcoin.coin(options, index);
+    options = bcoin.coin.fromTX(options, index);
 
   if (options instanceof bcoin.coin) {
     assert(typeof options.hash === 'string');
@@ -298,8 +190,6 @@ MTX.prototype.addInput = function addInput(options, index) {
 
 MTX.prototype.scriptInput = function scriptInput(index, addr) {
   var input, prev, n, i, redeemScript, witnessScript, vector, dummy;
-
-  assert(this.ts === 0, 'Cannot modify a confirmed tx.');
 
   if (typeof index !== 'number')
     index = this.inputs.indexOf(index);
@@ -503,8 +393,6 @@ MTX.prototype.createSignature = function createSignature(index, prev, key, type,
 MTX.prototype.signInput = function signInput(index, addr, type) {
   var input, prev, signature, index, signatures, i;
   var len, m, n, keys, vector, dummy, version;
-
-  assert(this.ts === 0, 'Cannot modify a confirmed tx.');
 
   if (typeof index !== 'number')
     index = this.inputs.indexOf(index);
@@ -801,13 +689,11 @@ MTX.prototype.sign = function sign(index, addr, type) {
  * tx.addOutput(receivingWallet, utils.satoshi('0.1'));
  * @param {Wallet|Address|Object} obj - Wallet, Address,
  * or options (see {@link Script.createOutputScript} for options).
- * @param {BN?} value - Only needs to be present for non-options.
+ * @param {Amount?} value - Only needs to be present for non-options.
  */
 
 MTX.prototype.addOutput = function addOutput(address, value) {
   var options, output;
-
-  assert(this.ts === 0, 'Cannot modify a confirmed tx.');
 
   if ((address instanceof bcoin.wallet) || (address instanceof bcoin.keyring))
     address = address.getAddress();
@@ -838,8 +724,6 @@ MTX.prototype.addOutput = function addOutput(address, value) {
 
 MTX.prototype.scriptOutput = function scriptOutput(index, options) {
   var output;
-
-  assert(this.ts === 0, 'Cannot modify a confirmed tx.');
 
   if (options instanceof bcoin.output)
     return;
@@ -914,7 +798,7 @@ MTX.prototype.maxSize = function maxSize(options, force) {
     wallet = options.wallet;
 
   // Calculate the size, minus the input scripts.
-  total = bcoin.protocol.framer.tx.size(this);
+  total = this.getBaseSize();
 
   for (i = 0; i &lt; this.inputs.length; i++) {
     input = this.inputs[i];
@@ -953,7 +837,7 @@ MTX.prototype.maxSize = function maxSize(options, force) {
       if (redeem) {
         prev = redeem;
         sz = prev.getSize();
-        size += utils.sizePush(sz);
+        size += bcoin.script.sizePush(sz);
         size += sz;
       }
     }
@@ -1070,7 +954,8 @@ MTX.prototype.maxSize = function maxSize(options, force) {
  * @param {Boolean} options.confirmed - Select only confirmed coins.
  * @param {Boolean} options.free - Do not apply a fee if the
  * transaction priority is high enough to be considered free.
- * @param {BN?} options.fee - Use a hard fee rather than calculating one.
+ * @param {Amount?} options.fee - Use a hard fee rather than calculating one.
+ * @param {Rate?} options.rate - Rate used for fee calculation.
  * @param {Number|Boolean} options.subtractFee - Whether to subtract the
  * fee from * existing outputs rather than adding more inputs.
  * @returns {CoinSelection}
@@ -1110,11 +995,11 @@ MTX.prototype.selectCoins = function selectCoins(coins, options) {
   function total() {
     if (options.subtractFee != null)
       return outputValue;
-    return outputValue.add(fee);
+    return outputValue + fee;
   }
 
   function isFull() {
-    return tx.getInputValue().cmp(total()) >= 0;
+    return tx.getInputValue() >= total();
   }
 
   function addCoins() {
@@ -1152,7 +1037,7 @@ MTX.prototype.selectCoins = function selectCoins(coins, options) {
     // Transfer `total` funds maximum.
     addCoins();
   } else {
-    fee = new bn(constants.tx.MIN_FEE);
+    fee = constants.tx.MIN_FEE;
 
     // Transfer `total` funds maximum.
     addCoins();
@@ -1164,7 +1049,7 @@ MTX.prototype.selectCoins = function selectCoins(coins, options) {
       // In case we don't have a change address,
       // use a fake p2pkh output to gauge size.
       keyHash: constants.ZERO_HASH.slice(0, 20),
-      value: new bn(0)
+      value: 0
     });
 
     // Change fee value if it is more than 1024
@@ -1173,13 +1058,13 @@ MTX.prototype.selectCoins = function selectCoins(coins, options) {
       // Calculate max possible size after signing.
       size = tx.maxSize(options, true);
 
-      if (tryFree &amp;&amp; options.height > 0) {
+      if (tryFree &amp;&amp; options.height >= 0) {
         // Note that this will only work
         // if the mempool's rolling reject
         // fee is zero (i.e. the mempool is
         // not full).
         if (tx.isFree(options.height + 1, size)) {
-          fee = new bn(0);
+          fee = 0;
           break;
         }
         tryFree = false;
@@ -1203,11 +1088,11 @@ MTX.prototype.selectCoins = function selectCoins(coins, options) {
     throw err;
   }
 
-  if (fee.cmp(constants.tx.MAX_FEE) > 0)
-    fee = constants.tx.MAX_FEE.clone();
+  if (fee > constants.tx.MAX_FEE)
+    fee = constants.tx.MAX_FEE;
 
   // How much money is left after filling outputs.
-  change = tx.getInputValue().sub(total());
+  change = tx.getInputValue() - total();
 
   // Attempt to subtract fee.
   if (options.subtractFee != null) {
@@ -1218,18 +1103,18 @@ MTX.prototype.selectCoins = function selectCoins(coins, options) {
       if (!output)
         throw new Error('Subtraction index does not exist.');
 
-      min = fee.add(output.getDustThreshold());
+      min = fee + output.getDustThreshold();
 
-      if (output.value.cmp(min) &lt; 0)
+      if (output.value &lt; min)
         throw new Error('Could not subtract fee.');
 
-      output.value.isub(fee);
+      output.value -= fee;
     } else {
       for (i = 0; i &lt; tx.outputs.length; i++) {
         output = tx.outputs[i];
-        min = fee.add(output.getDustThreshold());
-        if (output.value.cmp(min) >= 0) {
-          output.value.isub(fee);
+        min = fee + output.getDustThreshold();
+        if (output.value >= min) {
+          output.value -= fee;
           break;
         }
       }
@@ -1257,7 +1142,6 @@ MTX.prototype.selectCoins = function selectCoins(coins, options) {
 MTX.prototype.fill = function fill(coins, options) {
   var result, i, change;
 
-  assert(this.ts === 0, 'Cannot modify a confirmed tx.');
   assert(this.inputs.length === 0, 'TX is already filled.');
   assert(options, '`options` are required.');
   assert(options.changeAddress, '`changeAddress` is required.');
@@ -1281,10 +1165,10 @@ MTX.prototype.fill = function fill(coins, options) {
     // Do nothing. Change is added to fee.
     this.outputs.pop();
     this.changeIndex = -1;
-    assert(this.getFee().cmp(result.fee.add(result.change)) === 0);
+    assert(this.getFee() === result.fee + result.change);
   } else {
     this.changeIndex = this.outputs.length - 1;
-    assert(this.getFee().cmp(result.fee) === 0);
+    assert(this.getFee() === result.fee);
   }
 
   return result;
@@ -1297,8 +1181,6 @@ MTX.prototype.fill = function fill(coins, options) {
 
 MTX.prototype.sortMembers = function sortMembers() {
   var changeOutput;
-
-  assert(this.ts === 0, 'Cannot modify a confirmed tx.');
 
   if (this.changeIndex !== -1) {
     changeOutput = this.outputs[this.changeIndex];
@@ -1315,7 +1197,7 @@ MTX.prototype.sortMembers = function sortMembers() {
   });
 
   this.outputs = this.outputs.slice().sort(function(a, b) {
-    var res = a.value.cmp(b.value);
+    var res = a.value - b.value;
     if (res !== 0)
       return res;
     return utils.cmp(a.encode(), b.encode());
@@ -1353,8 +1235,6 @@ MTX.prototype.avoidFeeSniping = function avoidFeeSniping(height) {
 
 MTX.prototype.setLocktime = function setLocktime(locktime) {
   var i, input;
-
-  assert(this.ts === 0, 'Cannot modify a confirmed tx.');
 
   for (i = 0; i &lt; this.inputs.length; i++) {
     input = this.inputs[i];
@@ -1408,16 +1288,6 @@ MTX.fromExtended = function fromExtended(data, enc) {
 };
 
 /**
- * Convert a TX to an MTX.
- * @param {TX} tx
- * @returns {MTX}
- */
-
-MTX.fromTX = function fromTX(tx) {
-  return new MTX(tx);
-};
-
-/**
  * Convert the MTX to a TX.
  * @returns {TX}
  */
@@ -1440,6 +1310,10 @@ MTX.isMTX = function isMTX(obj) {
     &amp;&amp; typeof obj.scriptInput === 'function';
 };
 
+/*
+ * Expose
+ */
+
 module.exports = MTX;
 </code></pre>
         </article>
@@ -1451,13 +1325,13 @@ module.exports = MTX;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -67,27 +67,22 @@ var BufferReader = require('./reader');
  */
 
 function Block(data) {
-  var self = this;
+  var i, tx;
 
   if (!(this instanceof Block))
     return new Block(data);
 
   bcoin.abstractblock.call(this, data);
 
-  this.type = 'block';
-
-  this._witnessSize = data._witnessSize || 0;
-
-  this.txs = data.txs || [];
-
+  this.txs = [];
   this._cbHeight = null;
+  this._commitmentHash = null;
+  this._raw = null;
 
-  this.txs = this.txs.map(function(data, i) {
-    if (data instanceof bcoin.tx)
-      return data;
-
-    return bcoin.tx(data, self, i);
-  });
+  if (data.txs) {
+    for (i = 0; i &lt; data.txs.length; i++)
+      this.addTX(data.txs[i]);
+  }
 }
 
 utils.inherits(Block, bcoin.abstractblock);
@@ -107,6 +102,8 @@ Block.prototype.render = function render() {
  */
 
 Block.prototype.renderNormal = function renderNormal() {
+  if (!this.hasWitness())
+    return this.getRaw();
   return bcoin.protocol.framer.block(this);
 };
 
@@ -116,6 +113,8 @@ Block.prototype.renderNormal = function renderNormal() {
  */
 
 Block.prototype.renderWitness = function renderWitness() {
+  if (this.hasWitness())
+    return this.getRaw();
   return bcoin.protocol.framer.witnessBlock(this);
 };
 
@@ -128,84 +127,88 @@ Block.prototype.renderWitness = function renderWitness() {
 Block.prototype.getRaw = function getRaw() {
   var raw;
 
+  if (this._raw) {
+    assert(this._size > 0);
+    assert(this._witnessSize >= 0);
+    return this._raw;
+  }
+
   if (this.hasWitness())
     raw = bcoin.protocol.framer.witnessBlock(this);
   else
     raw = bcoin.protocol.framer.block(this);
 
-  this._size = raw.length;
-  this._witnessSize = raw._witnessSize;
+  if (!this.mutable) {
+    this._size = raw.length;
+    this._witnessSize = raw._witnessSize;
+    this._raw = raw;
+  }
 
   return raw;
 };
 
-Block.prototype._getSize = function _getSize() {
-  var sizes = bcoin.protocol.framer.block.sizes(this);
-  this._size = sizes.size;
-  this._witnessSize = sizes.witnessSize;
+/**
+ * Calculate real size and size of the witness bytes.
+ * @returns {Object} Contains `size` and `witnessSize`.
+ */
+
+Block.prototype.getSizes = function getSizes() {
+  if (this._size != null) {
+    return {
+      size: this._size,
+      witnessSize: this._witnessSize
+    };
+  }
+
+  if (!this.mutable) {
+    this.getRaw();
+    return {
+      size: this._size,
+      witnessSize: this._witnessSize
+    };
+  }
+
+  return bcoin.protocol.framer.block.sizes(this);
 };
 
 /**
  * Calculate virtual block size.
- * @param {Boolean?} force - If true, always recalculate.
  * @returns {Number} Virtual size.
  */
 
-Block.prototype.getVirtualSize = function getVirtualSize(force) {
+Block.prototype.getVirtualSize = function getVirtualSize() {
   var scale = constants.WITNESS_SCALE_FACTOR;
   return (this.getCost() + scale - 1) / scale | 0;
 };
 
 /**
  * Calculate block cost.
- * @param {Boolean?} force - If true, always recalculate.
  * @returns {Number} cost
  */
 
-Block.prototype.getCost = function getCost(force) {
-  var size, witnessSize, base;
-
-  size = this.getSize(force);
-  witnessSize = this.getWitnessSize(force);
-  base = size - witnessSize;
-
-  return base * (constants.WITNESS_SCALE_FACTOR - 1) + size;
+Block.prototype.getCost = function getCost() {
+  var sizes = this.getSizes();
+  var base = sizes.size - sizes.witnessSize;
+  return base * (constants.WITNESS_SCALE_FACTOR - 1) + sizes.size;
 };
 
 /**
  * Get real block size.
- * @param {Boolean?} force - If true, always recalculate.
  * @returns {Number} size
  */
 
-Block.prototype.getSize = function getSize(force) {
-  if (force || this._size === 0)
-    this._getSize();
-  return this._size;
+Block.prototype.getSize = function getSize() {
+  return this.getSizes().size;
 };
 
 /**
  * Get base block size (without witness).
- * @param {Boolean?} force - If true, always recalculate.
  * @returns {Number} size
  */
 
-Block.prototype.getBaseSize = function getBaseSize(force) {
-  if (force || this._size === 0)
-    this._getSize();
-  return this._size - this._witnessSize;
-};
-
-/**
- * Get the total size of the witnesses.
- * @param {Boolean?} force - If true, always recalculate.
- * @returns {Number} witness size
- */
-
-Block.prototype.getWitnessSize = function getWitnessSize(force) {
-  if (force || this._size === 0)
-    this._getSize();
-  return this._witnessSize;
+Block.prototype.getBaseSize = function getBaseSize() {
+  var sizes = this.getSizes();
+  return sizes.size - sizes.witnessSize;
 };
 
 /**
@@ -215,11 +218,37 @@ Block.prototype.getWitnessSize = function getWitnessSize(force) {
  */
 
 Block.prototype.hasWitness = function hasWitness() {
-  for (var i = 0; i &lt; this.txs.length; i++) {
+  var i;
+
+  if (this._witnessSize > 0)
+    return true;
+
+  for (i = 0; i &lt; this.txs.length; i++) {
     if (this.txs[i].hasWitness())
       return true;
   }
+
   return false;
+};
+
+/**
+ * Add a transaction to the block's tx vector.
+ * @param {TX|NakedTX} tx
+ * @returns {TX}
+ */
+
+Block.prototype.addTX = function addTX(tx) {
+  var index;
+
+  if (!(tx instanceof bcoin.tx))
+    tx = new bcoin.tx(tx);
+
+  index = this.txs.push(tx) - 1;
+
+  if (!this.mutable)
+    tx.setBlock(this, index);
+
+  return tx;
 };
 
 /**
@@ -342,8 +371,10 @@ Block.prototype.__defineGetter__('commitmentHash', function() {
     }
   }
 
-  if (commitmentHash)
-    this._commitmentHash = commitmentHash.toString('hex');
+  if (!this.mutable) {
+    if (commitmentHash)
+      this._commitmentHash = commitmentHash.toString('hex');
+  }
 
   return this._commitmentHash;
 });
@@ -447,29 +478,47 @@ Block.prototype.getCoinbaseHeight = function getCoinbaseHeight() {
     return -1;
 
   height = coinbase.inputs[0].script.getCoinbaseHeight();
-  this._cbHeight = height;
+
+  if (!this.mutable)
+    this._cbHeight = height;
 
   return height;
 };
 
 /**
  * Calculate the block reward.
- * @returns {BN} reward
+ * @returns {Amount} reward
  */
 
 Block.prototype.getReward = function getReward(network) {
   var reward = Block.reward(this.height, network);
-  var i;
+  var i, fee;
 
-  for (i = 1; i &lt; this.txs.length; i++)
-    reward.iadd(this.txs[i].getFee());
+  for (i = 1; i &lt; this.txs.length; i++) {
+    fee = this.txs[i].getFee();
+
+    if (fee &lt; 0 || fee > constants.MAX_MONEY)
+      return -1;
+
+    reward += fee;
+
+    // We don't want to go above 53 bits.
+    // This is to make the getClaimed check
+    // fail if the miner mined an evil block.
+    // Note that this check ONLY works because
+    // MAX_MONEY is 51 bits. The result of
+    // (51 bits + 51 bits) is _never_ greater
+    // than 52 bits.
+    if (reward &lt; 0 || reward > constants.MAX_MONEY)
+      return -1;
+  }
 
   return reward;
 };
 
 /**
  * Get the "claimed" reward by the coinbase.
- * @returns {BN} claimed
+ * @returns {Amount} claimed
  */
 
 Block.prototype.getClaimed = function getClaimed() {
@@ -481,25 +530,31 @@ Block.prototype.getClaimed = function getClaimed() {
 /**
  * Calculate block subsidy.
  * @param {Number} height - Reward era by height.
- * @returns {BN}
+ * @returns {Amount}
  */
 
 Block.reward = function reward(height, network) {
-  var halvings, reward;
+  var halvings;
+
+  assert(height >= 0, 'Bad height for reward.');
 
   network = bcoin.network.get(network);
   halvings = height / network.halvingInterval | 0;
 
-  if (height &lt; 0)
-    return new bn(0);
+  // BIP 42 (well, our own version of it,
+  // since we can only handle 32 bit shifts).
+  // https://github.com/bitcoin/bips/blob/master/bip-0042.mediawiki
+  if (halvings >= 33)
+    return 0;
 
-  if (halvings >= 64)
-    return new bn(0);
+  // We need to shift right by `halvings`,
+  // but 50 btc is a 33 bit number, so we
+  // cheat. We only start halving once the
+  // halvings are at least 1.
+  if (halvings === 0)
+    return 5000000000;
 
-  reward = new bn(5000000000);
-  reward.iushrn(halvings);
-
-  return reward;
+  return 2500000000 >>> (halvings - 1);
 };
 
 /**
@@ -535,9 +590,9 @@ Block.prototype.getPrevout = function getPrevout() {
 
 Block.prototype.inspect = function inspect() {
   return {
-    type: this.type,
-    height: this.height,
+    type: 'block',
     hash: utils.revHex(this.hash('hex')),
+    height: this.height,
     size: this.getSize(),
     virtualSize: this.getVirtualSize(),
     date: utils.date(this.ts),
@@ -566,8 +621,8 @@ Block.prototype.inspect = function inspect() {
 Block.prototype.toJSON = function toJSON() {
   return {
     type: 'block',
-    height: this.height,
     hash: utils.revHex(this.hash('hex')),
+    height: this.height,
     version: this.version,
     prevBlock: utils.revHex(this.prevBlock),
     merkleRoot: utils.revHex(this.merkleRoot),
@@ -673,6 +728,10 @@ Block.isBlock = function isBlock(obj) {
     &amp;&amp; typeof obj.toCompact === 'function';
 };
 
+/*
+ * Expose
+ */
+
 module.exports = Block;
 </code></pre>
         </article>
@@ -684,13 +743,13 @@ module.exports = Block;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

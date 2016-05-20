@@ -48,9 +48,6 @@ var BufferWriter = require('./writer');
  * @exports TX
  * @constructor
  * @param {NakedTX} data - Transaction fields.
- * @param {(Block|MerkleBlock)?} block - Block the transaction was included in.
- * @param {Number?} index - The index of the transaction in the block's
- * transaction vector.
  * @property {String} type - "tx" (inv type).
  * @property {Number} version - Transaction version. Note that BCoin reads
  * versions as unsigned even though they are signed at the protocol level.
@@ -79,19 +76,19 @@ var BufferWriter = require('./writer');
  * witness is present. All zeroes if coinbase).
  */
 
-function TX(data, block, index) {
+function TX(data) {
   var i;
 
   if (!(this instanceof TX))
-    return new TX(data, block, index);
+    return new TX(data);
 
   assert(data, 'TX data is required.');
   assert(typeof data.version === 'number');
+  assert(typeof data.flag === 'number');
   assert(Array.isArray(data.inputs));
   assert(Array.isArray(data.outputs));
   assert(typeof data.locktime === 'number');
 
-  this.type = 'tx';
   this.version = data.version;
   this.flag = data.flag;
   this.inputs = [];
@@ -102,27 +99,24 @@ function TX(data, block, index) {
   this.index = data.index != null ? data.index : -1;
   this.ps = this.ts === 0 ? (data.ps != null ? data.ps : utils.now()) : 0;
   this.height = data.height != null ? data.height : -1;
+  this.mutable = false;
 
   this._hash = null;
   this._whash = null;
-  this._raw = data._raw || null;
-  this._size = data._size || 0;
-  this._witnessSize = data._witnessSize || 0;
+  this._raw = null;
+  this._size = null;
+  this._witnessSize = null;
+  this._outputValue = null;
+  this._inputValue = null;
+  this._hashPrevouts = null;
+  this._hashSequence = null;
+  this._hashOutputs = null;
 
   for (i = 0; i &lt; data.inputs.length; i++)
     this.inputs.push(new bcoin.input(data.inputs[i]));
 
   for (i = 0; i &lt; data.outputs.length; i++)
     this.outputs.push(new bcoin.output(data.outputs[i]));
-
-  if (block &amp;&amp; this.ts === 0) {
-    if (block.type === 'merkleblock') {
-      if (block.hasTX(this))
-        this.setBlock(block, index);
-    } else {
-      this.setBlock(block, index);
-    }
-  }
 }
 
 /**
@@ -135,10 +129,10 @@ TX.prototype.clone = function clone() {
 
   copy = {
     version: this.version,
+    flag: this.flag,
     inputs: [],
     outputs: [],
     locktime: this.locktime,
-    flag: this.flag,
     ts: this.ts,
     block: this.block,
     index: this.index,
@@ -186,7 +180,7 @@ TX.prototype.setBlock = function setBlock(block, index) {
   this.ts = block.ts;
   this.block = block.hash('hex');
   this.height = block.height;
-  this.index = index;
+  this.index = index == null ? -1 : index;
   this.ps = 0;
 };
 
@@ -208,11 +202,16 @@ TX.prototype.unsetBlock = function unsetBlock() {
  * @returns {Hash|Buffer} hash
  */
 
-TX.prototype.hash = function hash(enc) {
-  if (!this._hash)
-    this._hash = utils.dsha256(this.renderNormal());
+TX.prototype.hash = function _hash(enc) {
+  var hash = this._hash;
 
-  return enc === 'hex' ? this._hash.toString('hex') : this._hash;
+  if (!hash) {
+    hash = utils.dsha256(this.renderNormal());
+    if (!this.mutable)
+      this._hash = hash;
+  }
+
+  return enc === 'hex' ? hash.toString('hex') : hash;
 };
 
 /**
@@ -225,19 +224,24 @@ TX.prototype.hash = function hash(enc) {
  */
 
 TX.prototype.witnessHash = function witnessHash(enc) {
+  var hash = this._whash;
+
   if (this.isCoinbase()) {
     return enc === 'hex'
       ? constants.NULL_HASH
-      : utils.slice(constants.ZERO_HASH);
+      : utils.copy(constants.ZERO_HASH);
   }
 
   if (!this.hasWitness())
     return this.hash(enc);
 
-  if (!this._whash)
-    this._whash = utils.dsha256(this.renderWitness());
+  if (!hash) {
+    hash = utils.dsha256(this.renderWitness());
+    if (!this.mutable)
+      this._whash = hash;
+  }
 
-  return enc === 'hex' ? this._whash.toString('hex') : this._whash;
+  return enc === 'hex' ? hash.toString('hex') : hash;
 };
 
 /**
@@ -302,11 +306,30 @@ TX.prototype.getRaw = function getRaw() {
   else
     raw = bcoin.protocol.framer.tx(this);
 
-  this._raw = raw;
-  this._size = raw.length;
-  this._witnessSize = raw._witnessSize;
+  if (!this.mutable) {
+    this._raw = raw;
+    this._size = raw.length;
+    this._witnessSize = raw._witnessSize;
+  }
 
   return raw;
+};
+
+/**
+ * Calculate real size and size of the witness bytes.
+ * @returns {Object} Contains `size` and `witnessSize`.
+ */
+
+TX.prototype.getSizes = function getSizes() {
+  if (this.mutable)
+    return bcoin.protocol.framer.tx.sizes(this);
+
+  this.getRaw();
+
+  return {
+    size: this._size,
+    witnessSize: this._witnessSize
+  };
 };
 
 /**
@@ -327,15 +350,9 @@ TX.prototype.getVirtualSize = function getVirtualSize() {
  */
 
 TX.prototype.getCost = function getCost() {
-  var size, witnessSize, base;
-
-  this.getRaw();
-
-  size = this._size;
-  witnessSize = this._witnessSize;
-  base = size - witnessSize;
-
-  return base * (constants.WITNESS_SCALE_FACTOR - 1) + size;
+  var sizes = this.getSizes();
+  var base = sizes.size - sizes.witnessSize;
+  return base * (constants.WITNESS_SCALE_FACTOR - 1) + sizes.size;
 };
 
 /**
@@ -345,7 +362,19 @@ TX.prototype.getCost = function getCost() {
  */
 
 TX.prototype.getSize = function getSize() {
-  return this.getRaw().length;
+  return this.getSizes().size;
+};
+
+/**
+ * Calculate the size of the transaction
+ * without the witness.
+ * with the witness included.
+ * @returns {Number} size
+ */
+
+TX.prototype.getBaseSize = function getBaseSize() {
+  var sizes = this.getSizes();
+  return sizes.size - sizes.witnessSize;
 };
 
 /**
@@ -355,6 +384,9 @@ TX.prototype.getSize = function getSize() {
 
 TX.prototype.hasWitness = function hasWitness() {
   var i;
+
+  if (this._witnessSize > 0)
+    return true;
 
   for (i = 0; i &lt; this.inputs.length; i++) {
     if (this.inputs[i].witness.items.length > 0)
@@ -426,7 +458,7 @@ TX.prototype.signatureHashV0 = function signatureHashV0(index, prev, type) {
 
   // Remove all signatures.
   for (i = 0; i &lt; copy.inputs.length; i++)
-    copy.inputs[i].script = new Script([]);
+    copy.inputs[i].script = new Script();
 
   // Remove all code separators.
   prev = prev.removeSeparators();
@@ -447,7 +479,7 @@ TX.prototype.signatureHashV0 = function signatureHashV0(index, prev, type) {
     // Bitcoind used to return 1 as an error code:
     // it ended up being treated like a hash.
     if (index >= copy.outputs.length)
-      return utils.slice(constants.ONE_HASH);
+      return utils.copy(constants.ONE_HASH);
 
     // Drop all the outputs after the input index.
     copy.outputs.length = index + 1;
@@ -455,8 +487,8 @@ TX.prototype.signatureHashV0 = function signatureHashV0(index, prev, type) {
     // Null outputs that are not the at current input index.
     for (i = 0; i &lt; copy.outputs.length; i++) {
       if (i !== index) {
-        copy.outputs[i].script = new Script([]);
-        copy.outputs[i].value = utils.U64;
+        copy.outputs[i].script = new Script();
+        copy.outputs[i].value = -1;
       }
     }
 
@@ -508,7 +540,7 @@ TX.prototype.signatureHashV1 = function signatureHashV1(index, prev, type) {
         this._hashPrevouts = hashPrevouts;
     }
   } else {
-    hashPrevouts = utils.slice(constants.ZERO_HASH);
+    hashPrevouts = utils.copy(constants.ZERO_HASH);
   }
 
   if (!(type &amp; constants.hashType.ANYONECANPAY)
@@ -525,7 +557,7 @@ TX.prototype.signatureHashV1 = function signatureHashV1(index, prev, type) {
         this._hashSequence = hashSequence;
     }
   } else {
-    hashSequence = utils.slice(constants.ZERO_HASH);
+    hashSequence = utils.copy(constants.ZERO_HASH);
   }
 
   if ((type &amp; 0x1f) !== constants.hashType.SINGLE
@@ -544,7 +576,7 @@ TX.prototype.signatureHashV1 = function signatureHashV1(index, prev, type) {
     hashOutputs = bcoin.protocol.framer.output(this.outputs[index]);
     hashOutputs = utils.dsha256(hashOutputs);
   } else {
-    hashOutputs = utils.slice(constants.ZERO_HASH);
+    hashOutputs = utils.copy(constants.ZERO_HASH);
   }
 
   p.write32(this.version);
@@ -674,45 +706,57 @@ TX.prototype.isCoinbase = function isCoinbase() {
 
 /**
  * Calculate the fee for the transaction.
- * @returns {BN} fee (zero if not all coins are available).
+ * @returns {Amount} fee (zero if not all coins are available).
  */
 
 TX.prototype.getFee = function getFee() {
   if (!this.hasCoins())
-    return new bn(0);
+    return 0;
 
-  return this.getInputValue().sub(this.getOutputValue());
+  return this.getInputValue() - this.getOutputValue();
 };
 
 /**
  * Calculate the total input value.
- * @returns {BN} value
+ * @returns {Amount} value
  */
 
 TX.prototype.getInputValue = function getInputValue() {
-  var total = new bn(0);
+  var total = 0;
   var i;
+
+  if (this._inputValue != null)
+    return this._inputValue;
 
   if (!this.hasCoins())
     return total;
 
   for (i = 0; i &lt; this.inputs.length; i++)
-    total.iadd(this.inputs[i].coin.value);
+    total += this.inputs[i].coin.value;
+
+  if (!this.mutable)
+    this._inputValue = total;
 
   return total;
 };
 
 /**
  * Calculate the total output value.
- * @returns {BN} value
+ * @returns {Amount} value
  */
 
 TX.prototype.getOutputValue = function getOutputValue() {
-  var total = new bn(0);
+  var total = 0;
   var i;
 
+  if (this._outputValue != null)
+    return this._outputValue;
+
   for (i = 0; i &lt; this.outputs.length; i++)
-    total.iadd(this.outputs[i].value);
+    total += this.outputs[i].value;
+
+  if (!this.mutable)
+    this._outputValue = total;
 
   return total;
 };
@@ -907,7 +951,7 @@ TX.prototype.hasCoins = function hasCoins() {
 
 TX.prototype.fillCoins = function fillCoins(coins) {
   var total = 0;
-  var inputs, txs, key, i, input;
+  var inputs, txs, key, i, input, prevout;
 
   if ((coins instanceof bcoin.coin) || (coins instanceof bcoin.tx))
     coins = [coins];
@@ -929,12 +973,13 @@ TX.prototype.fillCoins = function fillCoins(coins) {
 
   for (i = 0; i &lt; this.inputs.length; i++) {
     input = this.inputs[i];
+    prevout = input.prevout;
 
     if (!input.coin) {
-      if (coins[input.prevout.hash]) {
-        input.coin = bcoin.coin(coins[input.prevout.hash], input.prevout.index);
+      if (coins[prevout.hash]) {
+        input.coin = bcoin.coin.fromTX(coins[prevout.hash], prevout.index);
       } else {
-        key = input.prevout.hash + '/' + input.prevout.index;
+        key = prevout.hash + '/' + prevout.index;
         if (coins[key])
           input.coin = coins[key];
       }
@@ -1084,7 +1129,7 @@ TX.prototype.getSigops = function getSigops(flags) {
 
 TX.prototype.isSane = function isSane(ret) {
   var prevout = {};
-  var total = new bn(0);
+  var total = 0;
   var i, input, output, size, key;
 
   if (!ret)
@@ -1102,7 +1147,7 @@ TX.prototype.isSane = function isSane(ret) {
     return false;
   }
 
-  if (this.getSize() > constants.block.MAX_SIZE) {
+  if (this.getBaseSize() > constants.block.MAX_SIZE) {
     ret.reason = 'bad-txns-oversize';
     ret.score = 100;
     return false;
@@ -1111,21 +1156,21 @@ TX.prototype.isSane = function isSane(ret) {
   for (i = 0; i &lt; this.outputs.length; i++) {
     output = this.outputs[i];
 
-    if (output.value.cmpn(0) &lt; 0) {
+    if (output.value &lt; 0) {
       ret.reason = 'bad-txns-vout-negative';
       ret.score = 100;
       return false;
     }
 
-    if (output.value.cmp(constants.MAX_MONEY) > 0) {
+    if (output.value > constants.MAX_MONEY) {
       ret.reason = 'bad-txns-vout-toolarge';
       ret.score = 100;
       return false;
     }
 
-    total.iadd(output.value);
+    total += output.value;
 
-    if (total.cmpn(0) &lt; 0 || total.cmp(constants.MAX_MONEY) > 0) {
+    if (total &lt; 0 || total > constants.MAX_MONEY) {
       ret.reason = 'bad-txns-txouttotal-toolarge';
       ret.score = 100;
       return false;
@@ -1314,7 +1359,7 @@ TX.prototype.hasStandardInputs = function hasStandardInputs(flags) {
  */
 
 TX.prototype.checkInputs = function checkInputs(spendHeight, ret) {
-  var total = new bn(0);
+  var total = 0;
   var i, input, coin, fee, value;
 
   if (!ret)
@@ -1332,16 +1377,16 @@ TX.prototype.checkInputs = function checkInputs(spendHeight, ret) {
       }
     }
 
-    if (coin.value.cmpn(0) &lt; 0 || coin.value.cmp(constants.MAX_MONEY) > 0) {
+    if (coin.value &lt; 0 || coin.value > constants.MAX_MONEY) {
       ret.reason = 'bad-txns-inputvalues-outofrange';
       ret.score = 100;
       return false;
     }
 
-    total.iadd(coin.value);
+    total += coin.value;
   }
 
-  if (total.cmpn(0) &lt; 0 || total.cmp(constants.MAX_MONEY) > 0) {
+  if (total &lt; 0 || total > constants.MAX_MONEY) {
     ret.reason = 'bad-txns-inputvalues-outofrange';
     ret.score = 100;
     return false;
@@ -1349,21 +1394,21 @@ TX.prototype.checkInputs = function checkInputs(spendHeight, ret) {
 
   value = this.getOutputValue();
 
-  if (value.cmp(total) > 0) {
+  if (value > total) {
     ret.reason = 'bad-txns-in-belowout'
     ret.score = 100;
     return false;
   }
 
-  fee = total.sub(value);
+  fee = total - value;
 
-  if (fee.cmpn(0) &lt; 0) {
+  if (fee &lt; 0) {
     ret.reason = 'bad-txns-fee-negative';
     ret.score = 100;
     return false;
   }
 
-  if (fee.cmp(constants.MAX_MONEY) > 0) {
+  if (fee > constants.MAX_MONEY) {
     ret.reason = 'bad-txns-fee-outofrange';
     ret.score = 100;
     return false;
@@ -1413,14 +1458,15 @@ TX.prototype.getModifiedSize = function getModifiedSize(size) {
  * @param {Number?} size - Size to calculate priority
  * based on. If not present, modified size will be
  * calculated and used.
- * @returns {BN} priority
+ * @returns {Object} data - Object containing
+ * `priority` and `value`.
  */
 
 TX.prototype.getPriority = function getPriority(height, size) {
   var sum, i, input, age, value;
 
   if (this.isCoinbase())
-    return new bn(0);
+    return { value: 0, priority: 0 };
 
   if (height == null) {
     height = this.height;
@@ -1431,8 +1477,8 @@ TX.prototype.getPriority = function getPriority(height, size) {
   if (size == null)
     size = this.maxSize();
 
-  sum = new bn(0);
-  value = new bn(0);
+  sum = 0;
+  value = 0;
 
   for (i = 0; i &lt; this.inputs.length; i++) {
     input = this.inputs[i];
@@ -1445,14 +1491,14 @@ TX.prototype.getPriority = function getPriority(height, size) {
 
     if (input.coin.height &lt;= height) {
       age = height - input.coin.height;
-      value.iadd(input.coin.value);
-      sum.iadd(input.coin.value.muln(age));
+      sum += input.coin.value * age;
+      value += input.coin.value;
     }
   }
 
   return {
     value: value,
-    priority: sum.divn(size)
+    priority: Math.floor(sum / size)
   };
 };
 
@@ -1469,7 +1515,7 @@ TX.prototype.getPriority = function getPriority(height, size) {
  */
 
 TX.prototype.isFree = function isFree(height, size) {
-  var priority;
+  var data;
 
   if (height == null) {
     height = this.height;
@@ -1477,9 +1523,9 @@ TX.prototype.isFree = function isFree(height, size) {
       height = bcoin.network.get().height + 1;
   }
 
-  priority = this.getPriority(height, size).priority;
+  data = this.getPriority(height, size);
 
-  return priority.cmp(constants.tx.FREE_THRESHOLD) > 0;
+  return data.priority > constants.tx.FREE_THRESHOLD;
 };
 
 /**
@@ -1487,8 +1533,8 @@ TX.prototype.isFree = function isFree(height, size) {
  * to be relayable (not the constant min relay fee).
  * @param {Number?} size - If not present, max size
  * estimation will be calculated and used.
- * @param {Number?} rate - Rate of satoshi per kB.
- * @returns {BN} fee
+ * @param {Rate?} rate - Rate of satoshi per kB.
+ * @returns {Amount} fee
  */
 
 TX.prototype.getMinFee = function getMinFee(size, rate) {
@@ -1499,24 +1545,17 @@ TX.prototype.getMinFee = function getMinFee(size, rate) {
 };
 
 /**
- * Calculate minimum fee based on rate and size.
+ * Calculate the transaction's rate based on size
+ * and fees. Size will be calculated if not present.
  * @param {Number?} size
- * @param {Number?} rate - Rate of satoshi per kB.
- * @returns {BN} fee
+ * @returns {Rate}
  */
 
-TX.getMinFee = function getMinFee(size, rate) {
-  var fee;
+TX.prototype.getRate = function getRate(size) {
+  if (size == null)
+    size = this.maxSize();
 
-  if (rate == null)
-    rate = constants.tx.MIN_RELAY;
-
-  fee = new bn(rate).muln(size).divn(1000);
-
-  if (fee.cmpn(0) === 0 &amp;&amp; rate > 0)
-    fee = new bn(rate);
-
-  return fee;
+  return TX.getRate(size, this.getFee());
 };
 
 /**
@@ -1525,8 +1564,8 @@ TX.getMinFee = function getMinFee(size, rate) {
  * when taking into account size.
  * @param {Number?} size - If not present, max size
  * estimation will be calculated and used.
- * @param {Number?} rate - Rate of satoshi per kB.
- * @returns {BN} fee
+ * @param {Rate?} rate - Rate of satoshi per kB.
+ * @returns {Amount} fee
  */
 
 TX.prototype.getMaxFee = function getMaxFee(size, rate) {
@@ -1538,10 +1577,10 @@ TX.prototype.getMaxFee = function getMaxFee(size, rate) {
   if (rate == null)
     rate = constants.tx.MIN_RELAY;
 
-  fee = new bn(rate).muln(Math.ceil(size / 1000));
+  fee = rate * Math.ceil(size / 1000);
 
-  if (fee.cmpn(0) === 0 &amp;&amp; rate > 0)
-    fee = new bn(rate);
+  if (fee === 0 &amp;&amp; rate > 0)
+    fee = rate;
 
   return fee;
 };
@@ -1690,6 +1729,38 @@ TX.prototype.__defineGetter__('wtxid', function() {
 });
 
 /**
+ * Calculate minimum fee based on rate and size.
+ * @param {Number?} size
+ * @param {Rate?} rate - Rate of satoshi per kB.
+ * @returns {Amount} fee
+ */
+
+TX.getMinFee = function getMinFee(size, rate) {
+  var fee;
+
+  if (rate == null)
+    rate = constants.tx.MIN_RELAY;
+
+  fee = Math.floor(rate * size / 1000);
+
+  if (fee === 0 &amp;&amp; rate > 0)
+    fee = rate;
+
+  return fee;
+};
+
+/**
+ * Calculate a fee rate based on size and fees.
+ * @param {Number} size
+ * @param {Amount} fee
+ * @returns {Rate}
+ */
+
+TX.getRate = function(size, fee) {
+  return Math.floor(fee * 1000 / size);
+};
+
+/**
  * Inspect the transaction and return a more
  * user-friendly representation of the data.
  * @returns {Object}
@@ -1697,15 +1768,16 @@ TX.prototype.__defineGetter__('wtxid', function() {
 
 TX.prototype.inspect = function inspect() {
   return {
-    type: this.type,
-    hash: utils.revHex(this.hash('hex')),
-    witnessHash: utils.revHex(this.witnessHash('hex')),
+    type: 'tx',
+    hash: this.rhash,
+    witnessHash: this.rwhash,
     size: this.getSize(),
     virtualSize: this.maxSize(),
     height: this.height,
     value: utils.btc(this.getOutputValue()),
     fee: utils.btc(this.getFee()),
     minFee: utils.btc(this.getMinFee()),
+    rate: utils.btc(this.getRate()),
     confirmations: this.getConfirmations(),
     priority: this.getPriority().priority.toString(10),
     date: utils.date(this.ts || this.ps),
@@ -1715,6 +1787,7 @@ TX.prototype.inspect = function inspect() {
     index: this.index,
     changeIndex: this.changeIndex || -1,
     version: this.version,
+    flag: this.flag,
     inputs: this.inputs,
     outputs: this.outputs,
     locktime: this.locktime
@@ -1741,6 +1814,7 @@ TX.prototype.toJSON = function toJSON() {
     index: this.index,
     changeIndex: this.changeIndex || -1,
     version: this.version,
+    flag: this.flag,
     inputs: this.inputs.map(function(input) {
       return input.toJSON();
     }),
@@ -1769,6 +1843,7 @@ TX.parseJSON = function fromJSON(json) {
     index: json.index,
     changeIndex: json.changeIndex || -1,
     version: json.version,
+    flag: json.flag,
     inputs: json.inputs.map(function(input) {
       return bcoin.input.parseJSON(input);
     }),
@@ -1919,6 +1994,11 @@ TX.isTX = function isTX(obj) {
     &amp;&amp; typeof obj.getVirtualSize === 'function';
 };
 
+/*
+ * Expose
+ */
+
+
 module.exports = TX;
 </code></pre>
         </article>
@@ -1930,13 +2010,13 @@ module.exports = TX;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

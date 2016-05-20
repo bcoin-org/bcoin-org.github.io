@@ -325,7 +325,7 @@ be changed in the future.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line857">line 857</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line813">line 813</a>
     </li></ul></dd>
     
 
@@ -482,7 +482,7 @@ account negative zero, minimaldata, etc.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1935">line 1935</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1892">line 1892</a>
     </li></ul></dd>
     
 
@@ -528,8 +528,9 @@ account negative zero, minimaldata, etc.</p>
     <h5>Example</h5>
     
     <pre class="prettyprint"><code>assert.deepEqual(Script.array(0), new Buffer([]));
-assert.deepEqual(Script.array(0xffee), new Buffer([0xee, 0xff]));
-assert.deepEqual(Script.array(new bn(0xffee)), new Buffer([0xee, 0xff]));</code></pre>
+assert.deepEqual(Script.array(0xffee), new Buffer([0xee, 0xff, 0x00]));
+assert.deepEqual(Script.array(new bn(0xffee)), new Buffer([0xee, 0xff, 0x00]));
+assert.deepEqual(Script.array(new bn(0x1e).ineg()), new Buffer([0x9e]));</code></pre>
 
 
 
@@ -641,7 +642,7 @@ assert.deepEqual(Script.array(new bn(0xffee)), new Buffer([0xee, 0xff]));</code>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1846">line 1846</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1802">line 1802</a>
     </li></ul></dd>
     
 
@@ -843,7 +844,7 @@ assert.deepEqual(Script.array(new bn(0xffee)), new Buffer([0xee, 0xff]));</code>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1782">line 1782</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1738">line 1738</a>
     </li></ul></dd>
     
 
@@ -1036,7 +1037,7 @@ assert.deepEqual(Script.array(new bn(0xffee)), new Buffer([0xee, 0xff]));</code>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2046">line 2046</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2075">line 2075</a>
     </li></ul></dd>
     
 
@@ -1231,7 +1232,7 @@ assert.deepEqual(Script.array(new bn(0xffee)), new Buffer([0xee, 0xff]));</code>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1809">line 1809</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1765">line 1765</a>
     </li></ul></dd>
     
 
@@ -1489,7 +1490,7 @@ and high S values.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3908">line 3908</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3875">line 3875</a>
     </li></ul></dd>
     
 
@@ -1638,7 +1639,7 @@ and high S values.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3881">line 3881</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3848">line 3848</a>
     </li></ul></dd>
     
 
@@ -1791,7 +1792,7 @@ and high S values.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2223">line 2223</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2252">line 2252</a>
     </li></ul></dd>
     
 
@@ -1986,7 +1987,7 @@ and high S values.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2152">line 2152</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2181">line 2181</a>
     </li></ul></dd>
     
 
@@ -2135,7 +2136,7 @@ and high S values.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2194">line 2194</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2223">line 2223</a>
     </li></ul></dd>
     
 
@@ -2277,6 +2278,9 @@ and high S values.</p></td>
             <td class="type">
             
                 
+<span class="param-type"><a href="Address.html">Address</a></span>
+|
+
 <span class="param-type"><a href="global.html#Base58Address">Base58Address</a></span>
 
 
@@ -2297,7 +2301,7 @@ and high S values.</p></td>
 
             
 
-            <td class="description last"><p>Base58 address to send to.</p></td>
+            <td class="description last"><p>Address to send to.</p></td>
         </tr>
 
     
@@ -2442,10 +2446,7 @@ and high S values.</p></td>
             <td class="type">
             
                 
-<span class="param-type">Boolean</span>
-|
-
-<span class="param-type">Array.&lt;Buffer></span>
+<span class="param-type">Buffer</span>
 
 
             
@@ -2511,7 +2512,7 @@ and high S values.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2712">line 2712</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2741">line 2741</a>
     </li></ul></dd>
     
 
@@ -2665,7 +2666,7 @@ and high S values.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2124">line 2124</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2153">line 2153</a>
     </li></ul></dd>
     
 
@@ -2814,7 +2815,7 @@ and high S values.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2134">line 2134</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2163">line 2163</a>
     </li></ul></dd>
     
 
@@ -2963,7 +2964,7 @@ and high S values.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2179">line 2179</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2208">line 2208</a>
     </li></ul></dd>
     
 
@@ -3135,7 +3136,7 @@ and high S values.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2210">line 2210</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2239">line 2239</a>
     </li></ul></dd>
     
 
@@ -3311,7 +3312,7 @@ Buffer slices. Larger buffer slices should
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line4022">line 4022</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3989">line 3989</a>
     </li></ul></dd>
     
 
@@ -3469,7 +3470,7 @@ code's pushdatas to minimaldata representations.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line4118">line 4118</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line4085">line 4085</a>
     </li></ul></dd>
     
 
@@ -3499,6 +3500,157 @@ code's pushdatas to minimaldata representations.</p>
     <p>Serialized script.</p>
 </div>
 
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".encodePush"><span class="type-signature">(static) </span>encodePush<span class="signature">(data)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Encode a single push op. Note that this
+will <em>always</em> be a PUSHDATA. Used for
+findAndDelete.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line4172">line 4172</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
 
 
 <dl>
@@ -3622,7 +3774,7 @@ code's pushdatas to minimaldata representations.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3258">line 3258</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3261">line 3261</a>
     </li></ul></dd>
     
 
@@ -3818,7 +3970,7 @@ code's pushdatas to minimaldata representations.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3319">line 3319</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3322">line 3322</a>
     </li></ul></dd>
     
 
@@ -4017,7 +4169,7 @@ code's pushdatas to minimaldata representations.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3981">line 3981</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3948">line 3948</a>
     </li></ul></dd>
     
 
@@ -4167,7 +4319,7 @@ string into a script object.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3563">line 3563</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3566">line 3566</a>
     </li></ul></dd>
     
 
@@ -4195,169 +4347,6 @@ string into a script object.</p>
     <div class="param-desc">
     
         <p>Parse error.</p>
-    
-    </div>
-
-
-    
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type"><a href="Script.html">Script</a></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id=".fromSymbolic"><span class="type-signature">(static) </span>fromSymbolic<span class="signature">(items)</span><span class="type-signature"> &rarr; {<a href="Script.html">Script</a>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Parse an array of opcodes and pushdatas (Buffers) with the
-opcodes as strings representing their symbolic name.
-Script.fromSymbolic(['OP_1', new Buffer([2]), 'OP_ADD']);</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>items</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Array of strings and Buffers.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3668">line 3668</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-<h5>Throws:</h5>
-
-        
-
-    <div class="param-desc">
-    
-        <p>Parse error on unknown opcode.</p>
     
     </div>
 
@@ -4442,7 +4431,7 @@ Script.fromSymbolic(['OP_1', new Buffer([2]), 'OP_ADD']);</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2912">line 2912</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2915">line 2915</a>
     </li></ul></dd>
     
 
@@ -4595,7 +4584,7 @@ Script.fromSymbolic(['OP_1', new Buffer([2]), 'OP_ADD']);</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2257">line 2257</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2286">line 2286</a>
     </li></ul></dd>
     
 
@@ -4751,7 +4740,7 @@ Script.fromSymbolic(['OP_1', new Buffer([2]), 'OP_ADD']);</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3631">line 3631</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3634">line 3634</a>
     </li></ul></dd>
     
 
@@ -4969,7 +4958,7 @@ Script.fromSymbolic(['OP_1', new Buffer([2]), 'OP_ADD']);</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3486">line 3486</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3489">line 3489</a>
     </li></ul></dd>
     
 
@@ -5133,7 +5122,7 @@ scripts.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line4212">line 4212</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line4210">line 4210</a>
     </li></ul></dd>
     
 
@@ -5282,7 +5271,7 @@ scripts.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2083">line 2083</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2112">line 2112</a>
     </li></ul></dd>
     
 
@@ -5443,7 +5432,7 @@ scripts.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3007">line 3007</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3010">line 3010</a>
     </li></ul></dd>
     
 
@@ -5604,7 +5593,7 @@ scripts.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2975">line 2975</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2978">line 2978</a>
     </li></ul></dd>
     
 
@@ -5753,7 +5742,7 @@ scripts.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3215">line 3215</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3218">line 3218</a>
     </li></ul></dd>
     
 
@@ -5915,7 +5904,7 @@ this does not verify the format of the key, only the length.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2986">line 2986</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2989">line 2989</a>
     </li></ul></dd>
     
 
@@ -6064,7 +6053,7 @@ this does not verify the format of the key, only the length.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3054">line 3054</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3057">line 3057</a>
     </li></ul></dd>
     
 
@@ -6213,7 +6202,7 @@ this does not verify the format of the key, only the length.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3238">line 3238</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3241">line 3241</a>
     </li></ul></dd>
     
 
@@ -6362,7 +6351,7 @@ this does not verify the format of the key, only the length.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line4228">line 4228</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line4246">line 4246</a>
     </li></ul></dd>
     
 
@@ -6524,7 +6513,7 @@ this does not verify the format of the signature, only the length.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2997">line 2997</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3000">line 3000</a>
     </li></ul></dd>
     
 
@@ -6673,7 +6662,7 @@ this does not verify the format of the signature, only the length.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3124">line 3124</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3127">line 3127</a>
     </li></ul></dd>
     
 
@@ -6841,7 +6830,7 @@ this does not verify the format of the signature, only the length.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3018">line 3018</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3021">line 3021</a>
     </li></ul></dd>
     
 
@@ -7066,7 +7055,7 @@ this does not verify the format of the signature, only the length.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1875">line 1875</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1831">line 1831</a>
     </li></ul></dd>
     
 
@@ -7279,7 +7268,7 @@ as an options object for Script).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3964">line 3964</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3931">line 3931</a>
     </li></ul></dd>
     
 
@@ -7478,7 +7467,7 @@ as an options object for Script).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3942">line 3942</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3909">line 3909</a>
     </li></ul></dd>
     
 
@@ -7517,6 +7506,160 @@ as an options object for Script).</p>
     <dd>
         
 <span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".sizePush"><span class="type-signature">(static) </span>sizePush<span class="signature">(num)</span><span class="type-signature"> &rarr; {Number}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Calculate the size (including
+the opcode) of a pushdata.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>num</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Pushdata data length.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line4227">line 4227</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>size</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Number</span>
 
 
     </dd>
@@ -7631,7 +7774,7 @@ as an options object for Script).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3650">line 3650</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3653">line 3653</a>
     </li></ul></dd>
     
 
@@ -7827,7 +7970,7 @@ as an options object for Script).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3033">line 3033</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3036">line 3036</a>
     </li></ul></dd>
     
 
@@ -8038,7 +8181,7 @@ this will allow zero-length signatures.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3086">line 3086</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3089">line 3089</a>
     </li></ul></dd>
     
 
@@ -8317,7 +8460,7 @@ this will allow zero-length signatures.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3707">line 3707</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3674">line 3674</a>
     </li></ul></dd>
     
 
@@ -8575,7 +8718,7 @@ the witness to a stack and execute the program.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3819">line 3819</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3786">line 3786</a>
     </li></ul></dd>
     
 
@@ -8767,7 +8910,7 @@ the witness to a stack and execute the program.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3460">line 3460</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3463">line 3463</a>
     </li></ul></dd>
     
 
@@ -8871,7 +9014,7 @@ the witness to a stack and execute the program.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line901">line 901</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line857">line 857</a>
     </li></ul></dd>
     
 
@@ -9024,7 +9167,7 @@ the witness to a stack and execute the program.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2113">line 2113</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2142">line 2142</a>
     </li></ul></dd>
     
 
@@ -9130,7 +9273,7 @@ This allows it to be hashed for scripthashes.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line940">line 940</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line896">line 896</a>
     </li></ul></dd>
     
 
@@ -9425,7 +9568,7 @@ This allows it to be hashed for scripthashes.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1031">line 1031</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line987">line 987</a>
     </li></ul></dd>
     
 
@@ -9507,6 +9650,157 @@ This allows it to be hashed for scripthashes.</p>
 
     
 
+    <h4 class="name" id="findAndDelete"><span class="type-signature">(private) </span>findAndDelete<span class="signature">(data)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>A more accurate, but slower implementation
+of FindAndDelete. Shouldn't be necessary
+in practice.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1995">line 1995</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="getAddress"><span class="type-signature"></span>getAddress<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="global.html#Base58Address">Base58Address</a>|null}</span></h4>
 
     
@@ -9560,7 +9854,7 @@ they are pubkeyhash and scripthashes respectively.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2389">line 2389</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2418">line 2418</a>
     </li></ul></dd>
     
 
@@ -9665,7 +9959,7 @@ standardness verification.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3523">line 3523</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3526">line 3526</a>
     </li></ul></dd>
     
 
@@ -9765,7 +10059,7 @@ standardness verification.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2943">line 2943</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2946">line 2946</a>
     </li></ul></dd>
     
 
@@ -9870,7 +10164,7 @@ standardness verification.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2903">line 2903</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2906">line 2906</a>
     </li></ul></dd>
     
 
@@ -9974,7 +10268,7 @@ standardness verification.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2545">line 2545</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2574">line 2574</a>
     </li></ul></dd>
     
 
@@ -10078,7 +10372,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2378">line 2378</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2407">line 2407</a>
     </li></ul></dd>
     
 
@@ -10182,7 +10476,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2662">line 2662</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2691">line 2691</a>
     </li></ul></dd>
     
 
@@ -10282,7 +10576,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2238">line 2238</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2267">line 2267</a>
     </li></ul></dd>
     
 
@@ -10438,7 +10732,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3428">line 3428</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3431">line 3431</a>
     </li></ul></dd>
     
 
@@ -10592,7 +10886,7 @@ take into account the <code>n</code> value for OP_CHECKMULTISIG(VERIFY).</p></td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3393">line 3393</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3396">line 3396</a>
     </li></ul></dd>
     
 
@@ -10696,7 +10990,7 @@ take into account the <code>n</code> value for OP_CHECKMULTISIG(VERIFY).</p></td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2365">line 2365</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2394">line 2394</a>
     </li></ul></dd>
     
 
@@ -10845,7 +11139,7 @@ take into account the <code>n</code> value for OP_CHECKMULTISIG(VERIFY).</p></td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3618">line 3618</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3621">line 3621</a>
     </li></ul></dd>
     
 
@@ -11006,7 +11300,7 @@ take into account the <code>n</code> value for OP_CHECKMULTISIG(VERIFY).</p></td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line969">line 969</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line925">line 925</a>
     </li></ul></dd>
     
 
@@ -11110,7 +11404,7 @@ take into account the <code>n</code> value for OP_CHECKMULTISIG(VERIFY).</p></td
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2274">line 2274</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2303">line 2303</a>
     </li></ul></dd>
     
 
@@ -11217,7 +11511,7 @@ or 'unknown').</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2595">line 2595</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2624">line 2624</a>
     </li></ul></dd>
     
 
@@ -11369,7 +11663,7 @@ or 'unknown').</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2034">line 2034</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2063">line 2063</a>
     </li></ul></dd>
     
 
@@ -11473,7 +11767,7 @@ or 'unknown').</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line910">line 910</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line866">line 866</a>
     </li></ul></dd>
     
 
@@ -11581,7 +11875,7 @@ but coinbases.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2521">line 2521</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2550">line 2550</a>
     </li></ul></dd>
     
 
@@ -11681,7 +11975,7 @@ but coinbases.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2423">line 2423</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2452">line 2452</a>
     </li></ul></dd>
     
 
@@ -11782,7 +12076,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2822">line 2822</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2825">line 2825</a>
     </li></ul></dd>
     
 
@@ -11883,7 +12177,7 @@ fail if the pushdata is greater than 80 bytes.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2487">line 2487</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2516">line 2516</a>
     </li></ul></dd>
     
 
@@ -11983,7 +12277,7 @@ fail if the pushdata is greater than 80 bytes.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2398">line 2398</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2427">line 2427</a>
     </li></ul></dd>
     
 
@@ -12083,7 +12377,7 @@ fail if the pushdata is greater than 80 bytes.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2409">line 2409</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2438">line 2438</a>
     </li></ul></dd>
     
 
@@ -12184,7 +12478,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2806">line 2806</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2809">line 2809</a>
     </li></ul></dd>
     
 
@@ -12285,7 +12579,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2792">line 2792</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2795">line 2795</a>
     </li></ul></dd>
     
 
@@ -12386,7 +12680,7 @@ Push ops are: OP_1NEGATE, OP_0-OP_16 and all PUSHDATAs.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3372">line 3372</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line3375">line 3375</a>
     </li></ul></dd>
     
 
@@ -12489,7 +12783,7 @@ encoding. Using <code>OP_HASH160 OP_PUSHDATA1 [hash] OP_EQUAL</code> will
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2467">line 2467</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2496">line 2496</a>
     </li></ul></dd>
     
 
@@ -12590,7 +12884,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2859">line 2859</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2862">line 2862</a>
     </li></ul></dd>
     
 
@@ -12690,7 +12984,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2305">line 2305</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2334">line 2334</a>
     </li></ul></dd>
     
 
@@ -12791,7 +13085,7 @@ with non-mandatory flags).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2329">line 2329</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2358">line 2358</a>
     </li></ul></dd>
     
 
@@ -12891,7 +13185,7 @@ with non-mandatory flags).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2296">line 2296</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2325">line 2325</a>
     </li></ul></dd>
     
 
@@ -12992,7 +13286,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2690">line 2690</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2719">line 2719</a>
     </li></ul></dd>
     
 
@@ -13092,7 +13386,7 @@ This method is not 100% reliable.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2652">line 2652</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2681">line 2681</a>
     </li></ul></dd>
     
 
@@ -13194,7 +13488,7 @@ witness v0 programs.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2559">line 2559</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2588">line 2588</a>
     </li></ul></dd>
     
 
@@ -13294,7 +13588,7 @@ witness v0 programs.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2628">line 2628</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2657">line 2657</a>
     </li></ul></dd>
     
 
@@ -13394,7 +13688,7 @@ witness v0 programs.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2640">line 2640</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line2669">line 2669</a>
     </li></ul></dd>
     
 
@@ -13550,7 +13844,7 @@ not minimaldata.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1990">line 1990</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line1948">line 1948</a>
     </li></ul></dd>
     
 
@@ -13666,7 +13960,7 @@ code separators are present.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line998">line 998</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line954">line 954</a>
     </li></ul></dd>
     
 
@@ -13831,7 +14125,7 @@ code separators are present.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line929">line 929</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line885">line 885</a>
     </li></ul></dd>
     
 
@@ -13984,7 +14278,7 @@ code separators are present.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line956">line 956</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line912">line 912</a>
     </li></ul></dd>
     
 
@@ -14091,7 +14385,7 @@ code separators are present.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line919">line 919</a>
+        <a href="bcoin_script.js.html">bcoin/script.js</a>, <a href="bcoin_script.js.html#line875">line 875</a>
     </li></ul></dd>
     
 
@@ -14155,13 +14449,13 @@ code separators are present.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:31 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:21 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

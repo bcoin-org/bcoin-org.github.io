@@ -167,7 +167,8 @@ Mnemonic.prototype.toSeed = function toSeed() {
   this.seed = utils.pbkdf2(
     nfkd(this.phrase),
     nfkd('mnemonic' + this.passphrase),
-    2048, 64);
+    2048,
+    64);
 
   return this.seed;
 };
@@ -206,8 +207,8 @@ Mnemonic.prototype.createMnemonic = function createMnemonic() {
     word = 0;
     for (j = 0; j &lt; 11; j++) {
       i++;
-      oct = i / 8 | 0;
       bit = i % 8;
+      oct = (i - bit) / 8;
       word &lt;&lt;= 1;
       word |= (entropy[oct] >>> (7 - bit)) &amp; 1;
     }
@@ -393,11 +394,12 @@ HD.parsePath = function parsePath(path, max) {
   if (max == null)
     max = constants.hd.MAX_INDEX;
 
-  if (constants.hd.PATH_ROOTS.indexOf(path) !== -1)
-    return result;
-
-  if (constants.hd.PATH_ROOTS.indexOf(root) === -1)
+  if (root !== 'm'
+      &amp;&amp; root !== 'M'
+      &amp;&amp; root !== 'm\''
+      &amp;&amp; root !== 'M\'') {
     throw new Error('Bad path root.');
+  }
 
   for (i = 0; i &lt; parts.length; i++) {
     index = parts[i];
@@ -409,7 +411,7 @@ HD.parsePath = function parsePath(path, max) {
     if (!/^\d+$/.test(index))
       throw new Error('Non-number path index.');
 
-    index = +index;
+    index = parseInt(index, 10);
 
     if (hardened)
       index += constants.hd.HARDENED;
@@ -536,6 +538,7 @@ HDPrivateKey.prototype.derive = function derive(index, hardened) {
     return child;
 
   hardened = index >= constants.hd.HARDENED ? true : hardened;
+
   if (index &lt; constants.hd.HARDENED &amp;&amp; hardened)
     index += constants.hd.HARDENED;
 
@@ -588,34 +591,24 @@ HDPrivateKey.prototype.derive = function derive(index, hardened) {
  * @throws Error if key is not a master key.
  */
 
-HDPrivateKey.prototype.deriveAccount44 = function deriveAccount44(options) {
-  var coinType, accountIndex, child;
+HDPrivateKey.prototype.deriveAccount44 = function deriveAccount44(accountIndex) {
+  var coinType;
 
-  if (typeof options === 'number')
-    options = { accountIndex: options };
-
-  coinType = options.coinType;
-  accountIndex = options.accountIndex;
+  assert(utils.isNumber(accountIndex), 'Account index must be a number.');
 
   if (this instanceof HDPublicKey) {
-    assert(this.isAccount44());
+    assert(this.isAccount44(accountIndex), 'Cannot derive account index.');
     return this;
   }
 
-  if (coinType == null)
-    coinType = this.network === 'main' ? 0 : 1;
+  assert(this.isMaster(), 'Cannot derive account index.');
 
-  assert(utils.isNumber(coinType));
-  assert(utils.isNumber(accountIndex));
+  coinType = this.network === 'main' ? 0 : 1;
 
-  child = this
+  return this
     .derive(44, true)
     .derive(coinType, true)
     .derive(accountIndex, true);
-
-  assert(child.isAccount44());
-
-  return child;
 };
 
 /**
@@ -627,15 +620,38 @@ HDPrivateKey.prototype.derivePurpose45 = function derivePurpose45() {
   var child;
 
   if (this instanceof HDPublicKey) {
-    assert(this.isPurpose45());
+    assert(this.isPurpose45(), 'Cannot derive purpose 45.');
     return this;
   }
 
-  child = this.derive(45, true);
+  assert(this.isMaster(), 'Cannot derive purpose 45.');
 
-  assert(child.isPurpose45());
+  return this.derive(45, true);
+};
 
-  return child;
+/**
+ * Test whether the key is a master key.
+ * @returns {Boolean}
+ */
+
+HDPrivateKey.prototype.isMaster = function isMaster() {
+  return this.depth === 0
+    &amp;&amp; this.childIndex === 0
+    &amp;&amp; this.parentFingerPrint.readUInt32LE(0, true) === 0;
+};
+
+/**
+ * Test whether the key is (most likely) a BIP44 account key.
+ * @param {Number?} accountIndex
+ * @returns {Boolean}
+ */
+
+HDPrivateKey.prototype.isAccount44 = function isAccount44(accountIndex) {
+  if (accountIndex != null) {
+    if (this.childIndex !== constants.hd.HARDENED + accountIndex)
+      return false;
+  }
+  return this.depth === 3 &amp;&amp; this.childIndex >= constants.hd.HARDENED;
 };
 
 /**
@@ -644,20 +660,7 @@ HDPrivateKey.prototype.derivePurpose45 = function derivePurpose45() {
  */
 
 HDPrivateKey.prototype.isPurpose45 = function isPurpose45() {
-  if (this.depth !== 1)
-    return false;
-  return this.childIndex === constants.hd.HARDENED + 45;
-};
-
-/**
- * Test whether the key is (most likely) a BIP44 account key.
- * @returns {Boolean}
- */
-
-HDPrivateKey.prototype.isAccount44 = function isAccount44() {
-  if (this.childIndex &lt; constants.hd.HARDENED)
-    return false;
-  return this.depth === 3;
+  return this.depth === 1 &amp;&amp; this.childIndex === constants.hd.HARDENED + 45;
 };
 
 /**
@@ -690,6 +693,9 @@ HDPrivateKey.isExtended = function isExtended(data) {
  */
 
 HDPrivateKey.isValidPath = function isValidPath(path) {
+  if (typeof path !== 'string')
+    return false;
+
   try {
     HD.parsePath(path, constants.hd.MAX_INDEX);
     return true;
@@ -750,8 +756,7 @@ HDPrivateKey.parseSeed = function parseSeed(seed, network) {
     parentFingerPrint: new Buffer([0, 0, 0, 0]),
     childIndex: 0,
     chainCode: chainCode,
-    privateKey: privateKey,
-    mnemonic: seed
+    privateKey: privateKey
   };
 };
 
@@ -780,14 +785,19 @@ HDPrivateKey.fromMnemonic = function fromMnemonic(mnemonic, network) {
   if (!(mnemonic instanceof Mnemonic))
     mnemonic = new Mnemonic(mnemonic);
 
-  if (mnemonic.seed || mnemonic.phrase || mnemonic.entropy)
-    return HDPrivateKey.fromSeed(mnemonic.toSeed(), network);
+  if (mnemonic.seed || mnemonic.phrase || mnemonic.entropy) {
+    key = HDPrivateKey.parseSeed(mnemonic.toSeed(), network);
+    key.mnemonic = mnemonic;
+    return new HDPrivateKey(key);
+  }
 
   // Very unlikely, but not impossible
   // to get an invalid private key.
   for (;;) {
     try {
-      key = HDPrivateKey.fromSeed(mnemonic.toSeed(), network);
+      key = HDPrivateKey.parseSeed(mnemonic.toSeed(), network);
+      key.mnemonic = mnemonic;
+      key = new HDPrivateKey(key);
     } catch (e) {
       if (e.message === 'Master private key is invalid.') {
         mnemonic.seed = null;
@@ -924,8 +934,7 @@ HDPrivateKey.prototype.toBase58 = function toBase58(network) {
  */
 
 HDPrivateKey.fromBase58 = function fromBase58(xkey) {
-  var data = HDPrivateKey.parseBase58(xkey);
-  return new HDPrivateKey(data);
+  return new HDPrivateKey(HDPrivateKey.parseBase58(xkey));
 };
 
 /**
@@ -1178,20 +1187,29 @@ HDPublicKey.prototype.deriveAccount44 = HDPrivateKey.prototype.deriveAccount44;
 HDPublicKey.prototype.derivePurpose45 = HDPrivateKey.prototype.derivePurpose45;
 
 /**
+ * Test whether the key is a master key.
+ * @method
+ * @returns {Boolean}
+ */
+
+HDPublicKey.prototype.isMaster = HDPrivateKey.prototype.isMaster;
+
+/**
+ * Test whether the key is (most likely) a BIP44 account key.
+ * @method
+ * @param {Number?} accountIndex
+ * @returns {Boolean}
+ */
+
+HDPublicKey.prototype.isAccount44 = HDPrivateKey.prototype.isAccount44;
+
+/**
  * Test whether the key is a BIP45 purpose key.
  * @method
  * @returns {Boolean}
  */
 
 HDPublicKey.prototype.isPurpose45 = HDPrivateKey.prototype.isPurpose45;
-
-/**
- * Test whether the key is (most likely) a BIP44 account key.
- * @method
- * @returns {Boolean}
- */
-
-HDPublicKey.prototype.isAccount44 = HDPrivateKey.prototype.isAccount44;
 
 /**
  * Test whether a string is a valid path.
@@ -1201,6 +1219,9 @@ HDPublicKey.prototype.isAccount44 = HDPrivateKey.prototype.isAccount44;
  */
 
 HDPublicKey.isValidPath = function isValidPath(path) {
+  if (typeof path !== 'string')
+    return false;
+
   try {
     HD.parsePath(path, constants.hd.HARDENED);
     return true;
@@ -1342,8 +1363,7 @@ HDPublicKey.prototype.toBase58 = function toBase58(network) {
  */
 
 HDPublicKey.fromBase58 = function fromBase58(xkey) {
-  var data = HDPublicKey.parseBase58(xkey);
-  return new HDPublicKey(data);
+  return new HDPublicKey(HDPublicKey.parseBase58(xkey));
 };
 
 /**
@@ -1452,13 +1472,13 @@ module.exports = HD;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

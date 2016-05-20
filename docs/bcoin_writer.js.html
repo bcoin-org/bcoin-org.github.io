@@ -36,6 +36,35 @@
 var utils = require('./utils');
 var assert = utils.assert;
 
+/*
+ * Constants
+ */
+
+var SEEK = 0;
+var UI8 = 1;
+var UI16 = 2;
+var UI16BE = 3;
+var UI32 = 4;
+var UI32BE = 5;
+var UI64 = 6;
+var UI64BE = 7;
+var I8 = 8;
+var I16 = 9;
+var I16BE = 10;
+var I32 = 11;
+var I32BE = 12;
+var I64 = 13;
+var I64BE = 14;
+var FL = 15;
+var FLBE = 16;
+var DBL = 17;
+var DBLBE = 18;
+var VARINT = 19;
+var BYTES = 20;
+var STR = 21;
+var CHECKSUM = 22;
+var FILL = 23;
+
 /**
  * An object that allows writing of buffers in a
  * sane manner. This buffer writer is extremely
@@ -76,33 +105,65 @@ BufferWriter.prototype.render = function render(keep) {
   for (i = 0; i &lt; this.data.length; i++) {
     item = this.data[i];
     switch (item[0]) {
-      case 'u8': off += utils.writeU8(data, item[1], off); break;
-      case 'u16': off += utils.writeU16(data, item[1], off); break;
-      case 'u16be': off += utils.writeU16BE(data, item[1], off); break;
-      case 'u32': off += utils.writeU32(data, item[1], off); break;
-      case 'u32be': off += utils.writeU32BE(data, item[1], off); break;
-      case 'u64': off += utils.writeU64(data, item[1], off); break;
-      case 'u64be': off += utils.writeU64BE(data, item[1], off); break;
-      case '8': off += utils.write8(data, item[1], off); break;
-      case '16': off += utils.write16(data, item[1], off); break;
-      case '16be': off += utils.write16BE(data, item[1], off); break;
-      case '32': off += utils.write32(data, item[1], off); break;
-      case '32be': off += utils.write32BE(data, item[1], off); break;
-      case '64': off += utils.write64(data, item[1], off); break;
-      case '64be': off += utils.write64BE(data, item[1], off); break;
-      case 'varint': off += utils.writeVarint(data, item[1], off); break;
-      case 'bytes': off += item[1].copy(data, off); break;
-      case 'str': off += data.write(item[1], off, item[2]); break;
-      case 'checksum':
+      case SEEK: off += item[1]; break;
+      case UI8: off = data.writeUInt8(item[1], off, true); break;
+      case UI16: off = data.writeUInt16LE(item[1], off, true); break;
+      case UI16BE: off = data.writeUInt16BE(item[1], off, true); break;
+      case UI32: off = data.writeUInt32LE(item[1], off, true); break;
+      case UI32BE: off = data.writeUInt32BE(item[1], off, true); break;
+      case UI64: off = utils.writeU64(data, item[1], off); break;
+      case UI64BE: off = utils.writeU64BE(data, item[1], off); break;
+      case I8: off = data.writeInt8(item[1], off, true); break;
+      case I16: off = data.writeInt16LE(item[1], off, true); break;
+      case I16BE: off = data.writeInt16BE(item[1], off, true); break;
+      case I32: off = data.writeInt32LE(item[1], off, true); break;
+      case I32BE: off = data.writeInt32BE(item[1], off, true); break;
+      case I64: off = utils.write64(data, item[1], off); break;
+      case I64BE: off = utils.write64BE(data, item[1], off); break;
+      case FL: off = data.writeFloatLE(item[1], off, true); break;
+      case FLBE: off = data.writeFloatBE(item[1], off, true); break;
+      case DBL: off = data.writeDoubleLE(item[1], off, true); break;
+      case DBLBE: off = data.writeDoubleBE(item[1], off, true); break;
+      case VARINT: off = utils.writeVarint(data, item[1], off); break;
+      case BYTES: off += item[1].copy(data, off); break;
+      case STR: off += data.write(item[1], off, item[2]); break;
+      case CHECKSUM:
         off += utils.checksum(data.slice(0, off)).copy(data, off);
+        break;
+      case FILL:
+        data.fill(item[1], off, off + item[2]);
+        off += item[2];
+        break;
+      default:
+        assert(false, 'Bad type.');
         break;
     }
   }
+
+  assert(off === data.length);
 
   if (!keep)
     this.destroy();
 
   return data;
+};
+
+/**
+ * Get size of data written so far.
+ * @returns {Number}
+ */
+
+BufferWriter.prototype.getSize = function getSize() {
+  return this.written;
+};
+
+/**
+ * Seek to relative offset.
+ * @param {Number} offset
+ */
+
+BufferWriter.prototype.seek = function seek(offset) {
+  this.data.push([SEEK, offset]);
 };
 
 /**
@@ -122,7 +183,7 @@ BufferWriter.prototype.destroy = function destroy() {
 
 BufferWriter.prototype.writeU8 = function writeU8(value) {
   this.written += 1;
-  this.data.push(['u8', value]);
+  this.data.push([UI8, value]);
 };
 
 /**
@@ -132,7 +193,7 @@ BufferWriter.prototype.writeU8 = function writeU8(value) {
 
 BufferWriter.prototype.writeU16 = function writeU16(value) {
   this.written += 2;
-  this.data.push(['u16', value]);
+  this.data.push([UI16, value]);
 };
 
 /**
@@ -142,7 +203,7 @@ BufferWriter.prototype.writeU16 = function writeU16(value) {
 
 BufferWriter.prototype.writeU16BE = function writeU16BE(value) {
   this.written += 2;
-  this.data.push(['u16be', value]);
+  this.data.push([UI16BE, value]);
 };
 
 /**
@@ -152,7 +213,7 @@ BufferWriter.prototype.writeU16BE = function writeU16BE(value) {
 
 BufferWriter.prototype.writeU32 = function writeU32(value) {
   this.written += 4;
-  this.data.push(['u32', value]);
+  this.data.push([UI32, value]);
 };
 
 /**
@@ -162,7 +223,7 @@ BufferWriter.prototype.writeU32 = function writeU32(value) {
 
 BufferWriter.prototype.writeU32BE = function writeU32BE(value) {
   this.written += 4;
-  this.data.push(['u32be', value]);
+  this.data.push([UI32BE, value]);
 };
 
 /**
@@ -172,7 +233,7 @@ BufferWriter.prototype.writeU32BE = function writeU32BE(value) {
 
 BufferWriter.prototype.writeU64 = function writeU64(value) {
   this.written += 8;
-  this.data.push(['u64', value]);
+  this.data.push([UI64, value]);
 };
 
 /**
@@ -182,7 +243,7 @@ BufferWriter.prototype.writeU64 = function writeU64(value) {
 
 BufferWriter.prototype.writeU64BE = function writeU64BE(value) {
   this.written += 8;
-  this.data.push(['u64be', value]);
+  this.data.push([UI64BE, value]);
 };
 
 /**
@@ -192,7 +253,7 @@ BufferWriter.prototype.writeU64BE = function writeU64BE(value) {
 
 BufferWriter.prototype.write8 = function write8(value) {
   this.written += 1;
-  this.data.push(['8', value]);
+  this.data.push([I8, value]);
 };
 
 /**
@@ -202,7 +263,7 @@ BufferWriter.prototype.write8 = function write8(value) {
 
 BufferWriter.prototype.write16 = function write16(value) {
   this.written += 2;
-  this.data.push(['16', value]);
+  this.data.push([I16, value]);
 };
 
 /**
@@ -212,7 +273,7 @@ BufferWriter.prototype.write16 = function write16(value) {
 
 BufferWriter.prototype.write16BE = function write16BE(value) {
   this.written += 2;
-  this.data.push(['16be', value]);
+  this.data.push([I16BE, value]);
 };
 
 /**
@@ -222,7 +283,7 @@ BufferWriter.prototype.write16BE = function write16BE(value) {
 
 BufferWriter.prototype.write32 = function write32(value) {
   this.written += 4;
-  this.data.push(['32', value]);
+  this.data.push([I32, value]);
 };
 
 /**
@@ -232,7 +293,7 @@ BufferWriter.prototype.write32 = function write32(value) {
 
 BufferWriter.prototype.write32BE = function write32BE(value) {
   this.written += 4;
-  this.data.push(['32be', value]);
+  this.data.push([I32BE, value]);
 };
 
 /**
@@ -242,7 +303,7 @@ BufferWriter.prototype.write32BE = function write32BE(value) {
 
 BufferWriter.prototype.write64 = function write64(value) {
   this.written += 8;
-  this.data.push(['64', value]);
+  this.data.push([I64, value]);
 };
 
 /**
@@ -252,7 +313,62 @@ BufferWriter.prototype.write64 = function write64(value) {
 
 BufferWriter.prototype.write64BE = function write64BE(value) {
   this.written += 8;
-  this.data.push(['64be', value]);
+  this.data.push([I64BE, value]);
+};
+
+/**
+ * Write float le.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.writeFloat = function writeFloat(value) {
+  this.written += 4;
+  this.data.push([FL, value]);
+};
+
+/**
+ * Write float be.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.writeFloatBE = function writeFloatBE(value) {
+  this.written += 4;
+  this.data.push([FLBE, value]);
+};
+
+/**
+ * Write double le.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.writeDouble = function writeDouble(value) {
+  this.written += 8;
+  this.data.push([DBL, value]);
+};
+
+/**
+ * Write double be.
+ * @param {Number} value
+ */
+
+BufferWriter.prototype.writeDoubleBE = function writeDoubleBE(value) {
+  this.written += 8;
+  this.data.push([DBLBE, value]);
+};
+
+/**
+ * Write a varint.
+ * @param {BN|Number} value
+ */
+
+BufferWriter.prototype.writeVarint = function writeVarint(value) {
+  if (typeof value === 'number')
+    assert(value >= 0);
+  else
+    assert(!value.isNeg());
+
+  this.written += utils.sizeVarint(value);
+  this.data.push([VARINT, value]);
 };
 
 /**
@@ -262,16 +378,19 @@ BufferWriter.prototype.write64BE = function write64BE(value) {
 
 BufferWriter.prototype.writeBytes = function writeBytes(value) {
   this.written += value.length;
-  this.data.push(['bytes', value]);
+  this.data.push([BYTES, value]);
 };
 
 /**
- * Get size of data written so far.
- * @returns {Number}
+ * Write bytes with a varint length before them.
+ * @param {Buffer} value
  */
 
-BufferWriter.prototype.getSize = function getSize() {
-  return this.written;
+BufferWriter.prototype.writeVarBytes = function writeVarBytes(value) {
+  this.written += utils.sizeVarint(value.length);
+  this.written += value.length;
+  this.data.push([VARINT, value.length]);
+  this.data.push([BYTES, value]);
 };
 
 /**
@@ -284,7 +403,7 @@ BufferWriter.prototype.writeString = function writeString(value, enc) {
   if (typeof value !== 'string')
     return this.writeBytes(value);
   this.written += Buffer.byteLength(value, enc);
-  this.data.push(['str', value, enc]);
+  this.data.push([STR, value, enc]);
 };
 
 /**
@@ -313,20 +432,8 @@ BufferWriter.prototype.writeVarString = function writeVarString(value, enc) {
   this.written += utils.sizeVarint(size);
   this.written += size;
 
-  this.data.push(['varint', size]);
-  this.data.push(['str', value, enc]);
-};
-
-/**
- * Write bytes with a varint length before them.
- * @param {Buffer} value
- */
-
-BufferWriter.prototype.writeVarBytes = function writeVarBytes(value) {
-  this.written += utils.sizeVarint(value.length);
-  this.written += value.length;
-  this.data.push(['varint', value.length]);
-  this.data.push(['bytes', value]);
+  this.data.push([VARINT, size]);
+  this.data.push([STR, value, enc]);
 };
 
 /**
@@ -341,23 +448,12 @@ BufferWriter.prototype.writeNullString = function writeNullString(value, enc) {
 };
 
 /**
- * Write a varint.
- * @param {BN|Number} value
- */
-
-BufferWriter.prototype.writeVarint = function writeVarint(value) {
-  assert(value >= 0);
-  this.written += utils.sizeVarint(value);
-  this.data.push(['varint', value]);
-};
-
-/**
  * Calculate and write a checksum for the data written so far.
  */
 
 BufferWriter.prototype.writeChecksum = function writeChecksum() {
   this.written += 4;
-  this.data.push(['checksum']);
+  this.data.push([CHECKSUM]);
 };
 
 /**
@@ -367,16 +463,18 @@ BufferWriter.prototype.writeChecksum = function writeChecksum() {
  */
 
 BufferWriter.prototype.fill = function fill(value, size) {
-  var buf;
-
   assert(size >= 0);
 
-  buf = new Buffer(size);
-  buf.fill(value);
+  if (size === 0)
+    return;
 
-  this.written += buf.length;
-  this.data.push(['bytes', buf]);
+  this.written += size;
+  this.data.push([FILL, value, size]);
 };
+
+/*
+ * Expose
+ */
 
 module.exports = BufferWriter;
 </code></pre>
@@ -389,13 +487,13 @@ module.exports = BufferWriter;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

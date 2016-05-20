@@ -300,50 +300,6 @@ Witness.fromString = function fromString(items) {
 };
 
 /**
- * Parse an array of opcodes and pushdatas (Buffers) with the
- * opcodes as strings representing their symbolic name.
- * _Must_ contain only stack items (no non-push opcodes).
- * @example
- * Witness.fromSymbolic(['OP_1', new Buffer([2]), 'OP_3']);
- * @param {Array} items - Array of strings and Buffers.
- * @returns {Witness}
- * @throws Parse error.
- */
-
-Witness.fromSymbolic = function fromSymbolic(items) {
-  var code = new Array(items.length);
-  var i, op, symbol;
-
-  for (i = 0; i &lt; items.length; i++) {
-    op = items[i];
-
-    if (Buffer.isBuffer(op)) {
-      code[i] = op;
-      continue;
-    }
-
-    op = (op + '').toLowerCase();
-    if (op.indexOf('op_') === 0)
-      op = op.slice(3);
-
-    if (+op === -1)
-      op = STACK_NEGATE;
-    else if (+op === 0 || op === 'false')
-      op = STACK_FALSE;
-    else if (+op === 1 || op === 'true')
-      op = STACK_TRUE;
-    else if (+op >= 1 &amp;&amp; +op &lt;= 16)
-      op = new Buffer([+op]);
-    else
-      assert(false, 'Non-stack item in witness string.');
-
-    code[i] = op;
-  }
-
-  return new Witness(code);
-};
-
-/**
  * Format script code into a human readable-string.
  * @param {Array} code
  * @returns {String} Human-readable string.
@@ -1105,21 +1061,21 @@ Script.prototype.execute = function execute(stack, flags, tx, index, version) {
     // are in unexecuted branches of code_. Whereas
     // a totally unknown opcode is fine as long as it
     // is unexecuted.
-    if (op == opcodes.OP_CAT
-        || op == opcodes.OP_SUBSTR
-        || op == opcodes.OP_LEFT
-        || op == opcodes.OP_RIGHT
-        || op == opcodes.OP_INVERT
-        || op == opcodes.OP_AND
-        || op == opcodes.OP_OR
-        || op == opcodes.OP_XOR
-        || op == opcodes.OP_2MUL
-        || op == opcodes.OP_2DIV
-        || op == opcodes.OP_MUL
-        || op == opcodes.OP_DIV
-        || op == opcodes.OP_MOD
-        || op == opcodes.OP_LSHIFT
-        || op == opcodes.OP_RSHIFT) {
+    if (op === opcodes.OP_CAT
+        || op === opcodes.OP_SUBSTR
+        || op === opcodes.OP_LEFT
+        || op === opcodes.OP_RIGHT
+        || op === opcodes.OP_INVERT
+        || op === opcodes.OP_AND
+        || op === opcodes.OP_OR
+        || op === opcodes.OP_XOR
+        || op === opcodes.OP_2MUL
+        || op === opcodes.OP_2DIV
+        || op === opcodes.OP_MUL
+        || op === opcodes.OP_DIV
+        || op === opcodes.OP_MOD
+        || op === opcodes.OP_LSHIFT
+        || op === opcodes.OP_RSHIFT) {
       throw new ScriptError('DISABLED_OPCODE', op, ip);
     }
 
@@ -1748,7 +1704,7 @@ Script.prototype.execute = function execute(stack, flags, tx, index, version) {
       case opcodes.OP_INVERT: {
         if (stack.length &lt; 1)
           throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
-        val = utils.slice(stack.pop());
+        val = utils.copy(stack.pop());
         for (i = 0; i &lt; val.length; i++)
           val[i] = ~val[i] &amp; 0xff;
         stack.push(val);
@@ -1760,7 +1716,7 @@ Script.prototype.execute = function execute(stack, flags, tx, index, version) {
         if (stack.length &lt; 2)
           throw new ScriptError('INVALID_STACK_OPERATION', op, ip);
         v2 = stack.pop();
-        v1 = utils.slice(stack.pop());
+        v1 = utils.copy(stack.pop());
         if (v1.length &lt; v2.length) {
           v3 = new Buffer(v2.length - v1.length);
           v3.fill(0);
@@ -1940,10 +1896,10 @@ Script.num = function num(value, flags, size) {
   // If the input vector's most significant byte is
   // 0x80, remove it from the result's msb and return
   // a negative.
-  if (value[value.length - 1] &amp; 0x80) {
-    n = new bn(0x80).ushln(8 * (value.length - 1)).notn(64);
-    return result.uand(n).neg();
-  }
+  // Equivalent to:
+  // -(result &amp; ~(0x80 &lt;&lt; (8 * (value.length - 1))))
+  if (value[value.length - 1] &amp; 0x80)
+    result.setn((value.length * 8) - 1, 0).ineg();
 
   return result;
 };
@@ -1954,8 +1910,9 @@ Script.num = function num(value, flags, size) {
  * account negative zero, minimaldata, etc.
  * @example
  * assert.deepEqual(Script.array(0), new Buffer([]));
- * assert.deepEqual(Script.array(0xffee), new Buffer([0xee, 0xff]));
- * assert.deepEqual(Script.array(new bn(0xffee)), new Buffer([0xee, 0xff]));
+ * assert.deepEqual(Script.array(0xffee), new Buffer([0xee, 0xff, 0x00]));
+ * assert.deepEqual(Script.array(new bn(0xffee)), new Buffer([0xee, 0xff, 0x00]));
+ * assert.deepEqual(Script.array(new bn(0x1e).ineg()), new Buffer([0x9e]));
  * @param {Buffer|Number|BN} value
  * @returns {Buffer}
  */
@@ -1992,6 +1949,7 @@ Script.array = function(value) {
 
   neg = value.cmpn(0) &lt; 0;
   result = value.toArray('le');
+
   if (result[result.length - 1] &amp; 0x80)
     result.push(neg ? 0x80 : 0);
   else if (neg)
@@ -2051,6 +2009,77 @@ Script.prototype.removeData = function removeData(data) {
   }
 
   return index.length;
+};
+
+/**
+ * A more accurate, but slower implementation
+ * of FindAndDelete. Shouldn't be necessary
+ * in practice.
+ * @private
+ * @param {Buffer} data
+ * @returns {Buffer}
+ */
+
+Script.prototype.findAndDelete = function findAndDelete(data) {
+  var total = 0;
+  var p, raw, a, b, op, size;
+
+  if (data.length === 0)
+    return total;
+
+  // Compare on the byte level.
+  raw = this.encode();
+
+  p = new BufferReader(raw, true);
+
+  for (;;) {
+    while (p.left() >= data.length &amp;&amp; utils.icmp(raw, data, p.offset) === 0) {
+      a = raw.slice(0, p.offset);
+      b = raw.slice(p.offset + data.length);
+      raw = Buffer.concat([a, b]);
+      p.data = raw;
+      total++;
+    }
+
+    if (p.left() === 0)
+      break;
+
+    op = p.readU8();
+    if (op >= 0x01 &amp;&amp; op &lt;= 0x4b) {
+      if (p.left() &lt; op)
+        break;
+      p.seek(op);
+    } else if (op === opcodes.OP_PUSHDATA1) {
+      if (p.left() &lt; 1)
+        break;
+      size = p.readU8();
+      if (p.left() &lt; size)
+        break;
+      p.seek(size);
+    } else if (op === opcodes.OP_PUSHDATA2) {
+      if (p.left() &lt; 2)
+        break;
+      size = p.readU16();
+      if (p.left() &lt; size)
+        break;
+      p.seek(size);
+    } else if (op === opcodes.OP_PUSHDATA4) {
+      if (p.left() &lt; 4)
+        break;
+      size = p.readU32();
+      if (p.left() &lt; size)
+        break;
+      p.seek(size);
+    }
+  }
+
+  if (total > 0) {
+    this.code = Script.decode(raw);
+    if (this.raw)
+      this.raw = raw;
+  }
+
+  return total;
 };
 
 /**
@@ -2554,7 +2583,7 @@ Script.prototype.isCommitment = function isCommitment() {
       return false;
     if (this.raw[1] !== 0x24)
       return false;
-    if (utils.readU32BE(this.raw, 2) !== 0xaa21a9ed)
+    if (this.raw.readUInt32BE(2, true) !== 0xaa21a9ed)
       return false;
     return true;
   }
@@ -2562,7 +2591,7 @@ Script.prototype.isCommitment = function isCommitment() {
     &amp;&amp; this.code[0] === opcodes.OP_RETURN
     &amp;&amp; Buffer.isBuffer(this.code[1])
     &amp;&amp; this.code[1].length === 36
-    &amp;&amp; utils.readU32BE(this.code[1], 0) === 0xaa21a9ed;
+    &amp;&amp; this.code[1].readUInt32BE(0, true) === 0xaa21a9ed;
 };
 
 /**
@@ -2728,35 +2757,26 @@ Script.isUnknownInput = function isUnknownInput(code, isWitness) {
  * @example
  * Script.createOutputScript({ address: '1HT7xU2Ngenf7D4yocz2SAcnNLW7rK8d4E' });
  * @param {Object} options
- * @param {Base58Address?} options.address - Base58 address to send to.
+ * @param {(Address|Base58Address)?} options.address - Address to send to.
  * @param {Buffer?} options.flags - Nulldata flags.
  * @param {Buffer?} options.key - Key for pay-to-pubkey.
  * @param {Buffer?} options.keyHash - Key has for pay-to-pubkeyhash.
  * @param {Buffer[]?} options.keys - Keys for pay-to-multisig.
- * @param {Boolean|Buffer[]} options.scriptHash - Whether to create a scripthash
+ * @param {Buffer} options.scriptHash - Whether to create a scripthash
  * @returns {Script}
  */
 
 Script.createOutputScript = function createOutputScript(options) {
-  var script, m, n, hash, flags, address, redeem;
+  var m, n, flags, address;
 
   if (!options)
     options = {};
 
   if (options.address) {
-    if (typeof options.address === 'string')
-      address = bcoin.address.parseBase58(options.address);
-
-    if (address.type === 'pubkeyhash')
-      script = Script.createPubkeyhash(address.hash);
-    else if (address.type === 'scripthash')
-      script = Script.createScripthash(address.hash);
-    else if (address.version !== -1)
-      script = Script.createWitnessProgram(address.version, address.hash);
-    else
-      assert(false, 'Unknown address type.');
-
-    return script;
+    address = options.address;
+    if (typeof address === 'string')
+      address = bcoin.address.fromBase58(address);
+    return address.toScript();
   }
 
   if (options.flags) {
@@ -2766,19 +2786,23 @@ Script.createOutputScript = function createOutputScript(options) {
     return Script.createNulldata(flags);
   }
 
-  if (options.key) {
-    script = Script.createPubkey(options.key);
-  } else if (options.keyHash) {
+  if (options.key)
+    return Script.createPubkey(options.key);
+
+  if (options.keyHash) {
     assert(options.keyHash.length === 20);
     if (options.version != null)
-      script = Script.createWitnessProgram(options.version, options.keyHash);
-    else
-      script = Script.createPubkeyhash(options.keyHash);
-  } else if (options.keys) {
+      return Script.createWitnessProgram(options.version, options.keyHash);
+    return Script.createPubkeyhash(options.keyHash);
+  }
+
+  if (options.keys) {
     m = options.m;
     n = options.n || options.keys.length;
-    script = Script.createMultisig(options.keys, m, n);
-  } else if (Buffer.isBuffer(options.scriptHash)) {
+    return Script.createMultisig(options.keys, m, n);
+  }
+
+  if (options.scriptHash) {
     if (options.version != null) {
       assert(options.scriptHash.length === 32);
       return Script.createWitnessProgram(options.version, options.scriptHash);
@@ -2787,28 +2811,7 @@ Script.createOutputScript = function createOutputScript(options) {
     return Script.createScripthash(options.scriptHash);
   }
 
-  if (!script)
-    return new Script([]);
-
-  if (options.locktime != null) {
-    script.code.unshift(opcodes.OP_DROP);
-    script.code.unshift(opcodes.OP_CHECKLOCKTIMEVERIFY);
-    script.code.unshift(Script.array(options.locktime));
-  }
-
-  if (options.scriptHash) {
-    redeem = script;
-    if (options.version != null) {
-      hash = utils.sha256(redeem.encode());
-      script = Script.createWitnessProgram(options.version, hash);
-    } else {
-      hash = utils.ripesha(redeem.encode());
-      script = Script.createScripthash(hash);
-    }
-    script.redeem = redeem;
-  }
-
-  return script;
+  return new Script();
 };
 
 /**
@@ -3611,8 +3614,10 @@ Script.fromString = function fromString(code) {
 
     if (opcodes[symbol] == null) {
       if (op[0] === '\'') {
+        assert(op[op.length - 1] === '\'', 'Unknown opcode.');
         op = op.slice(1, -1);
-        p.writeBytes(Script.encode([new Buffer(op, 'ascii')]));
+        op = new Buffer(op, 'ascii')
+        p.writeBytes(Script.encode([op]));
         continue;
       }
       if (/^-?\d+$/.test(op)) {
@@ -3621,11 +3626,9 @@ Script.fromString = function fromString(code) {
         p.writeBytes(Script.encode([op]));
         continue;
       }
-      assert(op.indexOf('0x') === 0);
+      assert(op.indexOf('0x') === 0, 'Unknown opcode.');
       op = op.substring(2);
       assert(utils.isHex(op), 'Unknown opcode.');
-      if (op.length % 2 !== 0)
-        op = op + '0';
       op = new Buffer(op, 'hex');
       p.writeBytes(op);
       continue;
@@ -3682,42 +3685,6 @@ Script.toSmall = function toSmall(op) {
     return opcodes.OP_0;
 
   return op + 0x50;
-};
-
-/**
- * Parse an array of opcodes and pushdatas (Buffers) with the
- * opcodes as strings representing their symbolic name.
- * Script.fromSymbolic(['OP_1', new Buffer([2]), 'OP_ADD']);
- * @param {Array} items - Array of strings and Buffers.
- * @returns {Script}
- * @throws Parse error on unknown opcode.
- */
-
-Script.fromSymbolic = function fromSymbolic(items) {
-  var code = new Array(items.length);
-  var i, op;
-
-  for (i = 0; i &lt; items.length; i++) {
-    op = items[i];
-
-    if (Buffer.isBuffer(op)) {
-      code[i] = op;
-      continue;
-    }
-
-    if (+op === -1)
-      op = '1negate';
-
-    op = (op + '').toUpperCase();
-    if (op.indexOf('OP_') !== 0)
-      op = 'OP_' + op;
-
-    assert(opcodes[op] != null, 'Unknown opcode.');
-
-    code[i] = opcodes[op];
-  }
-
-  return new Script(code);
 };
 
 /**
@@ -4223,6 +4190,37 @@ Script.encode = function encode(code, writer) {
 };
 
 /**
+ * Encode a single push op. Note that this
+ * will _always_ be a PUSHDATA. Used for
+ * findAndDelete.
+ * @param {Buffer} data
+ * @returns {Buffer}
+ */
+
+Script.encodePush = function encodePush(data) {
+  var p = new BufferWriter();
+  if (data.length &lt;= 0x4b) {
+    p.writeU8(data.length);
+    p.writeBytes(data);
+  } else if (data.length &lt;= 0xff) {
+    p.writeU8(opcodes.OP_PUSHDATA1);
+    p.writeU8(data.length);
+    p.writeBytes(data);
+  } else if (data.length &lt;= 0xffff) {
+    p.writeU8(opcodes.OP_PUSHDATA2);
+    p.writeU16(data.length);
+    p.writeBytes(data);
+  } else if (data.length &lt;= 0xffffffff) {
+    p.writeU8(opcodes.OP_PUSHDATA4);
+    p.writeU32(data.length);
+    p.writeBytes(data);
+  } else {
+    assert(false, 'Bad pushdata op.');
+  }
+  return p.render();
+};
+
+/**
  * Determine whether GetOp2 should fail
  * on a given op due to a bad push (either
  * not enough size bytes after a PUSHDATA,
@@ -4248,6 +4246,26 @@ Script.isBadPush = function isBadPush(op) {
 };
 
 /**
+ * Calculate the size (including
+ * the opcode) of a pushdata.
+ * @param {Number} num - Pushdata data length.
+ * @returns {Number} size
+ */
+
+Script.sizePush = function sizePush(num) {
+  if (num &lt;= 0x4b)
+    return 1;
+
+  if (num &lt;= 0xff)
+    return 2;
+
+  if (num &lt;= 0xffff)
+    return 3;
+
+  return 5;
+};
+
+/**
  * Test an object to see if it is a Script.
  * @param {Object} obj
  * @returns {Boolean}
@@ -4259,10 +4277,20 @@ Script.isScript = function isScript(obj) {
     &amp;&amp; typeof obj.getSubscript === 'function';
 };
 
-Script.Witness = Witness;
-Script.Stack = Stack;
+/*
+ * Expose
+ */
 
-module.exports = Script;
+exports = Script;
+
+exports.opcodes = constants.opcodes;
+exports.opcodesByVal = constants.opcodesByVal;
+
+exports.Script = Script;
+exports.Witness = Witness;
+exports.Stack = Stack;
+
+module.exports = exports;
 </code></pre>
         </article>
     </section>
@@ -4273,13 +4301,13 @@ module.exports = Script;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -42,7 +42,7 @@ var utils = exports;
 var assert = require('assert');
 var bn = require('bn.js');
 var util = require('util');
-var crypto, hash, aes;
+var crypto, supersha, hash, aes;
 
 /**
  * Whether we're in a browser or not.
@@ -55,9 +55,28 @@ utils.isBrowser =
 
 if (!utils.isBrowser) {
   crypto = require('cry' + 'pto');
+  try {
+    supersha = require('super' + 'sha');
+  } catch (e) {
+    ;
+  }
 } else {
   hash = require('hash.js');
   aes = require('./aes');
+}
+
+/**
+ * The home directory.
+ * @const {String}
+ */
+
+try {
+  utils.HOME = require('o' + 's').homedir();
+} catch (e) {
+  utils.HOME = process.env.HOME
+    || process.env.USERPROFILE
+    || process.env.HOMEPATH
+    || '/';
 }
 
 /**
@@ -79,23 +98,14 @@ utils.nop = function() {};
 utils.gc = !utils.isBrowser &amp;&amp; typeof gc === 'function' ? gc : utils.nop;
 
 /**
- * A slow buffer slice (will allocate a new buffer).
+ * Clone a buffer.
  * @param {Buffer} data
- * @param {Number?} start
- * @param {Number?} end
  * @returns {Buffer}
  */
 
-utils.slice = function slice(data, start, end) {
-  var clone;
-
-  if (start != null)
-    data = data.slice(start, end);
-
-  clone = new Buffer(data.length);
-
+utils.copy = function copy(data) {
+  var clone = new Buffer(data.length);
   data.copy(clone, 0, 0, data.length);
-
   return clone;
 };
 
@@ -270,6 +280,11 @@ utils.sha1 = function sha1(data, enc) {
  */
 
 utils.sha256 = function sha256(data, enc) {
+  if (supersha) {
+    if (!Buffer.isBuffer(data))
+      data = new Buffer(data, enc);
+    return supersha.sha256(data);
+  }
   return utils.hash('sha256', data, enc);
 };
 
@@ -292,6 +307,11 @@ utils.ripesha = function ripesha(data, enc) {
  */
 
 utils.dsha256 = function dsha256(data, enc) {
+  if (supersha) {
+    if (!Buffer.isBuffer(data))
+      data = new Buffer(data, enc);
+    return supersha.dsha256(data);
+  }
   return utils.sha256(utils.sha256(data, enc));
 };
 
@@ -411,7 +431,7 @@ utils.pbkdf2 = function pbkdf2(key, salt, iterations, dkLen, alg) {
  */
 
 utils.encrypt = function encrypt(data, passphrase) {
-  var key, cipher;
+  var key, cipher, out;
 
   assert(crypto, 'No crypto module available.');
   assert(passphrase, 'No passphrase.');
@@ -424,15 +444,24 @@ utils.encrypt = function encrypt(data, passphrase) {
 
   key = utils.pbkdf2key(passphrase, null, 2048, 32, 16);
 
-  if (!crypto)
-    return aes.cbc.encrypt(data, key.key, key.iv);
+  if (!crypto) {
+    out = aes.cbc.encrypt(data, key.key, key.iv);
+    key.key.fill(0);
+    key.iv.fill(0);
+    return out;
+  }
 
   cipher = crypto.createCipheriv('aes-256-cbc', key.key, key.iv);
 
-  return Buffer.concat([
+  out = Buffer.concat([
     cipher.update(data),
     cipher.final()
   ]);
+
+  key.key.fill(0);
+  key.iv.fill(0);
+
+  return out;
 };
 
 /**
@@ -443,7 +472,7 @@ utils.encrypt = function encrypt(data, passphrase) {
  */
 
 utils.decrypt = function decrypt(data, passphrase) {
-  var key, decipher;
+  var key, decipher, out;
 
   assert(crypto, 'No crypto module available.');
   assert(passphrase, 'No passphrase.');
@@ -456,15 +485,24 @@ utils.decrypt = function decrypt(data, passphrase) {
 
   key = utils.pbkdf2key(passphrase, null, 2048, 32, 16);
 
-  if (!crypto)
-    return aes.cbc.decrypt(data, key.key, key.iv);
+  if (!crypto) {
+    out = aes.cbc.decrypt(data, key.key, key.iv);
+    key.key.fill(0);
+    key.iv.fill(0);
+    return out;
+  }
 
   decipher = crypto.createDecipheriv('aes-256-cbc', key.key, key.iv);
 
-  return Buffer.concat([
+  out = Buffer.concat([
     decipher.update(data),
     decipher.final()
   ]);
+
+  key.key.fill(0);
+  key.iv.fill(0);
+
+  return out;
 };
 
 /**
@@ -661,122 +699,171 @@ utils.assert.fatal = function fatal(value, message) {
 };
 
 /**
- * One bitcoin in satoshis.
- * @const {BN}
- * @default
- */
-
-utils.COIN = new bn(10000000).muln(10);
-
-/**
- * Convert satoshis to a BTC string. Note that
- * BTC strings _always_ have a decimal point.
- * @param {BN|Number} satoshi
+ * Safely convert satoshis to a BTC string.
+ * This function explicitly avoids any
+ * floating point arithmetic.
+ * @param {Amount} value - Satoshis.
  * @returns {String} BTC string.
  */
 
-utils.btc = function btc(satoshi) {
-  var neg = false;
-  var btc, hi, lo;
+utils.btc = function btc(value) {
+  var negative = false;
+  var hi, lo, result;
 
-  if (utils.isBTC(satoshi))
-    return satoshi;
+  if (utils.isFloat(value))
+    return value;
 
-  assert(utils.isSatoshi(satoshi), 'Non-satoshi value for conversion.');
+  assert(utils.isInt(value), 'Non-satoshi value for conversion.');
 
-  if (satoshi.isNeg()) {
-    satoshi = satoshi.neg();
-    neg = true;
+  if (value &lt; 0) {
+    value = -value;
+    negative = true;
   }
 
-  hi = satoshi.div(utils.COIN).toString(10);
+  assert(value &lt;= utils.MAX_SAFE_INTEGER, 'Number exceeds 2^53-1.');
 
-  lo = satoshi.mod(utils.COIN);
+  value = value.toString(10);
 
-  lo = lo.toString(10);
+  assert(value.length &lt;= 16, 'Number exceeds 2^53-1.');
 
-  while (lo.length &lt; 8)
-    lo = '0' + lo;
+  while (value.length &lt; 9)
+    value = '0' + value;
 
-  lo = '.' + lo;
+  hi = value.slice(0, -8);
+  lo = value.slice(-8);
 
   lo = lo.replace(/0+$/, '');
-  if (lo === '.')
+
+  if (lo.length === 0)
     lo += '0';
 
-  btc = hi + lo;
+  result = hi + '.' + lo;
 
-  if (neg)
-    btc = '-' + btc;
+  if (negative)
+    result = '-' + result;
 
-  return btc;
+  return result;
 };
 
 /**
- * Convert BTC string to satoshis.
- * @param {String|Number} btc
- * @returns {BN} Satoshis.
+ * Safely convert a BTC string to satoshis.
+ * This function explicitly avoids any
+ * floating point arithmetic. It also does
+ * extra validation to ensure the resulting
+ * Number will be 53 bits or less.
+ * @param {String} value - BTC
+ * @returns {Amount} Satoshis.
+ * @throws on parse error
  */
 
-utils.satoshi = function satoshi(btc) {
-  var neg = false;
-  var satoshi, parts, hi, lo;
+utils.satoshi = function satoshi(value) {
+  var negative = false;
+  var parts, hi, lo, result;
 
-  if (utils.isSatoshi(btc))
-    return btc;
+  if (utils.isInt(value))
+    return value;
 
-  assert(utils.isBTC(btc), 'Non-BTC value for conversion.');
+  assert(utils.isFloat(value), 'Non-BTC value for conversion.');
 
-  if (btc[0] === '-') {
-    neg = true;
-    btc = btc.substring(1);
+  if (value[0] === '-') {
+    negative = true;
+    value = value.substring(1);
   }
 
-  parts = btc.split('.');
+  parts = value.split('.');
+
+  assert(parts.length &lt;= 2, 'Bad decimal point.');
+
   hi = parts[0] || '0';
   lo = parts[1] || '0';
+
+  hi = hi.replace(/^0+/, '');
+  lo = lo.replace(/0+$/, '');
+
+  assert(hi.length &lt;= 8, 'Number exceeds 2^53-1.');
+  assert(lo.length &lt;= 8, 'Too many decimal places.');
+
+  if (hi.length === 0)
+    hi = '0';
 
   while (lo.length &lt; 8)
     lo += '0';
 
-  satoshi = (hi + lo).replace(/^0+/, '');
+  hi = parseInt(hi, 10);
+  lo = parseInt(lo, 10);
 
-  satoshi = new bn(satoshi, 10);
+  assert(hi &lt; 90071992 || (hi === 90071992 &amp;&amp; lo &lt;= 54740991),
+    'Number exceeds 2^53-1.');
 
-  if (neg)
-    satoshi.ineg();
+  result = hi * 100000000 + lo;
 
-  return satoshi;
+  if (negative)
+    result = -result;
+
+  return result;
 };
 
 /**
  * Test whether a number is both a Number and finite.
- * @param {Number?} val
+ * @param {Number?} value
  * @returns {Boolean}
  */
 
-utils.isNumber = function isNumber(val) {
-  return typeof val === 'number' &amp;&amp; isFinite(val);
+utils.isNumber = function isNumber(value) {
+  return typeof value === 'number' &amp;&amp; isFinite(value);
 };
 
 /**
- * Test whether an object qualifies as satoshis.
- * @param {BN?} val
+ * Test whether a string qualifies as a float.
+ * @param {String?} value
  * @returns {Boolean}
  */
 
-utils.isSatoshi = function isSatoshi(val) {
-  return bn.isBN(val);
+utils.isFloat = function isFloat(value) {
+  return typeof value === 'string'
+    &amp;&amp; /^-?(\d+)?(?:\.\d*)?$/.test(value)
+    &amp;&amp; value.length !== 0
+    &amp;&amp; value !== '-';
 };
 
 /**
- * Test whether an object qualifies as a BTC string.
- * @param {String?} val
+ * Test whether an object is a finite number and int.
+ * @param {Number?} value
  * @returns {Boolean}
  */
 
-utils.isBTC = function isBTC(val) {
-  return typeof val === 'string' &amp;&amp; /^-?\d+\.\d+$/.test(val);
+utils.isInt = function isInt(value) {
+  return utils.isNumber(value) &amp;&amp; value % 1 === 0;
+};
+
+/**
+ * Test and validate a satoshi value (Number).
+ * @param {Number?} value
+ * @returns {Boolean}
+ */
+
+utils.isSatoshi = function isSatoshi(value) {
+  try {
+    utils.satoshi(value);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+/**
+ * Test and validate a BTC string.
+ * @param {String?} value
+ * @returns {Boolean}
+ */
+
+utils.isBTC = function isBTC(value) {
+  try {
+    utils.btc(value);
+    return true;
+  } catch (e) {
+    return false;
+  }
 };
 
 /**
@@ -837,7 +924,7 @@ utils.ip2version = function ip2version(ip, version) {
   var b, i, j;
 
   assert(Buffer.isBuffer(ip));
-  assert(version === 4 || version === 6);
+  assert(version === 4 || version === 6, 'Bad IP version.');
 
   if (version === 4) {
     // Check to see if this an
@@ -849,7 +936,7 @@ utils.ip2version = function ip2version(ip, version) {
 
       // Found an ipv4 address
       if (ip.length - i === 6 &amp;&amp; ip[i] === 0xff &amp;&amp; ip[i + 1] === 0xff)
-        return utils.slice(ip, -4);
+        return utils.copy(ip.slice(-4));
 
       // No ipv4 address
       return new Buffer([0, 0, 0, 0]);
@@ -917,17 +1004,20 @@ utils.ip2version = function ip2version(ip, version) {
 
 utils.ip2array = function ip2array(ip, version) {
   var type = utils.isIP(ip);
+  var parts;
 
-  assert(version === 4 || version === 6);
+  assert(version === 4 || version === 6, 'Bad IP version.');
 
   if (type === 0) {
     if (!Buffer.isBuffer(ip))
       ip = new Buffer([0, 0, 0, 0]);
   } else if (type === 4) {
-    ip = new Buffer(ip.split('.').map(function(n) {
-      return +n;
-    }));
-    assert(ip.length &lt;= 4);
+    parts = ip.split('.');
+    ip = new Buffer(4);
+    ip[0] = +parts[0];
+    ip[1] = +parts[1];
+    ip[2] = +parts[2];
+    ip[3] = +parts[3];
   } else if (type === 6) {
     ip = new Buffer(ip.replace(/:/g, ''), 'hex');
     assert(ip.length &lt;= 16);
@@ -953,7 +1043,7 @@ utils.array2ip = function array2ip(ip, version) {
       ip = new Buffer([0, 0, 0, 0]);
   }
 
-  assert(version === 4 || version === 6);
+  assert(version === 4 || version === 6, 'Bad IP version.');
   assert(ip.length &lt;= 16);
 
   ip = utils.ip2version(ip, version);
@@ -1112,7 +1202,7 @@ utils.uniq = function uniq(obj) {
 };
 
 /**
- * Convert a mantissa/compact number to a big number.
+ * Convert a compact number to a big number.
  * Used for `block.bits` -> `target` conversion.
  * @param {Number} compact
  * @returns {BN}
@@ -1144,7 +1234,7 @@ utils.fromCompact = function fromCompact(compact) {
 };
 
 /**
- * Convert a big number to a mantissa/compact number.
+ * Convert a big number to a compact number.
  * Used for `target` -> `block.bits` conversion.
  * @param {BN} num
  * @returns {Number}
@@ -1177,25 +1267,24 @@ utils.toCompact = function toCompact(num) {
   if (num.isNeg())
     compact |= 0x800000;
 
-  if (compact &lt; 0)
-    compact += 0x100000000;
+  compact >>>= 0;
 
   return compact;
 };
 
 /**
  * Test hash against a target.
- * @param {BN|Number} target - Compact number or big number.
  * @param {Buffer|Hash} hash
+ * @param {BN|Number} target - Compact number or big number.
  * @returns {Boolean} True if hash is less than target.
  */
 
-utils.testTarget = function testTarget(target, hash) {
-  if (typeof target === 'number')
-    target = utils.fromCompact(target);
-
+utils.testTarget = function testTarget(hash, target) {
   if (typeof hash === 'string')
     hash = new Buffer(hash, 'hex');
+
+  if (typeof target === 'number')
+    target = utils.fromCompact(target);
 
   return new bn(hash, 'le').cmp(target) &lt; 0;
 };
@@ -1237,122 +1326,28 @@ utils.time = function time(date) {
 
 /**
  * UINT32_MAX
- * @type BN
- * @const
+ * @const {BN}
  */
 
 utils.U32 = new bn(0xffffffff);
 
 /**
  * UINT64_MAX
- * @type BN
- * @const
+ * @const {BN}
  */
 
 utils.U64 = new bn('ffffffffffffffff', 'hex');
 
 /**
- * Create a 64 bit nonce.
+ * Create an 8 byte nonce.
  * @returns {BN}
  */
 
-utils.nonce = function nonce() {
-  var nonce = utils.U64.clone();
-  nonce.imuln(Math.random());
-  return nonce;
-};
-
-//
-// Integer Functions
-//
-// Non-64-bit functions originally taken from the node.js tree:
-//
-// Copyright Joyent, Inc. and other Node contributors. All rights reserved.
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to
-// deal in the Software without restriction, including without limitation the
-// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-// sell copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-// IN THE SOFTWARE.
-//
-
-/**
- * Read uint8.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.readU8 = function readU8(data, off) {
-  off = off >>> 0;
-  return data[off];
-};
-
-/**
- * Read uint16le.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.readU16 = function readU16(data, off) {
-  off = off >>> 0;
-  return data[off] | (data[off + 1] &lt;&lt; 8);
-};
-
-/**
- * Read uint16be.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.readU16BE = function readU16BE(data, off) {
-  off = off >>> 0;
-  return (data[off] &lt;&lt; 8) | data[off + 1];
-};
-
-/**
- * Read uint32le.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.readU32 = function readU32(data, off) {
-  off = off >>> 0;
-
-  return ((data[off])
-    | (data[off + 1] &lt;&lt; 8)
-    | (data[off + 2] &lt;&lt; 16))
-    + (data[off + 3] * 0x1000000);
-};
-
-/**
- * Read uint32be.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.readU32BE = function readU32BE(data, off) {
-  off = off >>> 0;
-
-  return (data[off] * 0x1000000)
-    + ((data[off + 1] &lt;&lt; 16)
-    | (data[off + 2] &lt;&lt; 8)
-    | data[off + 3]);
+utils.nonce = function _nonce() {
+  var nonce = new Buffer(8);
+  nonce.writeUInt32LE(Math.random() * 0x100000000 | 0, 0, true);
+  nonce.writeUInt32LE(Math.random() * 0x100000000 | 0, 4, true);
+  return new bn(nonce);
 };
 
 /**
@@ -1381,80 +1376,6 @@ utils.readU64BE = function readU64BE(data, off) {
   off = off >>> 0;
   num = data.slice(off, off + 8);
   return new bn(num, 'be');
-};
-
-/**
- * Read int8.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.read8 = function read8(data, off) {
-  var num;
-  off = off >>> 0;
-  num = data[off];
-  return !(num &amp; 0x80) ? num : (0xff - num + 1) * -1;
-};
-
-/**
- * Read int16le.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.read16 = function read16(data, off) {
-  var num;
-  off = off >>> 0;
-  num = data[off] | (data[off + 1] &lt;&lt; 8);
-  return (num &amp; 0x8000) ? num | 0xffff0000 : num;
-};
-
-/**
- * Read int16be.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.read16BE = function read16BE(data, off) {
-  var num;
-  off = off >>> 0;
-  num = data[off + 1] | (data[off] &lt;&lt; 8);
-  return (num &amp; 0x8000) ? num | 0xffff0000 : num;
-};
-
-/**
- * Read int32le.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.read32 = function read32(data, off) {
-  off = off >>> 0;
-
-  return (data[off])
-    | (data[off + 1] &lt;&lt; 8)
-    | (data[off + 2] &lt;&lt; 16)
-    | (data[off + 3] &lt;&lt; 24);
-};
-
-/**
- * Read int32be.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.read32BE = function read32BE(data, off) {
-  off = off >>> 0;
-
-  return (data[off] &lt;&lt; 24)
-    | (data[off + 1] &lt;&lt; 16)
-    | (data[off + 2] &lt;&lt; 8)
-    | (data[off + 3]);
 };
 
 /**
@@ -1498,74 +1419,6 @@ utils.read64BE = function read64BE(data, off) {
 };
 
 /**
- * Write uint8.
- * @param {Number} value
- */
-
-utils.writeU8 = function writeU8(dst, num, off) {
-  num = +num;
-  off = off >>> 0;
-  dst[off] = num &amp; 0xff;
-  return 1;
-};
-
-/**
- * Write uint16le.
- * @param {Number} value
- */
-
-utils.writeU16 = function writeU16(dst, num, off) {
-  num = +num;
-  off = off >>> 0;
-  dst[off] = num &amp; 0xff;
-  dst[off + 1] = (num >>> 8) &amp; 0xff;
-  return 2;
-};
-
-/**
- * Write uint16be.
- * @param {Number} value
- */
-
-utils.writeU16BE = function write16BE(dst, num, off) {
-  num = +num;
-  off = off >>> 0;
-  dst[off] = (num >>> 8) &amp; 0xff;
-  dst[off + 1] = num &amp; 0xff;
-  return 2;
-};
-
-/**
- * Write uint32le.
- * @param {Number} value
- */
-
-utils.writeU32 = function writeU32(dst, num, off) {
-  num = +num;
-  off = off >>> 0;
-  dst[off + 3] = (num >>> 24) &amp; 0xff;
-  dst[off + 2] = (num >>> 16) &amp; 0xff;
-  dst[off + 1] = (num >>> 8) &amp; 0xff;
-  dst[off] = num &amp; 0xff;
-  return 4;
-};
-
-/**
- * Write uint32be.
- * @param {Number} value
- */
-
-utils.writeU32BE = function writeU32BE(dst, num, off) {
-  num = +num;
-  off = off >>> 0;
-  dst[off] = (num >>> 24) &amp; 0xff;
-  dst[off + 1] = (num >>> 16) &amp; 0xff;
-  dst[off + 2] = (num >>> 8) &amp; 0xff;
-  dst[off + 3] = num &amp; 0xff;
-  return 4;
-};
-
-/**
  * Write uint64le.
  * @param {BN|Number} value
  */
@@ -1605,27 +1458,20 @@ utils.writeU64NBE = function writeU64NBE(dst, num, off) {
 
 /**
  * Max safe integer (53 bits).
- * @type Number
- * @const
+ * @const {Number}
+ * @default
  */
 
 utils.MAX_SAFE_INTEGER = 0x1fffffffffffff;
 
 /**
- * Max safe integer as a big number (53 bits).
- * @type BN
- * @const
+ * Max 52 bit integer (safe for additions).
+ * `(MAX_SAFE_INTEGER - 1) / 2`
+ * @const {Number}
+ * @default
  */
 
-utils.MAX_SAFE_BN = new bn(utils.MAX_SAFE_INTEGER);
-
-/**
- * Most-significant 4 bytes of max safe integer.
- * @type Number
- * @const
- */
-
-utils.MAX_SAFE_HI = 0x1fffff;
+utils.MAX_SAFE_ADDITION = 0xfffffffffffff;
 
 /**
  * Write a javascript number as an int64le (faster than big numbers).
@@ -1633,41 +1479,51 @@ utils.MAX_SAFE_HI = 0x1fffff;
  * @throws on num > MAX_SAFE_INTEGER
  */
 
-utils.write64N = function write64N(dst, num, off) {
-  var neg, hi, lo, one, i, b;
+utils.write64N = function write64N(dst, num, off, be) {
+  var negative, hi, lo;
 
-  num = +num;
+  assert(typeof num === 'number');
+
   off = off >>> 0;
+
+  negative = num &lt; 0;
+
+  if (negative) {
+    num = -num;
+    num -= 1;
+  }
 
   assert(num &lt;= utils.MAX_SAFE_INTEGER, 'Number exceeds 2^53-1');
 
-  if (num &lt; 0)
-    neg = true;
-
-  num = num &lt; 0 ? -num : num;
-
-  hi = num / 0x100000000 | 0;
   lo = num % 0x100000000;
+  hi = (num - lo) / 0x100000000;
 
-  dst[off + 0] = (lo >>> 0) &amp; 0xff;
-  dst[off + 1] = (lo >>> 8) &amp; 0xff;
-  dst[off + 2] = (lo >>> 16) &amp; 0xff;
-  dst[off + 3] = (lo >>> 24) &amp; 0xff;
-  dst[off + 4] = (hi >>> 0) &amp; 0xff;
-  dst[off + 5] = (hi >>> 8) &amp; 0xff;
-  dst[off + 6] = (hi >>> 16) &amp; 0xff;
-  dst[off + 7] = (hi >>> 24) &amp; 0xff;
-
-  if (neg) {
-    one = 1;
-    for (i = off; i &lt; off + 8; i++) {
-      b = (dst[i] ^ 0xff) + one;
-      dst[i] = b &amp; 0xff;
-      one = b >>> 8;
-    }
+  if (negative) {
+    hi = ~hi >>> 0;
+    lo = ~lo >>> 0;
   }
 
-  return 8;
+  if (be) {
+    dst[off + 0] = (hi >>> 24) &amp; 0xff;
+    dst[off + 1] = (hi >>> 16) &amp; 0xff;
+    dst[off + 2] = (hi >>> 8) &amp; 0xff;
+    dst[off + 3] = (hi >>> 0) &amp; 0xff;
+    dst[off + 4] = (lo >>> 24) &amp; 0xff;
+    dst[off + 5] = (lo >>> 16) &amp; 0xff;
+    dst[off + 6] = (lo >>> 8) &amp; 0xff;
+    dst[off + 7] = (lo >>> 0) &amp; 0xff;
+  } else {
+    dst[off + 0] = (lo >>> 0) &amp; 0xff;
+    dst[off + 1] = (lo >>> 8) &amp; 0xff;
+    dst[off + 2] = (lo >>> 16) &amp; 0xff;
+    dst[off + 3] = (lo >>> 24) &amp; 0xff;
+    dst[off + 4] = (hi >>> 0) &amp; 0xff;
+    dst[off + 5] = (hi >>> 8) &amp; 0xff;
+    dst[off + 6] = (hi >>> 16) &amp; 0xff;
+    dst[off + 7] = (hi >>> 24) &amp; 0xff;
+  }
+
+  return off + 8;
 };
 
 /**
@@ -1677,40 +1533,7 @@ utils.write64N = function write64N(dst, num, off) {
  */
 
 utils.write64NBE = function write64NBE(dst, num, off) {
-  var neg, hi, lo, one, i, b;
-
-  num = +num;
-  off = off >>> 0;
-
-  assert(num &lt;= utils.MAX_SAFE_INTEGER, 'Number exceeds 2^53-1');
-
-  if (num &lt; 0)
-    neg = true;
-
-  num = num &lt; 0 ? -num : num;
-
-  hi = num / 0x100000000 | 0;
-  lo = num % 0x100000000;
-
-  dst[off + 7] = (lo >>> 0) &amp; 0xff;
-  dst[off + 6] = (lo >>> 8) &amp; 0xff;
-  dst[off + 5] = (lo >>> 16) &amp; 0xff;
-  dst[off + 4] = (lo >>> 24) &amp; 0xff;
-  dst[off + 3] = (hi >>> 0) &amp; 0xff;
-  dst[off + 2] = (hi >>> 8) &amp; 0xff;
-  dst[off + 1] = (hi >>> 16) &amp; 0xff;
-  dst[off + 0] = (hi >>> 24) &amp; 0xff;
-
-  if (neg) {
-    one = 1;
-    for (i = off + 7; i >= off; i--) {
-      b = (dst[i] ^ 0xff) + one;
-      dst[i] = b &amp; 0xff;
-      one = b >>> 8;
-    }
-  }
-
-  return 8;
+  return utils.write64N(dst, num, off, true);
 };
 
 /**
@@ -1722,13 +1545,24 @@ utils.write64NBE = function write64NBE(dst, num, off) {
  * @throws on num > MAX_SAFE_INTEGER
  */
 
-utils.readU64N = function readU64N(data, off, force53) {
+utils.readU64N = function readU64N(data, off, force53, be) {
+  var hi, lo;
+
   off = off >>> 0;
-  var hi = utils.readU32(data, off + 4);
-  var lo = utils.readU32(data, off);
+
+  if (be) {
+    hi = data.readUInt32LE(off, true);
+    lo = data.readUInt32LE(off + 4, true);
+  } else {
+    hi = data.readUInt32LE(off + 4, true);
+    lo = data.readUInt32LE(off, true);
+  }
+
   if (force53)
-    hi &amp;= utils.MAX_SAFE_HI;
-  assert(hi &lt;= utils.MAX_SAFE_HI, 'Number exceeds 2^53-1');
+    hi &amp;= 0x1fffff;
+
+  assert((hi &amp; 0xffe00000) === 0, 'Number exceeds 2^53-1');
+
   return (hi * 0x100000000) + lo;
 };
 
@@ -1742,13 +1576,7 @@ utils.readU64N = function readU64N(data, off, force53) {
  */
 
 utils.readU64NBE = function readU64NBE(data, off, force53) {
-  off = off >>> 0;
-  var hi = utils.readU32BE(data, off);
-  var lo = utils.readU32BE(data, off + 4);
-  if (force53)
-    hi &amp;= utils.MAX_SAFE_HI;
-  assert(hi &lt;= utils.MAX_SAFE_HI, 'Number exceeds 2^53-1');
-  return (hi * 0x100000000) + lo;
+  return utils.readU64N(data, off, force53, true);
 };
 
 /**
@@ -1760,22 +1588,37 @@ utils.readU64NBE = function readU64NBE(data, off, force53) {
  * @throws on num > MAX_SAFE_INTEGER
  */
 
-utils.read64N = function read64N(data, off, force53) {
+utils.read64N = function read64N(data, off, force53, be) {
+  var hi, lo;
+
   off = off >>> 0;
-  var hi = utils.readU32(data, off + 4);
-  var lo = utils.readU32(data, off);
-  if (hi &amp; 0x80000000) {
-    hi = ~hi + 1;
-    lo = ~lo + 1;
-    if (force53)
-      hi &amp;= utils.MAX_SAFE_HI;
-    assert(hi &lt;= utils.MAX_SAFE_HI, 'Number exceeds 2^53-1');
-    return -(hi * 0x100000000 + lo);
+
+  if (be) {
+    hi = data.readUInt32LE(off, true);
+    lo = data.readUInt32LE(off + 4, true);
+  } else {
+    hi = data.readUInt32LE(off + 4, true);
+    lo = data.readUInt32LE(off, true);
   }
+
+  if (hi &amp; 0x80000000) {
+    hi = ~hi >>> 0;
+    lo = ~lo >>> 0;
+
+    if (force53)
+      hi &amp;= 0x1fffff;
+
+    assert((hi &amp; 0xffe00000) === 0, 'Number exceeds 2^53-1');
+
+    return -(hi * 0x100000000 + lo + 1);
+  }
+
   if (force53)
-    hi &amp;= utils.MAX_SAFE_HI;
-  assert(hi &lt;= utils.MAX_SAFE_HI, 'Number exceeds 2^53-1');
-  return (hi * 0x100000000) + lo;
+    hi &amp;= 0x1fffff;
+
+  assert((hi &amp; 0xffe00000) === 0, 'Number exceeds 2^53-1');
+
+  return hi * 0x100000000 + lo;
 };
 
 /**
@@ -1788,152 +1631,7 @@ utils.read64N = function read64N(data, off, force53) {
  */
 
 utils.read64NBE = function read64NBE(data, off, force53) {
-  off = off >>> 0;
-  var hi = utils.readU32BE(data, off);
-  var lo = utils.readU32BE(data, off + 4);
-  if (hi &amp; 0x80000000) {
-    hi = ~hi + 1;
-    lo = ~lo + 1;
-    if (force53)
-      hi &amp;= utils.MAX_SAFE_HI;
-    assert(hi &lt;= utils.MAX_SAFE_HI, 'Number exceeds 2^53-1');
-    return -(hi * 0x100000000 + lo);
-  }
-  if (force53)
-    hi &amp;= utils.MAX_SAFE_HI;
-  assert(hi &lt;= utils.MAX_SAFE_HI, 'Number exceeds 2^53-1');
-  return (hi * 0x100000000) + lo;
-};
-
-/**
- * Read first least significant 53 bits of
- * a uint64le as a js number. Maintain the sign.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.readU53 = function readU53(data, off) {
-  return utils.readU64N(data, off, true);
-};
-
-/**
- * Read first least significant 53 bits of
- * a uint64be as a js number. Maintain the sign.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.readU53BE = function readU53BE(data, off) {
-  return utils.readU64NBE(data, off, true);
-};
-
-/**
- * Read first least significant 53 bits of
- * a uint64le as a js number. Maintain the sign.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.read53 = function read53(data, off) {
-  return utils.read64N(data, off, true);
-};
-
-/**
- * Read first least significant 53 bits of
- * a int64be as a js number. Maintain the sign.
- * @param {Buffer} data
- * @param {Number} off
- * @returns {Number}
- */
-
-utils.read53BE = function read53BE(data, off) {
-  return utils.read64NBE(data, off, true);
-};
-
-/**
- * Write int8.
- * @param {Buffer} dst
- * @param {Number} num
- * @param {Number} off
- * @returns {Number} Number of bytes written.
- */
-
-utils.write8 = function write8(dst, num, off) {
-  num = +num;
-  off = off >>> 0;
-  dst[off] = num &amp; 0xff;
-  return 1;
-};
-
-/**
- * Write int16le.
- * @param {Buffer} dst
- * @param {Number} num
- * @param {Number} off
- * @returns {Number} Number of bytes written.
- */
-
-utils.write16 = function write16(dst, num, off) {
-  num = +num;
-  off = off >>> 0;
-  dst[off] = num &amp; 0xff;
-  dst[off + 1] = (num >>> 8) &amp; 0xff;
-  return 2;
-};
-
-/**
- * Write int16be.
- * @param {Buffer} dst
- * @param {Number} num
- * @param {Number} off
- * @returns {Number} Number of bytes written.
- */
-
-utils.write16BE = function write16BE(dst, num, off) {
-  num = +num;
-  off = off >>> 0;
-  dst[off] = (num >>> 8) &amp; 0xff;
-  dst[off + 1] = num &amp; 0xff;
-  return 2;
-};
-
-/**
- * Write int32le.
- * @param {Buffer} dst
- * @param {Number} num
- * @param {Number} off
- * @returns {Number} Number of bytes written.
- */
-
-utils.write32 = function write32(dst, num, off) {
-  num = +num;
-  off = off >>> 0;
-  dst[off] = num &amp; 0xff;
-  dst[off + 1] = (num >>> 8) &amp; 0xff;
-  dst[off + 2] = (num >>> 16) &amp; 0xff;
-  dst[off + 3] = (num >>> 24) &amp; 0xff;
-  return 4;
-};
-
-/**
- * Write int32be.
- * @param {Buffer} dst
- * @param {Number} num
- * @param {Number} off
- * @returns {Number} Number of bytes written.
- */
-
-utils.write32BE = function write32BE(dst, num, off) {
-  num = +num;
-  off = off >>> 0;
-  dst[off] = (num >>> 24) &amp; 0xff;
-  dst[off + 1] = (num >>> 16) &amp; 0xff;
-  dst[off + 2] = (num >>> 8) &amp; 0xff;
-  dst[off + 3] = num &amp; 0xff;
-  return 4;
+  return utils.read64N(data, off, force53, true);
 };
 
 /**
@@ -1947,23 +1645,23 @@ utils.write32BE = function write32BE(dst, num, off) {
 utils.write64 = function write64(dst, num, off) {
   var i;
 
-  if (!bn.isBN(num))
+  if (typeof num === 'number')
     return utils.write64N(dst, num, off);
 
   off = off >>> 0;
 
   if (num.isNeg())
-    num = num.neg().notn(64).addn(1);
+    num = num.neg().inotn(64).iaddn(1);
 
   if (num.bitLength() > 64)
     num = num.uand(utils.U64);
 
-  num = num.toBuffer('le', 8);
+  num = num.toArray('le', 8);
 
   for (i = 0; i &lt; num.length; i++)
-    dst[off++] = num[i] &amp; 0xff;
+    dst[off++] = num[i];
 
-  return 8;
+  return off;
 };
 
 /**
@@ -1977,23 +1675,23 @@ utils.write64 = function write64(dst, num, off) {
 utils.write64BE = function write64BE(dst, num, off) {
   var i;
 
-  if (!bn.isBN(num))
+  if (typeof num === 'number')
     return utils.write64NBE(dst, num, off);
 
   off = off >>> 0;
 
   if (num.isNeg())
-    num = num.neg().notn(64).addn(1);
+    num = num.neg().inotn(64).iaddn(1);
 
   if (num.bitLength() > 64)
     num = num.uand(utils.U64);
 
-  num = num.toBuffer('be', 8);
+  num = num.toArray('be', 8);
 
   for (i = 0; i &lt; num.length; i++)
-    dst[off++] = num[i] &amp; 0xff;
+    dst[off++] = num[i];
 
-  return 8;
+  return off;
 };
 
 /**
@@ -2005,41 +1703,41 @@ utils.write64BE = function write64BE(dst, num, off) {
  */
 
 utils.readVarint = function readVarint(data, off, big) {
-  var r, bytes;
+  var value, size;
 
   off = off >>> 0;
 
   assert(off &lt; data.length);
 
   if (data[off] &lt; 0xfd) {
-    r = data[off];
+    size = 1;
+    value = data[off];
     if (big)
-      r = new bn(r);
-    bytes = 1;
+      value = new bn(value);
   } else if (data[off] === 0xfd) {
-    assert(off + 2 &lt; data.length);
-    r = data[off + 1] | (data[off + 2] &lt;&lt; 8);
+    size = 3;
+    assert(off + size &lt;= data.length);
+    value = data[off + 1] | (data[off + 2] &lt;&lt; 8);
     if (big)
-      r = new bn(r);
-    bytes = 3;
+      value = new bn(value);
   } else if (data[off] === 0xfe) {
-    assert(off + 4 &lt; data.length);
-    r = utils.readU32(data, off + 1);
+    size = 5;
+    assert(off + size &lt;= data.length);
+    value = data.readUInt32LE(off + 1, true);
     if (big)
-      r = new bn(r);
-    bytes = 5;
+      value = new bn(value);
   } else if (data[off] === 0xff) {
-    assert(off + 8 &lt; data.length);
+    size = 9;
+    assert(off + size &lt;= data.length);
     if (big)
-      r = utils.readU64(data, off + 1);
+      value = utils.readU64(data, off + 1);
     else
-      r = utils.readU64N(data, off + 1);
-    bytes = 9;
+      value = utils.readU64N(data, off + 1);
   } else {
     assert(false, 'Malformed varint.');
   }
 
-  return { off: off + bytes, r: r };
+  return { size: size, value: value };
 };
 
 /**
@@ -2054,10 +1752,10 @@ utils.writeVarint = function writeVarint(dst, num, off) {
   off = off >>> 0;
 
   if (bn.isBN(num)) {
-    if (num.cmp(utils.U32) > 0) {
+    if (num.bitLength() > 32) {
       dst[off] = 0xff;
       utils.writeU64(dst, num, off + 1);
-      return 9;
+      return off + 9;
     }
     num = num.toNumber();
   }
@@ -2066,14 +1764,14 @@ utils.writeVarint = function writeVarint(dst, num, off) {
 
   if (num &lt; 0xfd) {
     dst[off] = num &amp; 0xff;
-    return 1;
+    return off + 1;
   }
 
   if (num &lt;= 0xffff) {
     dst[off] = 0xfd;
     dst[off + 1] = num &amp; 0xff;
     dst[off + 2] = (num >>> 8) &amp; 0xff;
-    return 3;
+    return off + 3;
   }
 
   if (num &lt;= 0xffffffff) {
@@ -2082,13 +1780,13 @@ utils.writeVarint = function writeVarint(dst, num, off) {
     dst[off + 2] = (num >>> 8) &amp; 0xff;
     dst[off + 3] = (num >>> 16) &amp; 0xff;
     dst[off + 4] = (num >>> 24) &amp; 0xff;
-    return 5;
+    return off + 5;
   }
 
   dst[off] = 0xff;
   utils.writeU64N(dst, num, off + 1);
 
-  return 9;
+  return off + 9;
 };
 
 /**
@@ -2099,7 +1797,7 @@ utils.writeVarint = function writeVarint(dst, num, off) {
 
 utils.sizeVarint = function sizeVarint(num) {
   if (bn.isBN(num)) {
-    if (num.cmp(utils.U32) > 0)
+    if (num.bitLength() > 32)
       return 9;
     num = num.toNumber();
   }
@@ -2114,26 +1812,6 @@ utils.sizeVarint = function sizeVarint(num) {
     return 5;
 
   return 9;
-};
-
-/**
- * Calculate the size (including
- * the opcode) of a pushdata.
- * @param {Number} num - Pushdata data length.
- * @returns {Number} size
- */
-
-utils.sizePush = function sizePush(num) {
-  if (num &lt;= 0x4b)
-    return 1;
-
-  if (num &lt;= 0xff)
-    return 2;
-
-  if (num &lt;= 0xffff)
-    return 3;
-
-  return 5;
 };
 
 /**
@@ -2550,7 +2228,7 @@ utils.getMerkleBranch = function getMerkleBranch(index, leaves) {
   for (; size > 1; size = (size + 1) / 2 | 0) {
     i = Math.min(index ^ 1, size - 1);
     branch.push(tree[j + i]);
-    index >>= 1;
+    index >>>= 1;
     j += size;
   }
 
@@ -2582,7 +2260,7 @@ utils.checkMerkleBranch = function checkMerkleBranch(hash, branch, index) {
     else
       hash = utils.dsha256(Buffer.concat([hash, otherside]));
 
-    index >>= 1;
+    index >>>= 1;
   }
 
   return hash;
@@ -2791,6 +2469,36 @@ utils.binarySearch = function binarySearch(items, key, insert, compare) {
 };
 
 /**
+ * Perform a binary insert on a sorted array.
+ * @param {Array} items
+ * @param {Object} item
+ * @param {Function?} compare
+ * @returns {Number} Length.
+ */
+
+utils.binaryInsert = function binaryInsert(items, item, compare) {
+  var i = utils.binarySearch(items, item, true, compare);
+  items.splice(i + 1, 0, item);
+  return items.length;
+};
+
+/**
+ * Perform a binary removal on a sorted array.
+ * @param {Array} items
+ * @param {Object} item
+ * @param {Function?} compare
+ * @returns {Number} Length.
+ */
+
+utils.binaryRemove = function binaryRemove(items, item, compare) {
+  var i = utils.binarySearch(items, item, false, compare);
+  if (i === -1)
+    return false;
+  items.splice(i, 1);
+  return true;
+};
+
+/**
  * Reference to the global object.
  * @const {Object}
  */
@@ -2818,13 +2526,13 @@ utils.global = (function() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

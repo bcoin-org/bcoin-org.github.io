@@ -140,7 +140,9 @@ function Pool(options) {
   this.destroyed = false;
   this.loaded = false;
   this.size = options.size || 8;
+  this.maxLeeches = options.maxLeeches || 8;
   this.connected = false;
+  this.uid = 0;
 
   this.syncing = false;
   this.synced = false;
@@ -173,7 +175,9 @@ function Pool(options) {
     // All peers
     all: [],
     // Misbehaving hosts
-    misbehaving: {}
+    misbehaving: {},
+    // Map of hosts
+    map: {}
   };
 
   this.block = {
@@ -202,17 +206,12 @@ function Pool(options) {
     activeTX: 0
   };
 
-  this.validate = {
-    // 5 days scan delta for obtaining TXs
-    delta: 5 * 24 * 3600,
-    // getTX map
-    map: {}
-  };
-
   // Currently broadcasted objects
   this.inv = {
     list: [],
-    timeout: options.invTimeout || 60000
+    map: {},
+    timeout: options.invTimeout || 60000,
+    interval: options.invInterval || 3000
   };
 
   function done(err) {
@@ -260,7 +259,7 @@ Pool.prototype.connect = function connect() {
   if (this.options.broadcast) {
     if (this.mempool) {
       this.mempool.on('tx', function(tx) {
-        self.broadcast(tx);
+        self.announce(tx);
       });
     }
 
@@ -270,23 +269,23 @@ Pool.prototype.connect = function connect() {
     // miner sends us an invalid competing
     // chain that we can't connect and
     // verify yet.
-    this.chain.on('block', function(block) {
-      if (!self.synced)
-        return;
-      self.broadcast(block);
-    });
+    if (!this.options.spv) {
+      this.chain.on('block', function(block) {
+        if (!self.synced)
+          return;
+        self.announce(block);
+      });
+    }
   }
 
   if (this.originalSeeds.length > 0) {
     this._addLoader();
 
-    for (i = 0; i &lt; this.size; i++)
+    for (i = 0; i &lt; this.size - 1; i++)
       this._addPeer();
 
     this.connected = true;
   }
-
-  this.startServer();
 };
 
 Pool.prototype._init = function _init() {
@@ -295,7 +294,7 @@ Pool.prototype._init = function _init() {
 
   this.chain.on('block', function(block, entry, peer) {
     // Emit merkle txs after the fact
-    if (block.type === 'merkleblock') {
+    if (self.options.spv) {
       utils.forEachSerial(block.txs, function(tx, next) {
         self._handleTX(tx, peer, next);
       }, function(err) {
@@ -416,7 +415,7 @@ Pool.prototype.getHeaders = function getHeaders(peer, top, stop, callback) {
  * @param {Function} callback
  */
 
-Pool.prototype.startServer = function startServer(callback) {
+Pool.prototype.listen = function listen(callback) {
   var self = this;
   var net;
 
@@ -427,21 +426,22 @@ Pool.prototype.startServer = function startServer(callback) {
 
   net = require('n' + 'et');
 
-  if (!this.options.listen)
-    return utils.nextTick(callback);
-
-  assert(!this.server);
+  assert(!this.server, 'Server already listening.');
 
   this.server = new net.Server();
 
   this.server.on('connection', function(socket) {
+    if (self.peers.leeches.length >= self.maxLeeches) {
+      socket.destroy();
+      return;
+    }
     self._addLeech(socket);
   });
 
   this.server.on('listening', function() {
     var data = self.server.address();
     bcoin.debug(
-      'Bitcoin server listening on %s (port=%d)',
+      'Bitcoin server listening on %s (port=%d).',
       data.address, data.port);
   });
 
@@ -453,7 +453,7 @@ Pool.prototype.startServer = function startServer(callback) {
  * @param {Function} callback
  */
 
-Pool.prototype.stopServer = function stopServer(callback) {
+Pool.prototype.unlisten = function unlisten(callback) {
   callback = utils.ensure(callback);
 
   if (bcoin.isBrowser)
@@ -463,7 +463,7 @@ Pool.prototype.stopServer = function stopServer(callback) {
     return utils.nextTick(callback);
 
   this.server.close(callback);
-  delete this.server;
+  this.server = null;
 };
 
 Pool.prototype._startTimer = function _startTimer() {
@@ -512,9 +512,7 @@ Pool.prototype._startInterval = function _startInterval() {
     if (self.chain.isBusy())
       return self._startTimer();
 
-    bcoin.debug('Stall recovery: loading again.');
-
-    // self._load();
+    bcoin.debug('Warning: Stalling.');
   }
 
   this._interval = setInterval(load, this.load.interval);
@@ -535,7 +533,7 @@ Pool.prototype._addLoader = function _addLoader() {
   if (this.destroyed)
     return;
 
-  if (this.peers.load != null)
+  if (this.peers.load)
     return;
 
   peer = this._createPeer({
@@ -546,19 +544,26 @@ Pool.prototype._addLoader = function _addLoader() {
     witness: this.options.witness
   });
 
-  assert(peer);
-
-  bcoin.debug('Added loader peer: %s', peer.host);
+  bcoin.debug('Added loader peer (%s).', peer.hostname);
 
   this.peers.load = peer;
   this.peers.all.push(peer);
+  this.peers.map[peer.host] = peer;
 
   peer.once('close', function() {
     self._stopInterval();
     self._stopTimer();
     self._removePeer(peer);
-    if (self.destroyed)
+    if (self.peers.regular.length === 0) {
+      bcoin.debug('%s %s %s',
+        'Could not connect to any peers.',
+        'Do you have a network connection?',
+        'Retrying in 5 seconds.');
+      setTimeout(function() {
+        self._addLoader();
+      }, 5000);
       return;
+    }
     self._addLoader();
   });
 
@@ -689,9 +694,9 @@ Pool.prototype._handleHeaders = function _handleHeaders(headers, peer, callback)
     return callback();
 
   bcoin.debug(
-    'Recieved %s headers from %s',
+    'Received %s headers from peer (%s).',
     headers.length,
-    peer.host);
+    peer.hostname);
 
   if (headers.length > 2000) {
     peer.setMisbehavior(100);
@@ -747,9 +752,9 @@ Pool.prototype._handleBlocks = function _handleBlocks(hashes, peer, callback) {
     return callback();
 
   bcoin.debug(
-    'Recieved %s block hashes from %s',
+    'Received %s block hashes from peer (%s).',
     hashes.length,
-    peer.host);
+    peer.hostname);
 
   // Normally this is 500, but with older
   // versions locator.GetDistanceBack() is called.
@@ -841,8 +846,8 @@ Pool.prototype._handleBlock = function _handleBlock(block, peer, callback) {
   // us requesting them.
   if (!requested) {
     bcoin.debug(
-      'Recieved unrequested block: %s (%s)',
-      block.rhash, peer.host);
+      'Received unrequested block: %s (%s).',
+      block.rhash, peer.hostname);
     return callback();
   }
 
@@ -944,8 +949,8 @@ Pool.prototype._createPeer = function _createPeer(options) {
       : null;
 
     bcoin.debug(
-      'Reject (%s): msg=%s ccode=%s reason=%s data=%s',
-      peer.host,
+      'Reject (%s): msg=%s ccode=%s reason=%s data=%s.',
+      peer.hostname,
       payload.message,
       payload.ccode,
       payload.reason,
@@ -955,7 +960,7 @@ Pool.prototype._createPeer = function _createPeer(options) {
   });
 
   peer.on('alert', function(payload) {
-    bcoin.debug('Received alert from: %s', peer.host);
+    bcoin.debug('Received alert from peer (%s).', peer.hostname);
     bcoin.debug(payload);
     self.emit('alert', payload, peer);
   });
@@ -967,7 +972,7 @@ Pool.prototype._createPeer = function _createPeer(options) {
       item = items[i];
       req = self.request.map[item.hash];
       if (req &amp;&amp; req.peer === peer)
-        req.finish();
+        req.finish(new Error('Not found.'));
     }
   });
 
@@ -982,14 +987,23 @@ Pool.prototype._createPeer = function _createPeer(options) {
     if (self.options.discoverPeers === false)
       return;
 
-    if (!data.network)
+    if (!(data.services &amp; constants.services.NETWORK))
       return;
 
-    if (self.options.spv &amp;&amp; !data.spv)
-      return;
+    if (self.options.headers) {
+      if (data.version &lt; 31800)
+        return;
+    }
 
-    if (self.options.witness &amp;&amp; !data.witness)
-      return;
+    if (self.options.spv) {
+      if (data.version &lt; 70011 || !(data.services &amp; constants.services.BLOOM))
+        return;
+    }
+
+    if (self.options.witness) {
+      if (!(data.services &amp; constants.services.WITNESS))
+        return;
+    }
 
     if (self.seeds.length > 300)
       self.setSeeds(self.seeds.slice(-150));
@@ -1021,8 +1035,12 @@ Pool.prototype._createPeer = function _createPeer(options) {
       self.block.versionHeight = version.height;
 
     bcoin.debug(
-      'Received version from %s: version=%d height=%d agent=%s',
-      peer.host, version.version, version.height, version.agent);
+      'Received version (%s): version=%d height=%d services=%s agent=%s',
+      peer.hostname,
+      version.version,
+      version.height,
+      version.services.toString(2),
+      version.agent);
 
     bcoin.time.add(peer.host, version.ts);
 
@@ -1085,10 +1103,11 @@ Pool.prototype._addLeech = function _addLeech(socket) {
     witness: false
   });
 
-  assert(peer);
+  bcoin.debug('Added leech peer (%s).', peer.hostname);
 
   this.peers.leeches.push(peer);
   this.peers.all.push(peer);
+  this.peers.map[peer.host] = peer;
 
   peer.once('close', function() {
     self._removePeer(peer);
@@ -1099,20 +1118,6 @@ Pool.prototype._addLeech = function _addLeech(socket) {
       return;
 
     peer.updateWatch();
-
-    self.inv.list.forEach(function(entry) {
-      var result = peer.broadcast(entry.msg);
-      if (!result)
-        return;
-
-      result[0].once('request', function() {
-        entry.e.emit('ack', peer);
-      });
-
-      result[0].once('reject', function(payload) {
-        entry.e.emit('reject', payload, peer);
-      });
-    });
   });
 
   peer.on('merkleblock', function(block) {
@@ -1150,7 +1155,7 @@ Pool.prototype._addPeer = function _addPeer() {
   if (this.destroyed)
     return;
 
-  if (this.peers.regular.length + this.peers.pending.length >= this.size)
+  if (this.peers.regular.length + this.peers.pending.length >= this.size - 1)
     return;
 
   seed = this.getSeed(false);
@@ -1170,6 +1175,7 @@ Pool.prototype._addPeer = function _addPeer() {
 
   this.peers.pending.push(peer);
   this.peers.all.push(peer);
+  this.peers.map[peer.host] = peer;
 
   peer.once('close', function() {
     self._removePeer(peer);
@@ -1184,27 +1190,10 @@ Pool.prototype._addPeer = function _addPeer() {
     if (self.destroyed)
       return;
 
-    i = self.peers.pending.indexOf(peer);
-    if (i !== -1) {
-      self.peers.pending.splice(i, 1);
-      self.peers.regular.push(peer);
-    }
+    if (utils.binaryRemove(self.peers.pending, peer, compare))
+      utils.binaryInsert(self.peers.regular, peer, compare);
 
     peer.updateWatch();
-
-    self.inv.list.forEach(function(entry) {
-      var result = peer.broadcast(entry.msg);
-      if (!result)
-        return;
-
-      result[0].once('request', function() {
-        entry.e.emit('ack', peer);
-      });
-
-      result[0].once('reject', function(payload) {
-        entry.e.emit('reject', payload, peer);
-      });
-    });
   });
 
   peer.on('merkleblock', function(block) {
@@ -1264,29 +1253,19 @@ Pool.prototype.bestPeer = function bestPeer() {
 };
 
 Pool.prototype._removePeer = function _removePeer(peer) {
-  var i = this.peers.pending.indexOf(peer);
-  if (i !== -1)
-    this.peers.pending.splice(i, 1);
-
-  i = this.peers.regular.indexOf(peer);
-  if (i !== -1)
-    this.peers.regular.splice(i, 1);
-
-  i = this.peers.leeches.indexOf(peer);
-  if (i !== -1)
-    this.peers.leeches.splice(i, 1);
-
-  i = this.peers.all.indexOf(peer);
-  if (i !== -1)
-    this.peers.all.splice(i, 1);
+  utils.binaryRemove(this.peers.pending, peer, compare);
+  utils.binaryRemove(this.peers.regular, peer, compare);
+  utils.binaryRemove(this.peers.leeches, peer, compare);
+  utils.binaryRemove(this.peers.all, peer, compare);
+  delete this.peers.map[peer.host];
 
   if (this.peers.load === peer) {
     Object.keys(this.request.map).forEach(function(hash) {
       var item = this.request.map[hash];
       if (item.peer === peer)
-        item.finish();
+        item.finish(new Error('Peer closed.'));
     }, this);
-    bcoin.debug('Removed loader peer (%s).', peer.host);
+    bcoin.debug('Removed loader peer (%s).', peer.hostname);
     this.peers.load = null;
   }
 };
@@ -1409,29 +1388,27 @@ Pool.prototype.removeWallet = function removeWallet(wallet) {
   if (!this.options.spv)
     return;
 
-  assert(this.loaded);
+  assert(this.loaded, 'Pool is not loaded.');
 
   this.unwatchWallet(wallet);
 };
 
 /**
  * Add an address to the bloom filter (SPV-only).
- * @param {Base58Address} address
+ * @param {Address|Base58Address} address
  */
 
 Pool.prototype.watchAddress = function watchAddress(address) {
-  var hash = bcoin.address.getHash(address);
-  this.watch(hash);
+  this.watch(bcoin.address.getHash(address));
 };
 
 /**
  * Remove an address from the bloom filter (SPV-only).
- * @param {Base58Address} address
+ * @param {Address|Base58Address} address
  */
 
 Pool.prototype.unwatchAddress = function unwatchAddress(address) {
-  var hash = bcoin.address.getHash(address);
-  this.unwatch(hash);
+  this.unwatch(bcoin.address.getHash(address));
 };
 
 /**
@@ -1466,7 +1443,7 @@ Pool.prototype.unwatchWallet = function unwatchWallet(wallet) {
 Pool.prototype.searchWallet = function(wallet, callback) {
   var self = this;
 
-  assert(this.loaded);
+  assert(this.loaded, 'Pool is not loaded.');
 
   callback = utils.asyncify(callback);
 
@@ -1485,13 +1462,13 @@ Pool.prototype.searchWallet = function(wallet, callback) {
 
       self.chain.reset(height, function(err) {
         if (err) {
-          bcoin.debug('Failed to reset height: %s', err.stack + '');
+          bcoin.error(err);
           return callback(err);
         }
 
-        bcoin.debug('Wallet height: %s', height);
+        bcoin.debug('Wallet height: %s.', height);
         bcoin.debug(
-          'Reverted chain to height=%d (%s)',
+          'Reverted chain to height=%d (%s).',
           self.chain.height,
           utils.date(self.chain.tip.ts)
         );
@@ -1507,13 +1484,13 @@ Pool.prototype.searchWallet = function(wallet, callback) {
 
     self.chain.resetTime(ts, function(err) {
       if (err) {
-        bcoin.debug('Failed to reset time: %s', err.stack + '');
+        bcoin.error(err);
         return callback(err);
       }
 
-      bcoin.debug('Wallet time: %s', utils.date(ts));
+      bcoin.debug('Wallet time is %s.', utils.date(ts));
       bcoin.debug(
-        'Reverted chain to height=%d (%s)',
+        'Reverted chain to height=%d (%s).',
         self.chain.height,
         utils.date(self.chain.tip.ts)
       );
@@ -1521,75 +1498,6 @@ Pool.prototype.searchWallet = function(wallet, callback) {
       callback();
     });
   });
-};
-
-/**
- * Search for a specific piece of data within a time range (SPV-only).
- * @param {Buffer|Hash} id
- * @param {Object} range - Range in the format
- * of `{start:Number, end:Number}`.
- * @param {Function} callback
- */
-
-Pool.prototype.search = function search(id, range, callback) {
-  var self = this;
-
-  assert(this.loaded);
-
-  if (!this.options.spv)
-    return;
-
-  if (range == null) {
-    range = id;
-    id = null;
-  }
-
-  if (typeof id === 'string')
-    id = new Buffer(id, 'hex');
-
-  if (typeof range === 'number')
-    range = { start: range, end: null };
-  else if (range)
-    range = { start: range.start, end: range.end };
-  else
-    range = { start: 0, end: 0 };
-
-  if (!range.end)
-    range.end = utils.now();
-
-  if (!range.start)
-    range.start = utils.now() - 432000;
-
-  if (id)
-    this.watch(id);
-
-  callback = utils.asyncify(callback);
-
-  function done(err, completed) {
-    self.removeListener('block', onBlock);
-    if (id)
-      self.unwatch(id);
-    callback(err, completed);
-  }
-
-  function onBlock(block) {
-    if (block.ts >= range.end)
-      done(null, true);
-  }
-
-  this.on('block', onBlock);
-
-  if (range.start &lt; this.chain.tip.ts) {
-    this.chain.resetTime(range.start, function(err) {
-      if (err)
-        return done(err);
-
-      self.stopSync();
-      self.startSync();
-    });
-  } else {
-    done(null, false);
-  }
 };
 
 /**
@@ -1641,10 +1549,10 @@ Pool.prototype.getData = function getData(peer, type, hash, options, callback) {
       if (peer.queue.tx.length === 0) {
         utils.nextTick(function() {
           bcoin.debug(
-            'Requesting %d/%d txs from %s with getdata',
+            'Requesting %d/%d txs from peer with getdata (%s).',
             peer.queue.tx.length,
             self.request.activeTX,
-            peer.host);
+            peer.hostname);
 
           peer.getData(peer.queue.tx);
           peer.queue.tx.length = 0;
@@ -1729,10 +1637,10 @@ Pool.prototype._sendRequests = function _sendRequests(peer) {
   });
 
   bcoin.debug(
-    'Requesting %d/%d blocks from %s with getdata',
+    'Requesting %d/%d blocks from peer with getdata (%s).',
     items.length,
     this.request.activeBlocks,
-    peer.host);
+    peer.hostname);
 
   peer.getData(items);
 };
@@ -1743,7 +1651,7 @@ Pool.prototype._sendRequests = function _sendRequests(peer) {
  */
 
 Pool.prototype.fulfill = function fulfill(hash) {
-  var i, item;
+  var item;
 
   if (hash.hash)
     hash = hash.hash('hex');
@@ -1754,131 +1662,7 @@ Pool.prototype.fulfill = function fulfill(hash) {
 
   item.finish();
 
-  for (i = 0; i &lt; item.callback.length; i++)
-    item.callback[i]();
-
   return item;
-};
-
-/**
- * Send `getdata` for a block, wait for response.
- * @param {Hash}
- * @param {Function} callback - Returns [Error, {@link Block}].
- */
-
-Pool.prototype.getBlock = function getBlock(hash, callback) {
-  if (!this.peers.load)
-    return setTimeout(this.getBlock.bind(this, hash, callback), 1000);
-
-  this.getData(this.peers.load, this.block.type, hash, true, function(block) {
-    callback(null, block);
-  });
-
-  this.scheduleRequests(this.peers.load);
-};
-
-/**
- * Broadcast a block.
- * @param {Block} block
- * @param {Function} callback - Returns [Error]. Executes on request, reject,
- * or timeout.
- */
-
-Pool.prototype.sendBlock = function sendBlock(block, callback) {
-  return this.broadcast(block, callback);
-};
-
-/**
- * Search for a transaction, wait for response (SPV-only).
- * @param {Hash}
- * @param {Object} range - Time range in the form
- * of `{start:Number, end:Number}`.
- * @param {Function} callback - Returns [Error, {@link Block}].
- */
-
-Pool.prototype.getTX = function getTX(hash, range, callback) {
-  var self = this;
-  var cbs, tx, found, delta;
-
-  if (!this.peers.load)
-    return setTimeout(this.getTX.bind(this, hash, range, callback), 1000);
-
-  if (!this.options.spv)
-    return callback(new Error('Cannot get tx with full node'));
-
-  if (typeof range === 'function') {
-    callback = range;
-    range = null;
-  }
-
-  // Do not perform duplicate searches
-  if (this.validate.map[hash])
-    return this.validate.map[hash].push(callback);
-
-  cbs = [callback];
-  this.validate.map[hash] = cbs;
-
-  // Add request without queueing it to get notification at the time of load
-  tx = null;
-  found = false;
-  this.getData(this.peers.load, self.tx.type, hash, { noQueue: true }, function(t) {
-    found = true;
-    tx = t;
-  });
-
-  // Do incremental search until the TX is found
-  delta = this.validate.delta;
-
-  // Start from the existing range if given
-  if (range)
-    range = { start: range.start, end: range.end };
-  else
-    range = { start: utils.now() - delta, end: 0 };
-
-  function done(err, tx, range) {
-    var i;
-
-    delete self.validate.map[hash];
-
-    for (i = 0; i &lt; cbs.length; i++)
-      cbs[i](err, tx, range);
-  }
-
-  (function next() {
-    self.search(hash, range, function(err, completed) {
-      if (err)
-        return done(err);
-
-      if (found)
-        return done(null, tx, range);
-
-      if (!completed)
-        return done();
-
-      // Not found yet, continue scanning
-      range.end = range.start;
-      range.start -= delta;
-      if (range.start &lt; 0)
-        range.start = 0;
-
-      next();
-    });
-  })();
-};
-
-/**
- * Broadcast a transaction.
- * @param {TX} tx
- * @param {Function} callback - Returns [Error]. Executes on request, reject,
- * or timeout.
- */
-
-Pool.prototype.sendTX = function sendTX(tx, callback) {
-  // Failsafe to avoid getting banned by bitcoind nodes.
-  if (!tx.isSane())
-    return utils.asyncify(callback)(new Error('CheckTransaction failed.'));
-
-  return this.broadcast(tx, callback);
 };
 
 /**
@@ -1886,51 +1670,39 @@ Pool.prototype.sendTX = function sendTX(tx, callback) {
  * @param {TX|Block} msg
  * @param {Function} callback - Returns [Error]. Executes on request, reject,
  * or timeout.
+ * @returns {BroadcastItem}
  */
 
 Pool.prototype.broadcast = function broadcast(msg, callback) {
-  var self = this;
-  var e = new EventEmitter();
-  var entry;
+  var hash = msg.hash('hex');
+  var item = this.inv.map[hash];
 
-  callback = utils.once(callback);
+  if (item) {
+    item.refresh();
+    item.addCallback(callback);
+    return item;
+  }
 
-  if (msg.mutable)
-    msg = msg.toTX();
+  item = new BroadcastItem(this, msg, callback);
 
-  entry = {
-    msg: msg,
-    e: e,
-    timer: setTimeout(function() {
-      var i = self.inv.list.indexOf(entry);
-      if (i !== -1)
-        self.inv.list.splice(i, 1);
-      callback(new Error('Timed out.'));
-    }, this.inv.timeout)
-  };
+  return item.start();
+};
 
-  this.inv.list.push(entry);
+/**
+ * Announce an item by sending an inv to all
+ * peers. This does not add it to the broadcast
+ * queue.
+ * @param {TX|Block} tx
+ */
 
-  this.peers.all.forEach(function(peer) {
-    var result = peer.broadcast(msg);
-    if (!result)
-      return;
+Pool.prototype.announce = function announce(msg) {
+  var i;
 
-    result[0].once('request', function() {
-      e.emit('ack', peer);
-      // Give them a chance to send a reject.
-      setTimeout(function() {
-        callback();
-      }, 100);
-    });
+  if (this.peers.load)
+    this.peers.load.sendInv(msg);
 
-    result[0].once('reject', function(payload) {
-      e.emit('reject', payload, peer);
-      callback(new Error('TX was rejected: ' + payload.reason));
-    });
-  });
-
-  return e;
+  for (i = 0; i &lt; this.peers.regular.length; i++)
+    this.peers.all[i].sendInv(msg);
 };
 
 /**
@@ -1950,13 +1722,12 @@ Pool.prototype.destroy = function destroy(callback) {
 
   this.stopSync();
 
-  this.inv.list.forEach(function(entry) {
-    clearTimeout(entry.timer);
-    entry.timer = null;
+  this.inv.list.slice().forEach(function(entry) {
+    entry.finish();
   });
 
   Object.keys(this.request.map).forEach(function(hash) {
-    this.request.map[hash].finish();
+    this.request.map[hash].finish(new Error('Pool closed.'));
   }, this);
 
   if (this.peers.load)
@@ -1974,7 +1745,7 @@ Pool.prototype.destroy = function destroy(callback) {
     peer.destroy();
   });
 
-  this.stopServer(callback);
+  this.unlisten(callback);
 };
 
 /**
@@ -1983,19 +1754,8 @@ Pool.prototype.destroy = function destroy(callback) {
  * @returns {Peer?}
  */
 
-Pool.prototype.getPeer = function getPeer(addr) {
-  var i, peer;
-
-  if (!addr)
-    return;
-
-  addr = utils.parseHost(addr);
-
-  for (i = 0; i &lt; this.peers.all.length; i++) {
-    peer = this.peers.all[i];
-    if (peer.host === addr.host)
-      return peer;
-  }
+Pool.prototype.getPeer = function getPeer(host) {
+  return this.peers.map[host.host || host];
 };
 
 /**
@@ -2075,12 +1835,6 @@ Pool.prototype.getSeed = function getSeed(priority) {
   // Hang back if we don't have a loader peer yet.
   if (!this.peers.load)
     return;
-
-  // Need at least one block peer.
-  if (this.originalSeeds.length + this.seeds.length === 1) {
-    assert(this.originalSeeds[0]);
-    return this.originalSeeds[0];
-  }
 
   addr = this._getRandom(this.originalSeeds, true);
   if (addr)
@@ -2193,7 +1947,7 @@ Pool.prototype.setMisbehavior = function setMisbehavior(peer, score) {
 
   if (peer.banScore >= constants.BAN_SCORE) {
     this.peers.misbehaving[peer.host] = utils.now();
-    bcoin.debug('Ban threshold exceeded for %s', peer.host);
+    bcoin.debug('Ban threshold exceeded (%s).', peer.host);
     peer.destroy();
     return true;
   }
@@ -2240,18 +1994,23 @@ Pool.prototype.isMisbehaving = function isMisbehaving(host) {
  */
 
 Pool.prototype.reject = function reject(peer, obj, code, reason, score) {
+  var type;
+
   if (obj) {
-    bcoin.debug('Rejecting %s %s from %s: ccode=%s reason=%s',
-      obj.type || 'block', obj.rhash, peer.host, code, reason);
+    type = (obj instanceof bcoin.tx) ? 'tx' : 'block';
+
+    bcoin.debug('Rejecting %s %s (%s): ccode=%s reason=%s.',
+      type, obj.rhash, peer.hostname, code, reason);
 
     peer.reject({
+      message: type,
       ccode: code,
       reason: reason,
       data: obj.hash()
     });
   } else {
-    bcoin.debug('Rejecting packet from %s: ccode=%s reason=%s',
-      peer.host, code, reason);
+    bcoin.debug('Rejecting packet from %s: ccode=%s reason=%s.',
+      peer.hostname, code, reason);
 
     peer.reject({
       ccode: code,
@@ -2277,21 +2036,39 @@ Pool.prototype.reject = function reject(peer, obj, code, reason, score) {
  */
 
 function LoadRequest(pool, peer, type, hash, callback) {
+  if (!(this instanceof LoadRequest))
+    return new LoadRequest(pool, peer, type, hash, callback);
+
   this.pool = pool;
   this.peer = peer;
   this.type = type;
   this.hash = hash;
   this.callback = [];
   this.active = false;
+  this.id = this.pool.uid++;
+  this.timeout = null;
 
-  if (callback)
-    this.callback.push(callback);
+  this.addCallback(callback);
 
   assert(!this.pool.request.map[this.hash]);
   this.pool.request.map[this.hash] = this;
 
-  this._finish = this.finish.bind(this);
+  this._finish = this._ontimeout.bind(this);
 }
+
+LoadRequest.prototype._ontimeout = function _ontimeout() {
+  this.finish(new Error('Timeout.'));
+};
+
+/**
+ * Add a callback to be executed when item is received.
+ * @param {Function} callback
+ */
+
+LoadRequest.prototype.addCallback = function addCallback(callback) {
+  if (callback)
+    this.callback.push(callback);
+};
 
 /**
  * Mark the request as in-flight. Start timeout timer.
@@ -2303,6 +2080,7 @@ LoadRequest.prototype.start = function start() {
 
   this.active = true;
   this.pool.request.active++;
+
   if (this.type === this.pool.tx.type)
     this.pool.request.activeTX++;
   else
@@ -2314,40 +2092,235 @@ LoadRequest.prototype.start = function start() {
 /**
  * Mark the request as completed.
  * Remove from queue and map. Clear timeout.
+ * @param {Error?} err
  */
 
-LoadRequest.prototype.finish = function finish() {
-  var index;
+LoadRequest.prototype.finish = function finish(err) {
+  var i;
 
   if (this.pool.request.map[this.hash]) {
     delete this.pool.request.map[this.hash];
     if (this.active) {
+      this.active = false;
       this.pool.request.active--;
       if (this.type === this.pool.tx.type)
         this.pool.request.activeTX--;
       else
         this.pool.request.activeBlocks--;
-      this.active = false;
     }
   }
 
-  if (this.type === this.pool.tx.type) {
-    index = this.peer.queue.tx.indexOf(this);
-    if (index !== -1)
-      this.peer.queue.tx.splice(index, 1);
-  } else {
-    index = this.peer.queue.block.indexOf(this);
-    if (index !== -1)
-      this.peer.queue.block.splice(index, 1);
-  }
+  if (this.type === this.pool.tx.type)
+    utils.binaryRemove(this.peer.queue.tx, this, compare);
+  else
+    utils.binaryRemove(this.peer.queue.block, this, compare);
 
   this.peer.removeListener('close', this._finish);
 
   if (this.timeout != null) {
     clearTimeout(this.timeout);
-    delete this.timeout;
+    this.timeout = null;
   }
+
+  for (i = 0; i &lt; this.callback.length; i++)
+    this.callback[i](err);
 };
+
+/**
+ * Inspect the load request.
+ * @returns {String}
+ */
+
+LoadRequest.prototype.inspect = function inspect() {
+  return '&lt;LoadRequest:'
+    + ' id=' + this.id
+    + ' type=' + (this.type === this.pool.tx.type ? 'tx' : 'block')
+    + ' active=' + this.active
+    + ' hash=' + utils.revHex(this.hash)
+    + '>';
+};
+
+/**
+ * Represents an item that is broadcasted via an inv/getdata cycle.
+ * @exports BroadcastItem
+ * @constructor
+ * @private
+ * @param {Pool} pool
+ * @param {TX|Block} item
+ * @param {Function?} callback
+ * @emits BroadcastItem#ack
+ * @emits BroadcastItem#reject
+ * @emits BroadcastItem#timeout
+ */
+
+function BroadcastItem(pool, item, callback) {
+  if (!(this instanceof BroadcastItem))
+    return new BroadcastItem(pool, item);
+
+  if (item instanceof bcoin.tx) {
+    if (item.mutable)
+      item = item.toTX();
+  }
+
+  this.pool = pool;
+  this.callback = [];
+
+  this.id = this.pool.uid++;
+  this.hash = item.hash('hex');
+  this.type = (item instanceof bcoin.tx)
+    ? constants.inv.TX
+    : constants.inv.BLOCK;
+  this.msg = item;
+  this.normalValue = item.renderNormal();
+  this.witnessValue = item.render();
+
+  // INV does not set the witness
+  // mask (only GETDATA does this).
+  assert((this.type &amp; constants.WITNESS_MASK) === 0);
+
+  this.addCallback(callback);
+}
+
+utils.inherits(BroadcastItem, EventEmitter);
+
+/**
+ * Add a callback to be executed on ack, timeout, or reject.
+ * @param {Function} callback
+ */
+
+BroadcastItem.prototype.addCallback = function addCallback(callback) {
+  if (callback)
+    this.callback.push(callback);
+};
+
+/**
+ * Start the broadcast.
+ */
+
+BroadcastItem.prototype.start = function start() {
+  var self = this;
+  var i;
+
+  assert(!this.timeout, 'Already started.');
+  assert(!this.pool.inv.map[this.hash], 'Already started.');
+
+  this.pool.inv.map[this.hash] = this;
+  utils.binaryInsert(this.pool.inv.list, this, compare);
+
+  this.refresh();
+
+  return this;
+};
+
+/**
+ * Refresh the timeout on the broadcast.
+ */
+
+BroadcastItem.prototype.refresh = function refresh() {
+  var self = this;
+
+  if (this.timeout) {
+    clearTimeout(this.timeout);
+    this.timeout = null;
+  }
+
+  this.timeout = setTimeout(function() {
+    self.emit('timeout');
+    self.finish(new Error('Timed out.'));
+  }, this.pool.inv.timeout);
+
+  for (i = 0; i &lt; this.pool.peers.all.length; i++)
+    this.pool.peers.all[i].sendInv(this);
+};
+
+/**
+ * Finish the broadcast, potentially with an error.
+ * @param {Error?} err
+ */
+
+BroadcastItem.prototype.finish = function finish(err) {
+  var i;
+
+  assert(this.timeout, 'Already finished.');
+  assert(this.pool.inv.map[this.hash], 'Already finished.');
+
+  clearInterval(this.timeout);
+  this.timeout = null;
+
+  delete this.pool.inv.map[this.hash];
+  utils.binaryRemove(this.pool.inv.list, this, compare);
+
+  for (i = 0; i &lt; this.callback.length; i++)
+    this.callback[i](err);
+
+  this.callback.length = 0;
+};
+
+/**
+ * Send the item to a peer.
+ * @param {Peer} peer
+ * @param {Boolean} witness - Whether to use the witness serialization.
+ */
+
+BroadcastItem.prototype.sendTo = function sendTo(peer, witness) {
+  var self = this;
+  var value = witness ? this.witnessValue : this.normalValue;
+  var packetType = this.type === constants.inv.TX ? 'tx' : 'block';
+  var i;
+
+  peer.write(peer.framer.packet(packetType, value));
+
+  setTimeout(function() {
+    self.emit('ack', peer);
+
+    for (i = 0; i &lt; this.callback.length; i++)
+      self.callback[i]();
+
+    self.callback.length = 0;
+  }, 1000);
+};
+
+/**
+ * Handle a reject from a peer.
+ * @param {Peer} peer
+ */
+
+BroadcastItem.prototype.reject = function reject(peer) {
+  var i, err;
+
+  this.emit('reject', peer);
+
+  err = new Error('Rejected by ' + peer.hostname);
+
+  for (i = 0; i &lt; this.callback.length; i++)
+    this.callback[i](err);
+
+  this.callback.length = 0;
+};
+
+/**
+ * Inspect the broadcast item.
+ */
+
+BroadcastItem.prototype.inspect = function inspect() {
+  return '&lt;BroadcastItem:'
+    + ' id=' + this.id
+    + ' type=' + (this.type === constants.TX ? 'tx' : 'block')
+    + ' hash=' + utils.revHex(this.hash)
+    + '>';
+};
+
+/*
+ * Helpers
+ */
+
+function compare(a, b) {
+  return a.id - b.id;
+}
+
+/*
+ * Expose
+ */
 
 module.exports = Pool;
 </code></pre>
@@ -2360,13 +2333,13 @@ module.exports = Pool;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

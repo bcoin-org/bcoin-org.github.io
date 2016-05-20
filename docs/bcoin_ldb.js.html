@@ -50,11 +50,13 @@ var db = {};
  * @param {Number} options.mapSize
  * @param {Boolean} options.writeMap
  * @param {String} options.db - Database backend (`"leveldb"` by default).
+ * @param {String} options.name - Database name.
+ * @param {String} options.location - Database location (overrides `name`).
  * @returns {LowlevelUp}
  */
 
 function ldb(options) {
-  var file = getLocation(options);
+  var file = ldb.getLocation(options);
 
   if (!db[file]) {
     if (!options)
@@ -80,14 +82,66 @@ function ldb(options) {
       mapSize: options.mapSize || 300 * (1024 &lt;&lt; 20),
       writeMap: options.writeMap || false,
 
-      db: getBackend(options.db)
+      db: ldb.getBackend(options.db)
     });
   }
 
   return db[file];
 }
 
-function getLocation(options) {
+/**
+ * Get database name and extension based on options.
+ * @param {String} db
+ * @returns {Object}
+ */
+
+ldb.getName = function getName(db) {
+  var ext;
+
+  if (!db)
+    db = bcoin.db || 'leveldb';
+
+  if (db === 'leveldb')
+    name = 'leveldown';
+  else if (db === 'rocksdb')
+    name = 'rocksdown';
+  else if (db === 'lmdb')
+    name = 'lmdb';
+  else if (db === 'memory')
+    name = 'bst';
+  else
+    name = db;
+
+  switch (name) {
+    case 'leveldown':
+      ext = 'ldb';
+      break;
+    case 'rocksdown':
+      ext = 'rdb';
+      break;
+    case 'lmdb':
+      ext = 'lmdb';
+      break;
+    case 'bst':
+      ext = 'mem';
+      break;
+    default:
+      ext = 'db';
+      break;
+  }
+
+  return { name: name, ext: ext };
+};
+
+/**
+ * Get database location based on options.
+ * @param {Object} options
+ * @returns {String} Path.
+ */
+
+ldb.getLocation = function getLocation(options) {
+  var backend = ldb.getName(options.db);
+
   if (options.location)
     return options.location;
 
@@ -96,23 +150,20 @@ function getLocation(options) {
     + options.name
     + '-'
     + bcoin.network.get(options.network).type
-    + '.db';
-}
+    + '.'
+    + backend.ext;
+};
 
-function getBackend(backend) {
-  if (!backend)
-    backend = bcoin.db;
+/**
+ * Require database backend module.
+ * @param {String} db
+ * @returns {Object} Module.
+ */
 
-  if (!backend || backend === 'leveldb')
-    backend = 'leveldown';
-  else if (backend === 'rocksdb')
-    backend = 'rocksdown';
-  else if (backend === 'lmdb')
-    backend = 'lmdb';
-  else if (backend === 'memory')
-    backend = 'bst';
+ldb.getBackend = function getBackend(db) {
+  var backend = ldb.getName(db);
 
-  if (backend === 'bst')
+  if (backend.name === 'bst')
     return require('./bst');
 
   if (bcoin.isBrowser)
@@ -120,8 +171,8 @@ function getBackend(backend) {
 
   bcoin.ensurePrefix();
 
-  return require(backend);
-}
+  return require(backend.name);
+};
 
 /**
  * Destroy a database.
@@ -129,15 +180,15 @@ function getBackend(backend) {
  * @param {Function} callback
  */
 
-function destroy(options, callback) {
-  var file = getLocation(options);
-  var backend = getBackend(options.db);
+ldb.destroy = function destroy(options, callback) {
+  var file = ldb.getLocation(options);
+  var backend = ldb.getBackend(options.db);
 
   if (!backend.destroy)
     return utils.nextTick(callback);
 
   backend.destroy(file, callback);
-}
+};
 
 /**
  * Repair a database.
@@ -145,18 +196,19 @@ function destroy(options, callback) {
  * @param {Function} callback
  */
 
-function repair(options, callback) {
-  var file = getLocation(options);
-  var backend = getBackend(options.db);
+ldb.repair = function repair(options, callback) {
+  var file = ldb.getLocation(options);
+  var backend = ldb.getBackend(options.db);
 
   if (!backend.repair)
     return utils.asyncify(callback)(new Error('Cannot repair.'));
 
   backend.repair(file, callback);
-}
+};
 
-ldb.destroy = destroy;
-ldb.repair = repair;
+/*
+ * Expose
+ */
 
 module.exports = ldb;
 </code></pre>
@@ -169,13 +221,13 @@ module.exports = ldb;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

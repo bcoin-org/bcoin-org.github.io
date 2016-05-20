@@ -118,8 +118,13 @@ Parser.prototype.feed = function feed(data) {
  */
 
 Parser.prototype.parse = function parse(chunk) {
-  if (chunk.length > constants.MAX_MESSAGE)
+  var checksum;
+
+  if (chunk.length > constants.MAX_MESSAGE) {
+    this.waiting = 24;
+    this.packet = null;
     return this._error('Packet too large: %dmb.', utils.mb(chunk.length));
+  }
 
   if (this.packet === null) {
     this.packet = this.parseHeader(chunk) || {};
@@ -128,18 +133,24 @@ Parser.prototype.parse = function parse(chunk) {
 
   this.packet.payload = chunk;
 
-  if (utils.readU32(utils.checksum(this.packet.payload)) !== this.packet.checksum)
+  checksum = utils.checksum(this.packet.payload).readUInt32LE(0, true);
+
+  if (checksum !== this.packet.checksum) {
+    this.waiting = 24;
+    this.packet = null;
     return this._error('Invalid checksum');
+  }
 
   try {
     this.packet.payload = this.parsePayload(this.packet.cmd, this.packet.payload);
   } catch (e) {
     this.emit('error', e);
+    this.waiting = 24;
+    this.packet = null;
+    return;
   }
 
-  if (this.packet.payload)
-    this.emit('packet', this.packet);
-
+  this.emit('packet', this.packet);
   this.waiting = 24;
   this.packet = null;
 };
@@ -154,7 +165,7 @@ Parser.prototype.parse = function parse(chunk) {
 Parser.prototype.parseHeader = function parseHeader(h) {
   var i, magic, cmd;
 
-  magic = utils.readU32(h, 0);
+  magic = h.readUInt32LE(0, true);
 
   if (magic !== this.network.magic)
     return this._error('Invalid magic value: ' + magic.toString(16));
@@ -166,15 +177,18 @@ Parser.prototype.parseHeader = function parseHeader(h) {
     return this._error('Not NULL-terminated cmd');
 
   cmd = h.toString('ascii', 4, 4 + i);
-  this.waiting = utils.readU32(h, 16);
 
-  if (this.waiting > constants.MAX_MESSAGE)
+  this.waiting = h.readUInt32LE(16, true);
+
+  if (this.waiting > constants.MAX_MESSAGE) {
+    this.waiting = 24;
     return this._error('Packet length too large: %dmb', utils.mb(this.waiting));
+  }
 
   return {
     cmd: cmd,
     length: this.waiting,
-    checksum: utils.readU32(h, 20)
+    checksum: h.readUInt32LE(20, true)
   };
 };
 
@@ -373,6 +387,8 @@ Parser.prototype.parsePayload = function parsePayload(cmd, p) {
       return Parser.parseGetUTXOs(p);
     case 'utxos':
       return Parser.parseUTXOs(p);
+    case 'feefilter':
+      return Parser.parseFeeFilter(p);
     default:
       bcoin.debug('Unknown packet: %s', cmd);
       return p;
@@ -496,15 +512,32 @@ Parser.parseVersion = function parseVersion(p) {
   services = p.readU53();
   ts = p.read53();
   recv = Parser.parseAddress(p, false);
-  from = Parser.parseAddress(p, false);
-  nonce = p.readU64();
-  agent = p.readVarString('ascii');
-  height = p.read32();
+
+  if (p.left() > 0) {
+    from = Parser.parseAddress(p, false);
+    nonce = p.readU64();
+  } else {
+    from = {};
+    nonce = new bn(0);
+  }
+
+  if (p.left() > 0)
+    agent = p.readVarString('ascii', 256);
+  else
+    agent = '';
+
+  if (p.left() > 0)
+    height = p.read32();
+  else
+    height = 0;
 
   if (p.left() > 0)
     relay = p.readU8() === 1;
   else
     relay = true;
+
+  if (version === 10300)
+    version = 300;
 
   assert(version >= 0, 'Version is negative.');
   assert(ts >= 0, 'Timestamp is negative.');
@@ -513,10 +546,6 @@ Parser.parseVersion = function parseVersion(p) {
   return {
     version: version,
     services: services,
-    network: (services &amp; constants.services.NETWORK) !== 0,
-    getutxo: (services &amp; constants.services.GETUTXO) !== 0,
-    bloom: (services &amp; constants.services.BLOOM) !== 0,
-    witness: (services &amp; constants.services.WITNESS) !== 0,
     ts: ts,
     local: recv,
     remote: from,
@@ -903,7 +932,7 @@ Parser.parseOutput = function parseOutput(p) {
 
   p = new BufferReader(p);
 
-  value = p.read64();
+  value = p.read64N();
   script = Parser.parseScript(p);
 
   return {
@@ -926,7 +955,7 @@ Parser.parseCoin = function parseCoin(p, extended) {
 
   version = p.readU32();
   height = p.readU32();
-  value = p.read64();
+  value = p.read64N();
   script = Parser.parseScript(p);
   coinbase = p.readU8() === 1;
 
@@ -1115,11 +1144,11 @@ Parser.parseReject = function parseReject(p) {
 
   p = new BufferReader(p);
 
-  message = p.readVarString('ascii');
+  message = p.readVarString('ascii', 12);
   ccode = p.readU8();
-  reason = p.readVarString('ascii');
+  reason = p.readVarString('ascii', 111);
 
-  if (p.left() >= 32)
+  if (message === 'block' || message === 'tx')
     data = p.readHash('hex');
   else
     data = null;
@@ -1255,6 +1284,23 @@ Parser.parseAlert = function parseAlert(p) {
   };
 };
 
+/**
+ * Parse feefilter packet.
+ * @param {Buffer|BufferReader} p
+ * @returns {FeeFilterPacket}
+ */
+
+Parser.parseFeeFilter = function parseFeeFilter(p) {
+  p = new BufferReader(p);
+  return {
+    rate: p.read64N()
+  };
+};
+
+/*
+ * Expose
+ */
+
 module.exports = Parser;
 </code></pre>
         </article>
@@ -1266,13 +1312,13 @@ module.exports = Parser;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

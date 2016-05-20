@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: SPVNode</title>
+    <title>JSDoc: Class: AES</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: SPVNode</h1>
+    <h1 class="page-title">Class: AES</h1>
 
     
 
@@ -28,7 +28,7 @@
 
 <header>
     
-        <h2>SPVNode</h2>
+        <h2>AES</h2>
         
     
 </header>
@@ -40,15 +40,14 @@
 
     
 
-    <h4 class="name" id="SPVNode"><span class="type-signature"></span>new SPVNode<span class="signature">(options<span class="signature-attributes">nullable</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="AES"><span class="type-signature"></span>new AES<span class="signature">(key, bits, iv<span class="signature-attributes">nullable</span>)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Create an spv node which only maintains
-a chain, a pool, and a wallet database.</p>
+    <p>An AES object for encrypting and decrypting blocks.</p>
 </div>
 
 
@@ -86,13 +85,75 @@ a chain, a pool, and a wallet database.</p>
 
         <tr>
             
-                <td class="name"><code>options</code></td>
+                <td class="name"><code>key</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Object</span>
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>bits</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>iv</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
 
 
             
@@ -112,9 +173,634 @@ a chain, a pool, and a wallet database.</p>
 
             
 
-            <td class="description last">
-                <h6>Properties</h6>
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line22">line 22</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".cbc"><span class="type-signature">(static) </span>cbc<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    <p>Cipher block chaining mode.</p>
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line595">line 595</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".ecb"><span class="type-signature">(static) </span>ecb<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    <p>Electronic codebook mode.</p>
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line567">line 567</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id=".cbc.decrypt"><span class="type-signature">(static) </span>cbc.decrypt<span class="signature">(data, key, iv)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Decrypt data with aes 256 cbc.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
                 
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>key</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>iv</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line617">line 617</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".cbc.encrypt"><span class="type-signature">(static) </span>cbc.encrypt<span class="signature">(data, key, iv)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Encrypt data with aes 256 cbc.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>key</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>iv</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line605">line 605</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".decrypt"><span class="type-signature">(static) </span>decrypt<span class="signature">(data, key, iv, chain<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Decrypt data with aes 256.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
 
 <table class="params">
     <thead>
@@ -140,7 +826,7 @@ a chain, a pool, and a wallet database.</p>
 
         <tr>
             
-                <td class="name"><code>sslKey</code></td>
+                <td class="name"><code>data</code></td>
             
 
             <td class="type">
@@ -157,8 +843,6 @@ a chain, a pool, and a wallet database.</p>
                 
 
                 
-                    &lt;nullable><br>
-                
 
                 
                 </td>
@@ -173,7 +857,7 @@ a chain, a pool, and a wallet database.</p>
 
         <tr>
             
-                <td class="name"><code>sslCert</code></td>
+                <td class="name"><code>key</code></td>
             
 
             <td class="type">
@@ -190,8 +874,6 @@ a chain, a pool, and a wallet database.</p>
                 
 
                 
-                    &lt;nullable><br>
-                
 
                 
                 </td>
@@ -206,13 +888,13 @@ a chain, a pool, and a wallet database.</p>
 
         <tr>
             
-                <td class="name"><code>httpPort</code></td>
+                <td class="name"><code>iv</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Number</span>
+<span class="param-type">Buffer</span>
 
 
             
@@ -223,138 +905,9 @@ a chain, a pool, and a wallet database.</p>
                 
 
                 
-                    &lt;nullable><br>
-                
 
                 
                 </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>httpHost</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>wallet</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Primary <a href="Wallet.html">Wallet</a> options.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>loaded</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
             
 
             
@@ -372,91 +925,34 @@ a chain, a pool, and a wallet database.</p>
             <td class="type">
             
                 
-<span class="param-type"><a href="Chain.html">Chain</a></span>
+<span class="param-type">Boolean</span>
 
 
             
             </td>
 
             
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>pool</code></td>
-            
-
-            <td class="type">
-            
+                <td class="attributes">
                 
-<span class="param-type"><a href="Pool.html">Pool</a></span>
 
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>walletdb</code></td>
-            
-
-            <td class="type">
-            
                 
-<span class="param-type"><a href="WalletDB.html">WalletDB</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>http</code></td>
-            
-
-            <td class="type">
-            
+                    &lt;nullable><br>
                 
-<span class="param-type"><a href="HTTPServer.html">HTTPServer</a></span>
 
-
-            
-            </td>
-
+                
+                </td>
             
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>XOR chaining (cbc).</p></td>
         </tr>
 
     
     </tbody>
 </table>
+
+
 
 
 
@@ -490,7 +986,7 @@ a chain, a pool, and a wallet database.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_spvnode.js.html">bcoin/spvnode.js</a>, <a href="bcoin_spvnode.js.html#line34">line 34</a>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line517">line 517</a>
     </li></ul></dd>
     
 
@@ -505,14 +1001,6 @@ a chain, a pool, and a wallet database.</p>
 
 
 
-<h5>Fires:</h5>
-<ul>
-    <li>SPVNode#event:block</li>
-
-    <li>SPVNode#event:tx</li>
-
-    <li>SPVNode#event:error</li>
-</ul>
 
 
 
@@ -521,54 +1009,40 @@ a chain, a pool, and a wallet database.</p>
 
 
 
-
-
-
-
-    
-    </div>
-
-    
-        <h3 class="subsection-title">Extends</h3>
+<h5>Returns:</h5>
 
         
 
 
-    <ul>
-        <li><a href="Node.html">Node</a></li>
-    </ul>
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
 
 
-    
-
-    
-
-    
-
-     
-
-    
+    </dd>
+</dl>
 
     
 
-    
-        <h3 class="subsection-title">Methods</h3>
+
 
         
             
 
     
 
-    <h4 class="name" id="broadcast"><span class="type-signature"></span>broadcast<span class="signature">(item, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".ecb.decrypt"><span class="type-signature">(static) </span>ecb.decrypt<span class="signature">(data, key)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Broadcast a transaction (note that this will <em>not</em> be verified
-by the mempool - use with care, lest you get banned from
-bitcoind nodes).</p>
+    <p>Decrypt data with aes 256 ecb.</p>
 </div>
 
 
@@ -604,19 +1078,13 @@ bitcoind nodes).</p>
 
         <tr>
             
-                <td class="name"><code>item</code></td>
+                <td class="name"><code>data</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="TX.html">TX</a></span>
-|
-
-<span class="param-type"><a href="MTX.html">MTX</a></span>
-|
-
-<span class="param-type"><a href="Block.html">Block</a></span>
+<span class="param-type">Buffer</span>
 
 
             
@@ -633,13 +1101,13 @@ bitcoind nodes).</p>
 
         <tr>
             
-                <td class="name"><code>callback</code></td>
+                <td class="name"><code>key</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">Buffer</span>
 
 
             
@@ -690,7 +1158,7 @@ bitcoind nodes).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_spvnode.js.html">bcoin/spvnode.js</a>, <a href="bcoin_spvnode.js.html#line171">line 171</a>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line587">line 587</a>
     </li></ul></dd>
     
 
@@ -713,6 +1181,24 @@ bitcoind nodes).</p>
 
 
 
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -721,14 +1207,14 @@ bitcoind nodes).</p>
 
     
 
-    <h4 class="name" id="close"><span class="type-signature"></span>close<span class="signature">(callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".ecb.encrypt"><span class="type-signature">(static) </span>ecb.encrypt<span class="signature">(data, key)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Close the node, wait for the database to close.</p>
+    <p>Encrypt data with aes 256 ecb.</p>
 </div>
 
 
@@ -764,13 +1250,36 @@ bitcoind nodes).</p>
 
         <tr>
             
-                <td class="name"><code>callback</code></td>
+                <td class="name"><code>data</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>key</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
 
 
             
@@ -821,7 +1330,7 @@ bitcoind nodes).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_spvnode.js.html">bcoin/spvnode.js</a>, <a href="bcoin_spvnode.js.html#line240">line 240</a>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line576">line 576</a>
     </li></ul></dd>
     
 
@@ -844,88 +1353,24 @@ bitcoind nodes).</p>
 
 
 
-
-
+<h5>Returns:</h5>
 
         
-            
-
-    
-
-    <h4 class="name" id="connect"><span class="type-signature"></span>connect<span class="signature">()</span><span class="type-signature"></span></h4>
-
-    
 
 
-
-<div class="description">
-    <p>Connect to the network.</p>
-</div>
-
-
-
-
-
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
 
 
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_spvnode.js.html">bcoin/spvnode.js</a>, <a href="bcoin_spvnode.js.html#line201">line 201</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
+    </dd>
 </dl>
 
-
-
-
-
-
-
-
-
-
-
-
-
+    
 
 
 
@@ -934,168 +1379,14 @@ bitcoind nodes).</p>
 
     
 
-    <h4 class="name" id="createWallet"><span class="type-signature"></span>createWallet<span class="signature">(options, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".encrypt"><span class="type-signature">(static) </span>encrypt<span class="signature">(data, key, iv, chain<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Create a <a href="Wallet.html">Wallet</a> in the wallet database.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>options</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Object</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>See <a href="Wallet.html">Wallet</a>.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="Wallet.html">Wallet</a>].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_spvnode.js.html">bcoin/spvnode.js</a>, <a href="bcoin_spvnode.js.html#line257">line 257</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getWallet"><span class="type-signature"></span>getWallet<span class="signature">(id, passphrase<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Retrieve a wallet from the wallet database.</p>
+    <p>Encrypt data with aes 256.</p>
 </div>
 
 
@@ -1133,13 +1424,13 @@ bitcoind nodes).</p>
 
         <tr>
             
-                <td class="name"><code>id</code></td>
+                <td class="name"><code>data</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">String</span>
+<span class="param-type">Buffer</span>
 
 
             
@@ -1157,20 +1448,82 @@ bitcoind nodes).</p>
 
             
 
-            <td class="description last"><p>Wallet ID.</p></td>
+            <td class="description last"></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>passphrase</code></td>
+                <td class="name"><code>key</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">String</span>
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>iv</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>chain</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
 
 
             
@@ -1190,38 +1543,7 @@ bitcoind nodes).</p>
 
             
 
-            <td class="description last"><p>Wallet key passphrase.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="Wallet.html">Wallet</a>].</p></td>
+            <td class="description last"><p>XOR chaining (cbc).</p></td>
         </tr>
 
     
@@ -1262,7 +1584,7 @@ bitcoind nodes).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_spvnode.js.html">bcoin/spvnode.js</a>, <a href="bcoin_spvnode.js.html#line285">line 285</a>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line464">line 464</a>
     </li></ul></dd>
     
 
@@ -1285,6 +1607,24 @@ bitcoind nodes).</p>
 
 
 
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -1293,15 +1633,14 @@ bitcoind nodes).</p>
 
     
 
-    <h4 class="name" id="open"><span class="type-signature"></span>open<span class="signature">(callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="decryptBlock"><span class="type-signature"></span>decryptBlock<span class="signature">(input)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Open the node and all its child objects,
-wait for the database to load.</p>
+    <p>Decrypt a 16 byte block of data.</p>
 </div>
 
 
@@ -1337,13 +1676,13 @@ wait for the database to load.</p>
 
         <tr>
             
-                <td class="name"><code>callback</code></td>
+                <td class="name"><code>input</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">function</span>
+<span class="param-type">Buffer</span>
 
 
             
@@ -1394,7 +1733,107 @@ wait for the database to load.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_spvnode.js.html">bcoin/spvnode.js</a>, <a href="bcoin_spvnode.js.html#line227">line 227</a>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line356">line 356</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="destroy"><span class="type-signature"></span>destroy<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Destroy the object and zero the keys.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line47">line 47</a>
     </li></ul></dd>
     
 
@@ -1425,16 +1864,14 @@ wait for the database to load.</p>
 
     
 
-    <h4 class="name" id="sendTX"><span class="type-signature"></span>sendTX<span class="signature">(item, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="encryptBlock"><span class="type-signature"></span>encryptBlock<span class="signature">(input)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Broadcast a transaction (note that this will <em>not</em> be verified
-by the mempool - use with care, lest you get banned from
-bitcoind nodes).</p>
+    <p>Encrypt a 16 byte block of data.</p>
 </div>
 
 
@@ -1470,39 +1907,13 @@ bitcoind nodes).</p>
 
         <tr>
             
-                <td class="name"><code>item</code></td>
+                <td class="name"><code>input</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="TX.html">TX</a></span>
-|
-
-<span class="param-type"><a href="MTX.html">MTX</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
+<span class="param-type">Buffer</span>
 
 
             
@@ -1553,7 +1964,7 @@ bitcoind nodes).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_spvnode.js.html">bcoin/spvnode.js</a>, <a href="bcoin_spvnode.js.html#line183">line 183</a>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line251">line 251</a>
     </li></ul></dd>
     
 
@@ -1576,6 +1987,24 @@ bitcoind nodes).</p>
 
 
 
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -1584,14 +2013,14 @@ bitcoind nodes).</p>
 
     
 
-    <h4 class="name" id="startSync"><span class="type-signature"></span>startSync<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getDecryptKey"><span class="type-signature"></span>getDecryptKey<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Start the blockchain sync.</p>
+    <p>Convert the user key into a decryption key.</p>
 </div>
 
 
@@ -1635,7 +2064,7 @@ bitcoind nodes).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_spvnode.js.html">bcoin/spvnode.js</a>, <a href="bcoin_spvnode.js.html#line209">line 209</a>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line187">line 187</a>
     </li></ul></dd>
     
 
@@ -1658,6 +2087,28 @@ bitcoind nodes).</p>
 
 
 
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>key</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -1666,14 +2117,14 @@ bitcoind nodes).</p>
 
     
 
-    <h4 class="name" id="stopSync"><span class="type-signature"></span>stopSync<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getEncryptKey"><span class="type-signature"></span>getEncryptKey<span class="signature">()</span><span class="type-signature"> &rarr; {Object}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Stop syncing the blockchain.</p>
+    <p>Convert the user key into an encryption key.</p>
 </div>
 
 
@@ -1717,7 +2168,7 @@ bitcoind nodes).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_spvnode.js.html">bcoin/spvnode.js</a>, <a href="bcoin_spvnode.js.html#line217">line 217</a>
+        <a href="bcoin_aes.js.html">bcoin/aes.js</a>, <a href="bcoin_aes.js.html#line78">line 78</a>
     </li></ul></dd>
     
 
@@ -1740,6 +2191,28 @@ bitcoind nodes).</p>
 
 
 
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>key</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -1765,7 +2238,7 @@ bitcoind nodes).</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:21 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

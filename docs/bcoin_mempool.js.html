@@ -60,6 +60,7 @@ var DUMMY = new Buffer([0]);
  * @param {String?} options.db - Database backend (`"memory"` by default).
  * @param {Boolean?} options.limitFree
  * @param {Number?} options.limitFreeRelay
+ * @param {Number?} options.maxSize - Max pool size (default ~300mb).
  * @param {Boolean?} options.relayPriority
  * @param {Boolean?} options.requireStandard
  * @param {Boolean?} options.rejectAbsurdFees
@@ -71,6 +72,12 @@ var DUMMY = new Buffer([0]);
  * @property {Locker} locker
  * @property {Number} freeCount
  * @property {Number} lastTime
+ * @property {Number} maxSize
+ * @property {Boolean} blockSinceBump
+ * @property {Number} lastFeeUpdate
+ * @property {Rate} minFeeRate
+ * @property {Rate} minReasonableFee
+ * @property {Rate} minRelayFee
  * @emits Mempool#open
  * @emits Mempool#error
  * @emits Mempool#tx
@@ -120,9 +127,9 @@ function Mempool(options) {
   this.accurateMemory = !!this.options.accurateMemory;
 
   this.maxSize = options.maxSize || constants.mempool.MAX_MEMPOOL_SIZE;
-  this.minFeeRate = 0;
   this.blockSinceBump = false;
   this.lastFeeUpdate = utils.now();
+  this.minFeeRate = 0;
   this.minReasonableFee = constants.tx.MIN_RELAY;
   this.minRelayFee = constants.tx.MIN_RELAY;
 
@@ -268,8 +275,10 @@ Mempool.prototype.addBlock = function addBlock(block, callback, force) {
       if (err)
         return next(err);
 
-      if (!entry)
-        return self.removeOrphan(hash, next);
+      if (!entry) {
+        self.removeOrphan(hash);
+        return next();
+      }
 
       self.removeUnchecked(entry, false, function(err) {
         if (err)
@@ -401,26 +410,21 @@ Mempool.prototype.limitMempoolSize = function limitMempoolSize(entryHash, callba
 
 /**
  * Purge orphan transactions from the mempool.
- * @param {Function} callback
  */
 
-Mempool.prototype.limitOrphans = function limitOrphans(callback) {
-  var self = this;
+Mempool.prototype.limitOrphans = function limitOrphans() {
   var orphans = Object.keys(this.orphans);
   var i, hash;
 
-  (function next() {
-    if (self.totalOrphans &lt;= constants.mempool.MAX_ORPHAN_TX)
-      return callback();
-
+  while (this.totalOrphans > constants.mempool.MAX_ORPHAN_TX) {
     i = bcoin.ec.rand(0, orphans.length);
     hash = orphans[i];
     orphans.splice(i, 1);
 
     bcoin.debug('Removing orphan %s from mempool.', utils.revHex(hash));
 
-    self.removeOrphan(hash, next);
-  })();
+    this.removeOrphan(hash);
+  }
 };
 
 /**
@@ -534,7 +538,7 @@ Mempool.prototype.fillHistory = function fillHistory(tx, callback) {
         return next(err);
 
       if (tx)
-        input.coin = bcoin.coin(tx, input.prevout.index);
+        input.coin = bcoin.coin.fromTX(tx, input.prevout.index);
 
       next();
     });
@@ -624,20 +628,13 @@ Mempool.prototype.getRange = function getRange(options, callback) {
  */
 
 Mempool.prototype.has = function has(hash, callback) {
-  var self = this;
-
   if (this.locker.hasPending(hash))
     return utils.asyncify(callback)(null, true);
 
-  return this.hasTX(hash, function(err, exists) {
-    if (err)
-      return callback(err);
+  if (this.hasOrphan(hash))
+    return utils.asyncify(callback)(null, true);
 
-    if (exists)
-      return callback(null, true);
-
-    self.hasOrphan(hash, callback);
-  });
+  return this.hasTX(hash, callback);
 };
 
 /**
@@ -673,11 +670,19 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
       0));
   }
 
-  if (!tx.isSane(ret))
-    return callback(new VerifyError(tx, 'invalid', ret.reason, ret.score));
+  if (!tx.isSane(ret)) {
+    return callback(new VerifyError(tx,
+      'invalid',
+      ret.reason,
+      ret.score));
+  }
 
-  if (tx.isCoinbase())
-    return callback(new VerifyError(tx, 'invalid', 'coinbase', 100));
+  if (tx.isCoinbase()) {
+    return callback(new VerifyError(tx,
+      'invalid',
+      'coinbase',
+      100));
+  }
 
   if (this.requireStandard) {
     if (!tx.isStandard(flags, ret))
@@ -692,16 +697,24 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
   }
 
   if (!this.chain.segwitActive &amp;&amp; !this.prematureWitness) {
-    if (tx.hasWitness())
-      return callback(new VerifyError(tx, 'nonstandard', 'no-witness-yet', 0));
+    if (tx.hasWitness()) {
+      return callback(new VerifyError(tx,
+        'nonstandard',
+        'no-witness-yet',
+        0));
+    }
   }
 
   this.chain.checkFinal(this.chain.tip, tx, lockFlags, function(err, isFinal) {
     if (err)
       return callback(err);
 
-    if (!isFinal)
-      return callback(new VerifyError(tx, 'nonstandard', 'non-final', 0));
+    if (!isFinal) {
+      return callback(new VerifyError(tx,
+        'nonstandard',
+        'non-final',
+        0));
+    }
 
     self.has(hash, function(err, exists) {
       if (err)
@@ -740,8 +753,10 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
             if (err)
               return callback(err);
 
-            if (!tx.hasCoins())
-              return self.storeOrphan(tx, callback);
+            if (!tx.hasCoins()) {
+              self.storeOrphan(tx);
+              return callback();
+            }
 
             entry = MempoolEntry.fromTX(tx, self.chain.height);
 
@@ -787,6 +802,7 @@ Mempool.prototype.addTX = function addTX(tx, callback, force) {
 
 Mempool.prototype.addUnchecked = function addUnchecked(entry, callback, force) {
   var self = this;
+  var resolved;
 
   var unlock = this._lock(addUnchecked, [entry, callback], force);
   if (!unlock)
@@ -806,34 +822,31 @@ Mempool.prototype.addUnchecked = function addUnchecked(entry, callback, force) {
 
     bcoin.debug('Added tx %s to the mempool.', entry.tx.rhash);
 
-    self.resolveOrphans(entry.tx, function(err, resolved) {
-      if (err)
-        return callback(err);
+    resolved = self.resolveOrphans(entry.tx);
 
-      utils.forEachSerial(resolved, function(tx, next) {
-        var entry = MempoolEntry.fromTX(tx, self.chain.height);
-        self.verify(entry, function(err) {
+    utils.forEachSerial(resolved, function(tx, next) {
+      var entry = MempoolEntry.fromTX(tx, self.chain.height);
+      self.verify(entry, function(err) {
+        if (err) {
+          if (err.type === 'VerifyError') {
+            bcoin.debug('Could not resolve orphan %s: %s.',
+              tx.rhash,
+              err.message);
+            return next();
+          }
+          self.emit('error', err);
+          return next();
+        }
+        self.addUnchecked(entry, function(err) {
           if (err) {
-            if (err.type === 'VerifyError') {
-              bcoin.debug('Could not resolve orphan %s: %s.',
-                tx.rhash,
-                err.message);
-              return next();
-            }
             self.emit('error', err);
             return next();
           }
-          self.addUnchecked(entry, function(err) {
-            if (err) {
-              self.emit('error', err);
-              return next();
-            }
-            bcoin.debug('Resolved orphan %s in mempool.', entry.tx.rhash);
-            next();
-          }, true);
-        });
-      }, callback);
-    });
+          bcoin.debug('Resolved orphan %s in mempool.', entry.tx.rhash);
+          next();
+        }, true);
+      });
+    }, callback);
   });
 };
 
@@ -858,38 +871,35 @@ Mempool.prototype.removeUnchecked = function removeUnchecked(entry, limit, callb
     if (err)
       return callback(err);
 
-    self.removeOrphan(entry.tx, function(err) {
+    self.removeOrphan(entry.tx);
+
+    self._removeUnchecked(entry, limit, function(err) {
       if (err)
         return callback(err);
 
-      self._removeUnchecked(entry, limit, function(err) {
-        if (err)
-          return callback(err);
+      self.spent -= entry.tx.inputs.length;
+      self.size -= self.memUsage(entry.tx);
+      self.total--;
 
-        self.spent -= entry.tx.inputs.length;
-        self.size -= self.memUsage(entry.tx);
-        self.total--;
-
-        if (limit) {
-          rate = entry.fees.muln(1000).divn(entry.size).toNumber();
-          rate += self.minReasonableFee;
-          if (rate > self.minFeeRate) {
-            self.minFeeRate = rate;
-            self.blockSinceBump = false;
-          }
+      if (limit) {
+        rate = bcoin.tx.getRate(entry.size, entry.fees);
+        rate += self.minReasonableFee;
+        if (rate > self.minFeeRate) {
+          self.minFeeRate = rate;
+          self.blockSinceBump = false;
         }
+      }
 
-        self.emit('remove tx', entry.tx);
+      self.emit('remove tx', entry.tx);
 
-        return callback();
-      });
+      return callback();
     });
   });
 };
 
 /**
  * Calculate and update the minimum rolling fee rate.
- * @returns {Number} Rate.
+ * @returns {Rate} Rate.
  */
 
 Mempool.prototype.getMinRate = function getMinRate() {
@@ -919,10 +929,7 @@ Mempool.prototype.getMinRate = function getMinRate() {
     }
   }
 
-  if (this.minFeeRate > this.minReasonableFee)
-    return this.minFeeRate;
-
-  return this.minReasonableFee;
+  return Math.max(this.minFeeRate, this.minReasonableFee);
 };
 
 /**
@@ -980,14 +987,14 @@ Mempool.prototype.verify = function verify(entry, callback) {
     rejectFee = tx.getMinFee(size, minRate);
     minRelayFee = tx.getMinFee(size, self.minRelayFee);
 
-    if (rejectFee.cmpn(0) > 0 &amp;&amp; modFee.cmp(rejectFee) &lt; 0) {
+    if (rejectFee > 0 &amp;&amp; modFee &lt; rejectFee) {
       return callback(new VerifyError(tx,
         'insufficientfee',
         'mempool min fee not met',
         0));
     }
 
-    if (self.relayPriority &amp;&amp; modFee.cmp(minRelayFee) &lt; 0) {
+    if (self.relayPriority &amp;&amp; modFee &lt; minRelayFee) {
       if (!entry.isFree(height)) {
         return callback(new VerifyError(tx,
           'insufficientfee',
@@ -1001,7 +1008,7 @@ Mempool.prototype.verify = function verify(entry, callback) {
     // sending thousands of free transactions just to be
     // annoying or make others' transactions take longer
     // to confirm.
-    if (self.limitFree &amp;&amp; modFee.cmp(minRelayFee) &lt; 0) {
+    if (self.limitFree &amp;&amp; modFee &lt; minRelayFee) {
       now = utils.now();
 
       if (!self.lastTime)
@@ -1023,11 +1030,8 @@ Mempool.prototype.verify = function verify(entry, callback) {
       self.freeCount += size;
     }
 
-    if (self.rejectAbsurdFees &amp;&amp; fee.cmp(minRelayFee.muln(10000)) > 0)
+    if (self.rejectAbsurdFees &amp;&amp; fee > minRelayFee * 10000)
       return callback(new VerifyError(tx, 'highfee', 'absurdly-high-fee', 0));
-
-    if (!tx.checkInputs(height, ret))
-      return callback(new VerifyError(tx, 'invalid', ret.reason, ret.score));
 
     self.countAncestors(tx, function(err, count) {
       if (err)
@@ -1039,6 +1043,9 @@ Mempool.prototype.verify = function verify(entry, callback) {
           'too-long-mempool-chain',
           0));
       }
+
+      if (!tx.checkInputs(height, ret))
+        return callback(new VerifyError(tx, 'invalid', ret.reason, ret.score));
 
       // Do this in the worker pool.
       tx.verifyAsync(null, true, flags, function(err, result) {
@@ -1115,17 +1122,15 @@ Mempool.prototype.countAncestors = function countAncestors(tx, callback) {
 /**
  * Store an orphaned transaction.
  * @param {TX} tx
- * @param {Function} callback
  */
 
-Mempool.prototype.storeOrphan = function storeOrphan(tx, callback, force) {
-  var self = this;
+Mempool.prototype.storeOrphan = function storeOrphan(tx) {
   var prevout = {};
   var i, hash, batch, input, prev;
 
   if (tx.getSize() > 5000) {
     bcoin.debug('Ignoring large orphan: %s', tx.rhash);
-    return callback();
+    return;
   }
 
   hash = tx.hash('hex');
@@ -1152,10 +1157,7 @@ Mempool.prototype.storeOrphan = function storeOrphan(tx, callback, force) {
 
   bcoin.debug('Added orphan %s to mempool.', tx.rhash);
 
-  if (this.totalOrphans > constants.mempool.MAX_ORPHAN_TX)
-    return this.limitOrphans(callback);
-
-  return callback();
+  this.limitOrphans();
 };
 
 /**
@@ -1164,7 +1166,7 @@ Mempool.prototype.storeOrphan = function storeOrphan(tx, callback, force) {
  */
 
 Mempool.prototype.getBalance = function getBalance(callback) {
-  var total = new bn(0);
+  var total = 0;
   var i;
 
   return this.db.iterate({
@@ -1172,17 +1174,18 @@ Mempool.prototype.getBalance = function getBalance(callback) {
     lte: 'c~',
     values: true,
     parse: function(data, key) {
-      return bcoin.coin.fromRaw(data);
+      assert(data.length >= 16);
+      return utils.read64N(data, 8);
     }
   }, function(err, coins) {
     if (err)
       return callback(err);
 
     for (i = 0; i &lt; coins.length; i++)
-      total.iadd(coins[i].value);
+      total += coins[i];
 
     return callback(null, {
-      confirmed: new bn(0),
+      confirmed: 0,
       unconfirmed: total,
       total: total
     });
@@ -1206,44 +1209,37 @@ Mempool.prototype.getHistory = function getHistory(callback) {
 };
 
 /**
- * Get hashes of all orphans a transaction hash potentially resolves.
- * @param {Hash} hash - Resolving transaction.
- * @param {Function} callback - Return [Error, {@link Hash}[]].
- */
-
-Mempool.prototype.getWaiting = function getWaiting(hash, callback) {
-  return callback(null, this.waiting[hash] || []);
-};
-
-/**
  * Retrieve an orphan transaction.
- * @param {Hash} orphanHash
- * @param {Function} callback - Returns [Error, {@link TX}].
+ * @param {Hash} hash
+ * @returns {TX}
  */
 
-Mempool.prototype.getOrphan = function getOrphan(orphanHash, callback) {
-  var self = this;
-  var orphan = this.orphans[orphanHash];
+Mempool.prototype.getOrphan = function getOrphan(hash) {
+  var orphan = this.orphans[hash];
 
   if (!orphan)
-    return callback();
+    return;
 
   try {
     orphan = bcoin.tx.fromExtended(orphan, true);
   } catch (e) {
-    return callback(e);
+    delete this.orphans[hash];
+    bcoin.debug('%s %s',
+      'Warning: possible memory corruption.',
+      'Orphan failed deserialization.');
+    return;
   }
 
-  return callback(null, orphan);
+  return orphan;
 };
 
 /**
- * @param {Hash} orphanHash
- * @param {Function} callback - Returns [Error, Boolean].
+ * @param {Hash} hash
+ * @returns {Boolean}
  */
 
-Mempool.prototype.hasOrphan = function hasOrphan(orphanHash, callback) {
-  return callback(null, this.orphans[orphanHash] != null);
+Mempool.prototype.hasOrphan = function hasOrphan(hash) {
+  return this.orphans[hash] != null;
 };
 
 /**
@@ -1252,107 +1248,81 @@ Mempool.prototype.hasOrphan = function hasOrphan(orphanHash, callback) {
  * Deletes all orphan entries and
  * returns orphan hashes.
  * @param {TX} tx
- * @param {Function} callback - Returns [Error, {@link Hash}[]].
+ * @returns {Array} Resolved
  */
 
-Mempool.prototype.resolveOrphans = function resolveOrphans(tx, callback, force) {
-  var self = this;
+Mempool.prototype.resolveOrphans = function resolveOrphans(tx) {
   var hash = tx.hash('hex');
   var resolved = [];
+  var hashes = this.waiting[hash];
+  var i, orphanHash, orphan;
 
-  this.getWaiting(hash, function(err, hashes) {
-    if (err)
-      return callback(err);
+  if (!hashes)
+    return resolved;
 
-    utils.forEachSerial(hashes, function(orphanHash, next, i) {
-      self.getOrphan(orphanHash, function(err, orphan) {
-        if (err)
-          return next(err);
+  for (i = 0; i &lt; hashes.length; i++) {
+    orphanHash = hashes[i];
+    orphan = this.getOrphan(orphanHash);
 
-        if (!orphan)
-          return next();
+    if (!orphan)
+      continue;
 
-        orphan.fillCoins(tx);
+    orphan.fillCoins(tx);
 
-        if (orphan.hasCoins()) {
-          self.totalOrphans--;
-          delete self.orphans[orphanHash];
-          resolved.push(orphan);
-          return next();
-        }
+    if (orphan.hasCoins()) {
+      this.totalOrphans--;
+      delete this.orphans[orphanHash];
+      resolved.push(orphan);
+      continue;
+    }
 
-        self.orphans[orphanHash] = orphan.toExtended(true);
+    this.orphans[orphanHash] = orphan.toExtended(true);
+  }
 
-        next();
-      });
-    }, function(err) {
-      if (err)
-        return callback(err);
+  delete this.waiting[hash];
 
-      delete self.waiting[hash];
-
-      return callback(null, resolved);
-    });
-  });
+  return resolved;
 };
 
 /**
  * Remove a transaction from the mempool.
  * @param {TX|Hash} tx
- * @param {Function} callback
  */
 
-Mempool.prototype.removeOrphan = function removeOrphan(tx, callback) {
-  var self = this;
-  var i, prevout, hash;
+Mempool.prototype.removeOrphan = function removeOrphan(tx) {
+  var i, j, hashes, prevout, prev, hash;
 
-  function getOrphan(tx, callback) {
-    if (typeof tx === 'string')
-      return self.getOrphan(tx, callback);
-    return callback(null, tx);
+  if (typeof tx === 'string')
+    tx = this.getOrphan(tx);
+
+  if (!tx)
+    return;
+
+  hash = tx.hash('hex');
+  prevout = tx.getPrevout();
+
+  for (i = 0; i &lt; prevout.length; i++) {
+    prev = prevout[i];
+    hashes = this.waiting[prev];
+
+    if (!hashes)
+      continue;
+
+    j = hashes.indexOf(hash);
+    if (j !== -1)
+      hashes.splice(j, 1);
+
+    if (hashes.length === 0) {
+      delete this.waiting[prev];
+      continue;
+    }
+
+    this.waiting[prev] = hashes;
   }
 
-  return getOrphan(tx, function(err, tx) {
-    if (err)
-      return callback(err);
+  delete this.orphans[hash];
 
-    if (!tx)
-      return callback();
-
-    hash = tx.hash('hex');
-    prevout = tx.getPrevout();
-
-    utils.forEachSerial(prevout, function(prev, next) {
-      self.getWaiting(prev, function(err, hashes) {
-        if (err)
-          return next(err);
-
-        if (hashes.length === 0)
-          return next();
-
-        i = hashes.indexOf(hash);
-        if (i !== -1)
-          hashes.splice(i, 1);
-
-        if (hashes.length === 0) {
-          delete self.waiting[prev];
-          return next();
-        }
-
-        self.waiting[prev] = hashes;
-
-        next();
-      });
-    }, function(err) {
-      if (err)
-        return callback(err);
-
-      delete self.orphans[hash];
-      self.totalOrphans--;
-
-      callback();
-    });
-  });
+  this.totalOrphans--;
 };
 
 /**
@@ -1607,7 +1577,7 @@ Mempool.prototype._addUnchecked = function _addUnchecked(entry, callback) {
     if (output.script.isUnspendable())
       continue;
 
-    coin = bcoin.coin(tx, i).toRaw();
+    coin = bcoin.coin.fromTX(tx, i).toRaw();
 
     batch.put('c/' + key, coin);
 
@@ -1817,20 +1787,20 @@ Mempool.prototype.getSize = function getSize() {
  * @param {Object} options
  * @param {TX} options.tx - Transaction in mempool.
  * @param {Number} options.height - Entry height.
- * @param {BN} options.priority - Entry priority.
+ * @param {Number} options.priority - Entry priority.
  * @param {Number} options.ts - Entry time.
- * @param {BN} options.chainValue - Value of on-chain coins.
+ * @param {Amount} options.chainValue - Value of on-chain coins.
  * @param {Number} options.count - Number of descendants (includes tx).
  * @param {Number} options.size - TX and descendant modified size.
- * @param {BN} options.fees - TX and descendant delta-applied fees.
+ * @param {Amount} options.fees - TX and descendant delta-applied fees.
  * @property {TX} tx
  * @property {Number} height
- * @property {BN} priority
+ * @property {Number} priority
  * @property {Number} ts
- * @property {BN} chainValue
+ * @property {Amount} chainValue
  * @property {Number} count
  * @property {Number} size
- * @property {BN} fees
+ * @property {Amount} fees
  */
 
 function MempoolEntry(options) {
@@ -1875,22 +1845,26 @@ MempoolEntry.fromTX = function fromTX(tx, height) {
  * can still be parsed as a regular tx since
  * the mempool entry data comes after the
  * serialized transaction.
- * @param {TX} tx
- * @param {Number} height - Entry height.
- * @returns {MempoolEntry}
+ * @param {BufferWriter?} writer
+ * @returns {Buffer}
  */
 
-MempoolEntry.prototype.toRaw = function toRaw() {
-  var p = new BufferWriter();
-  bcoin.protocol.framer.tx(this.tx, p);
+MempoolEntry.prototype.toRaw = function toRaw(writer) {
+  var p = new BufferWriter(writer);
+
+  bcoin.protocol.framer.renderTX(this.tx, true, p);
   p.writeU32(this.height);
-  p.writeVarint(this.priority);
+  p.writeDouble(this.priority);
   p.writeVarint(this.chainValue);
   p.writeU32(this.ts);
   p.writeU32(this.count);
   p.writeU32(this.size);
   p.writeVarint(this.fees);
-  return p.render();
+
+  if (!writer)
+    p = p.render();
+
+  return p;
 };
 
 /**
@@ -1904,12 +1878,12 @@ MempoolEntry.fromRaw = function fromRaw(data) {
   return new MempoolEntry({
     tx: bcoin.tx.fromRaw(p),
     height: p.readU32(),
-    priority: p.readVarint(true),
-    chainValue: p.readVarint(true),
+    priority: p.readDouble(),
+    chainValue: p.readVarint(),
     ts: p.readU32(),
     count: p.readU32(),
     size: p.readU32(),
-    fees: p.readVarint(true)
+    fees: p.readVarint()
   });
 };
 
@@ -1918,16 +1892,16 @@ MempoolEntry.fromRaw = function fromRaw(data) {
  * the entry height delta, modified size,
  * and chain value.
  * @param {Number} height
- * @returns {BN} Priority.
+ * @returns {Number} Priority.
  */
 
 MempoolEntry.prototype.getPriority = function getPriority(height) {
-  var heightDelta = Math.max(0, height - this.height);
+  var heightDelta = height - this.height;
   var modSize = this.tx.getModifiedSize(this.size);
-  var deltaPriority = new bn(heightDelta).mul(this.chainValue).divn(modSize);
-  var result = this.priority.add(deltaPriority);
-  if (result.cmpn(0) &lt; 0)
-    result = new bn(0);
+  var deltaPriority = (heightDelta * this.chainValue) / modSize;
+  var result = this.priority + Math.floor(deltaPriority);
+  if (result &lt; 0)
+    result = 0;
   return result;
 };
 
@@ -1941,7 +1915,7 @@ MempoolEntry.prototype.getPriority = function getPriority(height) {
 
 MempoolEntry.prototype.isFree = function isFree(height) {
   var priority = this.getPriority(height);
-  return priority.cmp(constants.tx.FREE_THRESHOLD) > 0;
+  return priority > constants.tx.FREE_THRESHOLD;
 };
 
 /*
@@ -1979,9 +1953,14 @@ function mallocUsage(alloc) {
   return ((alloc + 15) >>> 3) &lt;&lt; 3;
 }
 
-Mempool.MempoolEntry = MempoolEntry;
+/*
+ * Expose
+ */
 
-module.exports = Mempool;
+exports = Mempool;
+exports.MempoolEntry = MempoolEntry;
+
+module.exports = exports;
 </code></pre>
         </article>
     </section>
@@ -1992,13 +1971,13 @@ module.exports = Mempool;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

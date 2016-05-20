@@ -89,6 +89,8 @@ var constants = bcoin.protocol.constants;
  */
 
 function Peer(pool, options) {
+  var seed;
+
   if (!(this instanceof Peer))
     return new Peer(pool, options);
 
@@ -108,8 +110,8 @@ function Peer(pool, options) {
   this.mempool = this.pool.mempool;
   this.bloom = this.pool.bloom;
   this.network = this.chain.network;
-  this.parser = new bcoin.protocol.parser(this.chain.options);
-  this.framer = new bcoin.protocol.framer(this.chain.options);
+  this.parser = new bcoin.protocol.parser({ network: this.network });
+  this.framer = new bcoin.protocol.framer({ network: this.network });
   this.version = null;
   this.destroyed = false;
   this.ack = false;
@@ -120,6 +122,8 @@ function Peer(pool, options) {
   this.hashContinue = null;
   this.filter = null;
   this.relay = true;
+  this.localNonce = utils.nonce();
+  this.filterRate = -1;
 
   this.challenge = null;
   this.lastPong = 0;
@@ -130,30 +134,28 @@ function Peer(pool, options) {
     this.socket = options.socket;
     this.host = this.socket.remoteAddress;
     this.port = this.socket.remotePort;
-    assert(this.host);
-    assert(this.port != null);
   } else if (options.seed) {
-    options.seed = utils.parseHost(options.seed);
-    options.seed.port = options.seed.port || this.network.port;
-    this.socket = this.createSocket(options.seed.port, options.seed.host);
+    seed = utils.parseHost(options.seed);
+    this.host = seed.host;
+    this.port = seed.port || this.network.port;
+    this.socket = this.createSocket(this.port, this.host);
+  } else {
+    assert(false, 'No seed or socket.');
   }
+
+  assert(typeof this.host === 'string');
+  assert(typeof this.port === 'number');
 
   if (!this.socket)
     throw new Error('No socket');
 
-  this._broadcast = {
-    timeout: this.options.broadcastTimeout || 30000,
-    interval: this.options.broadcastInterval || 3000,
+  this.requests = {
+    timeout: this.options.requestTimeout || 10000,
+    skip: {},
     map: {}
   };
 
-  this._request = {
-    timeout: this.options.requestTimeout || 10000,
-    skip: {},
-    queue: {}
-  };
-
-  this._ping = {
+  this.pings = {
     timer: null,
     interval: this.options.pingInterval || 30000
   };
@@ -163,9 +165,8 @@ function Peer(pool, options) {
     tx: []
   };
 
-  Peer.uid.iaddn(1);
-
-  this.id = Peer.uid.toString(10);
+  this.uid = 0;
+  this.id = Peer.uid++;
 
   this.setMaxListeners(10000);
 
@@ -174,24 +175,14 @@ function Peer(pool, options) {
 
 utils.inherits(Peer, EventEmitter);
 
-Peer.uid = new bn(0);
+Peer.uid = 0;
 
 Peer.prototype._init = function init() {
   var self = this;
 
-  if (!this.host)
-    this.host = this.socket.remoteAddress || this.socket._host || null;
-
-  if (!this.port)
-    this.port = this.socket.remotePort || 0;
-
   this.socket.once('connect', function() {
     self.ts = utils.now();
     self.connected = true;
-    if (!self.host)
-      self.host = self.socket.remoteAddress;
-    if (!self.port)
-      self.port = self.socket.remotePort;
     self.emit('connect');
   });
 
@@ -214,6 +205,7 @@ Peer.prototype._init = function init() {
   });
 
   this.parser.on('error', function(err) {
+    bcoin.debug('Parse error:');
     bcoin.debug(err.stack + '');
     self.sendReject(null, 'malformed', 'error parsing message', 100);
     self._error(err);
@@ -221,13 +213,13 @@ Peer.prototype._init = function init() {
 
   this.challenge = utils.nonce();
 
-  this._ping.timer = setInterval(function() {
+  this.pings.timer = setInterval(function() {
     self.write(self.framer.ping({
       nonce: self.challenge
     }));
-  }, this._ping.interval);
+  }, this.pings.interval);
 
-  this._req('verack', function(err, payload) {
+  this.request('verack', function(err, payload) {
     if (err) {
       self._error(err);
       self.destroy();
@@ -237,8 +229,6 @@ Peer.prototype._init = function init() {
     self.ack = true;
     self.emit('ack');
     self.ts = utils.now();
-
-    self.write(self.framer.getAddr());
 
     if (self.options.headers) {
       if (self.version &amp;&amp; self.version.version > 70012)
@@ -250,6 +240,16 @@ Peer.prototype._init = function init() {
         self.write(self.framer.haveWitness());
     }
 
+    self.write(self.framer.getAddr());
+
+    self.sendInv(self.pool.inv.list);
+
+    if (self.pool.options.filterRate != null) {
+      self.write(self.framer.feeFilter({
+        rate: self.pool.options.filterRate
+      }));
+    }
+
     if (self.chain.isFull())
       self.getMempool();
   });
@@ -257,7 +257,8 @@ Peer.prototype._init = function init() {
   // Send hello
   this.write(this.framer.version({
     height: this.chain.height,
-    relay: this.options.relay
+    relay: this.options.relay,
+    nonce: this.localNonce
   }));
 };
 
@@ -273,12 +274,6 @@ Peer.prototype.createSocket = function createSocket(port, host) {
   var self = this;
   var socket, net;
 
-  assert(port != null);
-  assert(host);
-
-  this.host = host;
-  this.port = port;
-
   if (this._createSocket) {
     socket = this._createSocket(port, host);
   } else if (bcoin.isBrowser) {
@@ -288,13 +283,16 @@ Peer.prototype.createSocket = function createSocket(port, host) {
     socket = net.connect(port, host);
   }
 
+  if (utils.isIP(host) === 6)
+    host = '[' + host + ']';
+
   bcoin.debug(
-    'Connecting to %s:%d (priority=%s)',
+    'Connecting to %s:%d (priority=%s).',
     host, port, this.priority);
 
   socket.on('connect', function() {
     bcoin.debug(
-      'Connected to %s:%d (priority=%s)',
+      'Connected to %s:%d (priority=%s).',
       host, port, self.priority);
   });
 
@@ -303,97 +301,67 @@ Peer.prototype.createSocket = function createSocket(port, host) {
 
 /**
  * Broadcast items to peer (transactions or blocks).
- * @param {TX|Block|TX[]|Block[]} items
- * @returns {BroadcastPromise[]}
+ * @param {BroadcastEntry[]} items
  */
 
-Peer.prototype.broadcast = function broadcast(items) {
-  var self = this;
-  var result = [];
-  var payload = [];
+Peer.prototype.sendInv = function sendInv(items) {
+  if (this.destroyed)
+    return;
 
   if (!this.relay)
     return;
 
-  if (this.destroyed)
+  if (!items)
     return;
 
   if (!Array.isArray(items))
     items = [items];
 
-  items.forEach(function(item) {
-    var key, old, type, entry, packetType;
+  if (items.length === 0)
+    return;
 
-    if (item.mutable)
-      item = item.toTX();
+  if (items.length > 50000)
+    items = items.slice(0, 50000);
 
-    key = item.hash('hex');
-    old = this._broadcast.map[key];
-    type = item.type;
+  if (this.filter)
+    items = items.filter(this.isWatched, this);
 
-    if (typeof type === 'string')
-      type = constants.inv[type.toUpperCase()];
-
-    // INV does not set the witness
-    // mask (only GETDATA does this).
-    type &amp;= ~constants.WITNESS_MASK;
-
-    if (type === constants.inv.BLOCK)
-      packetType = 'block';
-    else if (type === constants.inv.TX)
-      packetType = 'tx';
-    else
-      assert(false, 'Bad type.');
-
-    if (self.filter &amp;&amp; type === constants.inv.TX) {
-      if (!item.isWatched(self.filter))
-        return;
+  items = items.map(function(msg) {
+    if (!(msg instanceof bcoin.tx)
+        &amp;&amp; !(msg instanceof bcoin.block)) {
+      return msg;
     }
-
-    if (old) {
-      clearTimeout(old.timer);
-      clearInterval(old.interval);
-    }
-
-    // Auto-cleanup broadcast map after timeout
-    entry = {
-      e: new EventEmitter(),
-      timeout: setTimeout(function() {
-        entry.e.emit('timeout');
-        clearInterval(entry.interval);
-        delete self._broadcast.map[key];
-      }, this._broadcast.timeout),
-
-      // Retransmit
-      interval: setInterval(function() {
-        self.write(entry.inv);
-      }, this._broadcast.interval),
-
-      inv: this.framer.inv([{
-        type: type,
-        hash: item.hash()
-      }]),
-
-      packetType: packetType,
-      type: type,
-      hash: item.hash(),
-      value: item.renderNormal(),
-      witnessValue: item.renderWitness()
+    return {
+      type: (msg instanceof bcoin.tx)
+        ? constants.inv.TX
+        : constants.inv.BLOCK,
+      hash: msg.hash()
     };
+  });
 
-    this._broadcast.map[key] = entry;
+  this.write(this.framer.inv(items));
+};
 
-    result.push(entry.e);
+/**
+ * Test whether an is being watched by the peer.
+ * @param {BroadcastItem|TX} item
+ * @returns {Boolean}
+ */
 
-    payload.push({
-      type: entry.type,
-      hash: entry.hash
-    });
-  }, this);
+Peer.prototype.isWatched = function isWatched(item) {
+  if (!this.filter)
+    return true;
 
-  this.write(this.framer.inv(payload));
+  if (!item)
+    return true;
 
-  return result;
+  if (item instanceof bcoin.tx)
+    return item.isWatched(this.filter);
+
+  if (!(item.msg instanceof bcoin.tx))
+    return true;
+
+  return item.msg.isWatched(this.filter);
 };
 
 /**
@@ -427,17 +395,11 @@ Peer.prototype.destroy = function destroy() {
   this.socket = null;
   this.emit('close');
 
-  // Clean-up timeouts
-  Object.keys(this._broadcast.map).forEach(function(key) {
-    clearTimeout(this._broadcast.map[key].timer);
-    clearInterval(this._broadcast.map[key].interval);
-  }, this);
+  clearInterval(this.pings.timer);
+  this.pings.timer = null;
 
-  clearInterval(this._ping.timer);
-  this._ping.timer = null;
-
-  Object.keys(this._request).forEach(function(cmd) {
-    var queue = this._request[cmd];
+  Object.keys(this.requests.map).forEach(function(cmd) {
+    var queue = this.requests.map[cmd];
     var i;
 
     for (i = 0; i &lt; queue.length; i++)
@@ -471,7 +433,7 @@ Peer.prototype._error = function error(err) {
   if (typeof err === 'string')
     err = new Error(err);
 
-  err.message += ' (' + this.host + ':' + this.port + ')';
+  err.message += ' (' + this.hostname + ')';
 
   this.destroy();
   this.emit('error', err);
@@ -485,52 +447,51 @@ Peer.prototype._error = function error(err) {
  * Executed on timeout or once packet is received.
  */
 
-Peer.prototype._req = function _req(cmd, cb) {
+Peer.prototype.request = function request(cmd, callback) {
   var self = this;
   var entry;
 
   if (this.destroyed)
-    return utils.asyncify(cb)(new Error('Destroyed, sorry'));
+    return utils.asyncify(callback)(new Error('Destroyed, sorry'));
 
   entry = {
     cmd: cmd,
-    cb: cb,
+    callback: callback,
+    id: this.uid++,
     ontimeout: function() {
-      var queue = self._request.queue[cmd];
-      var i;
+      var queue = self.requests.map[cmd];
 
       if (!queue)
         return;
 
-      i = queue.indexOf(entry);
-
-      if (i !== -1) {
-        queue.splice(i, 1);
-        cb(new Error('Timed out: ' + cmd), null);
+      if (utils.binaryRemove(queue, entry, compare)) {
+        if (queue.length === 0)
+          delete self.requests.map[cmd];
+        callback(new Error('Timed out: ' + cmd));
       }
     },
     timer: null
   };
 
-  entry.timer = setTimeout(entry.ontimeout, this._request.timeout);
+  entry.timer = setTimeout(entry.ontimeout, this.requests.timeout);
 
-  if (!this._request.queue[cmd])
-    this._request.queue[cmd] = [];
+  if (!this.requests.map[cmd])
+    this.requests.map[cmd] = [];
 
-  this._request.queue[cmd].push(entry);
+  this.requests.map[cmd].push(entry);
 
   return entry;
 };
 
 /**
- * Fulfill awaiting requests created with {@link Peer#_req}.
+ * Fulfill awaiting requests created with {@link Peer#request}.
  * @private
  * @param {String} cmd - Packet name.
  * @param {Object} payload
  */
 
-Peer.prototype._res = function _res(cmd, payload) {
-  var queue = this._request.queue[cmd];
+Peer.prototype.response = function response(cmd, payload) {
+  var queue = this.requests.map[cmd];
   var entry, res;
 
   if (!queue)
@@ -541,12 +502,12 @@ Peer.prototype._res = function _res(cmd, payload) {
   if (!entry)
     return false;
 
-  res = entry.cb(null, payload, cmd);
+  res = entry.callback(null, payload, cmd);
 
-  if (res !== this._request.skip) {
+  if (res !== this.requests.skip) {
     queue.shift();
     if (queue.length === 0)
-      delete this._request.queue[cmd];
+      delete this.requests.map[cmd];
     clearTimeout(entry.timer);
     entry.timer = null;
     return true;
@@ -569,7 +530,7 @@ Peer.prototype._onPacket = function onPacket(packet) {
   var payload = packet.payload;
 
   if (this.lastBlock &amp;&amp; cmd !== 'tx')
-    this._emitMerkle();
+    this._flushMerkle();
 
   switch (cmd) {
     case 'version':
@@ -596,6 +557,8 @@ Peer.prototype._onPacket = function onPacket(packet) {
       return this._handleGetUTXOs(payload);
     case 'utxos':
       return this._handleUTXOs(payload);
+    case 'feefilter':
+      return this._handleFeeFilter(payload);
     case 'getblocks':
       return this._handleGetBlocks(payload);
     case 'getheaders':
@@ -609,55 +572,55 @@ Peer.prototype._onPacket = function onPacket(packet) {
     case 'filterclear':
       return this._handleFilterClear(payload);
     case 'block':
-      payload = bcoin.compactblock(payload);
-      this._emit(cmd, payload);
+      payload = new bcoin.compactblock(payload);
+      this.fire(cmd, payload);
       break;
     case 'merkleblock':
-      payload = bcoin.merkleblock(payload);
+      payload = new bcoin.merkleblock(payload);
       this.lastBlock = payload;
       break;
     case 'tx':
-      payload = bcoin.tx(payload, this.lastBlock);
+      payload = new bcoin.tx(payload);
       if (this.lastBlock) {
-        if (payload.block) {
-          this.lastBlock.txs.push(payload);
+        if (this.lastBlock.hasTX(payload)) {
+          this.lastBlock.addTX(payload);
           break;
         }
-        this._emitMerkle();
+        this._flushMerkle();
       }
-      this._emit(cmd, payload);
+      this.fire(cmd, payload);
       break;
     case 'sendheaders':
       this.sendHeaders = true;
-      this._res(cmd, payload);
+      this.response(cmd, payload);
       break;
     case 'havewitness':
       this.haveWitness = true;
-      this._res(cmd, payload);
+      this.response(cmd, payload);
       break;
     case 'verack':
-      this._emit(cmd, payload);
+      this.fire(cmd, payload);
       break;
     case 'notfound':
-      this._emit(cmd, payload);
+      this.fire(cmd, payload);
       break;
     default:
-      bcoin.debug('Unknown packet: %s', cmd);
-      this._emit(cmd, payload);
+      bcoin.debug('Unknown packet: %s.', cmd);
+      this.fire(cmd, payload);
       break;
   }
 };
 
-Peer.prototype._emit = function _emit(cmd, payload) {
-  if (this._res(cmd, payload))
+Peer.prototype.fire = function fire(cmd, payload) {
+  if (this.response(cmd, payload))
     return;
 
   this.emit(cmd, payload);
 };
 
-Peer.prototype._emitMerkle = function _emitMerkle() {
+Peer.prototype._flushMerkle = function _flushMerkle() {
   if (this.lastBlock)
-    this._emit('merkleblock', this.lastBlock);
+    this.fire('merkleblock', this.lastBlock);
   this.lastBlock = null;
 };
 
@@ -679,14 +642,21 @@ Peer.prototype._handleFilterLoad = function _handleFilterLoad(payload) {
 };
 
 Peer.prototype._handleFilterAdd = function _handleFilterAdd(payload) {
+  if (payload.data.length > constants.script.MAX_PUSH) {
+    this.setMisbehavior(100);
+    return;
+  }
+
   if (this.filter)
     this.filter.add(payload.data);
+
   this.relay = true;
 };
 
 Peer.prototype._handleFilterClear = function _handleFilterClear(payload) {
   if (this.filter)
     this.filter.reset();
+
   this.relay = true;
 };
 
@@ -694,8 +664,20 @@ Peer.prototype._handleUTXOs = function _handleUTXOs(payload) {
   payload.coins = payload.coins(function(coin) {
     return new bcoin.coin(coin);
   });
-  bcoin.debug('Received %d utxos from %s.', payload.coins.length, this.host);
-  this._emit('utxos', payload);
+  bcoin.debug('Received %d utxos (%s).',
+    payload.coins.length, this.hostname);
+  this.fire('utxos', payload);
+};
+
+Peer.prototype._handleFeeFilter = function _handleFeeFilter(payload) {
+  if (!(payload.rate >= 0 &amp;&amp; payload.rate &lt;= constants.MAX_MONEY)) {
+    this.setMisbehavior(100);
+    return;
+  }
+
+  this.filterRate = payload.rate;
+
+  this.fire('feefilter', payload);
 };
 
 /**
@@ -734,7 +716,7 @@ Peer.prototype._getUTXOs = function getUTXOs(utxos, callback) {
   var index = 0;
   var i, prevout, coin;
 
-  this._req('utxos', function(err, payload) {
+  this.request('utxos', function(err, payload) {
     if (err)
       return callback(err);
 
@@ -932,7 +914,7 @@ Peer.prototype._handleGetBlocks = function _handleGetBlocks(payload) {
   function done(err) {
     if (err)
       return self.emit('error', err);
-    self.write(self.framer.inv(blocks));
+    self.sendInv(blocks);
   }
 
   this.chain.findLocator(payload.locator, function(err, tip) {
@@ -967,14 +949,23 @@ Peer.prototype._handleGetBlocks = function _handleGetBlocks(payload) {
 };
 
 Peer.prototype._handleVersion = function handleVersion(payload) {
-  if (payload.version &lt; constants.MIN_VERSION) {
+  var version = payload.version;
+  var services = payload.services;
+
+  if (payload.nonce.cmp(this.localNonce) === 0) {
+    this._error('We connected to ourself. Oops.');
+    this.setMisbehavior(100);
+    return;
+  }
+
+  if (version &lt; constants.MIN_VERSION) {
     this._error('Peer doesn\'t support required protocol version.');
     this.setMisbehavior(100);
     return;
   }
 
   if (this.options.headers) {
-    if (payload.version &lt; 31800) {
+    if (version &lt; 31800) {
       this._error('Peer doesn\'t support getheaders.');
       this.setMisbehavior(100);
       return;
@@ -982,7 +973,7 @@ Peer.prototype._handleVersion = function handleVersion(payload) {
   }
 
   if (this.options.network) {
-    if (!payload.network) {
+    if (!(services &amp; constants.services.NETWORK)) {
       this._error('Peer does not support network services.');
       this.setMisbehavior(100);
       return;
@@ -990,7 +981,7 @@ Peer.prototype._handleVersion = function handleVersion(payload) {
   }
 
   if (this.options.spv) {
-    if (!payload.bloom &amp;&amp; payload.version &lt; 70011) {
+    if (version &lt; 70011 || !(services &amp; constants.services.BLOOM)) {
       this._error('Peer does not support bip37.');
       this.setMisbehavior(100);
       return;
@@ -998,12 +989,11 @@ Peer.prototype._handleVersion = function handleVersion(payload) {
   }
 
   if (this.options.witness) {
-    if (!payload.witness) {
-      this._req('havewitness', function(err) {
+    if (!(services &amp; constants.services.WITNESS)) {
+      this.request('havewitness', function(err) {
         if (err) {
           self._error('Peer does not support segregated witness.');
           self.setMisbehavior(100);
-          return;
         }
       });
     }
@@ -1039,9 +1029,9 @@ Peer.prototype._handleMempool = function _handleMempool() {
     for (i = 0; i &lt; hashes.length; i++)
       items.push({ type: constants.inv.TX, hash: hashes[i] });
 
-    bcoin.debug('Sending mempool snapshot to %s.', self.host);
+    bcoin.debug('Sending mempool snapshot (%s).', self.hostname);
 
-    self.write(self.framer.inv(items));
+    self.sendInv(items);
   });
 };
 
@@ -1049,18 +1039,15 @@ Peer.prototype._handleGetData = function handleGetData(items) {
   var self = this;
   var check = [];
   var notfound = [];
-  var hash, entry, isWitness, value, i, item;
+  var i, item, entry, witness;
 
   if (items.length > 50000)
     return this._error('message getdata size() = %d', items.length);
 
   for (i = 0; i &lt; items.length; i++) {
     item = items[i];
-
-    hash = item.hash;
-    entry = this._broadcast.map[hash];
-    isWitness = item.type &amp; constants.WITNESS_MASK;
-    value = null;
+    entry = this.pool.inv.map[item.hash];
+    witness = (item.type &amp; constants.WITNESS_MASK) !== 0;
 
     if (!entry) {
       check.push(item);
@@ -1069,32 +1056,27 @@ Peer.prototype._handleGetData = function handleGetData(items) {
 
     if ((item.type &amp; ~constants.WITNESS_MASK) !== entry.type) {
       bcoin.debug(
-        'Peer %s requested an existing item with the wrong type.',
-        this.host);
+        'Peer requested an existing item with the wrong type (%s).',
+        this.hostname);
       continue;
     }
 
     bcoin.debug(
-      'Peer %s requested %s:%s as a %s packet.',
-      this.host,
+      'Peer requested %s:%s as a %s packet (%s).',
       entry.packetType,
       utils.revHex(entry.hash),
-      isWitness ? 'witness' : 'normal');
+      witness ? 'witness' : 'normal',
+      this.hostname);
 
-    if (isWitness)
-      this.write(this.framer.packet(entry.packetType, entry.witnessValue));
-    else
-      this.write(this.framer.packet(entry.packetType, entry.value));
-
-    entry.e.emit('request');
+    entry.sendTo(peer, witness);
   }
 
   if (this.pool.options.selfish)
     return;
 
   utils.forEachSerial(check, function(item, next) {
-    var isWitness = item.type &amp; constants.WITNESS_MASK;
-    var type = item.type &amp; ~constants.WITNESS_MASK;
+    var witness = item.type &amp; constants.WITNESS_MASK;
+    var type = (item.type &amp; ~constants.WITNESS_MASK) !== 0;
     var hash = item.hash;
     var i, tx, data;
 
@@ -1103,16 +1085,26 @@ Peer.prototype._handleGetData = function handleGetData(items) {
         notfound.push({ type: constants.inv.TX, hash: hash });
         return next();
       }
-      return self.mempool.getTX(hash, function(err, tx) {
+      return self.mempool.getEntry(hash, function(err, entry) {
         if (err)
           return next(err);
 
-        if (!tx) {
+        if (!entry) {
           notfound.push({ type: constants.inv.TX, hash: hash });
           return next();
         }
 
-        if (isWitness)
+        tx = entry.tx;
+
+        // We should technically calculate this in
+        // the `mempool` handler, but it would be
+        // too slow.
+        if (self.filterRate !== -1) {
+          if (bcoin.tx.getRate(entry.size, entry.fees) &lt; self.filterRate)
+            return next();
+        }
+
+        if (witness)
           data = tx.renderWitness();
         else
           data = tx.renderNormal();
@@ -1141,7 +1133,7 @@ Peer.prototype._handleGetData = function handleGetData(items) {
           return next();
         }
 
-        if (isWitness)
+        if (witness)
           data = block.renderWitness();
         else
           data = block.renderNormal();
@@ -1149,10 +1141,10 @@ Peer.prototype._handleGetData = function handleGetData(items) {
         self.write(self.framer.packet('block', data));
 
         if (hash === self.hashContinue) {
-          self.write(self.framer.inv([{
+          self.sendInv({
             type: constants.inv.BLOCK,
             hash: self.chain.tip.hash
-          }]));
+          });
           self.hashContinue = null;
         }
 
@@ -1185,7 +1177,7 @@ Peer.prototype._handleGetData = function handleGetData(items) {
         for (i = 0; i &lt; block.txs.length; i++) {
           tx = block.txs[i];
 
-          if (isWitness)
+          if (witness)
             tx = tx.renderWitness();
           else
             tx = tx.renderNormal();
@@ -1194,10 +1186,10 @@ Peer.prototype._handleGetData = function handleGetData(items) {
         }
 
         if (hash === self.hashContinue) {
-          self.write(self.framer.inv([{
+          self.sendInv({
             type: constants.inv.BLOCK,
             hash: self.chain.tip.hash
-          }]));
+          });
           self.hashContinue = null;
         }
 
@@ -1206,16 +1198,17 @@ Peer.prototype._handleGetData = function handleGetData(items) {
     }
 
     notfound.push({ type: type, hash: hash });
+
     return next();
   }, function(err) {
     if (err)
       self.emit('error', err);
 
     bcoin.debug(
-      'Served %d items to %s with getdata (notfound=%d).',
+      'Served %d items s with getdata (notfound=%d) (%s).',
       items.length - notfound.length,
-      self.host,
-      notfound.length);
+      notfound.length,
+      self.hostname);
 
     if (notfound.length > 0)
       self.write(self.framer.notFound(notfound));
@@ -1238,24 +1231,20 @@ Peer.prototype._handleAddr = function handleAddr(addrs) {
       ts = now - 5 * 24 * 60 * 60;
 
     this.emit('addr', {
+      version: addr.version,
       ts: ts,
       services: addr.services,
       host: host,
-      port: addr.port || this.network.port,
-      network: addr.network,
-      bloom: addr.bloom,
-      getutxo: addr.getutxo,
-      witness: addr.witness,
-      headers: addr.version >= 31800,
-      spv: addr.bloom &amp;&amp; addr.version >= 70011
+      port: addr.port || this.network.port
     });
   }
 
   bcoin.debug(
-    'Recieved %d peers (seeds=%d, peers=%d).',
+    'Received %d addrs (seeds=%d, peers=%d) (%s).',
     addrs.length,
     this.pool.seeds.length,
-    this.pool.peers.all.length);
+    this.pool.peers.all.length,
+    this.hostname);
 };
 
 Peer.prototype._handlePing = function handlePing(data) {
@@ -1276,42 +1265,43 @@ Peer.prototype._handlePong = function handlePong(data) {
 
 Peer.prototype._handleGetAddr = function handleGetAddr() {
   var hosts = {};
-  var peers = this.pool.peers.all;
   var items = [];
-  var i, peer, ip, version;
+  var ts = utils.now() - (process.uptime() | 0);
+  var i, seed, version, peer;
 
   if (this.pool.options.selfish)
     return;
 
-  for (i = 0; i &lt; peers.length; i++) {
-    peer = peers[i];
-
-    if (!peer.socket || !peer.socket.remoteAddress)
-      continue;
-
-    ip = peer.socket.remoteAddress;
-    version = utils.isIP(ip);
+  for (i = 0; i &lt; this.pool.seeds.length; i++) {
+    seed = utils.parseHost(this.pool.seeds[i]);
+    seed = this.pool.getPeer(seed.host) || seed;
+    version = utils.isIP(seed.host);
 
     if (!version)
       continue;
 
-    if (hosts[ip])
+    if (hosts[seed.host])
       continue;
 
-    hosts[ip] = true;
+    hosts[seed.host] = true;
 
     items.push({
       network: this.network,
-      ts: peer.ts,
-      services: peer.version ? peer.version.services : null,
-      ipv4: version === 4 ? ip : null,
-      ipv6: version === 6 ? ip : null,
-      port: peer.socket.remotePort || this.network.port
+      ts: seed.ts || ts,
+      services: seed.version ? seed.version.services : null,
+      ipv4: version === 4 ? seed.host : null,
+      ipv6: version === 6 ? seed.host : null,
+      port: seed.port || this.network.port
     });
 
     if (items.length === 1000)
       break;
   }
+
+  bcoin.debug(
+    'Sending %d addrs to peer (%s)',
+    addrs.length,
+    this.hostname);
 
   return this.write(this.framer.addr(items));
 };
@@ -1355,12 +1345,12 @@ Peer.prototype._handleReject = function handleReject(payload) {
     return;
 
   hash = payload.data;
-  entry = this._broadcast.map[hash];
+  entry = this.pool.inv.map[hash];
 
   if (!entry)
     return;
 
-  entry.e.emit('reject', payload);
+  entry.reject(this);
 };
 
 Peer.prototype._handleAlert = function handleAlert(details) {
@@ -1368,7 +1358,7 @@ Peer.prototype._handleAlert = function handleAlert(details) {
   var signature = details.signature;
 
   if (!bcoin.ec.verify(hash, signature, this.network.alertKey)) {
-    bcoin.debug('Peer %s sent a phony alert packet.', this.host);
+    bcoin.debug('Peer sent a phony alert packet (%s).', this.hostname);
     // Let's look at it because why not?
     bcoin.debug(details);
     this.setMisbehavior(100);
@@ -1387,11 +1377,11 @@ Peer.prototype._handleAlert = function handleAlert(details) {
 
 Peer.prototype.getHeaders = function getHeaders(locator, stop) {
   bcoin.debug(
-    'Requesting headers packet from %s with getheaders',
-    this.host);
+    'Requesting headers packet from peer with getheaders (%s).',
+    this.hostname);
 
   bcoin.debug('Height: %s, Hash: %s, Stop: %s',
-    locator &amp;&amp; locator.length ? this.chain._getCachedHeight(locator[0]) : null,
+    locator &amp;&amp; locator.length ? this.chain._getCachedHeight(locator[0]) : -1,
     locator &amp;&amp; locator.length ? utils.revHex(locator[0]) : 0,
     stop ? utils.revHex(stop) : 0);
 
@@ -1406,8 +1396,8 @@ Peer.prototype.getHeaders = function getHeaders(locator, stop) {
 
 Peer.prototype.getBlocks = function getBlocks(locator, stop) {
   bcoin.debug(
-    'Requesting inv packet from %s with getblocks',
-    this.host);
+    'Requesting inv packet from peer with getblocks (%s).',
+    this.hostname);
 
   bcoin.debug('Height: %s, Hash: %s, Stop: %s',
     locator &amp;&amp; locator.length ? this.chain._getCachedHeight(locator[0]) : null,
@@ -1423,8 +1413,8 @@ Peer.prototype.getBlocks = function getBlocks(locator, stop) {
 
 Peer.prototype.getMempool = function getMempool() {
   bcoin.debug(
-    'Requesting inv packet from %s with mempool',
-    this.host);
+    'Requesting inv packet from peer with mempool (%s).',
+    this.hostname);
 
   this.write(this.framer.mempool());
 };
@@ -1436,8 +1426,8 @@ Peer.prototype.getMempool = function getMempool() {
 
 Peer.prototype.reject = function reject(details) {
   bcoin.debug(
-    'Sending reject packet to %s',
-    this.host);
+    'Sending reject packet to peer (%s).',
+    this.hostname);
 
   this.write(this.framer.reject(details));
 };
@@ -1473,6 +1463,40 @@ Peer.prototype.sendReject = function sendReject(obj, code, reason, score) {
   return this.pool.reject(this, obj, code, reason, score);
 };
 
+Peer.prototype.__defineGetter__('hostname', function() {
+  var host = this.host;
+
+  if (utils.isIP(host) === 6)
+    host = '[' + host + ']';
+
+  return host + ':' + this.port;
+});
+
+/**
+ * Inspect the peer.
+ * @returns {String}
+ */
+
+Peer.prototype.inspect = function inspect() {
+  return '&lt;Peer:'
+    + ' id=' + this.id
+    + ' connected=' + this.connected
+    + ' host=' + this.hostname
+    + '>';
+};
+
+/*
+ * Helpers
+ */
+
+function compare(a, b) {
+  return a.id - b.id;
+}
+
+/*
+ * Expose
+ */
+
 module.exports = Peer;
 </code></pre>
         </article>
@@ -1484,13 +1508,13 @@ module.exports = Peer;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#verify">verify</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getCores">getCores</a></li><li><a href="global.html#jobs">jobs</a></li><li><a href="global.html#mallocUsage">mallocUsage</a></li><li><a href="global.html#ptrSize">ptrSize</a></li><li><a href="global.html#rcmp">rcmp</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#verify">verify</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sat May 14 2016 15:04:29 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:13:19 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
