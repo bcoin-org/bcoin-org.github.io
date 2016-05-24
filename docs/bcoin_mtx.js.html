@@ -758,11 +758,10 @@ MTX.prototype.isScripted = function isScripted() {
   for (i = 0; i &lt; this.inputs.length; i++) {
     input = this.inputs[i];
 
-    if (input.script.code.length === 0)
+    if (input.script.code.length === 0
+        &amp;&amp; input.witness.items.length === 0) {
       return false;
-
-    if (input.witness.items.length === 0)
-      return false;
+    }
   }
 
   return true;
@@ -804,7 +803,6 @@ MTX.prototype.maxSize = function maxSize(options, force) {
     input = this.inputs[i];
     size = input.script.getSize();
     total -= utils.sizeVarint(size) + size;
-    total += 1;
   }
 
   // Add size for signatures and public keys
@@ -812,6 +810,7 @@ MTX.prototype.maxSize = function maxSize(options, force) {
     input = this.inputs[i];
     size = 0;
     witness = false;
+    redeem = null;
 
     // We're out of luck here.
     // Just assume it's a p2pkh.
@@ -845,10 +844,17 @@ MTX.prototype.maxSize = function maxSize(options, force) {
     if (prev.isWitnessProgram()) {
       witness = true;
 
-      // Now calculating vsize. The regular
-      // redeem script (if there was one)
-      // is now worth 4 points.
-      size *= 4;
+      // Now calculating vsize.
+      if (redeem) {
+        // The regular redeem script
+        // is now worth 4 points.
+        size += utils.sizeVarint(size);
+        size *= 4;
+      } else {
+        // Add one varint byte back
+        // for the 0-byte input script.
+        size += 1 * 4;
+      }
 
       // Add 2 bytes for flag and marker.
       if (!hadWitness)
@@ -926,14 +932,14 @@ MTX.prototype.maxSize = function maxSize(options, force) {
       }
     }
 
-    // Byte for varint size of input script or witness.
-    size += utils.sizeVarint(size);
-
-    // Calculate vsize if we're a witness program.
     if (witness) {
-      // Add one byte back for the 0-byte input script.
-      size += 1 * 4;
+      // Calculate vsize if
+      // we're a witness program.
       size = (size + scale - 1) / scale | 0;
+    } else {
+      // Byte for varint
+      // size of input script.
+      size += utils.sizeVarint(size);
     }
 
     total += size;
@@ -948,10 +954,10 @@ MTX.prototype.maxSize = function maxSize(options, force) {
  * @param {Object?} options
  * @param {String?} options.selection - Coin selection priority. Can
  * be `age`, `random`, or `all`. (default=age).
- * @param {Boolean} options.accurate - Whether to use "accurate"
- * fee calculatation rather than rounding to the nearest kilobyte.
- * See {@link TX#getMinFee} vs. {@link TX#getMaxFee}.
  * @param {Boolean} options.confirmed - Select only confirmed coins.
+ * @param {Boolean} options.round - Whether to round to the nearest
+ * kilobyte for fee calculation.
+ * See {@link TX#getMinFee} vs. {@link TX#getRoundFee}.
  * @param {Boolean} options.free - Do not apply a fee if the
  * transaction priority is high enough to be considered free.
  * @param {Amount?} options.fee - Use a hard fee rather than calculating one.
@@ -1070,10 +1076,10 @@ MTX.prototype.selectCoins = function selectCoins(coins, options) {
         tryFree = false;
       }
 
-      if (options.accurate)
-        fee = tx.getMinFee(size, options.rate);
+      if (options.round)
+        fee = tx.getRoundFee(size, options.rate);
       else
-        fee = tx.getMaxFee(size, options.rate);
+        fee = tx.getMinFee(size, options.rate);
 
       // Failed to get enough funds, add more coins.
       if (!isFull())
@@ -1297,7 +1303,7 @@ MTX.prototype.toTX = function toTX() {
 };
 
 /**
- * Test an object to see if it is a TX.
+ * Test whether an object is an MTX.
  * @param {Object} obj
  * @returns {Boolean}
  */
@@ -1305,8 +1311,7 @@ MTX.prototype.toTX = function toTX() {
 MTX.isMTX = function isMTX(obj) {
   return obj
     &amp;&amp; Array.isArray(obj.inputs)
-    &amp;&amp; typeof obj.ps === 'number'
-    &amp;&amp; typeof obj.changeIndex === 'number'
+    &amp;&amp; typeof obj.locktime === 'number'
     &amp;&amp; typeof obj.scriptInput === 'function';
 };
 
@@ -1325,13 +1330,13 @@ module.exports = MTX;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:29:13 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

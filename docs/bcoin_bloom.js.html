@@ -37,6 +37,13 @@ var utils = require('./utils');
 var assert = utils.assert;
 var constants = require('./protocol/constants');
 
+/*
+ * Constants
+ */
+
+var LN2SQUARED = 0.4804530139182014246671025263266649717305529515945455;
+var LN2 = 0.6931471805599453094172321214581765680755001343602552;
+
 /**
  * Bloom Filter
  * @exports Bloom
@@ -59,10 +66,19 @@ function Bloom(size, n, tweak, update) {
     this.filter = size;
     this.size = this.filter.length * 8;
   } else {
-    this.filter = new Buffer(Math.ceil(size / 8));
-    this.size = size;
+    this.size = size - (size % 8);
+    this.filter = new Buffer(this.size / 8);
     this.reset();
   }
+
+  if (tweak == null || tweak == -1)
+    tweak = (Math.random() * 0x100000000) >>> 0;
+
+  if (update == null || update === -1)
+    update = constants.filterFlags.NONE;
+
+  if (typeof update === 'string')
+    update = constants.filterFlags[update.toUpperCase()];
 
   this.n = n;
   this.tweak = tweak;
@@ -77,7 +93,7 @@ function Bloom(size, n, tweak, update) {
  */
 
 Bloom.prototype.hash = function hash(val, n) {
-  return murmur(val, sum32(mul32(n, 0xfba4c795), this.tweak)) % this.size;
+  return murmur3(val, sum32(mul32(n, 0xfba4c795), this.tweak)) % this.size;
 };
 
 /**
@@ -95,21 +111,14 @@ Bloom.prototype.reset = function reset() {
  */
 
 Bloom.prototype.add = function add(val, enc) {
-  var i, bit, pos, shift;
+  var i, index;
 
   if (typeof val === 'string')
     val = new Buffer(val, enc);
 
   for (i = 0; i &lt; this.n; i++) {
-    bit = this.hash(val, i);
-    pos = 1 &lt;&lt; (bit &amp; 0x1f);
-    shift = bit >>> 5;
-    shift *= 4;
-
-    this.filter.writeUInt32LE(
-      this.filter.readUInt32LE(shift, true) | pos,
-      shift,
-      true);
+    index = this.hash(val, i);
+    this.filter[index >>> 3] |= 1 &lt;&lt; (7 &amp; index);
   }
 };
 
@@ -121,18 +130,14 @@ Bloom.prototype.add = function add(val, enc) {
  */
 
 Bloom.prototype.test = function test(val, enc) {
-  var i, bit, pos, shift;
+  var i, index;
 
   if (typeof val === 'string')
     val = new Buffer(val, enc);
 
   for (i = 0; i &lt; this.n; i++) {
-    bit = this.hash(val, i);
-    pos = 1 &lt;&lt; (bit &amp; 0x1f);
-    shift = bit >>> 5;
-    shift *= 4;
-
-    if ((this.filter.readUInt32LE(shift, true) &amp; pos) === 0)
+    index = this.hash(val, i);
+    if ((this.filter[index >>> 3] &amp; (1 &lt;&lt; (7 &amp; index))) === 0)
       return false;
   }
 
@@ -140,13 +145,28 @@ Bloom.prototype.test = function test(val, enc) {
 };
 
 /**
- * Return a Buffer representing the filter,
- * suitable for transmission on the network.
- * @returns {Buffer}
+ * Test whether data is present in the
+ * filter and potentially add data.
+ * @param {Buffer|String} val
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ * @returns {Boolean} Whether data was added.
  */
 
-Bloom.prototype.toBuffer = function toBuffer() {
-  return this.filter;
+Bloom.prototype.added = function added(val, enc) {
+  var ret = false;
+  var i, index;
+
+  if (typeof val === 'string')
+    val = new Buffer(val, enc);
+
+  for (i = 0; i &lt; this.n; i++) {
+    index = this.hash(val, i);
+    if (!ret &amp;&amp; (this.filter[index >>> 3] &amp; (1 &lt;&lt; (7 &amp; index))) === 0)
+      ret = true;
+    this.filter[index >>> 3] |= 1 &lt;&lt; (7 &amp; index);
+  }
+
+  return ret;
 };
 
 /**
@@ -164,44 +184,219 @@ Bloom.prototype.isWithinConstraints = function isWithinConstraints() {
   return true;
 };
 
-/*
- * Murmur
+/**
+ * Create a filter from a false positive rate.
+ * @param {Number} items - Expeected number of items.
+ * @param {Number} rate - False positive rate (0.0-1.0).
+ * @param {Number|String} update
+ * @example
+ * bcoin.bloom.fromRate(800000, 0.01, 'none');
+ * @returns {Boolean}
  */
 
-function mul32(a, b) {
-  var alo = a &amp; 0xffff;
-  var blo = b &amp; 0xffff;
-  var ahi = a >>> 16;
-  var bhi = b >>> 16;
-  var r, lo, hi;
+Bloom.fromRate = function fromRate(items, rate, update) {
+  var size, n;
 
-  lo = alo * blo;
-  hi = (ahi * blo + bhi * alo) &amp; 0xffff;
+  size = (-1 / LN2SQUARED * items * Math.log(rate)) | 0;
 
-  hi += lo >>> 16;
-  lo &amp;= 0xffff;
-  r = (hi &lt;&lt; 16) | lo;
+  if (update !== -1)
+    size = Math.min(size, constants.bloom.MAX_BLOOM_FILTER_SIZE * 8);
 
-  if (r &lt; 0)
-    r += 0x100000000;
+  n = (size / items * LN2) | 0;
 
-  return r;
+  if (update !== -1)
+    n = Math.min(n, constants.bloom.MAX_HASH_FUNCS);
+
+  return new Bloom(size, n, -1, update);
+};
+
+/**
+ * A rolling bloom filter used internally
+ * (do not relay this on the p2p network).
+ * @exports RollingFilter
+ * @constructor
+ * @param {Number} items - Expected number of items.
+ * @param {Number} rate - False positive rate (0.0-1.0).
+ */
+
+function RollingFilter(items, rate) {
+  var logRate, max;
+
+  if (!(this instanceof RollingFilter))
+    return new RollingFilter(items, rate);
+
+  logRate = Math.log(rate);
+
+  this.entries = 0;
+  this.generation = 1;
+
+  this.n = Math.max(1, Math.min(Math.round(logRate / Math.log(0.5)), 50));
+  this.limit = (items + 1) / 2 | 0;
+
+  max = this.limit * 3;
+  this.size = -1 * this.n * max / Math.log(1.0 - Math.exp(logRate / this.n));
+  this.size = Math.ceil(this.size);
+
+  this.items = ((this.size + 63) / 64 | 0) &lt;&lt; 1;
+
+  this.tweak = (Math.random() * 0x100000000) >>> 0;
+
+  this.filter = new Buffer(this.items * 8);
+  this.filter.fill(0);
 }
 
-function sum32(a, b) {
-  var r = (a + b) &amp; 0xffffffff;
+/**
+ * Perform the mumur3 hash on data.
+ * @param {Buffer} val
+ * @param {Number} seed
+ * @returns {Number}
+ */
 
-  if (r &lt; 0)
-    r += 0x100000000;
+RollingFilter.prototype.hash = function hash(val, n) {
+  return murmur3(val, sum32(mul32(n, 0xfba4c795), this.tweak));
+};
 
-  return r;
-}
+/**
+ * Reset the filter.
+ */
 
-function rotl32(w, b) {
-  return (w &lt;&lt; b) | (w >>> (32 - b));
-}
+RollingFilter.prototype.reset = function reset() {
+  if (this.entries === 0)
+    return;
 
-function murmur(data, seed) {
+  this.entries = 0;
+  this.generation = 1;
+  this.filter.fill(0);
+};
+
+/**
+ * Add data to the filter.
+ * @param {Buffer|String}
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ */
+
+RollingFilter.prototype.add = function add(val, enc) {
+  var i, j, hash, bits, pos, pos1, pos2, bit, oct;
+  var m1, m2, v1, v2, mhi, mlo;
+
+  if (typeof val === 'string')
+    val = new Buffer(val, enc);
+
+  if (this.entries === this.limit) {
+    this.entries = 0;
+    this.generation += 1;
+
+    if (this.generation === 4)
+      this.generation = 1;
+
+    m1 = (this.generation &amp; 1) * 0xffffffff;
+    m2 = (this.generation >>> 1) * 0xffffffff;
+
+    for (i = 0; i &lt; this.items; i += 2) {
+      pos1 = i * 8;
+      pos2 = (i + 1) * 8;
+      v1 = read(this.filter, pos1);
+      v2 = read(this.filter, pos2);
+      mhi = (v1.hi ^ m1) | (v2.hi ^ m2);
+      mlo = (v1.lo ^ m1) | (v2.lo ^ m2);
+      v1.hi &amp;= mhi;
+      v1.lo &amp;= mlo;
+      v2.hi &amp;= mhi;
+      v2.lo &amp;= mlo;
+      write(this.filter, v1, pos1);
+      write(this.filter, v2, pos2);
+    }
+  }
+
+  this.entries += 1;
+
+  for (i = 0; i &lt; this.n; i++) {
+    hash = this.hash(val, i);
+    bits = hash &amp; 0x3f;
+    pos = (hash >>> 6) % this.items;
+    pos1 = (pos &amp; ~1) * 8;
+    pos2 = (pos | 1) * 8;
+
+    bit = bits % 8;
+    oct = (bits - bit) / 8;
+    pos1 += oct;
+    pos2 += oct;
+
+    this.filter[pos1] &amp;= ~(1 &lt;&lt; bit);
+    this.filter[pos1] |= (this.generation &amp; 1) &lt;&lt; bit;
+
+    this.filter[pos2] &amp;= ~(1 &lt;&lt; bit);
+    this.filter[pos2] |= (this.generation >>> 1) &lt;&lt; bit;
+  }
+};
+
+/**
+ * Test whether data is present in the filter.
+ * @param {Buffer|String} val
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ * @returns {Boolean}
+ */
+
+RollingFilter.prototype.test = function test(val, enc) {
+  var i, hash, bits, pos, pos1, pos2, bit, oct;
+
+  if (this.entries === 0)
+    return false;
+
+  if (typeof val === 'string')
+    val = new Buffer(val, enc);
+
+  for (i = 0; i &lt; this.n; i++) {
+    hash = this.hash(val, i);
+    bits = hash &amp; 0x3f;
+    pos = (hash >>> 6) % this.items;
+    pos1 = (pos &amp; ~1) * 8;
+    pos2 = (pos | 1) * 8;
+
+    bit = bits % 8;
+    oct = (bits - bit) / 8;
+    pos1 += oct;
+    pos2 += oct;
+
+    bits = (this.filter[pos1] >>> bit) &amp; 1;
+    bits |= (this.filter[pos2] >>> bit) &amp; 1;
+
+    if (bits === 0)
+      return false;
+  }
+
+  return true;
+};
+
+/**
+ * Test whether data is present in the
+ * filter and potentially add data.
+ * @param {Buffer|String} val
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ * @returns {Boolean} Whether data was added.
+ */
+
+RollingFilter.prototype.added = function added(val, enc) {
+  if (typeof val === 'string')
+    val = new Buffer(val, enc);
+
+  if (!this.test(val)) {
+    this.add(val);
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Murmur3 hash.
+ * @memberof Bloom
+ * @param {Buffer} data
+ * @param {Number} seed
+ * @returns {Number}
+ */
+
+function murmur3(data, seed) {
   var c1 = 0xcc9e2d51;
   var c2 = 0x1b873593;
   var r1 = 15;
@@ -256,20 +451,58 @@ function murmur(data, seed) {
   return hash;
 }
 
-/**
- * Murmur3 hash.
- * @static
- * @function
- * @param {Buffer} data
- * @param {Number} seed
- * @returns {Number}
- */
+function mul32(a, b) {
+  var alo = a &amp; 0xffff;
+  var blo = b &amp; 0xffff;
+  var ahi = a >>> 16;
+  var bhi = b >>> 16;
+  var r, lo, hi;
 
-Bloom.hash = murmur;
+  lo = alo * blo;
+  hi = (ahi * blo + bhi * alo) &amp; 0xffff;
+
+  hi += lo >>> 16;
+  lo &amp;= 0xffff;
+  r = (hi &lt;&lt; 16) | lo;
+
+  if (r &lt; 0)
+    r += 0x100000000;
+
+  return r;
+}
+
+function sum32(a, b) {
+  var r = (a + b) &amp; 0xffffffff;
+
+  if (r &lt; 0)
+    r += 0x100000000;
+
+  return r;
+}
+
+function rotl32(w, b) {
+  return (w &lt;&lt; b) | (w >>> (32 - b));
+}
+
+function read(data, off) {
+  return {
+    hi: data.readUInt32LE(off + 4, true),
+    lo: data.readUInt32LE(off, true)
+  };
+}
+
+function write(data, value, off) {
+  data.writeUInt32LE(value.hi, off + 4, true);
+  data.writeUInt32LE(value.lo, off, true);
+}
 
 /*
  * Expose
  */
+
+exports = Bloom;
+exports.murmur3 = murmur3;
+exports.rolling = RollingFilter;
 
 module.exports = Bloom;
 </code></pre>
@@ -282,13 +515,13 @@ module.exports = Bloom;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:29:13 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

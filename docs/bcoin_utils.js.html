@@ -433,7 +433,6 @@ utils.pbkdf2 = function pbkdf2(key, salt, iterations, dkLen, alg) {
 utils.encrypt = function encrypt(data, passphrase) {
   var key, cipher, out;
 
-  assert(crypto, 'No crypto module available.');
   assert(passphrase, 'No passphrase.');
 
   if (typeof data === 'string')
@@ -442,7 +441,7 @@ utils.encrypt = function encrypt(data, passphrase) {
   if (typeof passphrase === 'string')
     passphrase = new Buffer(passphrase, 'utf8');
 
-  key = utils.pbkdf2key(passphrase, null, 2048, 32, 16);
+  key = utils.pbkdf2key(passphrase, 2048, 32, 16);
 
   if (!crypto) {
     out = aes.cbc.encrypt(data, key.key, key.iv);
@@ -474,7 +473,6 @@ utils.encrypt = function encrypt(data, passphrase) {
 utils.decrypt = function decrypt(data, passphrase) {
   var key, decipher, out;
 
-  assert(crypto, 'No crypto module available.');
   assert(passphrase, 'No passphrase.');
 
   if (typeof data === 'string')
@@ -483,7 +481,7 @@ utils.decrypt = function decrypt(data, passphrase) {
   if (typeof passphrase === 'string')
     passphrase = new Buffer(passphrase, 'utf8');
 
-  key = utils.pbkdf2key(passphrase, null, 2048, 32, 16);
+  key = utils.pbkdf2key(passphrase, 2048, 32, 16);
 
   if (!crypto) {
     out = aes.cbc.decrypt(data, key.key, key.iv);
@@ -516,23 +514,26 @@ utils.decrypt = function decrypt(data, passphrase) {
  * @returns {Buffer}
  */
 
-utils.pbkdf2key = function pbkdf2key(passphrase, salt, iterations, dkLen, ivLen, alg) {
-  var key = utils.pbkdf2(passphrase, salt || '', iterations, dkLen + ivLen, alg);
+utils.pbkdf2key = function pbkdf2key(passphrase, iterations, dkLen, ivLen, alg) {
+  var key = utils.pbkdf2(passphrase, '', iterations, dkLen + ivLen, alg);
   return {
     key: key.slice(0, dkLen),
-    iv: key.slice(dkLen)
+    iv: key.slice(dkLen, dkLen + ivLen)
   };
 };
 
 /**
  * Test whether a string is hex. Note that this
- * may yield a false positive on base58 strings.
+ * _could_ yield a false positive on base58
+ * strings.
  * @param {String?} obj
  * @returns {Boolean}
  */
 
 utils.isHex = function isHex(obj) {
-  return typeof obj === 'string' &amp;&amp; /^[0-9a-f]+$/i.test(obj);
+  return typeof obj === 'string'
+    &amp;&amp; /^[0-9a-f]+$/i.test(obj)
+    &amp;&amp; obj.length % 2 === 0;
 };
 
 /**
@@ -870,8 +871,8 @@ utils.isBTC = function isBTC(value) {
  * Parse a hostname.
  * @example
  * utils.parseHost('127.0.0.1:3000');
- * @param {String|Seed} addr
- * @returns {Seed}
+ * @param {String} addr
+ * @returns {Object} Contains `host` and `port`.
  */
 
 utils.parseHost = function parseHost(addr) {
@@ -894,6 +895,19 @@ utils.parseHost = function parseHost(addr) {
 };
 
 /**
+ * Concatenate a host and port.
+ * @param {String} host
+ * @param {Number} port
+ * @returns {String}
+ */
+
+utils.hostname = function hostname(host, port) {
+  if (utils.isIP(host) === 6)
+    host = '[' + host + ']';
+  return host + ':' + port;
+};
+
+/**
  * Test whether a string is an IP address.
  * @param {String?} ip
  * @returns {Number} IP version (4 or 6).
@@ -913,159 +927,104 @@ utils.isIP = function isIP(ip) {
 };
 
 /**
- * Cast an IPv6 or IPv4 to IPv4 or IPv6 respectively
- * (if possible using ipv4-mapped ipv6 addresses).
- * @param {Buffer} ip
- * @param {Number} version - 4 or 6.
- * @returns {Buffer} IP address.
+ * Test whether a buffer is an ipv4-mapped ipv6 address.
+ * @returns {Boolean}
  */
 
-utils.ip2version = function ip2version(ip, version) {
-  var b, i, j;
+utils.isMapped = function isMapped(ip, version) {
+  var i;
 
-  assert(Buffer.isBuffer(ip));
-  assert(version === 4 || version === 6, 'Bad IP version.');
+  if (!Buffer.isBuffer(ip))
+    return false;
 
-  if (version === 4) {
-    // Check to see if this an
-    // ipv4-mapped ipv6 address.
-    if (ip.length > 4) {
-      i = 0;
-      while (ip[i] === 0)
-        i++;
-
-      // Found an ipv4 address
-      if (ip.length - i === 6 &amp;&amp; ip[i] === 0xff &amp;&amp; ip[i + 1] === 0xff)
-        return utils.copy(ip.slice(-4));
-
-      // No ipv4 address
-      return new Buffer([0, 0, 0, 0]);
-    }
-
-    // Pad to 4 bytes
-    if (ip.length &lt; 4) {
-      b = new Buffer(4);
-      i = ip.length;
-      j = b.length;
-      b.fill(0);
-      while (i)
-        b[--j] = ip[--i];
-      ip = b;
-    }
-
-    return ip;
+  for (i = 0; i &lt; ip.length - 6; i++) {
+    if (ip[i] !== 0)
+      return false;
   }
 
-  if (version === 6) {
-    // Pad to 4 bytes
-    if (ip.length &lt; 4) {
-      b = new Buffer(4);
-      i = ip.length;
-      j = b.length;
-      b.fill(0);
-      while (i)
-        b[--j] = ip[--i];
-      ip = b;
-    }
+  if (ip[10] !== 0xff &amp;&amp; ip[11] !== 0xff)
+    return false;
 
-    // Try to convert ipv4 address to
-    // ipv4-mapped ipv6 address.
-    if (ip.length === 4) {
-      b = new Buffer(6);
-      i = ip.length;
-      j = b.length;
-      b.fill(0xff);
-      while (i)
-        b[--j] = ip[--i];
-      ip = b;
-    }
-
-    // Pad to 16 bytes
-    if (ip.length &lt; 16) {
-      b = new Buffer(16);
-      i = ip.length;
-      j = b.length;
-      b.fill(0);
-      while (i)
-        b[--j] = ip[--i];
-      ip = b;
-    }
-
-    return ip;
-  }
+  return true;
 };
 
 /**
  * Convert an IP string to a buffer.
  * @param {String} ip
- * @param {Number} version - 4 or 6.
  * @returns {Buffer}
  */
 
-utils.ip2array = function ip2array(ip, version) {
-  var type = utils.isIP(ip);
-  var parts;
+utils.ip2array = function ip2array(ip) {
+  var version, parts, out;
 
-  assert(version === 4 || version === 6, 'Bad IP version.');
-
-  if (type === 0) {
-    if (!Buffer.isBuffer(ip))
-      ip = new Buffer([0, 0, 0, 0]);
-  } else if (type === 4) {
-    parts = ip.split('.');
-    ip = new Buffer(4);
-    ip[0] = +parts[0];
-    ip[1] = +parts[1];
-    ip[2] = +parts[2];
-    ip[3] = +parts[3];
-  } else if (type === 6) {
-    ip = new Buffer(ip.replace(/:/g, ''), 'hex');
-    assert(ip.length &lt;= 16);
+  if (Buffer.isBuffer(ip)) {
+    assert(ip.length === 16);
+    return ip;
   }
 
-  return utils.ip2version(ip, version);
+  version = utils.isIP(ip);
+
+  if (version === 0)
+    return ip2array('0.0.0.0');
+
+  if (version === 4) {
+    parts = ip.split('.');
+    assert(parts.length === 4);
+    out = new Buffer(16);
+    out.fill(0);
+    out[10] = 0xff;
+    out[11] = 0xff;
+    out[12] = +parts[0];
+    out[13] = +parts[1];
+    out[14] = +parts[2];
+    out[15] = +parts[3];
+    return out;
+  }
+
+  if (version === 6) {
+    ip = new Buffer(ip.replace(/:/g, ''), 'hex');
+    assert(ip.length === 16);
+    return ip;
+  }
+
+  assert(false, 'Bad IP.');
 };
 
 /**
  * Convert a buffer to an ip string.
  * @param {Buffer} ip
- * @param {Number} version - 4 or 6.
  * @returns {String}
  */
 
-utils.array2ip = function array2ip(ip, version) {
-  var out, i, hi, lo;
+utils.array2ip = function array2ip(ip) {
+  var i, out, hi, lo;
 
-  if (!Buffer.isBuffer(ip)) {
-    if (utils.isIP(ip))
-      ip = utils.ip2array(ip, version);
-    else
-      ip = new Buffer([0, 0, 0, 0]);
+  if (typeof ip === 'string') {
+    assert(utils.isIP(ip) !== 0);
+    return ip;
   }
 
-  assert(version === 4 || version === 6, 'Bad IP version.');
-  assert(ip.length &lt;= 16);
+  if (!Buffer.isBuffer(ip))
+    return '0.0.0.0';
 
-  ip = utils.ip2version(ip, version);
+  assert(ip.length === 16);
 
-  if (version === 4)
-    return ip[0] + '.' + ip[1] + '.' + ip[2] + '.' + ip[3];
+  if (utils.isMapped(ip))
+    return ip[12] + '.' + ip[13] + '.' + ip[14] + '.' + ip[15];
 
-  if (version === 6) {
-    out = [];
+  out = [];
 
-    for (i = 0; i &lt; ip.length; i += 2) {
-      hi = ip[i].toString(16);
-      if (hi.length &lt; 2)
-        hi = '0' + hi;
-      lo = ip[i + 1].toString(16);
-      if (lo.length &lt; 2)
-        lo = '0' + lo;
-      out.push(hi + lo);
-    }
-
-    return out.join(':');
+  for (i = 0; i &lt; ip.length; i += 2) {
+    hi = ip[i].toString(16);
+    if (hi.length &lt; 2)
+      hi = '0' + hi;
+    lo = ip[i + 1].toString(16);
+    if (lo.length &lt; 2)
+      lo = '0' + lo;
+    out.push(hi + lo);
   }
+
+  return out.join(':');
 };
 
 /**
@@ -1295,7 +1254,16 @@ utils.testTarget = function testTarget(hash, target) {
  */
 
 utils.now = function now() {
-  return +new Date() / 1000 | 0;
+  return Math.floor(+new Date() / 1000);
+};
+
+/**
+ * Get current time in unix time (milliseconds).
+ * @returns {Number}
+ */
+
+utils.ms = function ms() {
+  return +new Date();
 };
 
 /**
@@ -1345,8 +1313,8 @@ utils.U64 = new bn('ffffffffffffffff', 'hex');
 
 utils.nonce = function _nonce() {
   var nonce = new Buffer(8);
-  nonce.writeUInt32LE(Math.random() * 0x100000000 | 0, 0, true);
-  nonce.writeUInt32LE(Math.random() * 0x100000000 | 0, 4, true);
+  nonce.writeUInt32LE((Math.random() * 0x100000000) >>> 0, 0, true);
+  nonce.writeUInt32LE((Math.random() * 0x100000000) >>> 0, 4, true);
   return new bn(nonce);
 };
 
@@ -1551,8 +1519,8 @@ utils.readU64N = function readU64N(data, off, force53, be) {
   off = off >>> 0;
 
   if (be) {
-    hi = data.readUInt32LE(off, true);
-    lo = data.readUInt32LE(off + 4, true);
+    hi = data.readUInt32BE(off, true);
+    lo = data.readUInt32BE(off + 4, true);
   } else {
     hi = data.readUInt32LE(off + 4, true);
     lo = data.readUInt32LE(off, true);
@@ -1594,8 +1562,8 @@ utils.read64N = function read64N(data, off, force53, be) {
   off = off >>> 0;
 
   if (be) {
-    hi = data.readUInt32LE(off, true);
-    lo = data.readUInt32LE(off + 4, true);
+    hi = data.readUInt32BE(off, true);
+    lo = data.readUInt32BE(off + 4, true);
   } else {
     hi = data.readUInt32LE(off + 4, true);
     lo = data.readUInt32LE(off, true);
@@ -1699,7 +1667,7 @@ utils.write64BE = function write64BE(dst, num, off) {
  * @param {Buffer} data
  * @param {Number} off
  * @param {Boolean?} big - Whether to read as a big number.
- * @returns {Number}
+ * @returns {Object}
  */
 
 utils.readVarint = function readVarint(data, off, big) {
@@ -1718,21 +1686,26 @@ utils.readVarint = function readVarint(data, off, big) {
     size = 3;
     assert(off + size &lt;= data.length);
     value = data[off + 1] | (data[off + 2] &lt;&lt; 8);
+    assert(value >= 0xfd);
     if (big)
       value = new bn(value);
   } else if (data[off] === 0xfe) {
     size = 5;
     assert(off + size &lt;= data.length);
     value = data.readUInt32LE(off + 1, true);
+    assert(value > 0xffff);
     if (big)
       value = new bn(value);
   } else if (data[off] === 0xff) {
     size = 9;
     assert(off + size &lt;= data.length);
-    if (big)
+    if (big) {
       value = utils.readU64(data, off + 1);
-    else
+      assert(value.bitLength() > 32);
+    } else {
       value = utils.readU64N(data, off + 1);
+      assert(value > 0xffffffff);
+    }
   } else {
     assert(false, 'Malformed varint.');
   }
@@ -1812,6 +1785,148 @@ utils.sizeVarint = function sizeVarint(num) {
     return 5;
 
   return 9;
+};
+
+/**
+ * Read a varint (type 2).
+ * @param {Buffer} data
+ * @param {Number} off
+ * @param {Boolean?} big - Whether to read as a big number.
+ * @returns {Object}
+ */
+
+utils.readVarint2 = function readVarint2(data, off, big) {
+  var num = 0;
+  var size = 0;
+  var bnum, ch;
+
+  off = off >>> 0;
+
+  for (;;) {
+    assert(off &lt; data.length);
+
+    ch = data[off++];
+    size++;
+
+    if (num >= 0x3fffffffffff) {
+      assert(big, 'Number exceeds 2^53-1.');
+      bnum = new bn(num);
+      num = 0;
+    }
+
+    if (bnum) {
+      bnum.iushln(7).iaddn(ch &amp; 0x7f);
+      if ((ch &amp; 0x80) === 0)
+        break;
+      bnum.iaddn(1);
+      continue;
+    }
+
+    num = (num * 0x80) + (ch &amp; 0x7f);
+    if ((ch &amp; 0x80) === 0)
+      break;
+    num++;
+  }
+
+  if (bnum)
+    return { size: size, value: bnum };
+
+  if (big)
+    num = new bn(num);
+
+  return { size: size, value: num };
+};
+
+/**
+ * Write a varint (type 2).
+ * @param {Buffer} dst
+ * @param {BN|Number} num
+ * @param {Number} off
+ * @returns {Number} Number of bytes written.
+ */
+
+utils.writeVarint2 = function writeVarint2(dst, num, off) {
+  var tmp = [];
+  var len = 0;
+
+  if (bn.isBN(num)) {
+    if (num.bitLength() > 53) {
+      for (;;) {
+        tmp[len] = (num.words[0] &amp; 0x7f) | (len ? 0x80 : 0x00);
+        if (num.cmpn(0x7f) &lt;= 0)
+          break;
+        num.iushrn(7).isubn(1);
+        len++;
+      }
+
+      assert(off + len &lt;= dst.length);
+
+      do {
+        dst[off++] = tmp[len];
+      } while (len--);
+
+      return off;
+    }
+
+    num = num.toNumber();
+  }
+
+  off = off >>> 0;
+  num = +num;
+
+  for (;;) {
+    tmp[len] = (num &amp; 0x7f) | (len ? 0x80 : 0x00);
+    if (num &lt;= 0x7f)
+      break;
+    num = ((num - (num % 0x80)) / 0x80) - 1;
+    len++;
+  }
+
+  assert(off + len &lt;= dst.length);
+
+  do {
+    dst[off++] = tmp[len];
+  } while (len--);
+
+  return off;
+};
+
+/**
+ * Calculate size of varint (type 2).
+ * @param {BN|Number} num
+ * @returns {Number} size
+ */
+
+utils.sizeVarint2 = function sizeVarint2(num) {
+  var size = 0;
+
+  if (bn.isBN(num)) {
+    if (num.bitLength() > 53) {
+      num = num.clone();
+
+      for (;;) {
+        size++;
+        if (num.cmpn(0x7f) &lt;= 0)
+          break;
+        num.iushrn(7).isubn(1);
+      }
+
+      return size;
+    }
+
+    num = num.toNumber();
+  }
+
+  num = +num;
+
+  for (;;) {
+    size++;
+    if (num &lt;= 0x7f)
+      break;
+    num = ((num - (num % 0x80)) / 0x80) - 1;
+  }
+
+  return size;
 };
 
 /**
@@ -2436,18 +2551,15 @@ utils.revMap = function revMap(map) {
  * Perform a binary search on a sorted array.
  * @param {Array} items
  * @param {Object} key
+ * @param {Function} compare
  * @param {Boolean?} insert
- * @param {Function?} compare
  * @returns {Number} Index.
  */
 
-utils.binarySearch = function binarySearch(items, key, insert, compare) {
+utils.binarySearch = function binarySearch(items, key, compare, insert) {
   var start = 0;
   var end = items.length - 1;
   var pos, cmp;
-
-  if (!compare)
-    compare = utils.cmp;
 
   while (start &lt;= end) {
     pos = (start + end) >>> 1;
@@ -2477,7 +2589,7 @@ utils.binarySearch = function binarySearch(items, key, insert, compare) {
  */
 
 utils.binaryInsert = function binaryInsert(items, item, compare) {
-  var i = utils.binarySearch(items, item, true, compare);
+  var i = utils.binarySearch(items, item, compare, true);
   items.splice(i + 1, 0, item);
   return items.length;
 };
@@ -2491,7 +2603,7 @@ utils.binaryInsert = function binaryInsert(items, item, compare) {
  */
 
 utils.binaryRemove = function binaryRemove(items, item, compare) {
-  var i = utils.binarySearch(items, item, false, compare);
+  var i = utils.binarySearch(items, item, compare, false);
   if (i === -1)
     return false;
   items.splice(i, 1);
@@ -2526,13 +2638,13 @@ utils.global = (function() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:29:13 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

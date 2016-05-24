@@ -45,8 +45,6 @@ var DUMMY = new Buffer([]);
  * @exports Framer
  * @constructor
  * @param {Object} options
- * @param {String} options.USER_AGENT - User agent string.
- * @property {Buffer} agent
  */
 
 function Framer(options) {
@@ -58,8 +56,6 @@ function Framer(options) {
 
   this.options = options;
   this.network = bcoin.network.get(options.network);
-
-  this.agent = options.agent || constants.USER_AGENT;
 }
 
 /**
@@ -69,7 +65,7 @@ function Framer(options) {
  * @returns {Buffer} Header.
  */
 
-Framer.prototype.header = function header(cmd, payload) {
+Framer.prototype.header = function header(cmd, payload, checksum) {
   var h = new Buffer(24);
   var len, i;
 
@@ -89,8 +85,11 @@ Framer.prototype.header = function header(cmd, payload) {
   // Payload length
   h.writeUInt32LE(payload.length, 16, true);
 
+  if (!checksum)
+    checksum = utils.dsha256(payload);
+
   // Checksum
-  utils.checksum(payload).copy(h, 20);
+  checksum.copy(h, 20, 0, 4);
 
   return h;
 };
@@ -102,12 +101,12 @@ Framer.prototype.header = function header(cmd, payload) {
  * @returns {Buffer} Payload with header prepended.
  */
 
-Framer.prototype.packet = function packet(cmd, payload) {
+Framer.prototype.packet = function packet(cmd, payload, checksum) {
   var header;
 
   assert(payload, 'No payload.');
 
-  header = this.header(cmd, payload);
+  header = this.header(cmd, payload, checksum);
 
   return Buffer.concat([header, payload]);
 };
@@ -119,12 +118,6 @@ Framer.prototype.packet = function packet(cmd, payload) {
  */
 
 Framer.prototype.version = function version(options) {
-  if (!options)
-    options = {};
-
-  options.agent = this.agent;
-  options.network = this.network;
-
   return this.packet('version', Framer.version(options));
 };
 
@@ -332,7 +325,14 @@ Framer.prototype.getBlocks = function getBlocks(data) {
  */
 
 Framer.prototype.tx = function tx(tx) {
-  return this.packet('tx', Framer.renderTX(tx, false));
+  var checksum;
+
+  // Save some time by using the
+  // cached hash as our checksum.
+  if (tx.hash)
+    checksum = tx.hash();
+
+  return this.packet('tx', Framer.renderTX(tx, false), checksum);
 };
 
 /**
@@ -342,7 +342,22 @@ Framer.prototype.tx = function tx(tx) {
  */
 
 Framer.prototype.witnessTX = function witnessTX(tx) {
-  return this.packet('tx', Framer.renderTX(tx, true));
+  var checksum;
+
+  // Save some time by using the
+  // cached hash as our checksum.
+  if (tx.witnessHash) {
+    if (tx.hasWitness()) {
+      // We can't use the coinbase
+      // hash since it is all zeroes.
+      if (!tx.isCoinbase())
+        checksum = tx.witnessHash();
+    } else {
+      checksum = tx.hash();
+    }
+  }
+
+  return this.packet('tx', Framer.renderTX(tx, true), checksum);
 };
 
 /**
@@ -412,7 +427,8 @@ Framer.prototype.addr = function addr(peers) {
  */
 
 Framer.prototype.alert = function alert(options) {
-  return this.packet('alert', Framer.alert(options, this.network));
+  options.network = this.network;
+  return this.packet('alert', Framer.alert(options));
 };
 
 /**
@@ -435,7 +451,6 @@ Framer.prototype.feeFilter = function feeFilter(options) {
 
 Framer.address = function address(data, full, writer) {
   var p = new BufferWriter(writer);
-  var network = bcoin.network.get(data.network);
 
   if (full) {
     if (!data.ts)
@@ -445,22 +460,8 @@ Framer.address = function address(data, full, writer) {
   }
 
   p.writeU64(data.services || 0);
-
-  if (data.ipv6) {
-    p.writeBytes(utils.ip2array(data.ipv6, 6));
-  } else {
-    // We don't have an ipv6 address: convert
-    // ipv4 to ipv4-mapped ipv6 address.
-    p.writeU32BE(0x00000000);
-    p.writeU32BE(0x00000000);
-    p.writeU32BE(0x0000ffff);
-    if (data.ipv4)
-      p.writeBytes(utils.ip2array(data.ipv4, 4));
-    else
-      p.writeU32BE(0x00000000);
-  }
-
-  p.writeU16BE(data.port || network.port);
+  p.writeBytes(utils.ip2array(data.host));
+  p.writeU16BE(data.port || 0);
 
   if (!writer)
     p = p.render();
@@ -478,15 +479,13 @@ Framer.address = function address(data, full, writer) {
 Framer.version = function version(options, writer) {
   var p = new BufferWriter(writer);
   var agent = options.agent || constants.USER_AGENT;
+  var services = options.services;
   var remote = options.remote || {};
   var local = options.local || {};
   var nonce = options.nonce;
 
-  if (local.network == null)
-    local.network = options.network;
-
-  if (remote.network == null)
-    remote.network = options.network;
+  if (services == null)
+    services = constants.LOCAL_SERVICES;
 
   if (local.services == null)
     local.services = constants.LOCAL_SERVICES;
@@ -494,9 +493,9 @@ Framer.version = function version(options, writer) {
   if (!nonce)
     nonce = utils.nonce();
 
-  p.write32(constants.VERSION);
-  p.writeU64(constants.LOCAL_SERVICES);
-  p.write64(utils.now());
+  p.write32(options.version || constants.VERSION);
+  p.writeU64(services);
+  p.write64(options.ts || bcoin.now());
   Framer.address(remote, false, p);
   Framer.address(local, false, p);
   p.writeU64(nonce);
@@ -940,19 +939,45 @@ Framer.renderTX = function renderTX(tx, useWitness, writer) {
   var p = new BufferWriter(writer);
   var witnessSize;
 
+  // Cache the serialization if we can.
+  if (tx.render &amp;&amp; !tx.mutable &amp;&amp; !tx._raw)
+    tx.render();
+
+  // Try the cached raw data first.
   if (tx._raw) {
-    if (!useWitness &amp;&amp; bcoin.protocol.parser.isWitnessTX(tx._raw)) {
-      Framer.tx(tx, p);
-      witnessSize = p._witnessSize;
-    } else {
+    if (useWitness) {
+      // If we're serializing the witness,
+      // we can use whatever data getRaw()
+      // gave us.
       p.writeBytes(tx._raw);
       witnessSize = tx._witnessSize;
+    } else {
+      // We have to use the standard format
+      // here. Try to grab it from cache.
+      if (bcoin.protocol.parser.isWitnessTX(tx._raw)) {
+        Framer.tx(tx, p);
+        witnessSize = p._witnessSize;
+      } else {
+        p.writeBytes(tx._raw);
+        witnessSize = tx._witnessSize;
+      }
     }
   } else {
-    if (useWitness &amp;&amp; bcoin.tx.prototype.hasWitness.call(tx))
-      Framer.witnessTX(tx, p);
-    else
+    if (useWitness) {
+      if (bcoin.tx.prototype.hasWitness.call(tx)) {
+        Framer.witnessTX(tx, p);
+      } else {
+        // Only use the witness serialization if
+        // we have a witness. This clause isn't
+        // necessary above since we already
+        // determined this in getRaw().
+        Framer.tx(tx, p);
+      }
+    } else {
+      // Any other case, we use
+      // the standard serialization.
       Framer.tx(tx, p);
+    }
     witnessSize = p._witnessSize;
   }
 
@@ -1166,28 +1191,19 @@ Framer.reject = function reject(details, writer) {
 
 /**
  * Create an addr packet (without a header).
- * @param {InvItem[]} peers
+ * @param {NetworkAddress[]} hosts
  * @param {BufferWriter?} writer - A buffer writer to continue writing from.
  * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
  */
 
-Framer.addr = function addr(peers, writer) {
+Framer.addr = function addr(hosts, writer) {
   var p = new BufferWriter(writer);
-  var i, peer;
+  var i;
 
-  p.writeVarint(peers.length);
+  p.writeVarint(hosts.length);
 
-  for (i = 0; i &lt; peers.length; i++) {
-    peer = peers[i];
-    Framer.address({
-      network: peer.network,
-      ts: peer.ts,
-      services: peer.services,
-      ipv6: peer.ipv6,
-      ipv4: peer.ipv4,
-      port: peer.port
-    }, true, p);
-  }
+  for (i = 0; i &lt; hosts.length; i++)
+    Framer.address(hosts[i], true, p);
 
   if (!writer)
     p = p.render();
@@ -1198,16 +1214,14 @@ Framer.addr = function addr(peers, writer) {
 /**
  * Create an alert packet (without a header).
  * @param {AlertPacket} data
- * @param {Network|NetworkType} network
  * @param {BufferWriter?} writer - A buffer writer to continue writing from.
  * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
  */
 
-Framer.alert = function alert(data, network, writer) {
-  var p, i, payload;
+Framer.alert = function alert(data, writer) {
+  var network = bcoin.network.get(data.network);
   var key = data.key;
-
-  network = bcoin.network.get(network);
+  var p, i, payload;
 
   if (!key &amp;&amp; network.alertPrivateKey)
     key = network.alertPrivateKey;
@@ -1447,7 +1461,7 @@ Framer.filterClear = function filterClear() {
  * @returns {Buffer} Returns a BufferWriter if `writer` was passed in.
  */
 
-Framer.feeFilter = function feeFilter(data, network, writer) {
+Framer.feeFilter = function feeFilter(data, writer) {
   var p = new BufferWriter(writer);
 
   p.write64(data.rate);
@@ -1597,13 +1611,13 @@ module.exports = Framer;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:29:13 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

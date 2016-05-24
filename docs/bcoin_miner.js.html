@@ -90,7 +90,7 @@ function Miner(options) {
   if (bcoin.useWorkers) {
     this.workerPool = new bcoin.workers({
       network: this.network,
-      size: 1,
+      size: this.options.parallel ? 2 : 1,
       timeout: -1
     });
   }
@@ -150,17 +150,14 @@ Miner.prototype._init = function _init() {
   });
 
   this.on('block', function(block) {
-    bcoin.debug(
-      'Found block: %d (%s)',
-      block.height,
-      block.hash('hex'));
     // Emit the block hex as a failsafe (in case we can't send it)
-    bcoin.debug('Raw: %s', block.render().toString('hex'));
+    bcoin.debug('Found block: %d (%s).', block.height, block.rhash);
+    bcoin.debug('Raw: %s', block.toRaw('hex'));
   });
 
   this.on('status', function(stat) {
     bcoin.debug(
-      'hashrate=%dkhs hashes=%d target=%d height=%d best=%s',
+      'Miner: hashrate=%dkhs hashes=%d target=%d height=%d best=%s',
       stat.hashrate / 1000 | 0,
       stat.hashes,
       stat.target,
@@ -246,6 +243,9 @@ Miner.prototype.stop = function stop() {
     this.attempt.destroy();
     this.attempt = null;
   }
+
+  if (this.workerPool)
+    this.workerPool.destroy();
 };
 
 /**
@@ -299,7 +299,9 @@ Miner.prototype.createBlock = function createBlock(version, callback) {
         address: self.address,
         coinbaseFlags: self.coinbaseFlags,
         witness: self.chain.segwitActive,
-        dsha256: self.dsha256
+        parallel: self.options.parallel,
+        dsha256: self.dsha256,
+        network: self.network
       });
 
       if (!self.mempool)
@@ -369,6 +371,7 @@ Miner.prototype.mineBlock = function mineBlock(version, callback) {
  * @param {Base58Address} options.address - Payout address.
  * @param {Boolean} options.witness - Allow witness
  * transactions, mine a witness block.
+ * @param {String} options.coinbaseFlags
  * @property {Block} block
  * @property {TX} coinbase
  * @property {BN} hashes - Number of hashes attempted.
@@ -388,6 +391,11 @@ function MinerBlock(options) {
   this.extraNonce = new bn(0);
   this.iterations = 0;
   this.dsha256 = options.dsha256;
+  this.coinbaseFlags = options.coinbaseFlags;
+  this.witness = options.witness;
+  this.address = options.address;
+  this.witnessNonce = null;
+  this.network = bcoin.network.get(options.network);
 
   // Create a coinbase
   this.coinbase = new bcoin.mtx();
@@ -412,14 +420,14 @@ function MinerBlock(options) {
       bcoin.script.array(utils.nonce()),
       // Let the world know this little
       // miner succeeded.
-      new Buffer(options.coinbaseFlags, 'ascii')
+      new Buffer(this.coinbaseFlags, 'utf8')
     ]),
     witness: new bcoin.witness(),
     sequence: 0xffffffff
   });
 
   this.coinbase.addOutput({
-    address: options.address,
+    address: this.address,
     value: 0
   });
 
@@ -437,10 +445,9 @@ function MinerBlock(options) {
 
   this.block.addTX(this.coinbase);
 
-  if (options.witness) {
+  if (this.witness) {
     // Set up the witness nonce and
     // commitment output for segwit.
-    this.witness = true;
     this.witnessNonce = utils.dsha256(new Buffer(this.tip.hash, 'hex'));
     this.coinbase.inputs[0].witness.items[0] = this.witnessNonce;
     this.coinbase.addOutput({
@@ -464,7 +471,8 @@ utils.inherits(MinerBlock, EventEmitter);
 
 MinerBlock.prototype.updateCommitment = function updateCommitment() {
   var hash = this.block.getCommitmentHash();
-  this.coinbase.outputs[1].script = bcoin.script.createCommitment(hash);
+  var commit = bcoin.script.createCommitment(hash, this.coinbaseFlags);
+  this.coinbase.outputs[1].script = commit;
 };
 
 /**
@@ -473,7 +481,7 @@ MinerBlock.prototype.updateCommitment = function updateCommitment() {
 
 MinerBlock.prototype.updateCoinbase = function updateCoinbase() {
   this.coinbase.inputs[0].script[1] = bcoin.script.array(this.extraNonce);
-  this.coinbase.outputs[0].value = this.block.getReward();
+  this.coinbase.outputs[0].value = this.block.getReward(this.network);
 };
 
 /**
@@ -559,7 +567,7 @@ MinerBlock.prototype.findNonce = function findNonce() {
     data.writeUInt32LE(block.nonce, 76, true);
 
     // Send progress report every so often
-    if (block.nonce % 100000 === 0)
+    if (block.nonce % 500000 === 0)
       this.sendStatus();
   }
 
@@ -596,16 +604,11 @@ MinerBlock.prototype.findNonce = function findNonce() {
 };
 
 MinerBlock.prototype.__defineGetter__('hashes', function() {
-  return new bn(this.iterations)
-    .mul(utils.U32)
-    .addn(this.block.nonce);
+  return this.iterations * 0xffffffff + this.block.nonce;
 });
 
 MinerBlock.prototype.__defineGetter__('rate', function() {
-  if (!this.block.nonce)
-    return 0;
-  // Calculate our terrible hashrate
-  return (this.block.nonce / (utils.now() - this.begin)) * 2 | 0;
+  return (this.block.nonce / (utils.now() - this.begin)) | 0;
 });
 
 /**
@@ -616,7 +619,7 @@ MinerBlock.prototype.sendStatus = function sendStatus() {
   this.emit('status', {
     block: this.block,
     target: this.block.bits,
-    hashes: this.hashes.toString(10),
+    hashes: this.hashes,
     hashrate: this.rate,
     height: this.height,
     best: utils.revHex(this.tip.hash)
@@ -660,8 +663,22 @@ MinerBlock.prototype.mineSync = function mineSync() {
  */
 
 MinerBlock.prototype.mineAsync = function mine(callback) {
+  var self = this;
+
   if (!this.workerPool)
     return this.mine(callback);
+
+  function done(err, block) {
+    self.workerPool.destroy();
+    callback(err, block);
+  }
+
+  if (this.options.parallel) {
+    done = utils.once(done);
+    this.workerPool.mine(this, done);
+    this.workerPool.mine(this, done);
+    return;
+  }
 
   this.workerPool.mine(this, callback);
 };
@@ -719,13 +736,13 @@ module.exports = Miner;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:29:13 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

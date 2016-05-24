@@ -91,7 +91,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line638">line 638</a>
+        <a href="bcoin_workers.js.html">bcoin/workers.js</a>, <a href="bcoin_workers.js.html#line696">line 696</a>
     </li></ul></dd>
     
 
@@ -140,7 +140,7 @@
 
     
 
-    <h4 class="name" id=".addr"><span class="type-signature">(static) </span>addr<span class="signature">(peers, writer<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+    <h4 class="name" id=".addr"><span class="type-signature">(static) </span>addr<span class="signature">(hosts, writer<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
 
     
 
@@ -185,13 +185,13 @@
 
         <tr>
             
-                <td class="name"><code>peers</code></td>
+                <td class="name"><code>hosts</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Array.&lt;<a href="global.html#InvItem">InvItem</a>></span>
+<span class="param-type">Array.&lt;<a href="global.html#NetworkAddress">NetworkAddress</a>></span>
 
 
             
@@ -283,7 +283,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1146">line 1146</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1171">line 1171</a>
     </li></ul></dd>
     
 
@@ -512,7 +512,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line408">line 408</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line424">line 424</a>
     </li></ul></dd>
     
 
@@ -565,7 +565,7 @@
 
     
 
-    <h4 class="name" id=".alert"><span class="type-signature">(static) </span>alert<span class="signature">(data, network, writer<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+    <h4 class="name" id=".alert"><span class="type-signature">(static) </span>alert<span class="signature">(data, writer<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
 
     
 
@@ -617,40 +617,6 @@
             
                 
 <span class="param-type"><a href="global.html#AlertPacket">AlertPacket</a></span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>network</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="Network.html">Network</a></span>
-|
-
-<span class="param-type"><a href="global.html#NetworkType">NetworkType</a></span>
 
 
             
@@ -742,7 +708,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1178">line 1178</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1193">line 1193</a>
     </li></ul></dd>
     
 
@@ -941,7 +907,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line887">line 887</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line886">line 886</a>
     </li></ul></dd>
     
 
@@ -1097,7 +1063,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1537">line 1537</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1551">line 1551</a>
     </li></ul></dd>
     
 
@@ -1253,7 +1219,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1491">line 1491</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1505">line 1505</a>
     </li></ul></dd>
     
 
@@ -1410,7 +1376,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1440">line 1440</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1454">line 1454</a>
     </li></ul></dd>
     
 
@@ -1566,7 +1532,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1515">line 1515</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1529">line 1529</a>
     </li></ul></dd>
     
 
@@ -1722,7 +1688,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1471">line 1471</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1485">line 1485</a>
     </li></ul></dd>
     
 
@@ -1930,7 +1896,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1091">line 1091</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1116">line 1116</a>
     </li></ul></dd>
     
 
@@ -2126,7 +2092,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1342">line 1342</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1356">line 1356</a>
     </li></ul></dd>
     
 
@@ -2356,7 +2322,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line669">line 669</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line668">line 668</a>
     </li></ul></dd>
     
 
@@ -2593,7 +2559,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line952">line 952</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line977">line 977</a>
     </li></ul></dd>
     
 
@@ -2785,7 +2751,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1422">line 1422</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1436">line 1436</a>
     </li></ul></dd>
     
 
@@ -2984,7 +2950,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1395">line 1395</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1409">line 1409</a>
     </li></ul></dd>
     
 
@@ -3088,7 +3054,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1411">line 1411</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1425">line 1425</a>
     </li></ul></dd>
     
 
@@ -3280,7 +3246,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line584">line 584</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line583">line 583</a>
     </li></ul></dd>
     
 
@@ -3445,7 +3411,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1243">line 1243</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1257">line 1257</a>
     </li></ul></dd>
     
 
@@ -3641,7 +3607,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line622">line 622</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line621">line 621</a>
     </li></ul></dd>
     
 
@@ -3837,7 +3803,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line536">line 536</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line535">line 535</a>
     </li></ul></dd>
     
 
@@ -4033,7 +3999,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line611">line 611</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line610">line 610</a>
     </li></ul></dd>
     
 
@@ -4229,7 +4195,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1254">line 1254</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1268">line 1268</a>
     </li></ul></dd>
     
 
@@ -4333,7 +4299,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1384">line 1384</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1398">line 1398</a>
     </li></ul></dd>
     
 
@@ -4528,7 +4494,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1061">line 1061</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1086">line 1086</a>
     </li></ul></dd>
     
 
@@ -4727,7 +4693,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line751">line 751</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line750">line 750</a>
     </li></ul></dd>
     
 
@@ -4923,7 +4889,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line525">line 525</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line524">line 524</a>
     </li></ul></dd>
     
 
@@ -5088,7 +5054,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1233">line 1233</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1247">line 1247</a>
     </li></ul></dd>
     
 
@@ -5287,7 +5253,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1029">line 1029</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1054">line 1054</a>
     </li></ul></dd>
     
 
@@ -5483,7 +5449,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line547">line 547</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line546">line 546</a>
     </li></ul></dd>
     
 
@@ -5710,7 +5676,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line732">line 732</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line731">line 731</a>
     </li></ul></dd>
     
 
@@ -5909,7 +5875,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line772">line 772</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line771">line 771</a>
     </li></ul></dd>
     
 
@@ -6105,7 +6071,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line558">line 558</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line557">line 557</a>
     </li></ul></dd>
     
 
@@ -6301,7 +6267,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line571">line 571</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line570">line 570</a>
     </li></ul></dd>
     
 
@@ -6497,7 +6463,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1114">line 1114</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1139">line 1139</a>
     </li></ul></dd>
     
 
@@ -6727,7 +6693,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line911">line 911</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line910">line 910</a>
     </li></ul></dd>
     
 
@@ -6923,7 +6889,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1353">line 1353</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1367">line 1367</a>
     </li></ul></dd>
     
 
@@ -7128,7 +7094,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line840">line 840</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line839">line 839</a>
     </li></ul></dd>
     
 
@@ -7232,7 +7198,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1375">line 1375</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1389">line 1389</a>
     </li></ul></dd>
     
 
@@ -7424,7 +7390,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1323">line 1323</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1337">line 1337</a>
     </li></ul></dd>
     
 
@@ -7623,7 +7589,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line700">line 700</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line699">line 699</a>
     </li></ul></dd>
     
 
@@ -7779,7 +7745,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1550">line 1550</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1564">line 1564</a>
     </li></ul></dd>
     
 
@@ -7935,7 +7901,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1503">line 1503</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1517">line 1517</a>
     </li></ul></dd>
     
 
@@ -8092,7 +8058,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1456">line 1456</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1470">line 1470</a>
     </li></ul></dd>
     
 
@@ -8248,7 +8214,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1526">line 1526</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1540">line 1540</a>
     </li></ul></dd>
     
 
@@ -8404,7 +8370,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1481">line 1481</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1495">line 1495</a>
     </li></ul></dd>
     
 
@@ -8600,7 +8566,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1280">line 1280</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1294">line 1294</a>
     </li></ul></dd>
     
 
@@ -8704,7 +8670,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line490">line 490</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line489">line 489</a>
     </li></ul></dd>
     
 
@@ -8896,7 +8862,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line450">line 450</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line451">line 451</a>
     </li></ul></dd>
     
 
@@ -9095,7 +9061,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line865">line 865</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line864">line 864</a>
     </li></ul></dd>
     
 
@@ -9295,7 +9261,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line899">line 899</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line898">line 898</a>
     </li></ul></dd>
     
 
@@ -9495,7 +9461,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line792">line 792</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line791">line 791</a>
     </li></ul></dd>
     
 
@@ -9648,7 +9614,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line376">line 376</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line391">line 391</a>
     </li></ul></dd>
     
 
@@ -9801,7 +9767,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line386">line 386</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line401">line 401</a>
     </li></ul></dd>
     
 
@@ -9954,7 +9920,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line326">line 326</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line341">line 341</a>
     </li></ul></dd>
     
 
@@ -10107,7 +10073,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line168">line 168</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line161">line 161</a>
     </li></ul></dd>
     
 
@@ -10260,7 +10226,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line396">line 396</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line412">line 412</a>
     </li></ul></dd>
     
 
@@ -10413,7 +10379,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line207">line 207</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line200">line 200</a>
     </li></ul></dd>
     
 
@@ -10517,7 +10483,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line216">line 216</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line209">line 209</a>
     </li></ul></dd>
     
 
@@ -10670,7 +10636,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line276">line 276</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line269">line 269</a>
     </li></ul></dd>
     
 
@@ -10774,7 +10740,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line148">line 148</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line141">line 141</a>
     </li></ul></dd>
     
 
@@ -10927,7 +10893,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line296">line 296</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line289">line 289</a>
     </li></ul></dd>
     
 
@@ -11080,7 +11046,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line236">line 236</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -11233,7 +11199,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line286">line 286</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line279">line 279</a>
     </li></ul></dd>
     
 
@@ -11386,7 +11352,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line129">line 129</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line122">line 122</a>
     </li></ul></dd>
     
 
@@ -11490,7 +11456,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line197">line 197</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line190">line 190</a>
     </li></ul></dd>
     
 
@@ -11666,7 +11632,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line44">line 44</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line40">line 40</a>
     </li></ul></dd>
     
 
@@ -11819,7 +11785,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line356">line 356</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line371">line 371</a>
     </li></ul></dd>
     
 
@@ -11972,7 +11938,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line226">line 226</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line219">line 219</a>
     </li></ul></dd>
     
 
@@ -12077,7 +12043,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line119">line 119</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line112">line 112</a>
     </li></ul></dd>
     
 
@@ -12230,7 +12196,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line346">line 346</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line361">line 361</a>
     </li></ul></dd>
     
 
@@ -12383,7 +12349,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line246">line 246</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line239">line 239</a>
     </li></ul></dd>
     
 
@@ -12559,7 +12525,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line77">line 77</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line76">line 76</a>
     </li></ul></dd>
     
 
@@ -12712,7 +12678,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line256">line 256</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line249">line 249</a>
     </li></ul></dd>
     
 
@@ -12865,7 +12831,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line266">line 266</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line259">line 259</a>
     </li></ul></dd>
     
 
@@ -13018,7 +12984,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line366">line 366</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line381">line 381</a>
     </li></ul></dd>
     
 
@@ -13171,7 +13137,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line178">line 178</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line171">line 171</a>
     </li></ul></dd>
     
 
@@ -13324,7 +13290,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line188">line 188</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line181">line 181</a>
     </li></ul></dd>
     
 
@@ -13477,7 +13443,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line158">line 158</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line151">line 151</a>
     </li></ul></dd>
     
 
@@ -13630,7 +13596,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line306">line 306</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line299">line 299</a>
     </li></ul></dd>
     
 
@@ -13783,7 +13749,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line139">line 139</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line132">line 132</a>
     </li></ul></dd>
     
 
@@ -13888,7 +13854,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line109">line 109</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line102">line 102</a>
     </li></ul></dd>
     
 
@@ -14041,7 +14007,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line93">line 93</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line92">line 92</a>
     </li></ul></dd>
     
 
@@ -14194,7 +14160,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line336">line 336</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line351">line 351</a>
     </li></ul></dd>
     
 
@@ -14486,115 +14452,14 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
 
             
 
-            <td class="description last">
-                <h6>Properties</h6>
-                
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>USER_AGENT</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>User agent string.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>agent</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Buffer</span>
-
-
-            
-            </td>
-
-            
-
-            
-
             <td class="description last"></td>
         </tr>
 
     
     </tbody>
 </table>
+
+
 
 
 
@@ -14628,7 +14493,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line24">line 24</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line22">line 22</a>
     </li></ul></dd>
     
 
@@ -14677,7 +14542,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
 
     
 
-    <h4 class="name" id=".addr"><span class="type-signature">(static) </span>addr<span class="signature">(peers, writer<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+    <h4 class="name" id=".addr"><span class="type-signature">(static) </span>addr<span class="signature">(hosts, writer<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
 
     
 
@@ -14722,13 +14587,13 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
 
         <tr>
             
-                <td class="name"><code>peers</code></td>
+                <td class="name"><code>hosts</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">Array.&lt;<a href="global.html#InvItem">InvItem</a>></span>
+<span class="param-type">Array.&lt;<a href="global.html#NetworkAddress">NetworkAddress</a>></span>
 
 
             
@@ -14820,7 +14685,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1146">line 1146</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1171">line 1171</a>
     </li></ul></dd>
     
 
@@ -15049,7 +14914,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line408">line 408</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line424">line 424</a>
     </li></ul></dd>
     
 
@@ -15102,7 +14967,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
 
     
 
-    <h4 class="name" id=".alert"><span class="type-signature">(static) </span>alert<span class="signature">(data, network, writer<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+    <h4 class="name" id=".alert"><span class="type-signature">(static) </span>alert<span class="signature">(data, writer<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
 
     
 
@@ -15154,40 +15019,6 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
             
                 
 <span class="param-type"><a href="global.html#AlertPacket">AlertPacket</a></span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>network</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="Network.html">Network</a></span>
-|
-
-<span class="param-type"><a href="global.html#NetworkType">NetworkType</a></span>
 
 
             
@@ -15279,7 +15110,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1178">line 1178</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1193">line 1193</a>
     </li></ul></dd>
     
 
@@ -15478,7 +15309,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line887">line 887</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line886">line 886</a>
     </li></ul></dd>
     
 
@@ -15634,7 +15465,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1537">line 1537</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1551">line 1551</a>
     </li></ul></dd>
     
 
@@ -15790,7 +15621,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1491">line 1491</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1505">line 1505</a>
     </li></ul></dd>
     
 
@@ -15947,7 +15778,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1440">line 1440</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1454">line 1454</a>
     </li></ul></dd>
     
 
@@ -16103,7 +15934,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1515">line 1515</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1529">line 1529</a>
     </li></ul></dd>
     
 
@@ -16259,7 +16090,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1471">line 1471</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1485">line 1485</a>
     </li></ul></dd>
     
 
@@ -16467,7 +16298,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1091">line 1091</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1116">line 1116</a>
     </li></ul></dd>
     
 
@@ -16663,7 +16494,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1342">line 1342</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1356">line 1356</a>
     </li></ul></dd>
     
 
@@ -16893,7 +16724,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line669">line 669</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line668">line 668</a>
     </li></ul></dd>
     
 
@@ -17130,7 +16961,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line952">line 952</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line977">line 977</a>
     </li></ul></dd>
     
 
@@ -17322,7 +17153,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1422">line 1422</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1436">line 1436</a>
     </li></ul></dd>
     
 
@@ -17521,7 +17352,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1395">line 1395</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1409">line 1409</a>
     </li></ul></dd>
     
 
@@ -17625,7 +17456,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1411">line 1411</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1425">line 1425</a>
     </li></ul></dd>
     
 
@@ -17817,7 +17648,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line584">line 584</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line583">line 583</a>
     </li></ul></dd>
     
 
@@ -17982,7 +17813,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1243">line 1243</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1257">line 1257</a>
     </li></ul></dd>
     
 
@@ -18178,7 +18009,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line622">line 622</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line621">line 621</a>
     </li></ul></dd>
     
 
@@ -18374,7 +18205,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line536">line 536</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line535">line 535</a>
     </li></ul></dd>
     
 
@@ -18570,7 +18401,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line611">line 611</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line610">line 610</a>
     </li></ul></dd>
     
 
@@ -18766,7 +18597,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1254">line 1254</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1268">line 1268</a>
     </li></ul></dd>
     
 
@@ -18870,7 +18701,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1384">line 1384</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1398">line 1398</a>
     </li></ul></dd>
     
 
@@ -19065,7 +18896,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1061">line 1061</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1086">line 1086</a>
     </li></ul></dd>
     
 
@@ -19264,7 +19095,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line751">line 751</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line750">line 750</a>
     </li></ul></dd>
     
 
@@ -19460,7 +19291,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line525">line 525</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line524">line 524</a>
     </li></ul></dd>
     
 
@@ -19625,7 +19456,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1233">line 1233</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1247">line 1247</a>
     </li></ul></dd>
     
 
@@ -19824,7 +19655,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1029">line 1029</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1054">line 1054</a>
     </li></ul></dd>
     
 
@@ -20020,7 +19851,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line547">line 547</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line546">line 546</a>
     </li></ul></dd>
     
 
@@ -20247,7 +20078,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line732">line 732</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line731">line 731</a>
     </li></ul></dd>
     
 
@@ -20446,7 +20277,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line772">line 772</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line771">line 771</a>
     </li></ul></dd>
     
 
@@ -20642,7 +20473,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line558">line 558</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line557">line 557</a>
     </li></ul></dd>
     
 
@@ -20838,7 +20669,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line571">line 571</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line570">line 570</a>
     </li></ul></dd>
     
 
@@ -21034,7 +20865,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1114">line 1114</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1139">line 1139</a>
     </li></ul></dd>
     
 
@@ -21264,7 +21095,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line911">line 911</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line910">line 910</a>
     </li></ul></dd>
     
 
@@ -21460,7 +21291,7 @@ for the serialized coins.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1353">line 1353</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1367">line 1367</a>
     </li></ul></dd>
     
 
@@ -21665,7 +21496,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line840">line 840</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line839">line 839</a>
     </li></ul></dd>
     
 
@@ -21769,7 +21600,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1375">line 1375</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1389">line 1389</a>
     </li></ul></dd>
     
 
@@ -21961,7 +21792,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1323">line 1323</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1337">line 1337</a>
     </li></ul></dd>
     
 
@@ -22160,7 +21991,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line700">line 700</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line699">line 699</a>
     </li></ul></dd>
     
 
@@ -22316,7 +22147,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1550">line 1550</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1564">line 1564</a>
     </li></ul></dd>
     
 
@@ -22472,7 +22303,7 @@ framer and parser.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1503">line 1503</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1517">line 1517</a>
     </li></ul></dd>
     
 
@@ -22629,7 +22460,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1456">line 1456</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1470">line 1470</a>
     </li></ul></dd>
     
 
@@ -22785,7 +22616,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1526">line 1526</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1540">line 1540</a>
     </li></ul></dd>
     
 
@@ -22941,7 +22772,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1481">line 1481</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1495">line 1495</a>
     </li></ul></dd>
     
 
@@ -23137,7 +22968,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1280">line 1280</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line1294">line 1294</a>
     </li></ul></dd>
     
 
@@ -23241,7 +23072,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line490">line 490</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line489">line 489</a>
     </li></ul></dd>
     
 
@@ -23433,7 +23264,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line450">line 450</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line451">line 451</a>
     </li></ul></dd>
     
 
@@ -23632,7 +23463,7 @@ witness size without serializing.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line865">line 865</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line864">line 864</a>
     </li></ul></dd>
     
 
@@ -23832,7 +23663,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line899">line 899</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line898">line 898</a>
     </li></ul></dd>
     
 
@@ -24032,7 +23863,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line792">line 792</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line791">line 791</a>
     </li></ul></dd>
     
 
@@ -24185,7 +24016,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line376">line 376</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line391">line 391</a>
     </li></ul></dd>
     
 
@@ -24338,7 +24169,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line386">line 386</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line401">line 401</a>
     </li></ul></dd>
     
 
@@ -24491,7 +24322,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line326">line 326</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line341">line 341</a>
     </li></ul></dd>
     
 
@@ -24644,7 +24475,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line168">line 168</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line161">line 161</a>
     </li></ul></dd>
     
 
@@ -24797,7 +24628,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line396">line 396</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line412">line 412</a>
     </li></ul></dd>
     
 
@@ -24950,7 +24781,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line207">line 207</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line200">line 200</a>
     </li></ul></dd>
     
 
@@ -25054,7 +24885,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line216">line 216</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line209">line 209</a>
     </li></ul></dd>
     
 
@@ -25207,7 +25038,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line276">line 276</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line269">line 269</a>
     </li></ul></dd>
     
 
@@ -25311,7 +25142,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line148">line 148</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line141">line 141</a>
     </li></ul></dd>
     
 
@@ -25464,7 +25295,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line296">line 296</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line289">line 289</a>
     </li></ul></dd>
     
 
@@ -25617,7 +25448,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line236">line 236</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -25770,7 +25601,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line286">line 286</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line279">line 279</a>
     </li></ul></dd>
     
 
@@ -25923,7 +25754,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line129">line 129</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line122">line 122</a>
     </li></ul></dd>
     
 
@@ -26027,7 +25858,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line197">line 197</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line190">line 190</a>
     </li></ul></dd>
     
 
@@ -26203,7 +26034,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line44">line 44</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line40">line 40</a>
     </li></ul></dd>
     
 
@@ -26356,7 +26187,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line356">line 356</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line371">line 371</a>
     </li></ul></dd>
     
 
@@ -26509,7 +26340,7 @@ size as it is framing (exposed on return value as <code>_witnessSize</code>).</p
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line226">line 226</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line219">line 219</a>
     </li></ul></dd>
     
 
@@ -26614,7 +26445,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line119">line 119</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line112">line 112</a>
     </li></ul></dd>
     
 
@@ -26767,7 +26598,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line346">line 346</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line361">line 361</a>
     </li></ul></dd>
     
 
@@ -26920,7 +26751,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line246">line 246</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line239">line 239</a>
     </li></ul></dd>
     
 
@@ -27096,7 +26927,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line77">line 77</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line76">line 76</a>
     </li></ul></dd>
     
 
@@ -27249,7 +27080,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line256">line 256</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line249">line 249</a>
     </li></ul></dd>
     
 
@@ -27402,7 +27233,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line266">line 266</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line259">line 259</a>
     </li></ul></dd>
     
 
@@ -27555,7 +27386,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line366">line 366</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line381">line 381</a>
     </li></ul></dd>
     
 
@@ -27708,7 +27539,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line178">line 178</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line171">line 171</a>
     </li></ul></dd>
     
 
@@ -27861,7 +27692,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line188">line 188</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line181">line 181</a>
     </li></ul></dd>
     
 
@@ -28014,7 +27845,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line158">line 158</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line151">line 151</a>
     </li></ul></dd>
     
 
@@ -28167,7 +27998,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line306">line 306</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line299">line 299</a>
     </li></ul></dd>
     
 
@@ -28320,7 +28151,7 @@ See <a href="Framer.html#.mempool">Framer.mempool</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line139">line 139</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line132">line 132</a>
     </li></ul></dd>
     
 
@@ -28425,7 +28256,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line109">line 109</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line102">line 102</a>
     </li></ul></dd>
     
 
@@ -28578,7 +28409,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line93">line 93</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line92">line 92</a>
     </li></ul></dd>
     
 
@@ -28731,7 +28562,7 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line336">line 336</a>
+        <a href="bcoin_protocol_framer.js.html">bcoin/protocol/framer.js</a>, <a href="bcoin_protocol_framer.js.html#line351">line 351</a>
     </li></ul></dd>
     
 
@@ -28948,13 +28779,13 @@ See <a href="Framer.html#.verack">Framer.verack</a>.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu May 19 2016 18:29:14 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
