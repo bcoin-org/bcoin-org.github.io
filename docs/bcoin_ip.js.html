@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: bcoin/ldb.js</title>
+    <title>JSDoc: Source: bcoin/ip.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: bcoin/ldb.js</h1>
+    <h1 class="page-title">Source: bcoin/ip.js</h1>
 
     
 
@@ -26,181 +26,207 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/**
- * global ldb tracker
- * @module ldb
- * @license
+            <pre class="prettyprint source linenums"><code>/*!
+ * ip.js - ip utils for bcoin
  * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
  * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
  * https://github.com/indutny/bcoin
  */
 
-var bcoin = require('./env');
-var LowlevelUp = require('./lowlevelup');
-var utils = bcoin.utils;
-var assert = utils.assert;
-var db = {};
+var IP = require('../../vendor/ip');
+var assert = require('assert');
 
 /**
- * @param {Object} options
- * @param {Boolean} options.compression
- * @param {Number} options.cacheSize
- * @param {Number} options.writeBufferSize
- * @param {Number} options.maxOpenFiles
- * @param {Boolean} options.sync
- * @param {Number} options.mapSize
- * @param {Boolean} options.writeMap
- * @param {String} options.db - Database backend (`"leveldb"` by default).
- * @param {String} options.name - Database name.
- * @param {String} options.location - Database location (overrides `name`).
- * @returns {LowlevelUp}
+ * Parse a hostname.
+ * @example
+ * IP.parseHost('127.0.0.1:3000');
+ * @param {String} addr
+ * @returns {Object} Contains `host` and `port`.
  */
 
-function ldb(options) {
-  options = ldb.parseOptions(options);
+exports.parseHost = function parseHost(addr) {
+  var parts, host, port;
 
-  if (!db[options.location]) {
-    if (options.backend !== 'bst' &amp;&amp; !bcoin.isBrowser)
-      bcoin.mkdir(options.location, true);
+  assert(addr);
 
-    db[options.location] = new LowlevelUp(options.location, {
-      // LevelDB and others
-      createIfMissing: true,
-      errorIfExists: false,
-      compression: options.compression !== false,
-      cacheSize: options.cacheSize || (8 &lt;&lt; 20),
-      writeBufferSize: options.writeBufferSize || (4 &lt;&lt; 20),
-      maxOpenFiles: options.maxOpenFiles || 8192,
-      filterBits: 0,
-      paranoidChecks: false,
-      memory: false,
+  if (typeof addr === 'object')
+    return addr;
 
-      // For LMDB if we decide to use it:
-      sync: options.sync || false,
-      mapSize: options.mapSize || 300 * (1024 &lt;&lt; 20),
-      writeMap: options.writeMap || false,
-
-      db: options.db
-    });
+  if (addr[0] === '[') {
+    addr = addr.substring(1);
+    parts = addr.split(/\]:?/);
+    assert(parts.length === 2);
+  } else {
+    parts = addr.split(':');
   }
 
-  return db[options.location];
-}
+  host = parts[0];
+  port = +parts[1] || 0;
 
-/**
- * Get database name and extension based on options.
- * @param {String} db
- * @returns {Object}
- */
+  if (exports.version(host) !== -1)
+    host = exports.normalize(host);
 
-ldb.getBackend = function getBackend(db) {
-  var name, ext;
-
-  if (!db)
-    db = bcoin.db || 'leveldb';
-
-  if (db === 'leveldb')
-    name = 'leveldown';
-  else if (db === 'rocksdb')
-    name = 'rocksdown';
-  else if (db === 'lmdb')
-    name = 'lmdb';
-  else if (db === 'memory')
-    name = 'bst';
-  else
-    name = db;
-
-  switch (name) {
-    case 'leveldown':
-      ext = 'ldb';
-      break;
-    case 'rocksdown':
-      ext = 'rdb';
-      break;
-    case 'lmdb':
-      ext = 'lmdb';
-      break;
-    case 'bst':
-      ext = 'mem';
-      break;
-    default:
-      ext = 'db';
-      break;
-  }
-
-  return { name: name, ext: ext };
+  return {
+    host: host,
+    port: port
+  };
 };
 
 /**
- * Parse options.
- * @param {Object} options
- * @returns {Object}
+ * Concatenate a host and port.
+ * @param {String} host
+ * @param {Number} port
+ * @returns {String}
  */
 
-ldb.parseOptions = function parseOptions(options) {
-  var network = bcoin.network.get(options.network);
-  var backend = ldb.getBackend(options.db);
-  var location = options.location;
-  var db;
+exports.hostname = function hostname(host, port) {
+  if (exports.version(host) === 6)
+    host = '[' + host + ']';
+  return host + ':' + port;
+};
 
-  if (!location) {
-    assert(typeof options.name === 'string', 'Name or location required.');
-    location = bcoin.prefix;
-    if (network.type !== 'main')
-      location += '/' + network.type;
-    location += '/' + options.name + '.' + backend.ext;
+/**
+ * Test whether a string is an IP address.
+ * @param {String?} ip
+ * @returns {Number} IP version (4 or 6).
+ */
+
+exports.version = function version(ip) {
+  if (typeof ip !== 'string')
+    return -1;
+
+  if (IP.isV4Format(ip))
+    return 4;
+
+  if (IP.isV6Format(ip))
+    return 6;
+
+  return -1;
+};
+
+/**
+ * Test whether a buffer is an ipv4-mapped ipv6 address.
+ * @param {Buffer} ip
+ * @returns {Boolean}
+ */
+
+exports.isMapped = function isMapped(ip) {
+  var i;
+
+  assert(Buffer.isBuffer(ip));
+  assert(ip.length === 16);
+
+  for (i = 0; i &lt; ip.length - 6; i++) {
+    if (ip[i] !== 0)
+      return false;
   }
 
-  if (backend.name === 'bst')
-    db = require('./bst');
-  else if (bcoin.isBrowser)
-    db = require('level-js');
-  else
-    db = require(backend.name);
+  if (ip[ip.length - 6] !== 0xff &amp;&amp; ip[ip.length - 5] !== 0xff)
+    return false;
 
-  return utils.merge({}, options, {
-    backend: backend.name,
-    ext: backend.ext,
-    location: location,
-    db: db
-  });
+  return true;
 };
 
 /**
- * Destroy a database.
- * @param {Object} options
- * @param {Function} callback
+ * Convert an IP string to a buffer.
+ * @param {String} ip
+ * @returns {Buffer}
  */
 
-ldb.destroy = function destroy(options, callback) {
-  options = ldb.parseOptions(options);
+exports.toBuffer = function toBuffer(ip) {
+  var out;
 
-  if (!options.db.destroy)
-    return utils.nextTick(callback);
+  if (Buffer.isBuffer(ip)) {
+    assert(ip.length === 16);
+    return ip;
+  }
 
-  options.db.destroy(options.location, callback);
+  if (!ip)
+    return toBuffer('0.0.0.0');
+
+  assert(typeof ip === 'string');
+  assert(exports.version(ip) !== -1);
+
+  ip = IP.toBuffer(ip);
+
+  if (ip.length === 4) {
+    out = new Buffer(16);
+    out.fill(0);
+    out[10] = 0xff;
+    out[11] = 0xff;
+    out[12] = ip[0];
+    out[13] = ip[1];
+    out[14] = ip[2];
+    out[15] = ip[3];
+    return out;
+  }
+
+  return ip;
 };
 
 /**
- * Repair a database.
- * @param {Object} options
- * @param {Function} callback
+ * Convert a buffer to an ip string.
+ * @param {Buffer} ip
+ * @returns {String}
  */
 
-ldb.repair = function repair(options, callback) {
-  options = ldb.parseOptions(options);
+exports.toString = function toString(ip) {
+  if (typeof ip === 'string') {
+    assert(exports.version(ip) !== -1);
+    return ip;
+  }
 
-  if (!options.db.repair)
-    return utils.asyncify(callback)(new Error('Cannot repair.'));
+  if (!ip)
+    return '0.0.0.0';
 
-  options.db.repair(options.location, callback);
+  assert(Buffer.isBuffer(ip));
+  assert(ip.length === 16);
+
+  if (exports.isMapped(ip)) {
+    return ip[ip.length - 4]
+      + '.' + ip[ip.length - 3]
+      + '.' + ip[ip.length - 2]
+      + '.' + ip[ip.length - 1];
+  }
+
+  return IP.toString(ip);
+};
+
+/**
+ * Normalize an ip.
+ * @param {String} ip
+ * @returns {String}
+ */
+
+exports.normalize = function normalize(ip) {
+  if (Buffer.isBuffer(ip)) {
+    assert(ip.length === 16);
+    return exports.toString(ip);
+  }
+  return exports.toString(exports.toBuffer(ip));
 };
 
 /*
- * Expose
+ * Expose IP functions.
  */
 
-module.exports = ldb;
+exports.isV4Format = IP.isV4Format;
+exports.isV6Format = IP.isV6Format;
+exports.fromPrefixLen = IP.fromPrefixLen;
+exports.mask = IP.mask;
+exports.cidr = IP.cidr;
+exports.subnet = IP.subnet;
+exports.cidrSubnet = IP.cidrSubnet;
+exports.not = IP.not;
+exports.or = IP.or;
+exports.isEqual = IP.isEqual;
+exports.isPrivate = IP.isPrivate;
+exports.isPublic = IP.isPublic;
+exports.isLoopback = IP.isLoopback;
+exports.loopback = IP.loopback;
+exports.address = IP.address;
+exports.toLong = IP.toLong;
+exports.fromLong = IP.fromLong;
 </code></pre>
         </article>
     </section>

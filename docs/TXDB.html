@@ -296,7 +296,8 @@
             
 
             <td class="description last"><p>Verify transactions as they
-come in (note that this will not happen on the worker pool).</p></td>
+come in (note that this will not happen on the worker
+pool -- only used for SPV).</p></td>
         </tr>
 
     
@@ -563,7 +564,7 @@ to orphan list. Stored by its required coin ID.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line226">line 226</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line203">line 203</a>
     </li></ul></dd>
     
 
@@ -742,7 +743,7 @@ transaction was confirmed, or should be ignored.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line684">line 684</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line696">line 696</a>
     </li></ul></dd>
     
 
@@ -896,7 +897,7 @@ transaction was confirmed, or should be ignored.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line252">line 252</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -1073,7 +1074,7 @@ transaction was confirmed, or should be ignored.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line860">line 860</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line854">line 854</a>
     </li></ul></dd>
     
 
@@ -1104,7 +1105,7 @@ transaction was confirmed, or should be ignored.</p></td>
 
     
 
-    <h4 class="name" id="_removeSpenders"><span class="type-signature">(private) </span>_removeSpenders<span class="signature">(hash, ref, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="_removeConflict"><span class="type-signature">(private) </span>_removeConflict<span class="signature">(hash, ref, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -1254,7 +1255,162 @@ the database.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line603">line 603</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line568">line 568</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="_removeRecursive"><span class="type-signature">(private) </span>_removeRecursive<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Remove a transaction and recursively
+remove all of its spenders.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>tx</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="TX.html">TX</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Transaction to be removed.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Returns [Error, Boolean].</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line616">line 616</a>
     </li></ul></dd>
     
 
@@ -1431,7 +1587,7 @@ the database.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1013">line 1013</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line998">line 998</a>
     </li></ul></dd>
     
 
@@ -1587,7 +1743,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line300">line 300</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line277">line 277</a>
     </li></ul></dd>
     
 
@@ -1741,7 +1897,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1578">line 1578</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1490">line 1490</a>
     </li></ul></dd>
     
 
@@ -1895,7 +2051,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1538">line 1538</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1450">line 1450</a>
     </li></ul></dd>
     
 
@@ -1926,7 +2082,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getBalance"><span class="type-signature"></span>getBalance<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getBalance"><span class="type-signature"></span>getBalance<span class="signature">(id<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -1957,6 +2113,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -1969,26 +2127,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -2007,6 +2172,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -2052,164 +2225,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1666">line 1666</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getBalanceByAddress"><span class="type-signature"></span>getBalanceByAddress<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Calculate balance.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>By address (can be null).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="global.html#Balance">Balance</a>].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1770">line 1770</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1578">line 1578</a>
     </li></ul></dd>
     
 
@@ -2386,7 +2402,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1641">line 1641</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1553">line 1553</a>
     </li></ul></dd>
     
 
@@ -2417,7 +2433,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getCoinHashes"><span class="type-signature"></span>getCoinHashes<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getCoinHashes"><span class="type-signature"></span>getCoinHashes<span class="signature">(id<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -2448,6 +2464,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -2460,26 +2478,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -2498,6 +2523,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -2543,7 +2576,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1187">line 1187</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1123">line 1123</a>
     </li></ul></dd>
     
 
@@ -2574,7 +2607,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getCoins"><span class="type-signature"></span>getCoins<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getCoins"><span class="type-signature"></span>getCoins<span class="signature">(id<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -2605,6 +2638,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -2617,26 +2652,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -2655,6 +2697,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -2700,164 +2750,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1498">line 1498</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getCoinsByAddress"><span class="type-signature"></span>getCoinsByAddress<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get coins.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>By address (can be null).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="Coin.html">Coin</a>[]].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1750">line 1750</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1410">line 1410</a>
     </li></ul></dd>
     
 
@@ -3011,7 +2904,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1271">line 1271</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1183">line 1183</a>
     </li></ul></dd>
     
 
@@ -3042,7 +2935,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getHeightRangeHashes"><span class="type-signature"></span>getHeightRangeHashes<span class="signature">(address, options, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getHeightRangeHashes"><span class="type-signature"></span>getHeightRangeHashes<span class="signature">(id<span class="signature-attributes">nullable</span>, options, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -3073,6 +2966,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -3085,26 +2980,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -3123,6 +3025,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -3303,6 +3213,14 @@ orphans, or confirm a transaction.</p>
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -3347,7 +3265,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1238">line 1238</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1152">line 1152</a>
     </li></ul></dd>
     
 
@@ -3378,7 +3296,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getHistory"><span class="type-signature"></span>getHistory<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getHistory"><span class="type-signature"></span>getHistory<span class="signature">(id<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -3409,6 +3327,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -3421,26 +3341,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -3459,6 +3386,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -3504,7 +3439,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1385">line 1385</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1295">line 1295</a>
     </li></ul></dd>
     
 
@@ -3535,164 +3470,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getHistoryByAddress"><span class="type-signature"></span>getHistoryByAddress<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get all transactions.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>By address (can be null).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>[]].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1740">line 1740</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getHistoryHashes"><span class="type-signature"></span>getHistoryHashes<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getHistoryHashes"><span class="type-signature"></span>getHistoryHashes<span class="signature">(id<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -3723,6 +3501,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -3735,26 +3515,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -3773,6 +3560,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -3818,7 +3613,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1090">line 1090</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1075">line 1075</a>
     </li></ul></dd>
     
 
@@ -3849,164 +3644,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getHistoryHashesByAddress"><span class="type-signature"></span>getHistoryHashesByAddress<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get hashes of all transactions in the database.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>By address (can be null).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="global.html#Hash">Hash</a>[]].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1730">line 1730</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getLast"><span class="type-signature"></span>getLast<span class="signature">(address, limit, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getLast"><span class="type-signature"></span>getLast<span class="signature">(id<span class="signature-attributes">nullable</span>, limit, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -4037,6 +3675,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -4049,26 +3689,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -4087,6 +3734,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -4110,6 +3765,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -4155,7 +3818,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1364">line 1364</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1274">line 1274</a>
     </li></ul></dd>
     
 
@@ -4186,7 +3849,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getLastTime"><span class="type-signature"></span>getLastTime<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getLastTime"><span class="type-signature"></span>getLastTime<span class="signature">(id<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -4217,6 +3880,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -4229,26 +3894,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -4267,6 +3939,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -4312,7 +3992,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1425">line 1425</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1335">line 1335</a>
     </li></ul></dd>
     
 
@@ -4466,7 +4146,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line119">line 119</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line110">line 110</a>
     </li></ul></dd>
     
 
@@ -4497,7 +4177,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getRange"><span class="type-signature"></span>getRange<span class="signature">(address, options, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getRange"><span class="type-signature"></span>getRange<span class="signature">(id<span class="signature-attributes">nullable</span>, options, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -4528,6 +4208,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -4540,26 +4222,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -4578,6 +4267,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -4757,6 +4454,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -4802,7 +4507,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1323">line 1323</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1233">line 1233</a>
     </li></ul></dd>
     
 
@@ -4833,7 +4538,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getRangeHashes"><span class="type-signature"></span>getRangeHashes<span class="signature">(address, options, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getRangeHashes"><span class="type-signature"></span>getRangeHashes<span class="signature">(id<span class="signature-attributes">nullable</span>, options, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -4864,6 +4569,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -4876,26 +4583,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -4914,6 +4628,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -5094,6 +4816,14 @@ orphans, or confirm a transaction.</p>
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
 
             
 
@@ -5138,7 +4868,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1286">line 1286</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1198">line 1198</a>
     </li></ul></dd>
     
 
@@ -5292,7 +5022,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1618">line 1618</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1530">line 1530</a>
     </li></ul></dd>
     
 
@@ -5323,7 +5053,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getUnconfirmed"><span class="type-signature"></span>getUnconfirmed<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getUnconfirmed"><span class="type-signature"></span>getUnconfirmed<span class="signature">(id<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -5354,6 +5084,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -5366,26 +5098,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -5404,6 +5143,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -5449,7 +5196,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1458">line 1458</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1370">line 1370</a>
     </li></ul></dd>
     
 
@@ -5480,164 +5227,7 @@ orphans, or confirm a transaction.</p>
 
     
 
-    <h4 class="name" id="getUnconfirmedByAddress"><span class="type-signature"></span>getUnconfirmedByAddress<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get unconfirmed transactions.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>By address (can be null).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>Returns [Error, <a href="TX.html">TX</a>[]].</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1760">line 1760</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="getUnconfirmedHashes"><span class="type-signature"></span>getUnconfirmedHashes<span class="signature">(address, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getUnconfirmedHashes"><span class="type-signature"></span>getUnconfirmedHashes<span class="signature">(id<span class="signature-attributes">nullable</span>, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -5668,6 +5258,8 @@ orphans, or confirm a transaction.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -5680,26 +5272,33 @@ orphans, or confirm a transaction.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
 
-            <td class="description last"><p>By address (can be null).</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -5718,6 +5317,14 @@ orphans, or confirm a transaction.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -5763,7 +5370,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1138">line 1138</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1099">line 1099</a>
     </li></ul></dd>
     
 
@@ -5917,7 +5524,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1656">line 1656</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1568">line 1568</a>
     </li></ul></dd>
     
 
@@ -6071,7 +5678,7 @@ orphans, or confirm a transaction.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1630">line 1630</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1542">line 1542</a>
     </li></ul></dd>
     
 
@@ -6226,7 +5833,7 @@ if any of its outpoints are a double-spend.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line645">line 645</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line656">line 656</a>
     </li></ul></dd>
     
 
@@ -6403,7 +6010,7 @@ if any of its outpoints are a double-spend.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line667">line 667</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line679">line 679</a>
     </li></ul></dd>
     
 
@@ -6559,7 +6166,7 @@ to disconnect.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line827">line 827</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line832">line 832</a>
     </li></ul></dd>
     
 
@@ -6597,7 +6204,7 @@ to disconnect.</p>
 
 
 <div class="description">
-    <p>Map an address to a wallet ID.</p>
+    <p>Map address hashes to a wallet ID.</p>
 </div>
 
 
@@ -6639,10 +6246,7 @@ to disconnect.</p>
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#Base58Address">Base58Address</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#Base58Address">Base58Address</a>></span>
+<span class="param-type">Array.&lt;<a href="global.html#Hash">Hash</a>></span>
 
 
             
@@ -6652,7 +6256,7 @@ to disconnect.</p>
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>Address hashes.</p></td>
         </tr>
 
     
@@ -6716,7 +6320,7 @@ to disconnect.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line177">line 177</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line160">line 160</a>
     </li></ul></dd>
     
 
@@ -6870,7 +6474,7 @@ to disconnect.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line781">line 781</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line797">line 797</a>
     </li></ul></dd>
     
 
@@ -7024,7 +6628,7 @@ to disconnect.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line966">line 966</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line962">line 962</a>
     </li></ul></dd>
     
 
@@ -7055,7 +6659,7 @@ to disconnect.</p>
 
     
 
-    <h4 class="name" id="zap"><span class="type-signature"></span>zap<span class="signature">(address, now, age, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="zap"><span class="type-signature"></span>zap<span class="signature">(id<span class="signature-attributes">nullable</span>, age, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -7082,6 +6686,8 @@ to disconnect.</p>
         <th>Type</th>
 
         
+        <th>Attributes</th>
+        
 
         
 
@@ -7094,49 +6700,33 @@ to disconnect.</p>
 
         <tr>
             
-                <td class="name"><code>address</code></td>
+                <td class="name"><code>id</code></td>
             
 
             <td class="type">
             
                 
 <span class="param-type"><a href="global.html#WalletID">WalletID</a></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#WalletID">WalletID</a>></span>
 
 
             
             </td>
 
             
-
-            
-
-            <td class="description last"><p>By address (can be null).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>now</code></td>
-            
-
-            <td class="type">
-            
+                <td class="attributes">
                 
-<span class="param-type">Number</span>
 
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
 
             
-            </td>
 
-            
-
-            
-
-            <td class="description last"><p>Current time.</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -7155,6 +6745,14 @@ to disconnect.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -7178,6 +6776,14 @@ to disconnect.</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
             
 
             
@@ -7223,7 +6829,7 @@ to disconnect.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1781">line 1781</a>
+        <a href="bcoin_txdb.js.html">bcoin/txdb.js</a>, <a href="bcoin_txdb.js.html#line1623">line 1623</a>
     </li></ul></dd>
     
 
@@ -7265,13 +6871,13 @@ to disconnect.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:22 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:59 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

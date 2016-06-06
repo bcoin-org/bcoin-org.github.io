@@ -42,15 +42,14 @@
  *   p/[hash] -> dummy (pending flag)
  *   m/[time]/[hash] -> dummy (tx by time)
  *   h/[height]/[hash] -> dummy (tx by height)
- *   T/[id]/[hash] -> dummy (tx by wallet id)
- *   P/[id]/[hash] -> dummy (pending tx by wallet id)
- *   M/[id]/[time]/[hash] -> dummy (tx by time + id)
- *   H/[id]/[height]/[hash] -> dummy (tx by height + id)
- *   C/[id]/[hash]/[index] -> dummy (coin by address)
+ *   T/[id]/[name]/[hash] -> dummy (tx by wallet id)
+ *   P/[id]/[name]/[hash] -> dummy (pending tx by wallet/account id)
+ *   M/[id]/[name]/[time]/[hash] -> dummy (tx by time + id/account)
+ *   H/[id]/[name]/[height]/[hash] -> dummy (tx by height + id/account)
+ *   C/[id]/[name]/[hash]/[index] -> dummy (coin by id/account)
  */
 
 var bcoin = require('./env');
-var bn = require('bn.js');
 var utils = require('./utils');
 var assert = bcoin.utils.assert;
 var EventEmitter = require('events').EventEmitter;
@@ -69,7 +68,8 @@ var BufferWriter = require('./writer');
  * @param {Boolean?} options.indexAddress - Index addresses/IDs.
  * @param {Boolean?} options.indexExtra - Index timestamps, heights, etc.
  * @param {Boolean?} options.verify - Verify transactions as they
- * come in (note that this will not happen on the worker pool).
+ * come in (note that this will not happen on the worker
+ * pool -- only used for SPV).
  */
 
 function TXDB(db, options) {
@@ -81,7 +81,8 @@ function TXDB(db, options) {
   if (!options)
     options = {};
 
-  this.db = db;
+  this.walletdb = db;
+  this.db = db.db;
   this.options = options;
   this.network = bcoin.network.get(options.network);
   this.busy = false;
@@ -90,9 +91,6 @@ function TXDB(db, options) {
   this.filter = this.options.useFilter
     ? new bcoin.bloom.rolling(800000, 0.01)
     : null;
-
-  if (this.options.mapAddress)
-    this.options.indexAddress = true;
 }
 
 utils.inherits(TXDB, EventEmitter);
@@ -111,17 +109,10 @@ TXDB.prototype._loadFilter = function loadFilter(callback) {
     gte: 'W',
     lte: 'W~',
     transform: function(key) {
-      return key.split('/')[1];
+      key = key.split('/')[1];
+      self.filter.add(key, 'hex');
     }
-  }, function(err, keys) {
-    if (err)
-      return callback(err);
-
-    for (i = 0; i &lt; keys.length; i++)
-      self.filter.add(keys[i], 'hex');
-
-    return callback();
-  });
+  }, callback);
 };
 
 TXDB.prototype._testFilter = function _testFilter(addresses) {
@@ -145,10 +136,7 @@ TXDB.prototype._testFilter = function _testFilter(addresses) {
  */
 
 TXDB.prototype.getMap = function getMap(tx, callback) {
-  var input, output, addresses, table, map;
-
-  if (!this.options.indexAddress)
-    return callback();
+  var i, input, output, address, addresses, map;
 
   input = tx.getInputHashes();
   output = tx.getOutputHashes();
@@ -157,9 +145,12 @@ TXDB.prototype.getMap = function getMap(tx, callback) {
   if (!this._testFilter(addresses))
     return callback();
 
-  function cb(err, table) {
+  this.mapAddresses(addresses, function(err, table) {
     if (err)
       return callback(err);
+
+    if (table.count === 0)
+      return callback();
 
     map = {
       table: table,
@@ -168,74 +159,60 @@ TXDB.prototype.getMap = function getMap(tx, callback) {
       all: []
     };
 
-    input.forEach(function(address) {
+    for (i = 0; i &lt; input.length; i++) {
+      address = input[i];
       assert(map.table[address]);
       map.input = map.input.concat(map.table[address]);
-    });
+    }
 
-    output.forEach(function(address) {
+    for (i = 0; i &lt; output.length; i++) {
+      address = output[i];
       assert(map.table[address]);
       map.output = map.output.concat(map.table[address]);
-    });
+    }
 
-    map.input = utils.uniq(map.input);
-    map.output = utils.uniq(map.output);
-    map.all = utils.uniq(map.input.concat(map.output));
+    map.input = uniq(map.input);
+    map.output = uniq(map.output);
+    map.all = uniq(map.input.concat(map.output));
 
     return callback(null, map);
-  }
-
-  if (!this.options.mapAddress) {
-    table = addresses.reduce(function(out, address) {
-      out[address] = [address];
-      return out;
-    }, {});
-    return cb(null, table);
-  }
-
-  return this.mapAddresses(addresses, cb);
+  });
 };
 
 /**
- * Map an address to a wallet ID.
- * @param {Base58Address|Base58Address[]} address
+ * Map address hashes to a wallet ID.
+ * @param {Hash[]} address - Address hashes.
  * @param {Function} callback - Returns [Error, {@link AddressTable}].
  */
 
 TXDB.prototype.mapAddresses = function mapAddresses(address, callback) {
   var self = this;
-  var table = {};
+  var table = { count: 0 };
+  var i, keys, values;
 
-  if (Array.isArray(address)) {
-    return utils.forEachSerial(address, function(address, next) {
-      self.mapAddresses(address, function(err, res) {
-        if (err)
-          return next(err);
-
-        assert(res[address]);
-        table[address] = res[address];
-
-        next();
-      });
-    }, function(err) {
+  return utils.forEachSerial(address, function(address, next) {
+    self.walletdb.getAddress(address, function(err, paths) {
       if (err)
-        return callback(err);
+        return next(err);
 
-      return callback(null, table);
+      if (!paths)
+        return next();
+
+      keys = Object.keys(paths);
+      values = [];
+
+      for (i = 0; i &lt; keys.length; i++)
+        values.push(paths[keys[i]]);
+
+      assert(!table[address]);
+      table[address] = values;
+      table.count += values.length;
+
+      return next();
     });
-  }
-
-  this.db.iterate({
-    gte: 'W/' + address,
-    lte: 'W/' + address + '~',
-    transform: function(key) {
-      return key.split('/')[2];
-    }
-  }, function(err, keys) {
+  }, function(err) {
     if (err)
       return callback(err);
-
-    table[address] = keys;
 
     return callback(null, table);
   });
@@ -328,12 +305,6 @@ TXDB.prototype._getOrphans = function _getOrphans(key, callback) {
 TXDB.prototype.add = function add(tx, callback, force) {
   var self = this;
 
-  if (Array.isArray(tx)) {
-    return utils.forEachSerial(tx, function(tx, next) {
-      self.add(tx, next, force);
-    }, callback);
-  }
-
   return this.getMap(tx, function(err, map) {
     if (err)
       return callback(err);
@@ -341,27 +312,17 @@ TXDB.prototype.add = function add(tx, callback, force) {
     if (!map)
       return callback(null, false);
 
-    if (self.options.mapAddress) {
-      if (map.all.length === 0)
-        return callback(null, false);
-    }
-
     return self._add(tx, map, callback, force);
   });
 };
 
-// This big scary function is what a persistent tx pool
-// looks like. It's a semi mempool in that it can handle
-// receiving txs out of order.
 TXDB.prototype._add = function add(tx, map, callback, force) {
   var self = this;
-  var hash = tx.hash('hex');
   var updated = false;
-  var batch;
+  var batch, hash, i, j, unlock, path, paths, id;
 
-  assert(tx.ts > 0 || tx.ps > 0);
+  unlock = this._lock(add, [tx, map, callback], force);
 
-  var unlock = this._lock(add, [tx, map, callback], force);
   if (!unlock)
     return;
 
@@ -377,38 +338,38 @@ TXDB.prototype._add = function add(tx, map, callback, force) {
 
     // Ignore if we already have this tx.
     if (existing)
-      return callback(null, true);
+      return callback(null, true, map);
+
+    hash = tx.hash('hex');
 
     batch = self.db.batch();
 
     batch.put('t/' + hash, tx.toExtended());
 
-    if (self.options.indexExtra) {
-      if (tx.ts === 0) {
-        assert(tx.ps > 0);
-        batch.put('p/' + hash, DUMMY);
-        batch.put('m/' + pad32(tx.ps) + '/' + hash, DUMMY);
-      } else {
-        batch.put('h/' + pad32(tx.height) + '/' + hash, DUMMY);
-        batch.put('m/' + pad32(tx.ts) + '/' + hash, DUMMY);
-      }
+    if (tx.ts === 0) {
+      batch.put('p/' + hash, DUMMY);
+      batch.put('m/' + pad32(tx.ps) + '/' + hash, DUMMY);
+    } else {
+      batch.put('h/' + pad32(tx.height) + '/' + hash, DUMMY);
+      batch.put('m/' + pad32(tx.ts) + '/' + hash, DUMMY);
+    }
 
-      if (self.options.indexAddress) {
-        map.all.forEach(function(id) {
-          batch.put('T/' + id + '/' + hash, DUMMY);
-          if (tx.ts === 0) {
-            batch.put('P/' + id + '/' + hash, DUMMY);
-            batch.put('M/' + id + '/' + pad32(tx.ps) + '/' + hash, DUMMY);
-          } else {
-            batch.put('H/' + id + '/' + pad32(tx.height) + '/' + hash, DUMMY);
-            batch.put('M/' + id + '/' + pad32(tx.ts) + '/' + hash, DUMMY);
-          }
-        });
+    for (i = 0; i &lt; map.all.length; i++) {
+      path = map.all[i];
+      id = path.id + '/' + path.account;
+      batch.put('T/' + id + '/' + hash, DUMMY);
+      if (tx.ts === 0) {
+        batch.put('P/' + id + '/' + hash, DUMMY);
+        batch.put('M/' + id + '/' + pad32(tx.ps) + '/' + hash, DUMMY);
+      } else {
+        batch.put('H/' + id + '/' + pad32(tx.height) + '/' + hash, DUMMY);
+        batch.put('M/' + id + '/' + pad32(tx.ts) + '/' + hash, DUMMY);
       }
     }
 
     // Consume unspent money or add orphans
     utils.forEachSerial(tx.inputs, function(input, next, i) {
+      var prevout = input.prevout;
       var key, address;
 
       if (tx.isCoinbase())
@@ -417,16 +378,16 @@ TXDB.prototype._add = function add(tx, map, callback, force) {
       address = input.getHash();
 
       // Only add orphans if this input is ours.
-      if (self.options.mapAddress) {
-        if (!address || !map.table[address].length)
-          return next();
-      }
+      if (!address || !map.table[address].length)
+        return next();
 
-      self.getCoin(input.prevout.hash, input.prevout.index, function(err, coin) {
+      self.getCoin(prevout.hash, prevout.index, function(err, coin) {
         if (err)
           return next(err);
 
-        key = input.prevout.hash + '/' + input.prevout.index;
+        key = prevout.hash + '/' + prevout.index;
+
+        batch.put('s/' + key, tx.hash());
 
         if (coin) {
           // Add TX to inputs and spend money
@@ -440,52 +401,56 @@ TXDB.prototype._add = function add(tx, map, callback, force) {
 
           updated = true;
 
-          if (self.options.indexAddress &amp;&amp; address) {
-            map.table[address].forEach(function(id) {
-              batch.del('C/' + id + '/' + key);
-            });
+          paths = map.table[address];
+
+          for (j = 0; j &lt; paths.length; j++) {
+            path = paths[j];
+            id = path.id + '/' + path.account;
+            batch.del('C/' + id + '/' + key);
           }
 
           batch.del('c/' + key);
-          batch.put('s/' + key, tx.hash());
 
           return next();
         }
 
         input.coin = null;
 
-        self.isSpent(input.prevout.hash, input.prevout.index, function(err, spentBy) {
+        self.isSpent(prevout.hash, prevout.index, function(err, spent) {
           if (err)
             return next(err);
 
           // Are we double-spending?
           // Replace older txs with newer ones.
-          if (spentBy) {
-            return self.getTX(input.prevout.hash, function(err, prev) {
+          if (spent) {
+            return self.getTX(prevout.hash, function(err, prev) {
               if (err)
                 return next(err);
 
               if (!prev)
                 return callback(new Error('Could not find double-spent coin.'));
 
-              input.coin = bcoin.coin.fromTX(prev, input.prevout.index);
+              input.coin = bcoin.coin.fromTX(prev, prevout.index);
 
               // Skip invalid transactions
               if (self.options.verify) {
                 if (!tx.verify(i))
-                  return callback(null, false);
+                  return callback(null, false, map);
               }
 
-              return self._removeSpenders(spentBy, tx, function(err, result) {
+              return self._removeConflict(spent, tx, function(err, rtx, rmap) {
                 if (err)
                   return next(err);
 
-                if (!result) {
-                  assert(tx.ts === 0, 'I\'m confused');
-                  return callback(null, false);
-                }
+                // Spender was not removed, the current
+                // transaction is not elligible to be added.
+                if (!rtx)
+                  return callback(null, false, map);
+
+                self.emit('conflict', rtx, rmap);
 
                 batch.clear();
+
                 self._add(tx, map, callback, true);
               });
             });
@@ -509,15 +474,12 @@ TXDB.prototype._add = function add(tx, map, callback, force) {
       // Add unspent outputs or resolve orphans
       utils.forEachSerial(tx.outputs, function(output, next, i) {
         var address = output.getHash();
-        var key, coin;
+        var key = hash + '/' + i;
+        var coin;
 
         // Do not add unspents for outputs that aren't ours.
-        if (self.options.mapAddress) {
-          if (!address || !map.table[address].length)
-            return next();
-        }
-
-        key = hash + '/' + i;
+        if (!address || !map.table[address].length)
+          return next();
 
         if (output.script.isUnspendable())
           return next();
@@ -559,11 +521,7 @@ TXDB.prototype._add = function add(tx, map, callback, force) {
               return next();
             }
 
-            self.lazyRemove(orphan.tx, function(err) {
-              if (err)
-                return next(err);
-              return next();
-            }, true);
+            self.lazyRemove(orphan.tx, next, true);
           }, function(err) {
             if (err)
               return next(err);
@@ -579,10 +537,12 @@ TXDB.prototype._add = function add(tx, map, callback, force) {
               return next(err);
 
             if (!orphans) {
-              if (self.options.indexAddress &amp;&amp; address) {
-                map.table[address].forEach(function(id) {
-                  batch.put('C/' + id + '/' + key, DUMMY);
-                });
+              paths = map.table[address];
+
+              for (j = 0; j &lt; paths.length; j++) {
+                path = paths[j];
+                id = path.id + '/' + path.account;
+                batch.put('C/' + id + '/' + key, DUMMY);
               }
 
               batch.put('c/' + key, coin.toRaw());
@@ -600,16 +560,21 @@ TXDB.prototype._add = function add(tx, map, callback, force) {
           if (err)
             return callback(err);
 
-          self.emit('tx', tx, map);
+          self.walletdb.syncOutputs(tx, map, function(err) {
+            if (err)
+              return callback(err);
 
-          if (updated) {
-            if (tx.ts !== 0)
-              self.emit('confirmed', tx, map);
+            self.emit('tx', tx, map);
 
-            self.emit('updated', tx, map);
-          }
+            if (updated) {
+              if (tx.ts !== 0)
+                self.emit('confirmed', tx, map);
 
-          return callback(null, true);
+              self.emit('updated', tx, map);
+            }
+
+            return callback(null, true, map);
+          });
         });
       });
     });
@@ -628,8 +593,9 @@ TXDB.prototype._add = function add(tx, map, callback, force) {
  * @param {Function} callback - Returns [Error, Boolean].
  */
 
-TXDB.prototype._removeSpenders = function removeSpenders(hash, ref, callback) {
+TXDB.prototype._removeConflict = function _removeConflict(hash, ref, callback) {
   var self = this;
+
   this.getTX(hash, function(err, tx) {
     if (err)
       return callback(err);
@@ -637,29 +603,74 @@ TXDB.prototype._removeSpenders = function removeSpenders(hash, ref, callback) {
     if (!tx)
       return callback(new Error('Could not find spender.'));
 
-    if (tx.ts !== 0)
-      return callback(null, false);
+    if (tx.ts !== 0) {
+      // If spender is confirmed and replacement
+      // is not confirmed, do nothing.
+      if (ref.ts === 0)
+        return callback();
 
-    if (ref.ts === 0 &amp;&amp; ref.ps &lt; ts.ps)
-      return callback(null, false);
+      // If both are confirmed but replacement
+      // is older than spender, do nothing.
+      if (ref.ts &lt; tx.ts)
+        return callback();
+    } else {
+      // If spender is unconfirmed and replacement
+      // is confirmed, do nothing.
+      if (ref.ts !== 0)
+        return callback();
 
-    utils.forEachSerial(tx.outputs, function(output, next, i) {
-      self.isSpent(hash, i, function(err, spent) {
-        if (err)
-          return next(err);
-        if (spent)
-          return self._removeSpenders(spent, ref, next);
-        next();
-      });
-    }, function(err) {
+      // If both are unconfirmed but replacement
+      // is older than spender, do nothing.
+      if (ref.ps &lt; tx.ps)
+        return callback();
+    }
+
+    self._removeRecursive(tx, function(err, result, map) {
       if (err)
         return callback(err);
-      return self.lazyRemove(tx, function(err) {
-        if (err)
-          return callback(err);
-        return callback(null, true);
-      }, true);
+      return callback(null, tx, map);
     });
+  });
+};
+
+/**
+ * Remove a transaction and recursively
+ * remove all of its spenders.
+ * @private
+ * @param {TX} tx - Transaction to be removed.
+ * @param {Function} callback - Returns [Error, Boolean].
+ */
+
+TXDB.prototype._removeRecursive = function _removeRecursive(tx, callback) {
+  var self = this;
+  var hash = tx.hash('hex');
+
+  utils.forEachSerial(tx.outputs, function(output, next, i) {
+    self.isSpent(hash, i, function(err, spent) {
+      if (err)
+        return next(err);
+
+      // Remove all of the spender's spenders first.
+      if (spent) {
+        return self.getTX(spent, function(err, tx) {
+          if (err)
+            return callback(err);
+
+          if (!tx)
+            return callback(new Error('Could not find spender.'));
+
+          return self._removeRecursive(tx, next);
+        });
+      }
+
+      next();
+    });
+  }, function(err) {
+    if (err)
+      return callback(err);
+
+    // Remove the spender.
+    return self.lazyRemove(tx, callback, true);
   });
 };
 
@@ -672,6 +683,7 @@ TXDB.prototype._removeSpenders = function removeSpenders(hash, ref, callback) {
 
 TXDB.prototype.isDoubleSpend = function isDoubleSpend(tx, callback) {
   var self = this;
+
   utils.everySerial(tx.inputs, function(input, next) {
     self.isSpent(input.prevout.hash, input.prevout.index, function(err, spent) {
       if (err)
@@ -711,14 +723,16 @@ TXDB.prototype.isSpent = function isSpent(hash, index, callback) {
 
 TXDB.prototype._confirm = function _confirm(tx, map, callback, force) {
   var self = this;
-  var hash = tx.hash('hex');
-  var batch;
+  var hash, batch, unlock, i, path, id;
 
-  var unlock = this._lock(_confirm, [tx, map, callback], force);
+  unlock = this._lock(_confirm, [tx, map, callback], force);
+
   if (!unlock)
     return;
 
   callback = utils.wrap(callback, unlock);
+
+  hash = tx.hash('hex');
 
   this.getTX(hash, function(err, existing) {
     if (err)
@@ -726,15 +740,16 @@ TXDB.prototype._confirm = function _confirm(tx, map, callback, force) {
 
     // Haven't seen this tx before, add it.
     if (!existing)
-      return callback(null, false);
+      return callback(null, false, map);
 
     // Existing tx is already confirmed. Ignore.
     if (existing.ts !== 0)
-      return callback(null, true);
+      return callback(null, true, map);
 
-    // The incoming tx won't confirm the existing one anyway. Ignore.
+    // The incoming tx won't confirm the
+    // existing one anyway. Ignore.
     if (tx.ts === 0)
-      return callback(null, true);
+      return callback(null, true, map);
 
     batch = self.db.batch();
 
@@ -745,30 +760,26 @@ TXDB.prototype._confirm = function _confirm(tx, map, callback, force) {
 
     batch.put('t/' + hash, tx.toExtended());
 
-    if (self.options.indexExtra) {
-      batch.del('p/' + hash);
-      batch.put('h/' + pad32(tx.height) + '/' + hash, DUMMY);
-      batch.del('m/' + pad32(existing.ps) + '/' + hash);
-      batch.put('m/' + pad32(tx.ts) + '/' + hash, DUMMY);
+    batch.del('p/' + hash);
+    batch.put('h/' + pad32(tx.height) + '/' + hash, DUMMY);
+    batch.del('m/' + pad32(existing.ps) + '/' + hash);
+    batch.put('m/' + pad32(tx.ts) + '/' + hash, DUMMY);
 
-      if (self.options.indexAddress) {
-        map.all.forEach(function(id) {
-          batch.del('P/' + id + '/' + hash);
-          batch.put('H/' + id + '/' + pad32(tx.height) + '/' + hash, DUMMY);
-          batch.del('M/' + id + '/' + pad32(existing.ps) + '/' + hash);
-          batch.put('M/' + id + '/' + pad32(tx.ts) + '/' + hash, DUMMY);
-        });
-      }
+    for (i = 0; i &lt; map.all.length; i++) {
+      path = map.all[i];
+      id = path.id + '/' + path.account;
+      batch.del('P/' + id + '/' + hash);
+      batch.put('H/' + id + '/' + pad32(tx.height) + '/' + hash, DUMMY);
+      batch.del('M/' + id + '/' + pad32(existing.ps) + '/' + hash);
+      batch.put('M/' + id + '/' + pad32(tx.ts) + '/' + hash, DUMMY);
     }
 
     utils.forEachSerial(tx.outputs, function(output, next, i) {
       var address = output.getHash();
 
       // Only update coins if this output is ours.
-      if (self.options.mapAddress) {
-        if (!address || !map.table[address].length)
-          return next();
-      }
+      if (!address || !map.table[address].length)
+        return next();
 
       self.getCoin(hash, i, function(err, coin) {
         if (err)
@@ -791,10 +802,15 @@ TXDB.prototype._confirm = function _confirm(tx, map, callback, force) {
         if (err)
           return callback(err);
 
-        self.emit('confirmed', tx, map);
-        self.emit('tx', tx, map);
+        self.walletdb.syncOutputs(tx, map, function(err) {
+          if (err)
+            return callback(err);
 
-        return callback(null, true);
+          self.emit('confirmed', tx, map);
+          self.emit('tx', tx, map);
+
+          return callback(null, true, map);
+        });
       });
     });
   });
@@ -808,12 +824,6 @@ TXDB.prototype._confirm = function _confirm(tx, map, callback, force) {
 
 TXDB.prototype.remove = function remove(hash, callback, force) {
   var self = this;
-
-  if (Array.isArray(hash)) {
-    return utils.forEachSerial(hash, function(hash, next) {
-      self.remove(hash, next, force);
-    }, callback);
-  }
 
   if (hash.hash)
     hash = hash.hash('hex');
@@ -834,11 +844,6 @@ TXDB.prototype.remove = function remove(hash, callback, force) {
       if (!map)
         return callback(null, false);
 
-      if (self.options.mapAddress) {
-        if (map.all.length === 0)
-          return callback(null, false);
-      }
-
       return self._remove(tx, map, callback, force);
     });
   });
@@ -855,23 +860,12 @@ TXDB.prototype.remove = function remove(hash, callback, force) {
 TXDB.prototype.lazyRemove = function lazyRemove(tx, callback, force) {
   var self = this;
 
-  if (Array.isArray(tx)) {
-    return utils.forEachSerial(tx, function(tx, next) {
-      self.lazyRemove(tx, next, force);
-    }, callback);
-  }
-
   return this.getMap(tx, function(err, map) {
     if (err)
       return callback(err);
 
     if (!map)
       return callback(null, false);
-
-    if (self.options.mapAddress) {
-      if (map.all.length === 0)
-        return callback(null, false);
-    }
 
     return self._remove(tx, map, callback, force);
   });
@@ -887,39 +881,39 @@ TXDB.prototype.lazyRemove = function lazyRemove(tx, callback, force) {
 
 TXDB.prototype._remove = function remove(tx, map, callback, force) {
   var self = this;
-  var hash = tx.hash('hex');
-  var batch;
+  var unlock, hash, batch, i, j, path, id, key, paths, address, input, output;
 
-  var unlock = this._lock(remove, [tx, map, callback], force);
+  unlock = this._lock(remove, [tx, map, callback], force);
+
   if (!unlock)
     return;
 
   callback = utils.wrap(callback, unlock);
 
+  hash = tx.hash('hex');
+
   batch = this.db.batch();
 
   batch.del('t/' + hash);
 
-  if (self.options.indexExtra) {
-    if (tx.ts === 0) {
-      batch.del('p/' + hash);
-      batch.del('m/' + pad32(tx.ps) + '/' + hash);
-    } else {
-      batch.del('h/' + pad32(tx.height) + '/' + hash);
-      batch.del('m/' + pad32(tx.ts) + '/' + hash);
-    }
+  if (tx.ts === 0) {
+    batch.del('p/' + hash);
+    batch.del('m/' + pad32(tx.ps) + '/' + hash);
+  } else {
+    batch.del('h/' + pad32(tx.height) + '/' + hash);
+    batch.del('m/' + pad32(tx.ts) + '/' + hash);
+  }
 
-    if (self.options.indexAddress) {
-      map.all.forEach(function(id) {
-        batch.del('T/' + id + '/' + hash);
-        if (tx.ts === 0) {
-          batch.del('P/' + id + '/' + hash);
-          batch.del('M/' + id + '/' + pad32(tx.ps) + '/' + hash);
-        } else {
-          batch.del('H/' + id + '/' + pad32(tx.height) + '/' + hash);
-          batch.del('M/' + id + '/' + pad32(tx.ts) + '/' + hash);
-        }
-      });
+  for (i = 0; i &lt; map.all.length; i++) {
+    path = map.all[i];
+    id = path.id + '/' + path.account;
+    batch.del('T/' + id + '/' + hash);
+    if (tx.ts === 0) {
+      batch.del('P/' + id + '/' + hash);
+      batch.del('M/' + id + '/' + pad32(tx.ps) + '/' + hash);
+    } else {
+      batch.del('H/' + id + '/' + pad32(tx.height) + '/' + hash);
+      batch.del('M/' + id + '/' + pad32(tx.ts) + '/' + hash);
     }
   }
 
@@ -927,52 +921,54 @@ TXDB.prototype._remove = function remove(tx, map, callback, force) {
     if (err)
       return callback(err);
 
-    tx.inputs.forEach(function(input) {
-      var key = input.prevout.hash + '/' + input.prevout.index;
-      var address = input.getHash();
+    for (i = 0; i &lt; tx.inputs.length; i++) {
+      input = tx.inputs[i];
+      key = input.prevout.hash + '/' + input.prevout.index;
+      address = input.getHash();
 
       if (tx.isCoinbase())
-        return;
+        break;
 
       if (!input.coin)
-        return;
+        continue;
 
-      if (self.options.mapAddress) {
-        if (!address || !map.table[address].length)
-          return;
-      }
+      if (!address || !map.table[address].length)
+        continue;
 
-      if (self.options.indexAddress &amp;&amp; address) {
-        map.table[address].forEach(function(id) {
-          batch.put('C/' + id + '/' + key, DUMMY);
-        });
+      paths = map.table[address];
+
+      for (j = 0; j &lt; paths.length; j++) {
+        path = paths[j];
+        id = path.id + '/' + path.account;
+        batch.put('C/' + id + '/' + key, DUMMY);
       }
 
       batch.put('c/' + key, input.coin.toRaw());
       batch.del('s/' + key);
       batch.del('o/' + key);
-    });
+    }
 
-    tx.outputs.forEach(function(output, i) {
-      var key = hash + '/' + i;
-      var address = output.getHash();
+    for (i = 0; i &lt; tx.outputs.length; i++) {
+      output = tx.outputs[i];
+      key = hash + '/' + i;
+      address = output.getHash();
 
-      if (self.options.mapAddress) {
-        if (!address || !map.table[address].length)
-          return;
-      }
+      if (!address || !map.table[address].length)
+        continue;
 
       if (output.script.isUnspendable())
-        return;
+        continue;
 
-      if (self.options.indexAddress &amp;&amp; address) {
-        map.table[address].forEach(function(id) {
-          batch.del('C/' + id + '/' + key);
-        });
+      paths = map.table[address];
+
+      for (j = 0; j &lt; paths.length; j++) {
+        path = paths[j];
+        id = path.id + '/' + path.account;
+        batch.del('C/' + id + '/' + key);
       }
 
       batch.del('c/' + key);
-    });
+    }
 
     batch.write(function(err) {
       if (err)
@@ -980,7 +976,7 @@ TXDB.prototype._remove = function remove(tx, map, callback, force) {
 
       self.emit('remove tx', tx, map);
 
-      return callback(null, true);
+      return callback(null, true, map);
     });
   });
 };
@@ -993,12 +989,6 @@ TXDB.prototype._remove = function remove(tx, map, callback, force) {
 
 TXDB.prototype.unconfirm = function unconfirm(hash, callback, force) {
   var self = this;
-
-  if (Array.isArray(hash)) {
-    return utils.forEachSerial(hash, function(hash, next) {
-      self.unconfirm(hash, next, force);
-    }, callback);
-  }
 
   if (hash.hash)
     hash = hash.hash('hex');
@@ -1021,11 +1011,6 @@ TXDB.prototype.unconfirm = function unconfirm(hash, callback, force) {
       if (!map)
         return callback(null, false);
 
-      if (self.options.mapAddress) {
-        if (map.all.length === 0)
-          return callback(null, false);
-      }
-
       return self._unconfirm(tx, map, callback, force);
     });
   });
@@ -1040,21 +1025,23 @@ TXDB.prototype.unconfirm = function unconfirm(hash, callback, force) {
 
 TXDB.prototype._unconfirm = function unconfirm(tx, map, callback, force) {
   var self = this;
-  var hash, batch, height, ts;
+  var batch, unlock, hash, height, ts, i, path, id;
 
-  var unlock = this._lock(unconfirm, [tx, map, callback], force);
+  unlock = this._lock(unconfirm, [tx, map, callback], force);
+
   if (!unlock)
     return;
 
   callback = utils.wrap(callback, unlock);
 
   hash = tx.hash('hex');
-  batch = this.db.batch();
   height = tx.height;
   ts = tx.ts;
 
+  batch = this.db.batch();
+
   if (height !== -1)
-    return callback(null, false);
+    return callback(null, false, map);
 
   tx.height = -1;
   tx.ps = utils.now();
@@ -1064,20 +1051,18 @@ TXDB.prototype._unconfirm = function unconfirm(tx, map, callback, force) {
 
   batch.put('t/' + hash, tx.toExtended());
 
-  if (self.options.indexExtra) {
-    batch.put('p/' + hash, DUMMY);
-    batch.del('h/' + pad32(height) + '/' + hash);
-    batch.del('m/' + pad32(ts) + '/' + hash);
-    batch.put('m/' + pad32(tx.ps) + '/' + hash, DUMMY);
+  batch.put('p/' + hash, DUMMY);
+  batch.del('h/' + pad32(height) + '/' + hash);
+  batch.del('m/' + pad32(ts) + '/' + hash);
+  batch.put('m/' + pad32(tx.ps) + '/' + hash, DUMMY);
 
-    if (self.options.indexAddress) {
-      map.all.forEach(function(id) {
-        batch.put('P/' + id + '/' + hash, DUMMY);
-        batch.del('H/' + id + '/' + pad32(height) + '/' + hash);
-        batch.del('M/' + id + '/' + pad32(ts) + '/' + hash);
-        batch.put('M/' + id + '/' + pad32(tx.ps) + '/' + hash, DUMMY);
-      });
-    }
+  for (i = 0; i &lt; map.all.length; i++) {
+    path = map.all[i];
+    id = path.id + '/' + path.account;
+    batch.put('P/' + id + '/' + hash, DUMMY);
+    batch.del('H/' + id + '/' + pad32(height) + '/' + hash);
+    batch.del('M/' + id + '/' + pad32(ts) + '/' + hash);
+    batch.put('M/' + id + '/' + pad32(tx.ps) + '/' + hash, DUMMY);
   }
 
   utils.forEachSerial(tx.outputs, function(output, next, i) {
@@ -1104,54 +1089,30 @@ TXDB.prototype._unconfirm = function unconfirm(tx, map, callback, force) {
 
       self.emit('unconfirmed', tx, map);
 
-      return callback(null, true);
+      return callback(null, true, map);
     });
   });
 };
 
 /**
  * Get hashes of all transactions in the database.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Function} callback - Returns [Error, {@link Hash}[]].
  */
 
-TXDB.prototype.getHistoryHashes = function getHistoryHashes(address, callback) {
-  var self = this;
-
-  if (typeof address === 'function') {
-    callback = address;
-    address = null;
-  }
-
-  callback = utils.ensure(callback);
-
-  if (Array.isArray(address)) {
-    return utils.forEachSerial(address, function(address, next) {
-      self.getHistoryHashes(address, function(err, tx) {
-        if (err)
-          return next(err);
-
-        txs = txs.concat(tx);
-
-        next();
-      });
-    }, function(err) {
-      if (err)
-        return callback(err);
-
-      txs = utils.uniq(txs);
-
-      return callback(null, txs);
-    });
+TXDB.prototype.getHistoryHashes = function getHistoryHashes(id, callback) {
+  if (typeof id === 'function') {
+    callback = id;
+    id = null;
   }
 
   this.db.iterate({
-    gte: address ? 'T/' + address : 't',
-    lte: address ? 'T/' + address + '~' : 't~',
+    gte: id ? 'T/' + id + '/' : 't',
+    lte: id ? 'T/' + id + '/~' : 't~',
     transform: function(key) {
       key = key.split('/');
-      if (address)
-        return key[2];
+      if (id)
+        return key[3];
       return key[1];
     }
   }, callback);
@@ -1159,48 +1120,23 @@ TXDB.prototype.getHistoryHashes = function getHistoryHashes(address, callback) {
 
 /**
  * Get hashes of all unconfirmed transactions in the database.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Function} callback - Returns [Error, {@link Hash}[]].
  */
 
-TXDB.prototype.getUnconfirmedHashes = function getUnconfirmedHashes(address, callback) {
-  var self = this;
-
-  if (typeof address === 'function') {
-    callback = address;
-    address = null;
-  }
-
-  callback = utils.ensure(callback);
-
-  if (Array.isArray(address)) {
-    return utils.forEachSerial(address, function(address, next) {
-      assert(address);
-      self.getUnconfirmedHashes(address, function(err, tx) {
-        if (err)
-          return next(err);
-
-        txs = txs.concat(tx);
-
-        next();
-      });
-    }, function(err) {
-      if (err)
-        return callback(err);
-
-      txs = utils.uniq(txs);
-
-      return callback(null, txs);
-    });
+TXDB.prototype.getUnconfirmedHashes = function getUnconfirmedHashes(id, callback) {
+  if (typeof id === 'function') {
+    callback = id;
+    id = null;
   }
 
   this.db.iterate({
-    gte: address ? 'P/' + address : 'p',
-    lte: address ? 'P/' + address + '~' : 'p~',
+    gte: id ? 'P/' + id + '/' : 'p',
+    lte: id ? 'P/' + id + '/~' : 'p~',
     transform: function(key) {
       key = key.split('/');
-      if (address)
-        return key[2];
+      if (id)
+        return key[3];
       return key[1];
     }
   }, callback);
@@ -1208,45 +1144,23 @@ TXDB.prototype.getUnconfirmedHashes = function getUnconfirmedHashes(address, cal
 
 /**
  * Get all coin hashes in the database.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Function} callback - Returns [Error, {@link Hash}[]].
  */
 
-TXDB.prototype.getCoinHashes = function getCoinHashes(address, callback) {
-  var self = this;
-
-  if (typeof address === 'function') {
-    callback = address;
-    address = null;
-  }
-
-  callback = utils.ensure(callback);
-
-  if (Array.isArray(address)) {
-    return utils.forEachSerial(address, function(address, next) {
-      self.getCoinHashes(address, function(err, coin) {
-        if (err)
-          return next(err);
-
-        coins = coins.concat(coin);
-
-        next();
-      });
-    }, function(err) {
-      if (err)
-        return callback(err);
-
-      return callback(null, coins);
-    });
+TXDB.prototype.getCoinHashes = function getCoinHashes(id, callback) {
+  if (typeof id === 'function') {
+    callback = id;
+    id = null;
   }
 
   this.db.iterate({
-    gte: address ? 'C/' + address : 'c',
-    lte: address ? 'C/' + address + '~' : 'c~',
+    gte: id ? 'C/' + id + '/' : 'c',
+    lte: id ? 'C/' + id + '/~' : 'c~',
     transform: function(key) {
       key = key.split('/');
-      if (address)
-        return [key[2], +key[3]];
+      if (id)
+        return [key[3], +key[4]];
       return [key[1], +key[2]];
     }
   }, callback);
@@ -1254,7 +1168,7 @@ TXDB.prototype.getCoinHashes = function getCoinHashes(address, callback) {
 
 /**
  * Get TX hashes by height range.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Object} options
  * @param {Number} options.start - Start height.
  * @param {Number} options.end - End height.
@@ -1263,28 +1177,26 @@ TXDB.prototype.getCoinHashes = function getCoinHashes(address, callback) {
  * @param {Function} callback - Returns [Error, {@link Hash}[]].
  */
 
-TXDB.prototype.getHeightRangeHashes = function getHeightRangeHashes(address, options, callback) {
-  if (typeof address !== 'string') {
+TXDB.prototype.getHeightRangeHashes = function getHeightRangeHashes(id, options, callback) {
+  if (typeof id !== 'string') {
     callback = options;
-    options = address;
-    address = null;
+    options = id;
+    id = null;
   }
 
-  callback = utils.ensure(callback);
-
   this.db.iterate({
-    gte: address
-      ? 'H/' + address + '/' + pad32(options.start) + '/'
+    gte: id
+      ? 'H/' + id + '/' + pad32(options.start) + '/'
       : 'h/' + pad32(options.start) + '/',
-    lte: address
-      ? 'H/' + address + '/' + pad32(options.end) + '/~'
+    lte: id
+      ? 'H/' + id + '/' + pad32(options.end) + '/~'
       : 'h/' + pad32(options.end) + '/~',
     limit: options.limit,
     reverse: options.reverse,
     transform: function(key) {
       key = key.split('/');
-      if (address)
-        return key[3];
+      if (id)
+        return key[4];
       return key[2];
     }
   }, callback);
@@ -1302,7 +1214,7 @@ TXDB.prototype.getHeightHashes = function getHeightHashes(height, callback) {
 
 /**
  * Get TX hashes by timestamp range.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Object} options
  * @param {Number} options.start - Start height.
  * @param {Number} options.end - End height.
@@ -1311,27 +1223,25 @@ TXDB.prototype.getHeightHashes = function getHeightHashes(height, callback) {
  * @param {Function} callback - Returns [Error, {@link Hash}[]].
  */
 
-TXDB.prototype.getRangeHashes = function getRangeHashes(address, options, callback) {
-  if (typeof address === 'function') {
-    callback = address;
-    address = null;
+TXDB.prototype.getRangeHashes = function getRangeHashes(id, options, callback) {
+  if (typeof id === 'function') {
+    callback = id;
+    id = null;
   }
 
-  callback = utils.ensure(callback);
-
   this.db.iterate({
-    gte: address
-      ? 'M/' + address + '/' + pad32(options.start) + '/'
+    gte: id
+      ? 'M/' + id + '/' + pad32(options.start) + '/'
       : 'm/' + pad32(options.start) + '/',
-    lte: address
-      ? 'M/' + address + '/' + pad32(options.end) + '/~'
+    lte: id
+      ? 'M/' + id + '/' + pad32(options.end) + '/~'
       : 'm/' + pad32(options.end) + '/~',
     limit: options.limit,
     reverse: options.reverse,
     transform: function(key) {
       key = key.split('/');
-      if (address)
-        return key[3];
+      if (id)
+        return key[4];
       return key[2];
     }
   }, callback);
@@ -1339,7 +1249,7 @@ TXDB.prototype.getRangeHashes = function getRangeHashes(address, options, callba
 
 /**
  * Get transactions by timestamp range.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Object} options
  * @param {Number} options.start - Start height.
  * @param {Number} options.end - End height.
@@ -1348,16 +1258,16 @@ TXDB.prototype.getRangeHashes = function getRangeHashes(address, options, callba
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-TXDB.prototype.getRange = function getLast(address, options, callback) {
+TXDB.prototype.getRange = function getLast(id, options, callback) {
   var self = this;
   var txs = [];
 
-  if (typeof address === 'function') {
-    callback = address;
-    address = null;
+  if (typeof id === 'function') {
+    callback = id;
+    id = null;
   }
 
-  return this.getRangeHashes(address, options, function(err, hashes) {
+  return this.getRangeHashes(id, options, function(err, hashes) {
     if (err)
       return callback(err);
 
@@ -1384,19 +1294,19 @@ TXDB.prototype.getRange = function getLast(address, options, callback) {
 
 /**
  * Get last N transactions.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Number} limit - Max number of transactions.
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-TXDB.prototype.getLast = function getLast(address, limit, callback) {
+TXDB.prototype.getLast = function getLast(id, limit, callback) {
   if (typeof limit === 'function') {
     callback = limit;
-    limit = address;
-    address = null;
+    limit = id;
+    id = null;
   }
 
-  return this.getRange(address, {
+  return this.getRange(id, {
     start: 0,
     end: 0xffffffff,
     reverse: true,
@@ -1406,20 +1316,20 @@ TXDB.prototype.getLast = function getLast(address, limit, callback) {
 
 /**
  * Get all transactions.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-TXDB.prototype.getHistory = function getHistory(address, callback) {
+TXDB.prototype.getHistory = function getHistory(id, callback) {
   var self = this;
   var txs = [];
 
-  if (typeof address === 'function') {
-    callback = address;
-    address = null;
+  if (typeof id === 'function') {
+    callback = id;
+    id = null;
   }
 
-  return this.getHistoryHashes(address, function(err, hashes) {
+  return this.getHistoryHashes(id, function(err, hashes) {
     if (err)
       return callback(err);
 
@@ -1446,32 +1356,34 @@ TXDB.prototype.getHistory = function getHistory(address, callback) {
 
 /**
  * Get last active timestamp and height.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Function} callback - Returns [Error, Number(ts), Number(height)].
  */
 
-TXDB.prototype.getLastTime = function getLastTime(address, callback) {
-  if (typeof address === 'function') {
-    callback = address;
-    address = null;
+TXDB.prototype.getLastTime = function getLastTime(id, callback) {
+  var i, tx, lastTs, lastHeight;
+
+  if (typeof id === 'function') {
+    callback = id;
+    id = null;
   }
 
-  return this.getHistory(address, function(err, txs) {
-    var lastTs, lastHeight;
-
+  return this.getHistory(id, function(err, txs) {
     if (err)
       return callback(err);
 
     lastTs = 0;
     lastHeight = -1;
 
-    txs.forEach(function(tx) {
+    for (i = 0; i &lt; txs.length; i++) {
+      tx = txs[i];
+
       if (tx.ts > lastTs)
         lastTs = tx.ts;
 
       if (tx.height > lastHeight)
         lastHeight = tx.height;
-    });
+    }
 
     return callback(null, lastTs, lastHeight);
   });
@@ -1479,20 +1391,20 @@ TXDB.prototype.getLastTime = function getLastTime(address, callback) {
 
 /**
  * Get unconfirmed transactions.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-TXDB.prototype.getUnconfirmed = function getUnconfirmed(address, callback) {
+TXDB.prototype.getUnconfirmed = function getUnconfirmed(id, callback) {
   var self = this;
   var txs = [];
 
-  if (typeof address === 'function') {
-    callback = address;
-    address = null;
+  if (typeof id === 'function') {
+    callback = id;
+    id = null;
   }
 
-  return this.getUnconfirmedHashes(address, function(err, hashes) {
+  return this.getUnconfirmedHashes(id, function(err, hashes) {
     if (err)
       return callback(err);
 
@@ -1519,20 +1431,20 @@ TXDB.prototype.getUnconfirmed = function getUnconfirmed(address, callback) {
 
 /**
  * Get coins.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Function} callback - Returns [Error, {@link Coin}[]].
  */
 
-TXDB.prototype.getCoins = function getCoins(address, callback) {
+TXDB.prototype.getCoins = function getCoins(id, callback) {
   var self = this;
   var coins = [];
 
-  if (typeof address === 'function') {
-    callback = address;
-    address = null;
+  if (typeof id === 'function') {
+    callback = id;
+    id = null;
   }
 
-  return this.getCoinHashes(address, function(err, hashes) {
+  return this.getCoinHashes(id, function(err, hashes) {
     if (err)
       return callback(err);
 
@@ -1667,8 +1579,8 @@ TXDB.prototype.hasTX = function hasTX(hash, callback) {
  */
 
 TXDB.prototype.getCoin = function getCoin(hash, index, callback) {
-  this.db.fetch('c/' + hash + '/' + index, function(coin) {
-    coin = bcoin.coin.fromRaw(coin);
+  this.db.fetch('c/' + hash + '/' + index, function(data) {
+    var coin = bcoin.coin.fromRaw(data);
     coin.hash = hash;
     coin.index = index;
     return coin;
@@ -1687,40 +1599,21 @@ TXDB.prototype.hasCoin = function hasCoin(hash, index, callback) {
 
 /**
  * Calculate balance.
- * @param {WalletID|WalletID[]} address - By address (can be null).
+ * @param {WalletID?} id
  * @param {Function} callback - Returns [Error, {@link Balance}].
  */
 
-TXDB.prototype.getBalance = function getBalance(address, callback) {
+TXDB.prototype.getBalance = function getBalance(id, callback) {
   var self = this;
   var confirmed = 0;
   var unconfirmed = 0;
-  var i;
 
-  if (typeof address === 'function') {
-    callback = address;
-    address = null;
+  if (typeof id === 'function') {
+    callback = id;
+    id = null;
   }
 
-  // return this.getCoins(address, function(err, coins) {
-  //   if (err)
-  //     return callback(err);
-  //
-  //   for (i = 0; i &lt; coins.length; i++) {
-  //     if (coins[i].height === -1)
-  //       unconfirmed += coins[i].value;
-  //     else
-  //       confirmed += coins[i].value;
-  //   }
-  //
-  //   return callback(null, {
-  //     confirmed: confirmed,
-  //     unconfirmed: unconfirmed,
-  //     total: confirmed + unconfirmed
-  //   });
-  // });
-
-  return this.getCoinHashes(address, function(err, hashes) {
+  return this.getCoinHashes(id, function(err, hashes) {
     if (err)
       return callback(err);
 
@@ -1750,86 +1643,35 @@ TXDB.prototype.getBalance = function getBalance(address, callback) {
 };
 
 /**
- * Get hashes of all transactions in the database.
- * @param {WalletID|WalletID[]} address - By address (can be null).
- * @param {Function} callback - Returns [Error, {@link Hash}[]].
- */
-
-TXDB.prototype.getHistoryHashesByAddress = function getHistoryHashesByAddress(address, callback) {
-  return this.getHistoryHashes(address, callback);
-};
-
-/**
- * Get all transactions.
- * @param {WalletID|WalletID[]} address - By address (can be null).
- * @param {Function} callback - Returns [Error, {@link TX}[]].
- */
-
-TXDB.prototype.getHistoryByAddress = function getHistoryByAddress(address, callback) {
-  return this.getHistory(address, callback);
-};
-
-/**
- * Get coins.
- * @param {WalletID|WalletID[]} address - By address (can be null).
- * @param {Function} callback - Returns [Error, {@link Coin}[]].
- */
-
-TXDB.prototype.getCoinsByAddress = function getCoins(address, callback) {
-  return this.getCoins(address, callback);
-};
-
-/**
- * Get unconfirmed transactions.
- * @param {WalletID|WalletID[]} address - By address (can be null).
- * @param {Function} callback - Returns [Error, {@link TX}[]].
- */
-
-TXDB.prototype.getUnconfirmedByAddress = function getUnconfirmedByAddress(address, callback) {
-  return this.getUnconfirmed(address, callback);
-};
-
-/**
- * Calculate balance.
- * @param {WalletID|WalletID[]} address - By address (can be null).
- * @param {Function} callback - Returns [Error, {@link Balance}].
- */
-
-TXDB.prototype.getBalanceByAddress = function getBalanceByAddress(address, callback) {
-  return this.getBalance(address, callback);
-};
-
-/**
- * @param {WalletID|WalletID[]} address - By address (can be null).
- * @param {Number} now - Current time.
+ * @param {WalletID?} id
  * @param {Number} age - Age delta (delete transactions older than `now - age`).
  * @param {Function} callback
  */
 
-TXDB.prototype.zap = function zap(address, now, age, callback, force) {
+TXDB.prototype.zap = function zap(id, age, callback, force) {
   var self = this;
+  var unlock;
 
-  if (typeof address !== 'string') {
+  if (typeof age === 'function') {
     force = callback;
     callback = age;
-    age = now;
-    now = address;
-    address = null;
+    age = id;
+    id = null;
   }
 
-  var unlock = this._lock(zap, [address, now, age, callback], force);
+  unlock = this._lock(zap, [id, age, callback], force);
+
   if (!unlock)
     return;
 
   callback = utils.wrap(callback, unlock);
 
-  assert(utils.isNumber(now));
-  assert(utils.isNumber(age));
-  assert(now >= age);
+  if (!utils.isNumber(age))
+    return callback(new Error('Age must be a number.'));
 
-  return this.getRange(address, {
+  return this.getRange(id, {
     start: 0,
-    end: now - age
+    end: bcoin.now() - age
   }, function(err, txs) {
     if (err)
       return callback(err);
@@ -1841,11 +1683,34 @@ TXDB.prototype.zap = function zap(address, now, age, callback, force) {
       utils.forEachSerial(txs, function(tx, next) {
         if (tx.ts !== 0)
           return next();
-        self.lazyRemove(tx, next);
+        self.lazyRemove(tx, next, true);
       }, callback);
     });
   });
 };
+
+/*
+ * Helpers
+ */
+
+function uniq(obj) {
+  var uniq = {};
+  var out = [];
+  var i, key, value;
+
+  for (i = 0; i &lt; obj.length; i++) {
+    value = obj[i];
+    key = value.id + '/' + value.account;
+
+    if (uniq[key])
+      continue;
+
+    uniq[key] = true;
+    out.push(value);
+  }
+
+  return out;
+}
 
 /*
  * Expose
@@ -1862,13 +1727,13 @@ module.exports = TXDB;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

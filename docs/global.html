@@ -101,6 +101,327 @@
 
     
 
+    <h4 class="name" id="hostname"><span class="type-signature"></span>hostname<span class="signature">(host, port)</span><span class="type-signature"> &rarr; {String}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Concatenate a host and port.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>host</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>port</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_ip.js.html">bcoin/ip.js</a>, <a href="bcoin_ip.js.html#line54">line 54</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">String</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="isMapped"><span class="type-signature"></span>isMapped<span class="signature">(ip)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Test whether a buffer is an ipv4-mapped ipv6 address.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_ip.js.html">bcoin/ip.js</a>, <a href="bcoin_ip.js.html#line85">line 85</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="mkdirp"><span class="type-signature"></span>mkdirp<span class="signature">(path)</span><span class="type-signature"></span></h4>
 
     
@@ -201,7 +522,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_env.js.html">bcoin/env.js</a>, <a href="bcoin_env.js.html#line386">line 386</a>
+        <a href="bcoin_env.js.html">bcoin/env.js</a>, <a href="bcoin_env.js.html#line444">line 444</a>
     </li></ul></dd>
     
 
@@ -224,6 +545,753 @@
 
 
 
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="normalize"><span class="type-signature"></span>normalize<span class="signature">(ip)</span><span class="type-signature"> &rarr; {String}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Normalize an ip.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_ip.js.html">bcoin/ip.js</a>, <a href="bcoin_ip.js.html#line173">line 173</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">String</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="normalize"><span class="type-signature"></span>normalize<span class="signature">(path, dirname<span class="signature-attributes">nullable</span>)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Normalize a path.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>path</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>dirname</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_env.js.html">bcoin/env.js</a>, <a href="bcoin_env.js.html#line426">line 426</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="parseHost"><span class="type-signature"></span>parseHost<span class="signature">(addr)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Parse a hostname.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>addr</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_ip.js.html">bcoin/ip.js</a>, <a href="bcoin_ip.js.html#line19">line 19</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Contains <code>host</code> and <code>port</code>.</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>IP.parseHost('127.0.0.1:3000');</code></pre>
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="scrypt"><span class="type-signature"></span>scrypt<span class="signature">(passwd, salt, N, r, p, len)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Javascript scrypt implementation. Scrypt is
+used in bip38. BCoin doesn't support bip38
+yet, but here it is, just in case.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>passwd</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>salt</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>N</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>r</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>p</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>len</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_scrypt-async.js.html">bcoin/scrypt-async.js</a>, <a href="bcoin_scrypt-async.js.html#line50">line 50</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -494,6 +1562,469 @@ yet, but here it is, just in case.</p>
 
 
         
+            
+
+    
+
+    <h4 class="name" id="toBuffer"><span class="type-signature"></span>toBuffer<span class="signature">(ip)</span><span class="type-signature"> &rarr; {Buffer}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Convert an IP string to a buffer.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_ip.js.html">bcoin/ip.js</a>, <a href="bcoin_ip.js.html#line108">line 108</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Buffer</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="toString"><span class="type-signature"></span>toString<span class="signature">(ip)</span><span class="type-signature"> &rarr; {String}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Convert a buffer to an ip string.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Buffer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_ip.js.html">bcoin/ip.js</a>, <a href="bcoin_ip.js.html#line145">line 145</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">String</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="version"><span class="type-signature"></span>version<span class="signature">(ip<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {Number}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Test whether a string is an IP address.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_ip.js.html">bcoin/ip.js</a>, <a href="bcoin_ip.js.html#line66">line 66</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>IP version (4 or 6).</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
     
 
     
@@ -555,7 +2086,7 @@ yet, but here it is, just in case.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line62">line 62</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line64">line 64</a>
     </li></ul></dd>
     
 
@@ -627,7 +2158,7 @@ yet, but here it is, just in case.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line56">line 56</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line58">line 58</a>
     </li></ul></dd>
     
 
@@ -787,7 +2318,7 @@ yet, but here it is, just in case.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line547">line 547</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line549">line 549</a>
     </li></ul></dd>
     
 
@@ -957,7 +2488,7 @@ yet, but here it is, just in case.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line554">line 554</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line556">line 556</a>
     </li></ul></dd>
     
 
@@ -1044,7 +2575,7 @@ or <code>witnessscripthash</code>, or an address prefix
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line27">line 27</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line36">line 36</a>
     </li></ul></dd>
     
 
@@ -1615,7 +3146,7 @@ or <code>witnessscripthash</code>, or an address prefix
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line370">line 370</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line372">line 372</a>
     </li></ul></dd>
     
 
@@ -1691,7 +3222,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line124">line 124</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line126">line 126</a>
     </li></ul></dd>
     
 
@@ -1861,7 +3392,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line115">line 115</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line117">line 117</a>
     </li></ul></dd>
     
 
@@ -2021,7 +3552,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line477">line 477</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line479">line 479</a>
     </li></ul></dd>
     
 
@@ -2103,7 +3634,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line90">line 90</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line92">line 92</a>
     </li></ul></dd>
     
 
@@ -2175,7 +3706,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line84">line 84</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line86">line 86</a>
     </li></ul></dd>
     
 
@@ -2335,7 +3866,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line456">line 456</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line458">line 458</a>
     </li></ul></dd>
     
 
@@ -2417,7 +3948,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line140">line 140</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line142">line 142</a>
     </li></ul></dd>
     
 
@@ -2577,7 +4108,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line484">line 484</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line486">line 486</a>
     </li></ul></dd>
     
 
@@ -2747,7 +4278,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line519">line 519</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line521">line 521</a>
     </li></ul></dd>
     
 
@@ -2917,7 +4448,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line436">line 436</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line438">line 438</a>
     </li></ul></dd>
     
 
@@ -3087,7 +4618,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line443">line 443</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line445">line 445</a>
     </li></ul></dd>
     
 
@@ -3314,7 +4845,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line169">line 169</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line171">line 171</a>
     </li></ul></dd>
     
 
@@ -3474,7 +5005,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line576">line 576</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line578">line 578</a>
     </li></ul></dd>
     
 
@@ -3647,7 +5178,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line533">line 533</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line535">line 535</a>
     </li></ul></dd>
     
 
@@ -3869,7 +5400,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line178">line 178</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line180">line 180</a>
     </li></ul></dd>
     
 
@@ -4029,7 +5560,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line470">line 470</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line472">line 472</a>
     </li></ul></dd>
     
 
@@ -4199,7 +5730,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line463">line 463</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line465">line 465</a>
     </li></ul></dd>
     
 
@@ -4329,7 +5860,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line391">line 391</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line393">line 393</a>
     </li></ul></dd>
     
 
@@ -4449,7 +5980,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line213">line 213</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line215">line 215</a>
     </li></ul></dd>
     
 
@@ -4648,7 +6179,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line203">line 203</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line205">line 205</a>
     </li></ul></dd>
     
 
@@ -4821,7 +6352,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line281">line 281</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line283">line 283</a>
     </li></ul></dd>
     
 
@@ -4964,7 +6495,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line220">line 220</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line222">line 222</a>
     </li></ul></dd>
     
 
@@ -5036,7 +6567,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line96">line 96</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line98">line 98</a>
     </li></ul></dd>
     
 
@@ -5196,7 +6727,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line498">line 498</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line500">line 500</a>
     </li></ul></dd>
     
 
@@ -5366,7 +6897,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line505">line 505</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line507">line 507</a>
     </li></ul></dd>
     
 
@@ -5567,7 +7098,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line583">line 583</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line585">line 585</a>
     </li></ul></dd>
     
 
@@ -5726,7 +7257,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line7">line 7</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line16">line 16</a>
     </li></ul></dd>
     
 
@@ -5801,7 +7332,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line14">line 14</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line23">line 23</a>
     </li></ul></dd>
     
 
@@ -5873,7 +7404,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line43">line 43</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line52">line 52</a>
     </li></ul></dd>
     
 
@@ -6033,7 +7564,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line540">line 540</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line542">line 542</a>
     </li></ul></dd>
     
 
@@ -6203,7 +7734,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line422">line 422</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line424">line 424</a>
     </li></ul></dd>
     
 
@@ -6373,7 +7904,7 @@ functions.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line429">line 429</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line431">line 431</a>
     </li></ul></dd>
     
 
@@ -6840,7 +8371,7 @@ This value will never be negative.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line289">line 289</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line291">line 291</a>
     </li></ul></dd>
     
 
@@ -7099,7 +8630,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line227">line 227</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line326">line 326</a>
     </li></ul></dd>
     
 
@@ -7358,7 +8889,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line324">line 324</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -7547,7 +9078,230 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line308">line 308</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line310">line 310</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+            
+                
+<h4 class="name" id="NakedNetworkAddress">NakedNetworkAddress</h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ts</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Timestamp.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>services</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Service bits.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>host</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>IP address (IPv6 or IPv4).</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>port</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Port.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line259">line 259</a>
     </li></ul></dd>
     
 
@@ -7690,7 +9444,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line317">line 317</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line319">line 319</a>
     </li></ul></dd>
     
 
@@ -7833,7 +9587,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line347">line 347</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line349">line 349</a>
     </li></ul></dd>
     
 
@@ -8045,7 +9799,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line337">line 337</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line339">line 339</a>
     </li></ul></dd>
     
 
@@ -8113,230 +9867,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line354">line 354</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-            
-                
-<h4 class="name" id="NetworkAddress">NetworkAddress</h4>
-
-
-
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Object</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>ts</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Timestamp.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>services</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Service bits.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>host</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>IP address (IPv6 or IPv4).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>port</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Port.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line257">line 257</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line356">line 356</a>
     </li></ul></dd>
     
 
@@ -8408,7 +9939,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line397">line 397</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line399">line 399</a>
     </li></ul></dd>
     
 
@@ -8575,7 +10106,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line491">line 491</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line493">line 493</a>
     </li></ul></dd>
     
 
@@ -8745,7 +10276,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line526">line 526</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line528">line 528</a>
     </li></ul></dd>
     
 
@@ -8898,7 +10429,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line162">line 162</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line164">line 164</a>
     </li></ul></dd>
     
 
@@ -9058,7 +10589,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line561">line 561</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line563">line 563</a>
     </li></ul></dd>
     
 
@@ -9211,7 +10742,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line20">line 20</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line29">line 29</a>
     </li></ul></dd>
     
 
@@ -9399,7 +10930,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line35">line 35</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line44">line 44</a>
     </li></ul></dd>
     
 
@@ -9651,7 +11182,196 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line68">line 68</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line70">line 70</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+            
+                
+<h4 class="name" id="Path">Path</h4>
+
+
+
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Account name.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>account</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Account index.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>change</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Change chain.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>index</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Address index.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line7">line 7</a>
     </li></ul></dd>
     
 
@@ -9771,7 +11491,7 @@ transaction is a coinbase.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line251">line 251</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line253">line 253</a>
     </li></ul></dd>
     
 
@@ -9942,7 +11662,7 @@ or <code>witnessscripthash</code>.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line152">line 152</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line154">line 154</a>
     </li></ul></dd>
     
 
@@ -10014,7 +11734,7 @@ or <code>witnessscripthash</code>.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line134">line 134</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line136">line 136</a>
     </li></ul></dd>
     
 
@@ -10082,7 +11802,7 @@ or <code>witnessscripthash</code>.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line360">line 360</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line362">line 362</a>
     </li></ul></dd>
     
 
@@ -10248,7 +11968,7 @@ or <code>witnessscripthash</code>.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line195">line 195</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line197">line 197</a>
     </li></ul></dd>
     
 
@@ -10320,7 +12040,7 @@ or <code>witnessscripthash</code>.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line102">line 102</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line104">line 104</a>
     </li></ul></dd>
     
 
@@ -10582,7 +12302,7 @@ or <code>witnessscripthash</code>.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_http_base.js.html">bcoin/http/base.js</a>, <a href="bcoin_http_base.js.html#line211">line 211</a>
+        <a href="bcoin_http_base.js.html">bcoin/http/base.js</a>, <a href="bcoin_http_base.js.html#line213">line 213</a>
     </li></ul></dd>
     
 
@@ -10602,149 +12322,6 @@ or <code>witnessscripthash</code>.</p></td>
 
 
 
-
-
-
-
-
-
-            
-                
-<h4 class="name" id="Seed">Seed</h4>
-
-
-
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">Object</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>host</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">String</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>port</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line49">line 49</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
 
 
 
@@ -10811,7 +12388,7 @@ one of constants.hashType.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line108">line 108</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line110">line 110</a>
     </li></ul></dd>
     
 
@@ -10954,7 +12531,7 @@ one of constants.hashType.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line188">line 188</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line190">line 190</a>
     </li></ul></dd>
     
 
@@ -11145,7 +12722,7 @@ one of constants.hashType.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line568">line 568</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line570">line 570</a>
     </li></ul></dd>
     
 
@@ -11315,7 +12892,7 @@ one of constants.hashType.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line408">line 408</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line410">line 410</a>
     </li></ul></dd>
     
 
@@ -11485,7 +13062,7 @@ one of constants.hashType.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line415">line 415</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line417">line 417</a>
     </li></ul></dd>
     
 
@@ -11744,7 +13321,7 @@ one of constants.hashType.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line240">line 240</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line242">line 242</a>
     </li></ul></dd>
     
 
@@ -11873,7 +13450,7 @@ one of constants.hashType.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line450">line 450</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line452">line 452</a>
     </li></ul></dd>
     
 
@@ -11955,7 +13532,7 @@ one of constants.hashType.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line146">line 146</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line148">line 148</a>
     </li></ul></dd>
     
 
@@ -12095,7 +13672,7 @@ one of constants.hashType.</p>
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#NetworkAddress">NetworkAddress</a></span>
+<span class="param-type"><a href="global.html#NakedNetworkAddress">NakedNetworkAddress</a></span>
 
 
             
@@ -12118,7 +13695,7 @@ one of constants.hashType.</p>
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#NetworkAddress">NetworkAddress</a></span>
+<span class="param-type"><a href="global.html#NakedNetworkAddress">NakedNetworkAddress</a></span>
 
 
             
@@ -12260,7 +13837,7 @@ should be relayed immediately.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line266">line 266</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line268">line 268</a>
     </li></ul></dd>
     
 
@@ -12423,7 +14000,7 @@ should be relayed immediately.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line512">line 512</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line514">line 514</a>
     </li></ul></dd>
     
 
@@ -12505,7 +14082,7 @@ should be relayed immediately.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line78">line 78</a>
+        <a href="bcoin_types.js.html">bcoin/types.js</a>, <a href="bcoin_types.js.html#line80">line 80</a>
     </li></ul></dd>
     
 
@@ -12535,13 +14112,13 @@ should be relayed immediately.</p></td>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -52,6 +52,9 @@ var assert = utils.assert;
  */
 
 function HTTPServer(options) {
+  if (!(this instanceof HTTPServer))
+    return new HTTPServer(options);
+
   if (!options)
     options = {};
 
@@ -66,8 +69,9 @@ function HTTPServer(options) {
   this.pool = this.node.pool;
   this.loaded = false;
 
+  options.sockets = true;
+
   this.server = new HTTPBase(options);
-  this.io = null;
 
   this._init();
 }
@@ -104,8 +108,11 @@ HTTPServer.prototype._init = function _init() {
   });
 
   this.use(function(req, res, next, send) {
-    var params = utils.merge({}, req.query, req.body, req.params);
+    var params = utils.merge({}, req.params, req.query, req.body);
     var options = {};
+
+    bcoin.debug('Params:');
+    bcoin.debug(params);
 
     if (params.id) {
       assert(params.id !== '!all');
@@ -134,12 +141,6 @@ HTTPServer.prototype._init = function _init() {
     if (params.limit != null)
       options.limit = params.limit >>> 0;
 
-    if (params.changeDepth)
-      options.changeDepth = params.changeDepth >>> 0;
-
-    if (params.receiveDepth)
-      options.receiveDepth = params.receiveDepth >>> 0;
-
     if (params.address) {
       params.addresses = params.address;
       options.address = params.address;
@@ -153,7 +154,7 @@ HTTPServer.prototype._init = function _init() {
           value: utils.satoshi(output.value)
         };
       });
-    } else if (options.value) {
+    } else if (params.value) {
       options.outputs = [{
         address: params.address,
         script: decodeScript(params.script),
@@ -176,8 +177,11 @@ HTTPServer.prototype._init = function _init() {
       }
     }
 
-    if (params.now)
-      options.now = params.now >>> 0;
+    if (params.account)
+      options.account = params.account;
+
+    if (params.name)
+      options.name = params.name;
 
     if (params.age)
       options.age = params.age >>> 0;
@@ -194,9 +198,6 @@ HTTPServer.prototype._init = function _init() {
 
     if (params.passphrase)
       options.passphrase = params.passphrase;
-
-    if (params.bin)
-      options.bin = true;
 
     req.options = options;
 
@@ -293,7 +294,7 @@ HTTPServer.prototype._init = function _init() {
       if (!txs.length)
         return send(404);
 
-      utils.forEach(txs, function(tx, next) {
+      utils.forEachSerial(txs, function(tx, next) {
         self.node.fillHistory(tx, next);
       }, function(err) {
         if (err)
@@ -315,7 +316,7 @@ HTTPServer.prototype._init = function _init() {
       if (!txs.length)
         return send(404);
 
-      utils.forEach(txs, function(tx, next) {
+      utils.forEachSerial(txs, function(tx, next) {
         self.node.fillHistory(tx, next);
       }, function(err) {
         if (err)
@@ -342,24 +343,57 @@ HTTPServer.prototype._init = function _init() {
     });
   });
 
-  // Get wallet
-  this.get('/wallet/:id', function(req, res, next, send) {
-    self.walletdb.getJSON(req.options.id, function(err, json) {
+  // Mempool snapshot
+  this.get('/mempool', function(req, res, next, send) {
+    self.node.mempool.getHistory(function(err, txs) {
       if (err)
         return next(err);
 
-      if (!json)
+      if (!txs.length)
         return send(404);
 
-      send(200, json);
+      utils.forEachSerial(txs, function(tx, next) {
+        self.node.fillHistory(tx, next);
+      }, function(err) {
+        if (err)
+          return next(err);
+
+        send(200, txs.map(function(tx) {
+          return tx.toJSON();
+        }));
+      });
+    });
+  });
+
+  // Broadcast TX
+  this.post('/broadcast', function(req, res, next, send) {
+    self.node.sendTX(req.options.tx, function(err) {
+      if (err)
+        return next(err);
+
+      send(200, {
+        success: true
+      });
+    });
+  });
+
+  // Get wallet
+  this.get('/wallet/:id', function(req, res, next, send) {
+    self.walletdb.getInfo(req.options.id, function(err, wallet) {
+      if (err)
+        return next(err);
+
+      if (!wallet)
+        return send(404);
+
+      send(200, wallet.toJSON());
     });
   });
 
   // Create/get wallet
-  this.post(['/wallet', '/wallet/:id'], function(req, res, next, send) {
+  this.post('/wallet/:id?', function(req, res, next, send) {
+    var json;
     self.walletdb.ensure(req.options, function(err, wallet) {
-      var json;
-
       if (err)
         return next(err);
 
@@ -373,29 +407,51 @@ HTTPServer.prototype._init = function _init() {
     });
   });
 
+  // List accounts
+  this.get('/wallet/:id/account', function(req, res, next, send) {
+    self.walletdb.getAccounts(req.options.id, function(err, accounts) {
+      if (err)
+        return next(err);
+
+      if (accounts.length === 0)
+        return send(404);
+
+      send(200, accounts);
+    });
+  });
+
+  // Create/get account
+  this.post('/wallet/:id/account/:account?', function(req, res, next, send) {
+    var id = req.options.id;
+    var options = req.options;
+    options.name = options.account || options.name;
+    self.walletdb.ensureAccount(id, options, function(err, account) {
+      if (err)
+        return next(err);
+
+      if (!account)
+        return send(404);
+
+      send(200, account.toJSON());
+    });
+  });
+
   // Send TX
   this.post('/wallet/:id/send', function(req, res, next, send) {
     var id = req.options.id;
-    var passphrase = req.options.passphrase;
+    var options = req.options;
     var outputs = req.options.outputs;
 
     if (!Array.isArray(outputs))
       return send(400);
 
-    self.walletdb.get(id, passphrase, function(err, wallet) {
+    self.walletdb.createTX(id, options, outputs, function(err, tx) {
       if (err)
         return next(err);
 
-      if (!wallet)
-        return send(404);
-
-      wallet.createTX(outputs, function(err, tx) {
-        if (err) {
-          wallet.destroy();
+      self.walletdb.sign(id, tx, options, function(err) {
+        if (err)
           return next(err);
-        }
-
-        wallet.destroy();
 
         self.node.sendTX(tx, function(err) {
           if (err)
@@ -407,29 +463,61 @@ HTTPServer.prototype._init = function _init() {
     });
   });
 
-  // Zap Wallet TXs
-  this.post('/wallet/:id/zap', function(req, res, next, send) {
+  // Create TX
+  this.post('/wallet/:id/create', function(req, res, next, send) {
     var id = req.options.id;
-    var now = req.options.now;
-    var age = req.options.age;
+    var options = req.options;
+    var outputs = req.options.outputs;
 
-    self.walletdb.zapWallet(id, now, age, function(err, wallet) {
+    if (!Array.isArray(outputs))
+      return send(400);
+
+    self.walletdb.createTX(id, options, outputs, function(err, tx) {
       if (err)
         return next(err);
 
-      send(200, {
-        success: true
+      self.walletdb.sign(id, tx, options, function(err) {
+        if (err)
+          return next(err);
+
+        send(200, tx.toJSON());
       });
     });
   });
 
-  // Update wallet / sync address depth
-  this.put('/wallet/:id', function(req, res, next, send) {
+  // Sign TX
+  this.post('/wallet/:id/sign', function(req, res, next, send) {
     var id = req.options.id;
-    var receive = req.options.receiveDepth;
-    var change = req.options.changeDepth;
+    var options = req.options;
+    var tx = req.options.tx;
 
-    self.walletdb.setDepth(id, receive, change, function(err) {
+    self.walletdb.sign(id, tx, options, function(err) {
+      if (err)
+        return next(err);
+
+      send(200, tx.toJSON());
+    });
+  });
+
+  // Fill TX
+  this.post('/wallet/:id/fill', function(req, res, next, send) {
+    var tx = req.options.tx;
+
+    self.walletdb.fillHistory(tx, function(err) {
+      if (err)
+        return next(err);
+
+      send(200, tx.toJSON());
+    });
+  });
+
+  // Zap Wallet TXs
+  this.post('/wallet/:id/zap', function(req, res, next, send) {
+    var id = req.options.id;
+    var account = req.options.account;
+    var age = req.options.age;
+
+    self.walletdb.zap(id, account, age, function(err) {
       if (err)
         return next(err);
 
@@ -441,7 +529,10 @@ HTTPServer.prototype._init = function _init() {
 
   // Add key
   this.put('/wallet/:id/key', function(req, res, next, send) {
-    self.walletdb.addKey(req.options.id, req.options.keys, function(err) {
+    var id = req.options.id;
+    var account = req.options.account;
+    var keys = req.options.keys;
+    self.walletdb.addKey(id, account, keys, function(err) {
       if (err)
         return next(err);
 
@@ -451,12 +542,12 @@ HTTPServer.prototype._init = function _init() {
 
   // Remove key
   this.del('/wallet/:id/key', function(req, res, next, send) {
-    self.walletdb.removeKey(req.options.id, req.options.keys, function(err) {
+    var id = req.options.id;
+    var account = req.options.account;
+    var keys = req.options.keys;
+    self.walletdb.removeKey(id, account, keys, function(err) {
       if (err)
         return next(err);
-
-      if (!json)
-        return send(404);
 
       send(200, { success: true });
     });
@@ -464,7 +555,9 @@ HTTPServer.prototype._init = function _init() {
 
   // Wallet Balance
   this.get('/wallet/:id/balance', function(req, res, next, send) {
-    self.walletdb.getBalance(req.options.id, function(err, balance) {
+    var id = req.options.id;
+    var account = req.options.account;
+    self.walletdb.getBalance(id, account, function(err, balance) {
       if (err)
         return next(err);
 
@@ -481,7 +574,9 @@ HTTPServer.prototype._init = function _init() {
 
   // Wallet UTXOs
   this.get('/wallet/:id/coin', function(req, res, next, send) {
-    self.walletdb.getCoins(req.options.id, function(err, coins) {
+    var id = req.options.id;
+    var account = req.options.account;
+    self.walletdb.getCoins(id, account, function(err, coins) {
       if (err)
         return next(err);
 
@@ -494,7 +589,7 @@ HTTPServer.prototype._init = function _init() {
     });
   });
 
-  // Wallet TX
+  // Wallet Coin
   this.get('/wallet/:id/coin/:hash/:index', function(req, res, next, send) {
     var hash = req.options.hash;
     var index = req.options.index;
@@ -511,14 +606,16 @@ HTTPServer.prototype._init = function _init() {
 
   // Wallet TXs
   this.get('/wallet/:id/tx/history', function(req, res, next, send) {
-    self.walletdb.getHistory(req.options.id, function(err, txs) {
+    var id = req.options.id;
+    var account = req.options.account;
+    self.walletdb.getHistory(id, account, function(err, txs) {
       if (err)
         return next(err);
 
       if (!txs.length)
         return send(404);
 
-      utils.forEach(txs, function(tx, next) {
+      utils.forEachSerial(txs, function(tx, next) {
         self.walletdb.fillHistory(tx, next);
       }, function(err) {
         if (err)
@@ -533,14 +630,16 @@ HTTPServer.prototype._init = function _init() {
 
   // Wallet Pending TXs
   this.get('/wallet/:id/tx/unconfirmed', function(req, res, next, send) {
-    self.walletdb.getUnconfirmed(req.options.id, function(err, txs) {
+    var id = req.options.id;
+    var account = req.options.account;
+    self.walletdb.getUnconfirmed(id, account, function(err, txs) {
       if (err)
         return next(err);
 
       if (!txs.length)
         return send(404);
 
-      utils.forEach(txs, function(tx, next) {
+      utils.forEachSerial(txs, function(tx, next) {
         self.walletdb.fillHistory(tx, next);
       }, function(err) {
         if (err)
@@ -555,14 +654,17 @@ HTTPServer.prototype._init = function _init() {
 
   // Wallet TXs within time range
   this.get('/wallet/:id/tx/range', function(req, res, next, send) {
-    self.walletdb.getRange(req.options.id, req.options, function(err, txs) {
+    var id = req.options.id;
+    var account = req.options.account;
+    var options = req.options;
+    self.walletdb.getRange(id, account, options, function(err, txs) {
       if (err)
         return next(err);
 
       if (!txs.length)
         return send(404);
 
-      utils.forEach(txs, function(tx, next) {
+      utils.forEachSerial(txs, function(tx, next) {
         self.walletdb.fillHistory(tx, next);
       }, function(err) {
         if (err)
@@ -578,15 +680,16 @@ HTTPServer.prototype._init = function _init() {
   // Wallet TXs within time range
   this.get('/wallet/:id/tx/last', function(req, res, next, send) {
     var id = req.options.id;
+    var account = req.options.account;
     var limit = req.options.limit;
-    self.walletdb.getRange(id, limit, function(err, txs) {
+    self.walletdb.getRange(id, account, limit, function(err, txs) {
       if (err)
         return next(err);
 
       if (!txs.length)
         return send(404);
 
-      utils.forEach(txs, function(tx, next) {
+      utils.forEachSerial(txs, function(tx, next) {
         self.walletdb.fillHistory(tx, next);
       }, function(err) {
         if (err)
@@ -612,40 +715,6 @@ HTTPServer.prototype._init = function _init() {
         if (err)
           return next(err);
         send(200, tx.toJSON());
-      });
-    });
-  });
-
-  // Broadcast TX
-  this.post('/broadcast', function(req, res, next, send) {
-    self.pool.sendTX(req.options.tx, function(err) {
-      if (err)
-        return callback(err);
-
-      send(200, {
-        success: true
-      });
-    });
-  });
-
-  // Mempool snapshot
-  this.get('/mempool', function(req, res, next, send) {
-    self.node.mempool.getHistory(function(err, txs) {
-      if (err)
-        return next(err);
-
-      if (!txs.length)
-        return send(404);
-
-      utils.forEach(txs, function(tx, next) {
-        self.node.fillHistory(tx, next);
-      }, function(err) {
-        if (err)
-          return next(err);
-
-        send(200, txs.map(function(tx) {
-          return tx.toJSON();
-        }));
       });
     });
   });
@@ -692,6 +761,14 @@ HTTPServer.prototype._initIO = function _initIO() {
   this.server.on('websocket', function(socket) {
     socket.on('error', function(err) {
       self.emit('error', err);
+    });
+
+    socket.on('join', function(id) {
+      socket.join(id);
+    });
+
+    socket.on('leave', function(id) {
+      socket.leave(id);
     });
 
     self.emit('websocket', socket);
@@ -746,6 +823,19 @@ HTTPServer.prototype._initIO = function _initIO() {
       };
     });
     self.server.io.to('!all').emit('balances', json);
+  });
+
+  this.walletdb.on('address', function(receive, change, map) {
+    receive = receive.map(function(address) {
+      return address.toJSON();
+    });
+    change = change.map(function(address) {
+      return address.toJSON();
+    });
+    map.all.forEach(function(id) {
+      self.server.io.to(id).emit('address', receive, change, map);
+    });
+    self.server.io.to('!all').emit('address', receive, change, map);
   });
 };
 
@@ -802,7 +892,7 @@ HTTPServer.prototype.listen = function listen(port, host, callback) {
       return self.emit('error', err);
     }
 
-    bcoin.debug('Listening - host=%s port=%d',
+    bcoin.debug('HTTP server listening on %s (port=%d).',
       address.address, address.port);
 
     self.loaded = true;
@@ -828,13 +918,13 @@ module.exports = HTTPServer;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

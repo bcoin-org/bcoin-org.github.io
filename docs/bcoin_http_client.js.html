@@ -71,25 +71,24 @@ utils.inherits(HTTPClient, EventEmitter);
 
 HTTPClient.prototype._init = function _init() {
   var self = this;
-  var io;
+  var IOClient;
 
-  return;
   try {
-    io = require('socket.io');
+    IOClient = require('socket.io-client');
   } catch (e) {
     ;
   }
 
-  if (!io)
+  if (!IOClient)
     return;
 
-  this.socket = new io.Socket(this.uri);
+  this.socket = new IOClient(this.uri);
 
   this.socket.on('error', function(err) {
     self.emit('error', err);
   });
 
-  this.socket.on('open', function() {
+  this.socket.on('connect', function() {
     self.socket.on('version', function(info) {
       bcoin.debug('Connected to bcoin server: %s (%s)',
         info.version, info.network);
@@ -131,6 +130,16 @@ HTTPClient.prototype._init = function _init() {
       }, id);
     });
 
+    self.socket.on('address', function(receive, change, map) {
+      receive = receive.map(function(address) {
+        return bcoin.keyring.fromJSON(address);
+      });
+      change = change.map(function(address) {
+        return bcoin.keyring.fromJSON(address);
+      });
+      self.emit('address', receive, change, map);
+    });
+
     self.socket.on('balances', function(json) {
       var balances = {};
       Object.keys(json).forEach(function(id) {
@@ -165,11 +174,11 @@ HTTPClient.prototype.open = function open(callback) {
  * @param {WalletID} id
  */
 
-HTTPClient.prototype.listenWallet = function listenWallet(id) {
+HTTPClient.prototype.join = function join(id) {
   if (!this.socket)
     return;
 
-  this.socket.join(id);
+  this.socket.emit('join', id);
 };
 
 /**
@@ -177,27 +186,27 @@ HTTPClient.prototype.listenWallet = function listenWallet(id) {
  * @param {WalletID} id
  */
 
-HTTPClient.prototype.unlistenWallet = function unlistenWallet(id) {
+HTTPClient.prototype.leave = function leave(id) {
   if (!this.socket)
     return;
 
-  this.socket.leave(id);
+  this.socket.emit('leave', id);
 };
 
 /**
  * Listen for events on all wallets.
  */
 
-HTTPClient.prototype.listenAll = function listenAll() {
-  this.listenWallet('!all');
+HTTPClient.prototype.all = function all() {
+  this.join('!all');
 };
 
 /**
  * Unlisten for events on all wallets.
  */
 
-HTTPClient.prototype.unlistenAll = function unlistenAll() {
-  this.unlistenWallet('!all');
+HTTPClient.prototype.none = function none() {
+  this.leave('!all');
 };
 
 /**
@@ -255,6 +264,7 @@ HTTPClient.prototype._request = function _request(method, endpoint, json, callba
 
     networkType = res.headers['x-bcoin-network'];
     assert(networkType === self.network.type, 'Wrong network.');
+    self.network.updateHeight(+res.headers['x-bcoin-height']);
 
     if (res.statusCode === 404)
       return callback();
@@ -262,8 +272,11 @@ HTTPClient.prototype._request = function _request(method, endpoint, json, callba
     if (!body)
       return callback(new Error('No body.'));
 
-    if (res.statusCode !== 200)
+    if (res.statusCode !== 200) {
+      if (body.error)
+        return callback(new Error(body.error));
       return callback(new Error('Status code: ' + res.statusCode));
+    }
 
     try {
       return callback(null, body);
@@ -328,7 +341,7 @@ HTTPClient.prototype._del = function _del(endpoint, json, callback) {
  * @param {Function} callback - Returns [Error, Object].
  */
 
-HTTPClient.prototype._createWallet = function createWallet(options, callback) {
+HTTPClient.prototype.createWallet = function createWallet(options, callback) {
   return this._post('/wallet', options, callback);
 };
 
@@ -339,62 +352,8 @@ HTTPClient.prototype._createWallet = function createWallet(options, callback) {
  * @param {Function} callback - Returns [Error, Object].
  */
 
-HTTPClient.prototype._getWallet = function getWallet(id, callback) {
+HTTPClient.prototype.getWallet = function getWallet(id, callback) {
   return this._get('/wallet/' + id, callback);
-};
-
-/**
- * Get wallet and setup http provider (note that the
- * passphrase is _not_ sent over the wire).
- * @param {WalletID} id
- * @param {String?} passphrase
- * @param {Function} callback - Returns [Error, {@link Wallet}].
- */
-
-HTTPClient.prototype.getWallet = function getWallet(id, passphrase, callback) {
-  var self = this;
-  var provider;
-
-  return this._getWallet(id, function(err, json) {
-    if (err)
-      return callback(err);
-
-    try {
-      json = bcoin.wallet.parseJSON(json, passphrase);
-    } catch (e) {
-      return callback(e);
-    }
-
-    json.provider = new bcoin.http.provider(self.options);
-
-    return callback(null, new bcoin.wallet(json));
-  });
-};
-
-/**
- * Get wallet and setup http provider (note that the
- * passphrase is _not_ sent over the wire).
- * @param {WalletID} id
- * @param {String?} passphrase
- * @param {Function} callback - Returns [Error, {@link Wallet}].
- */
-
-HTTPClient.prototype.createWallet = function createWallet(options, callback) {
-  var self = this;
-  return this._createWallet(options, function(err, json) {
-    if (err)
-      return callback(err);
-
-    try {
-      json = bcoin.wallet.parseJSON(json, options.passphrase);
-    } catch (e) {
-      return callback(e);
-    }
-
-    json.provider = new bcoin.http.provider(self.options);
-
-    return callback(null, new bcoin.wallet(json));
-  });
 };
 
 /**
@@ -403,8 +362,17 @@ HTTPClient.prototype.createWallet = function createWallet(options, callback) {
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-HTTPClient.prototype.getWalletHistory = function getWalletHistory(id, callback) {
-  return this._get('/wallet/' + id + '/tx/history', function(err, body) {
+HTTPClient.prototype.getWalletHistory = function getWalletHistory(id, account, callback) {
+  var options;
+
+  if (typeof account === 'function') {
+    callback = account;
+    account = null;
+  }
+
+  options = { account: account };
+
+  return this._get('/wallet/' + id + '/tx/history', options, function(err, body) {
     if (err)
       return callback(err);
 
@@ -429,8 +397,17 @@ HTTPClient.prototype.getWalletHistory = function getWalletHistory(id, callback) 
  * @param {Function} callback - Returns [Error, {@link Coin}[]].
  */
 
-HTTPClient.prototype.getWalletCoins = function getWalletCoins(id, callback) {
-  return this._get('/wallet/' + id + '/coin', function(err, body) {
+HTTPClient.prototype.getWalletCoins = function getWalletCoins(id, account, callback) {
+  var options;
+
+  if (typeof account === 'function') {
+    callback = account;
+    account = null;
+  }
+
+  options = { account: account };
+
+  return this._get('/wallet/' + id + '/coin', options, function(err, body) {
     if (err)
       return callback(err);
 
@@ -455,8 +432,17 @@ HTTPClient.prototype.getWalletCoins = function getWalletCoins(id, callback) {
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-HTTPClient.prototype.getWalletUnconfirmed = function getUnconfirmed(id, callback) {
-  return this._get('/wallet/' + id + '/tx/unconfirmed', function(err, body) {
+HTTPClient.prototype.getWalletUnconfirmed = function getUnconfirmed(id, account, callback) {
+  var options;
+
+  if (typeof account === 'function') {
+    callback = account;
+    account = null;
+  }
+
+  options = { account: account };
+
+  return this._get('/wallet/' + id + '/tx/unconfirmed', options, function(err, body) {
     if (err)
       return callback(err);
 
@@ -481,8 +467,17 @@ HTTPClient.prototype.getWalletUnconfirmed = function getUnconfirmed(id, callback
  * @param {Function} callback - Returns [Error, {@link Balance}].
  */
 
-HTTPClient.prototype.getWalletBalance = function getBalance(id, callback) {
-  return this._get('/wallet/' + id + '/balance', function(err, body) {
+HTTPClient.prototype.getWalletBalance = function getBalance(id, account, callback) {
+  var options;
+
+  if (typeof account === 'function') {
+    callback = account;
+    account = null;
+  }
+
+  options = { account: account };
+
+  return this._get('/wallet/' + id + '/balance', options, function(err, body) {
     if (err)
       return callback(err);
 
@@ -504,8 +499,16 @@ HTTPClient.prototype.getWalletBalance = function getBalance(id, callback) {
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-HTTPClient.prototype.getWalletLast = function getWalletLast(id, limit, callback) {
-  var options = { limit: limit };
+HTTPClient.prototype.getWalletLast = function getWalletLast(id, account, limit, callback) {
+  var options;
+
+  if (typeof account === 'function') {
+    callback = account;
+    account = null;
+  }
+
+  options = { account: account, limit: limit };
+
   return this._get('/wallet/' + id + '/tx/last', options, function(err, body) {
     if (err)
       return callback(err);
@@ -529,14 +532,28 @@ HTTPClient.prototype.getWalletLast = function getWalletLast(id, limit, callback)
  * Get wallet transactions by timestamp range.
  * @param {WalletID} id
  * @param {Object} options
- * @param {Number} options.start - Start height.
- * @param {Number} options.end - End height.
+ * @param {Number} options.start - Start time.
+ * @param {Number} options.end - End time.
  * @param {Number?} options.limit - Max number of records.
  * @param {Boolean?} options.reverse - Reverse order.
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-HTTPClient.prototype.getWalletRange = function getWalletRange(id, options, callback) {
+HTTPClient.prototype.getWalletRange = function getWalletRange(id, account, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = account;
+    account = null;
+  }
+
+  options = {
+    account: account || options.account,
+    start: options.start,
+    end: options.end ,
+    limit: options.limit,
+    reverse: options.reverse
+  };
+
   return this._get('/wallet/' + id + '/tx/range', options, function(err, body) {
     if (err)
       return callback(err);
@@ -564,10 +581,20 @@ HTTPClient.prototype.getWalletRange = function getWalletRange(id, options, callb
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-HTTPClient.prototype.getWalletTX = function getTX(id, hash, callback) {
+HTTPClient.prototype.getWalletTX = function getTX(id, account, hash, callback) {
+  var options;
+
+  if (typeof hash === 'function') {
+    callback = hash;
+    hash = account;
+    account = null;
+  }
+
+  options = { account: account };
+
   hash = utils.revHex(hash);
 
-  return this._get('/wallet/' + id + '/tx/' + hash, function(err, body) {
+  return this._get('/wallet/' + id + '/tx/' + hash, options, function(err, body) {
     if (err)
       return callback(err);
 
@@ -593,13 +620,22 @@ HTTPClient.prototype.getWalletTX = function getTX(id, hash, callback) {
  * @param {Function} callback - Returns [Error, {@link Coin}[]].
  */
 
-HTTPClient.prototype.getWalletCoin = function getCoin(id, hash, index, callback) {
-  var path;
+HTTPClient.prototype.getWalletCoin = function getCoin(id, account, hash, index, callback) {
+  var options, path;
+
+  if (typeof hash === 'function') {
+    callback = index;
+    index = hash;
+    hash = account;
+    account = null;
+  }
+
+  options = { account: account };
 
   hash = utils.revHex(hash);
   path = '/wallet/' + id + '/coin/' + hash + '/' + index;
 
-  return this._get(path, function(err, body) {
+  return this._get(path, options, function(err, body) {
     if (err)
       return callback(err);
 
@@ -613,28 +649,6 @@ HTTPClient.prototype.getWalletCoin = function getCoin(id, hash, index, callback)
     }
 
     return callback(null, body);
-  });
-};
-
-/**
- * Sync wallet receive and change depth with the server.
- * @param {WalletID} id
- * @param {Object} options
- * @param {Number} options.receiveDepth
- * @param {Number} options.changeDepth
- * @param {Function} callback
- */
-
-HTTPClient.prototype.syncWallet = function syncWallet(id, options, callback) {
-  var body = {
-    receiveDepth: options.receiveDepth,
-    changeDepth: options.changeDepth
-  };
-
-  return this._put('/wallet/' + id, body, function(err) {
-    if (err)
-      return callback(err);
-    return callback();
   });
 };
 
@@ -804,15 +818,139 @@ HTTPClient.prototype.broadcast = function broadcast(tx, callback) {
  * @param {Function} callback - Returns [Error, {@link TX}].
  */
 
-HTTPClient.prototype.walletSend = function walletSend(id, options, callback) {
-  var body = {
-    address: options.address,
-    value: utils.btc(options.value)
-  };
+HTTPClient.prototype.walletSend = function walletSend(id, options, outputs, callback) {
+  if (typeof outputs === 'function') {
+    callback = outputs;
+    outputs = null;
+  }
+
+  options = utils.merge({}, options);
+  options.outputs = outputs || options.outputs || [];
+
+  if (!Array.isArray(options.outputs))
+    options.outputs = [options.outputs];
+
+  options.outputs = options.outputs.map(function(output) {
+    return {
+      value: utils.btc(output.value),
+      address: output.address &amp;&amp; output.address.toBase58
+        ? output.address.toBase58()
+        : output.address,
+      script: output.script ? output.script.toRaw('hex') : null
+    };
+  });
 
   callback = utils.ensure(callback);
 
-  return this._post('/wallet/' + id + '/send', body, function(err, body) {
+  return this._post('/wallet/' + id + '/send', options, function(err, body) {
+    if (err)
+      return callback(err);
+
+    try {
+      body = bcoin.tx.fromJSON(body);
+    } catch (e) {
+      return callback(e);
+    }
+
+    return callback(null, body);
+  });
+};
+
+/**
+ * Create a transaction, fill.
+ * @param {WalletID} id
+ * @param {Object} options
+ * @param {Base58Address} options.address
+ * @param {Amount} options.value
+ * @param {Function} callback - Returns [Error, {@link TX}].
+ */
+
+HTTPClient.prototype.walletCreate = function walletCreate(id, options, outputs, callback) {
+  if (typeof outputs === 'function') {
+    callback = outputs;
+    outputs = null;
+  }
+
+  options = utils.merge({}, options);
+  options.outputs = outputs || options.outputs || [];
+
+  if (!Array.isArray(options.outputs))
+    options.outputs = [options.outputs];
+
+  options.outputs = options.outputs.map(function(output) {
+    return {
+      value: utils.btc(output.value),
+      address: output.address &amp;&amp; output.address.toBase58
+        ? output.address.toBase58()
+        : output.address,
+      script: output.script ? output.script.toRaw('hex') : null
+    };
+  });
+
+  callback = utils.ensure(callback);
+
+  return this._post('/wallet/' + id + '/create', options, function(err, body) {
+    if (err)
+      return callback(err);
+
+    try {
+      body = bcoin.tx.fromJSON(body);
+    } catch (e) {
+      return callback(e);
+    }
+
+    return callback(null, body);
+  });
+};
+
+/**
+ * Sign a transaction.
+ * @param {WalletID} id
+ * @param {TX} tx
+ * @param {Object} options
+ * @param {Function} callback - Returns [Error, {@link TX}].
+ */
+
+HTTPClient.prototype.walletSign = function walletCreate(id, tx, options, callback) {
+  var body;
+
+  if (typeof options === 'function') {
+    callback = options;
+    options = null;
+  }
+
+  body = utils.merge({}, options || {}, {
+    tx: tx.toRaw('hex')
+  });
+
+  callback = utils.ensure(callback);
+
+  return this._post('/wallet/' + id + '/sign', body, function(err, body) {
+    if (err)
+      return callback(err);
+
+    try {
+      body = bcoin.tx.fromJSON(body);
+    } catch (e) {
+      return callback(e);
+    }
+
+    return callback(null, body);
+  });
+};
+
+/**
+ * Fill a transaction with coins.
+ * @param {TX} tx
+ * @param {Function} callback - Returns [Error, {@link TX}].
+ */
+
+HTTPClient.prototype.walletFill = function walletFill(tx, callback) {
+  var body = { tx: tx.toRaw('hex') };
+
+  callback = utils.ensure(callback);
+
+  return this._post('/wallet/_/fill', body, function(err, body) {
     if (err)
       return callback(err);
 
@@ -833,15 +971,21 @@ HTTPClient.prototype.walletSend = function walletSend(id, options, callback) {
  * @param {Function} callback
  */
 
-HTTPClient.prototype.zapWallet = function zapWallet(id, now, age, callback) {
-  var body = {
-    now: now,
+HTTPClient.prototype.walletZap = function walletZap(id, account, age, callback) {
+  var body;
+
+  if (typeof age === 'function') {
+    callback = age;
+    age = account;
+    account = null;
+  }
+
+  body = {
+    account: account,
     age: age
   };
 
-  assert(utils.isNumber(now));
   assert(utils.isNumber(age));
-  assert(now >= age);
 
   callback = utils.ensure(callback);
 
@@ -860,13 +1004,23 @@ HTTPClient.prototype.zapWallet = function zapWallet(id, now, age, callback) {
  * @param {Function} callback
  */
 
-HTTPClient.prototype.addKey = function addKey(id, keys, callback) {
+HTTPClient.prototype.addKey = function addKey(id, account, keys, callback) {
+  var options;
+
+  if (typeof keys === 'function') {
+    callback = keys;
+    keys = account;
+    account = null;
+  }
+
   if (!Array.isArray(keys))
     keys = [keys];
 
   keys = keys.map(function(key) {
-    return key || key.xpubkey;
+    return key.xpubkey || key;
   });
+
+  options = { account: account, keys: keys };
 
   callback = utils.ensure(callback);
 
@@ -885,13 +1039,23 @@ HTTPClient.prototype.addKey = function addKey(id, keys, callback) {
  * @param {Function} callback
  */
 
-HTTPClient.prototype.removeKey = function removeKey(id, keys, callback) {
+HTTPClient.prototype.removeKey = function removeKey(id, account, keys, callback) {
+  var options;
+
+  if (typeof keys === 'function') {
+    callback = keys;
+    keys = account;
+    account = null;
+  }
+
   if (!Array.isArray(keys))
     keys = [keys];
 
   keys = keys.map(function(key) {
-    return key || key.xpubkey;
+    return key.xpubkey || key;
   });
+
+  options = { account: account, keys: keys };
 
   callback = utils.ensure(callback);
 
@@ -901,6 +1065,60 @@ HTTPClient.prototype.removeKey = function removeKey(id, keys, callback) {
     return callback();
   });
 };
+
+/**
+ * Get wallet accounts.
+ * @param {WalletID} id
+ * @param {Function} callback - Returns [Error, Array].
+ */
+
+HTTPClient.prototype.getWalletAccounts = function getWalletAccounts(id, callback) {
+  var path = '/wallet/' + id + '/account';
+  return this._get(path, function(err, body) {
+    if (err)
+      return callback(err);
+
+    if (!body)
+      return callback(null, []);
+
+    return callback(null, body);
+  });
+};
+
+/**
+ * Create account.
+ * @param {WalletID} id
+ * @param {Object} options
+ * @param {Function} callback - Returns [Error, Array].
+ */
+
+HTTPClient.prototype.createWalletAccount = function createWalletAccount(id, options, callback) {
+  var path;
+
+  if (typeof options === 'function') {
+    callback = options;
+    options = null;
+  }
+
+  if (!options)
+    options = {};
+
+  if (typeof options === 'string')
+    options = { account: options };
+
+  path = '/wallet/' + id + '/account';
+
+  return this._post(path, options, function(err, body) {
+    if (err)
+      return callback(err);
+
+    if (!body)
+      return callback(null, []);
+
+    return callback(null, body);
+  });
+};
+
 
 /**
  * Get a mempool snapshot.
@@ -959,13 +1177,13 @@ module.exports = HTTPClient;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

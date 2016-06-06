@@ -40,7 +40,7 @@
 
     
 
-    <h4 class="name" id="Peer"><span class="type-signature"></span>new Peer<span class="signature">(pool, options, priority)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Peer"><span class="type-signature"></span>new Peer<span class="signature">(pool, options)</span><span class="type-signature"></span></h4>
 
     
 
@@ -71,8 +71,6 @@
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
         
 
@@ -98,14 +96,6 @@
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
 
             
 
@@ -128,14 +118,6 @@
             
             </td>
 
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
             
 
             
@@ -199,49 +181,10 @@ node.js-like socket object. Necessary for browser.</p></td>
         </tr>
 
     
-    </tbody>
-</table>
-
-            </td>
-        </tr>
-
-    
 
         <tr>
             
-                <td class="name"><code>priority</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"><p>Whether this peer is high
-priority (i.e. a loader).</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>options.chain</code></td>
+                <td class="name"><code>chain</code></td>
             
 
             <td class="type">
@@ -272,7 +215,7 @@ priority (i.e. a loader).</p></td>
 
         <tr>
             
-                <td class="name"><code>options.mempool</code></td>
+                <td class="name"><code>mempool</code></td>
             
 
             <td class="type">
@@ -303,7 +246,7 @@ priority (i.e. a loader).</p></td>
 
         <tr>
             
-                <td class="name"><code>options.ts</code></td>
+                <td class="name"><code>ts</code></td>
             
 
             <td class="type">
@@ -336,7 +279,7 @@ priority (i.e. a loader).</p></td>
 
         <tr>
             
-                <td class="name"><code>options.socket</code></td>
+                <td class="name"><code>socket</code></td>
             
 
             <td class="type">
@@ -369,13 +312,13 @@ priority (i.e. a loader).</p></td>
 
         <tr>
             
-                <td class="name"><code>options.seed</code></td>
+                <td class="name"><code>host</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#Seed">Seed</a></span>
+<span class="param-type"><a href="NetworkAddress.html">NetworkAddress</a></span>
 
 
             
@@ -396,6 +339,13 @@ priority (i.e. a loader).</p></td>
             
 
             <td class="description last"><p>Host to connect to.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
         </tr>
 
     
@@ -533,35 +483,6 @@ priority (i.e. a loader).</p></td>
             
                 
 <span class="param-type">Number</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>priority</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Boolean</span>
 
 
             
@@ -1208,7 +1129,7 @@ sent (unix time).</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line64">line 64</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line61">line 61</a>
     </li></ul></dd>
     
 
@@ -1365,7 +1286,7 @@ sent (unix time).</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line533">line 533</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line540">line 540</a>
     </li></ul></dd>
     
 
@@ -1505,7 +1426,7 @@ sent (unix time).</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line315">line 315</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line313">line 313</a>
     </li></ul></dd>
     
 
@@ -1760,7 +1681,7 @@ will use <code>options.createSocket</code> if provided.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line491">line 491</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line498">line 498</a>
     </li></ul></dd>
     
 
@@ -1934,7 +1855,7 @@ will use <code>options.createSocket</code> if provided.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1535">line 1535</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1599">line 1599</a>
     </li></ul></dd>
     
 
@@ -2065,7 +1986,7 @@ will use <code>options.createSocket</code> if provided.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line628">line 628</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line637">line 637</a>
     </li></ul></dd>
     
 
@@ -2242,7 +2163,7 @@ will use <code>options.createSocket</code> if provided.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1516">line 1516</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1580">line 1580</a>
     </li></ul></dd>
     
 
@@ -2324,7 +2245,7 @@ will use <code>options.createSocket</code> if provided.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1552">line 1552</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1616">line 1616</a>
     </li></ul></dd>
     
 
@@ -2478,7 +2399,7 @@ will use <code>options.createSocket</code> if provided.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line791">line 791</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line806">line 806</a>
     </li></ul></dd>
     
 
@@ -2560,7 +2481,7 @@ will use <code>options.createSocket</code> if provided.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1609">line 1609</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1673">line 1673</a>
     </li></ul></dd>
     
 
@@ -2660,7 +2581,7 @@ will use <code>options.createSocket</code> if provided.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1578">line 1578</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1642">line 1642</a>
     </li></ul></dd>
     
 
@@ -2812,7 +2733,7 @@ will use <code>options.createSocket</code> if provided.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line448">line 448</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line455">line 455</a>
     </li></ul></dd>
     
 
@@ -2961,7 +2882,7 @@ will use <code>options.createSocket</code> if provided.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1565">line 1565</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1629">line 1629</a>
     </li></ul></dd>
     
 
@@ -3116,7 +3037,7 @@ Executed on timeout or once packet is received.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line554">line 554</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line563">line 563</a>
     </li></ul></dd>
     
 
@@ -3270,7 +3191,7 @@ Executed on timeout or once packet is received.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line597">line 597</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line606">line 606</a>
     </li></ul></dd>
     
 
@@ -3401,7 +3322,7 @@ Executed on timeout or once packet is received.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line393">line 393</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line395">line 395</a>
     </li></ul></dd>
     
 
@@ -3532,7 +3453,7 @@ Executed on timeout or once packet is received.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line365">line 365</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line362">line 362</a>
     </li></ul></dd>
     
 
@@ -3614,7 +3535,7 @@ Executed on timeout or once packet is received.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line420">line 420</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line427">line 427</a>
     </li></ul></dd>
     
 
@@ -3853,7 +3774,7 @@ Executed on timeout or once packet is received.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1600">line 1600</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1664">line 1664</a>
     </li></ul></dd>
     
 
@@ -3991,7 +3912,7 @@ Executed on timeout or once packet is received.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line481">line 481</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line488">line 488</a>
     </li></ul></dd>
     
 
@@ -4122,7 +4043,7 @@ Executed on timeout or once packet is received.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1587">line 1587</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line1651">line 1651</a>
     </li></ul></dd>
     
 
@@ -4204,7 +4125,7 @@ Executed on timeout or once packet is received.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line468">line 468</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line475">line 475</a>
     </li></ul></dd>
     
 
@@ -4335,7 +4256,7 @@ Executed on timeout or once packet is received.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line520">line 520</a>
+        <a href="bcoin_peer.js.html">bcoin/peer.js</a>, <a href="bcoin_peer.js.html#line527">line 527</a>
     </li></ul></dd>
     
 
@@ -4395,13 +4316,13 @@ Executed on timeout or once packet is received.</p></td>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:22 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:59 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

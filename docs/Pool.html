@@ -761,9 +761,6 @@ peers.</p></td>
             
                 
 <span class="param-type">Array.&lt;String></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#Seed">Seed</a>></span>
 
 
             
@@ -773,8 +770,6 @@ peers.</p></td>
                 <td class="attributes">
                 
 
-                
-                    &lt;nullable><br>
                 
 
                 
@@ -911,7 +906,7 @@ Must return a node-like server.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line76">line 76</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line78">line 78</a>
     </li></ul></dd>
     
 
@@ -1007,14 +1002,14 @@ Must return a node-like server.</p></td>
 
     
 
-    <h4 class="name" id="addSeed"><span class="type-signature"></span>addSeed<span class="signature">(seed)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
+    <h4 class="name" id="addHost"><span class="type-signature"></span>addHost<span class="signature">(host)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Add seed to seed list.</p>
+    <p>Add host to host list.</p>
 </div>
 
 
@@ -1050,7 +1045,7 @@ Must return a node-like server.</p></td>
 
         <tr>
             
-                <td class="name"><code>seed</code></td>
+                <td class="name"><code>host</code></td>
             
 
             <td class="type">
@@ -1059,7 +1054,7 @@ Must return a node-like server.</p></td>
 <span class="param-type">String</span>
 |
 
-<span class="param-type"><a href="global.html#Seed">Seed</a></span>
+<span class="param-type"><a href="NetworkAddress.html">NetworkAddress</a></span>
 
 
             
@@ -1110,7 +1105,7 @@ Must return a node-like server.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1971">line 1971</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1805">line 1805</a>
     </li></ul></dd>
     
 
@@ -1151,160 +1146,6 @@ Must return a node-like server.</p></td>
 </dl>
 
     
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="addWallet"><span class="type-signature"></span>addWallet<span class="signature">(wallet, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Add a wallet to bloom filter (SPV-only). Resend pending transactions.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>wallet</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="Wallet.html">Wallet</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1360">line 1360</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1418,7 +1259,7 @@ queue.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1756">line 1756</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1588">line 1588</a>
     </li></ul></dd>
     
 
@@ -1579,7 +1420,7 @@ or timeout.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1725">line 1725</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1557">line 1557</a>
     </li></ul></dd>
     
 
@@ -1728,7 +1569,7 @@ or timeout.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1789">line 1789</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1621">line 1621</a>
     </li></ul></dd>
     
 
@@ -1810,7 +1651,7 @@ or timeout.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line220">line 220</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line224">line 224</a>
     </li></ul></dd>
     
 
@@ -1841,7 +1682,7 @@ or timeout.</p></td>
 
     
 
-    <h4 class="name" id="fillHistory"><span class="type-signature"></span>fillHistory<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="fillCoins"><span class="type-signature"></span>fillCoins<span class="signature">(tx, callback)</span><span class="type-signature"></span></h4>
 
     
 
@@ -1964,7 +1805,7 @@ or timeout.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1857">line 1857</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1705">line 1705</a>
     </li></ul></dd>
     
 
@@ -2095,7 +1936,7 @@ or timeout.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1702">line 1702</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1534">line 1534</a>
     </li></ul></dd>
     
 
@@ -2331,7 +2172,7 @@ or timeout.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line341">line 341</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line334">line 334</a>
     </li></ul></dd>
     
 
@@ -2599,7 +2440,7 @@ in the chain before requesting.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1514">line 1514</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1346">line 1346</a>
     </li></ul></dd>
     
 
@@ -2835,7 +2676,7 @@ in the chain before requesting.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line396">line 396</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line389">line 389</a>
     </li></ul></dd>
     
 
@@ -2858,6 +2699,106 @@ in the chain before requesting.</p>
 
 
 
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getHost"><span class="type-signature"></span>getHost<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="NetworkAddress.html">NetworkAddress</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Allocate a new host which is not currently being used.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1751">line 1751</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="NetworkAddress.html">NetworkAddress</a></span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -2966,7 +2907,7 @@ in the chain before requesting.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line2108">line 2108</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1940">line 1940</a>
     </li></ul></dd>
     
 
@@ -3097,7 +3038,7 @@ in the chain before requesting.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line2138">line 2138</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1970">line 1970</a>
     </li></ul></dd>
     
 
@@ -3120,6 +3061,106 @@ in the chain before requesting.</p>
 
 
 
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="getLoaderHost"><span class="type-signature"></span>getLoaderHost<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="NetworkAddress.html">NetworkAddress</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Allocate a new loader host.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1733">line 1733</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="NetworkAddress.html">NetworkAddress</a></span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -3179,7 +3220,7 @@ in the chain before requesting.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line936">line 936</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line947">line 947</a>
     </li></ul></dd>
     
 
@@ -3259,9 +3300,6 @@ in the chain before requesting.</p>
             <td class="type">
             
                 
-<span class="param-type"><a href="global.html#Seed">Seed</a></span>
-|
-
 <span class="param-type">String</span>
 
 
@@ -3313,7 +3351,7 @@ in the chain before requesting.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1832">line 1832</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1664">line 1664</a>
     </li></ul></dd>
     
 
@@ -3362,14 +3400,14 @@ in the chain before requesting.</p>
 
     
 
-    <h4 class="name" id="getSeed"><span class="type-signature"></span>getSeed<span class="signature">(priority<span class="signature-attributes">nullable</span>)</span><span class="type-signature"> &rarr; {<a href="global.html#Seed">Seed</a>}</span></h4>
+    <h4 class="name" id="getRandom"><span class="type-signature"></span>getRandom<span class="signature">(hosts, unique)</span><span class="type-signature"> &rarr; {<a href="NetworkAddress.html">NetworkAddress</a>}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Allocate a new seed which is not currently being used.</p>
+    <p>Get a random host from collection of hosts.</p>
 </div>
 
 
@@ -3393,8 +3431,6 @@ in the chain before requesting.</p>
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
         
 
@@ -3407,7 +3443,30 @@ in the chain before requesting.</p>
 
         <tr>
             
-                <td class="name"><code>priority</code></td>
+                <td class="name"><code>hosts</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="NetworkAddress.html">NetworkAddress</a>></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>unique</code></td>
             
 
             <td class="type">
@@ -3420,21 +3479,10 @@ in the chain before requesting.</p>
             </td>
 
             
-                <td class="attributes">
-                
-
-                
-                    &lt;nullable><br>
-                
-
-                
-                </td>
-            
 
             
 
-            <td class="description last"><p>If true, the peer that
-is going to use this seed is high-priority.</p></td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -3475,7 +3523,7 @@ is going to use this seed is high-priority.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1888">line 1888</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1772">line 1772</a>
     </li></ul></dd>
     
 
@@ -3509,7 +3557,7 @@ is going to use this seed is high-priority.</p></td>
     </dt>
     <dd>
         
-<span class="param-type"><a href="global.html#Seed">Seed</a></span>
+<span class="param-type"><a href="NetworkAddress.html">NetworkAddress</a></span>
 
 
     </dd>
@@ -3647,7 +3695,7 @@ is going to use this seed is high-priority.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1842">line 1842</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1674">line 1674</a>
     </li></ul></dd>
     
 
@@ -3824,7 +3872,7 @@ is going to use this seed is high-priority.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1578">line 1578</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1410">line 1410</a>
     </li></ul></dd>
     
 
@@ -3955,7 +4003,7 @@ is going to use this seed is high-priority.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line2039">line 2039</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1871">line 1871</a>
     </li></ul></dd>
     
 
@@ -4104,7 +4152,7 @@ is going to use this seed is high-priority.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line414">line 414</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line407">line 407</a>
     </li></ul></dd>
     
 
@@ -4235,7 +4283,7 @@ is going to use this seed is high-priority.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line209">line 209</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line213">line 213</a>
     </li></ul></dd>
     
 
@@ -4505,7 +4553,7 @@ is going to use this seed is high-priority.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line2071">line 2071</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1903">line 1903</a>
     </li></ul></dd>
     
 
@@ -4543,14 +4591,14 @@ is going to use this seed is high-priority.</p></td>
 
     
 
-    <h4 class="name" id="removeSeed"><span class="type-signature"></span>removeSeed<span class="signature">(seed)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
+    <h4 class="name" id="removeHost"><span class="type-signature"></span>removeHost<span class="signature">(host)</span><span class="type-signature"> &rarr; {Boolean}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Remove seed from seed list.</p>
+    <p>Remove host from host list.</p>
 </div>
 
 
@@ -4586,7 +4634,7 @@ is going to use this seed is high-priority.</p></td>
 
         <tr>
             
-                <td class="name"><code>seed</code></td>
+                <td class="name"><code>host</code></td>
             
 
             <td class="type">
@@ -4595,7 +4643,7 @@ is going to use this seed is high-priority.</p></td>
 <span class="param-type">String</span>
 |
 
-<span class="param-type"><a href="global.html#Seed">Seed</a></span>
+<span class="param-type"><a href="NetworkAddress.html">NetworkAddress</a></span>
 
 
             
@@ -4646,7 +4694,7 @@ is going to use this seed is high-priority.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1993">line 1993</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1828">line 1828</a>
     </li></ul></dd>
     
 
@@ -4687,137 +4735,6 @@ is going to use this seed is high-priority.</p></td>
 </dl>
 
     
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="removeWallet"><span class="type-signature"></span>removeWallet<span class="signature">(wallet)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Remove a wallet from the bloom filter (SPV-only).</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>wallet</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="Wallet.html">Wallet</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1388">line 1388</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4996,7 +4913,7 @@ locator and resolving orphan root.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line363">line 363</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line356">line 356</a>
     </li></ul></dd>
     
 
@@ -5127,162 +5044,7 @@ locator and resolving orphan root.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1641">line 1641</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="searchWallet"><span class="type-signature"></span>searchWallet<span class="signature">(wallet, callback)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Reset the chain to the wallet's last
-active transaction's timestamp/height (SPV-only).</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>wallet</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="Wallet.html">Wallet</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>callback</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1444">line 1444</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1473">line 1473</a>
     </li></ul></dd>
     
 
@@ -5413,7 +5175,7 @@ active transaction's timestamp/height (SPV-only).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1771">line 1771</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1603">line 1603</a>
     </li></ul></dd>
     
 
@@ -5567,7 +5329,7 @@ active transaction's timestamp/height (SPV-only).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line2020">line 2020</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1851">line 1851</a>
     </li></ul></dd>
     
 
@@ -5612,140 +5374,6 @@ active transaction's timestamp/height (SPV-only).</p>
 </dl>
 
     
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="setSeeds"><span class="type-signature"></span>setSeeds<span class="signature">(seeds)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Reset seeds list.</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>seeds</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array.&lt;String></span>
-|
-
-<span class="param-type">Array.&lt;<a href="global.html#Seed">Seed</a>></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1955">line 1955</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5805,7 +5433,7 @@ active transaction's timestamp/height (SPV-only).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line651">line 651</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line663">line 663</a>
     </li></ul></dd>
     
 
@@ -5887,7 +5515,7 @@ active transaction's timestamp/height (SPV-only).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line672">line 672</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line684">line 684</a>
     </li></ul></dd>
     
 
@@ -6018,7 +5646,7 @@ active transaction's timestamp/height (SPV-only).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line454">line 454</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line467">line 467</a>
     </li></ul></dd>
     
 
@@ -6049,14 +5677,14 @@ active transaction's timestamp/height (SPV-only).</p>
 
     
 
-    <h4 class="name" id="unwatch"><span class="type-signature"></span>unwatch<span class="signature">(data)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="unwatch"><span class="type-signature"></span>unwatch<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Unwatch a piece of data (filterload, SPV-only).</p>
+    <p>Reset the spv filter (filterload, SPV-only).</p>
 </div>
 
 
@@ -6065,58 +5693,6 @@ active transaction's timestamp/height (SPV-only).</p>
 
 
 
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>data</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Buffer</span>
-|
-
-<span class="param-type"><a href="global.html#Hash">Hash</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
 
 
 
@@ -6152,272 +5728,7 @@ active transaction's timestamp/height (SPV-only).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1307">line 1307</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="unwatchAddress"><span class="type-signature"></span>unwatchAddress<span class="signature">(address)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Remove an address from the bloom filter (SPV-only).</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="Address.html">Address</a></span>
-|
-
-<span class="param-type"><a href="global.html#Base58Address">Base58Address</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1411">line 1411</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="unwatchWallet"><span class="type-signature"></span>unwatchWallet<span class="signature">(address)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Remove a wallet from the bloom filter (SPV-only).</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#Base58Address">Base58Address</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1431">line 1431</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1296">line 1296</a>
     </li></ul></dd>
     
 
@@ -6499,7 +5810,7 @@ active transaction's timestamp/height (SPV-only).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1334">line 1334</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1307">line 1307</a>
     </li></ul></dd>
     
 
@@ -6530,14 +5841,14 @@ active transaction's timestamp/height (SPV-only).</p>
 
     
 
-    <h4 class="name" id="watch"><span class="type-signature"></span>watch<span class="signature">(data)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="watch"><span class="type-signature"></span>watch<span class="signature">(data, enc<span class="signature-attributes">nullable</span>)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Watch a piece of data (filterload, SPV-only).</p>
+    <p>Watch a an address hash (filterload, SPV-only).</p>
 </div>
 
 
@@ -6560,6 +5871,8 @@ active transaction's timestamp/height (SPV-only).</p>
 
         <th>Type</th>
 
+        
+        <th>Attributes</th>
         
 
         
@@ -6588,6 +5901,47 @@ active transaction's timestamp/height (SPV-only).</p>
             
             </td>
 
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>enc</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                    &lt;nullable><br>
+                
+
+                
+                </td>
             
 
             
@@ -6633,7 +5987,7 @@ active transaction's timestamp/height (SPV-only).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1279">line 1279</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1285">line 1285</a>
     </li></ul></dd>
     
 
@@ -6767,138 +6121,7 @@ active transaction's timestamp/height (SPV-only).</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1402">line 1402</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-            
-
-    
-
-    <h4 class="name" id="watchWallet"><span class="type-signature"></span>watchWallet<span class="signature">(address)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Add a wallet to the bloom filter (SPV-only).</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>address</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="global.html#Base58Address">Base58Address</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1420">line 1420</a>
+        <a href="bcoin_pool.js.html">bcoin/pool.js</a>, <a href="bcoin_pool.js.html#line1332">line 1332</a>
     </li></ul></dd>
     
 
@@ -6940,13 +6163,13 @@ active transaction's timestamp/height (SPV-only).</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:22 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:59 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

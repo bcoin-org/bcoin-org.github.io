@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: bcoin/output.js</title>
+    <title>JSDoc: Source: bcoin/http/wallet.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: bcoin/output.js</h1>
+    <h1 class="page-title">Source: bcoin/http/wallet.js</h1>
 
     
 
@@ -27,271 +27,237 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>/*!
- * output.js - output object for bcoin
+ * wallet.js - http wallet for bcoin
  * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
  * Copyright (c) 2014-2016, Christopher Jeffrey (MIT License).
  * https://github.com/indutny/bcoin
  */
 
-var bcoin = require('./env');
-var utils = require('./utils');
-var constants = bcoin.protocol.constants;
-var assert = utils.assert;
-var BufferWriter = require('./writer');
-var Framer = bcoin.protocol.framer;
+var bcoin = require('../env');
+var EventEmitter = require('events').EventEmitter;
+
+var utils = require('../utils');
+var http = require('./');
 
 /**
- * Represents a transaction output.
- * @exports Output
+ * HTTPWallet
+ * @exports HTTPWallet
  * @constructor
- * @param {NakedOutput} options
- * @param {Boolean?} mutable
- * @property {Amount} value - Value in satoshis.
- * @property {Script} script
- * @property {String} type - Script type.
- * @property {String?} address - Input address.
- * @property {Boolean} mutable
+ * @param {String} uri
  */
 
-function Output(options, mutable) {
-  var value;
+function HTTPWallet(options) {
+  if (!(this instanceof HTTPWallet))
+    return new HTTPWallet(options);
 
-  if (!(this instanceof Output))
-    return new Output(options, mutable);
+  EventEmitter.call(this);
 
-  assert(options, 'Output data is required.');
+  if (!options)
+    options = {};
 
-  value = options.value;
+  if (typeof options === 'string')
+    options = { uri: options };
 
-  if (!value)
-    value = 0;
-
-  this.mutable = !!mutable;
-  this.value = value;
-  this.script = bcoin.script(options.script, this.mutable);
-
-  assert(typeof this.value === 'number');
-  assert(!this.mutable || this.value >= 0);
+  this.options = options;
+  this.client = new http.client(options);
+  this.network = bcoin.network.get(options.network);
+  this.uri = options.uri;
+  this._init();
 }
 
-/**
- * Get the script type.
- * @returns {String} type
- */
+utils.inherits(HTTPWallet, EventEmitter);
 
-Output.prototype.getType = function getType() {
-  var type;
+HTTPWallet.prototype._init = function _init() {
+  var self = this;
 
-  if (this._type)
-    return this._type;
+  this.client.on('tx', function(tx, map) {
+    self.emit('tx', tx, map);
+  });
 
-  type = this.script.getType();
+  this.client.on('confirmed', function(tx, map) {
+    self.emit('confirmed', tx, map);
+  });
 
-  if (!this.mutable)
-    this._type = type;
+  this.client.on('updated', function(tx, map) {
+    self.emit('updated', tx, map);
+  });
 
-  return type;
+  this.client.on('balance', function(balance, map) {
+    self.emit('balance', balance, map);
+  });
+
+  this.client.on('address', function(receive, change, map) {
+    self.emit('address', receive, change, map);
+  });
+
+  this.client.on('error', function(err) {
+    self.emit('error', err);
+  });
+
+  this.client.join(this.id);
 };
 
 /**
- * Get the address.
- * @returns {Address} address
+ * @see Wallet#open
  */
 
-Output.prototype.getAddress = function getAddress() {
-  var address;
-
-  if (this._address)
-    return this._address;
-
-  address = this.script.getAddress();
-
-  if (!this.mutable)
-    this._address = address;
-
-  return address;
+HTTPWallet.prototype.open = function open(callback) {
+  var self = this;
+  this.client.open(function(err) {
+    if (err)
+      return callback(err);
+    self.createWallet(self.options, callback);
+  });
 };
 
 /**
- * Get the address hash.
- * @returns {Hash} hash
+ * @see Wallet#close
  */
 
-Output.prototype.getHash = function getHash() {
-  var address = this.getAddress();
-  if (!address)
-    return;
-  return address.getHash('hex');
+HTTPWallet.prototype.close =
+HTTPWallet.prototype.destroy = function destroy(callback) {
+  callback = utils.ensure(callback);
+
+  if (!this.client)
+    return utils.nextTick(callback);
+
+  this.client.destroy(callback);
+  this.client = null;
 };
 
 /**
- * Test the output against an address, an
- * array of addresses, or a map of addresses.
- * @param {Hash|Hash[]|AddressHashMap} addressMap
- * @returns {Boolean} Whether the output matched.
+ * @see Wallet#getHistory
  */
 
-Output.prototype.test = function test(addressMap) {
-  var hash = this.getHash();
-
-  if (!hash)
-    return false;
-
-  if (typeof addressMap === 'string')
-    return hash === addressMap;
-
-  if (Array.isArray(addressMap))
-    return addressMap.indexOf(hash) !== -1;
-
-  if (addressMap[hash] != null)
-    return true;
-
-  return false;
+HTTPWallet.prototype.getHistory = function getHistory(account, callback) {
+  return this.client.getWalletHistory(this.id, account, callback);
 };
 
 /**
- * Convert the input to a more user-friendly object.
- * @returns {Object}
+ * @see Wallet#getCoins
  */
 
-Output.prototype.inspect = function inspect() {
-  return {
-    type: this.getType(),
-    value: utils.btc(this.value),
-    script: this.script,
-    address: this.getAddress()
-  };
+HTTPWallet.prototype.getCoins = function getCoins(account, callback) {
+  return this.client.getWalletCoins(this.id, account, callback);
 };
 
 /**
- * Convert the output to an object suitable
- * for JSON serialization.
- * @returns {Object}
+ * @see Wallet#getUnconfirmed
  */
 
-Output.prototype.toJSON = function toJSON() {
-  return {
-    value: utils.btc(this.value),
-    script: this.script.toRaw('hex')
-  };
+HTTPWallet.prototype.getUnconfirmed = function getUnconfirmed(account, callback) {
+  return this.client.getWalletUnconfirmed(this.id, account, callback);
 };
 
 /**
- * Calculate the dust threshold for this
- * output, based on serialize size and rate.
- * @param {Rate?} rate
- * @returns {Amount}
+ * @see Wallet#getBalance
  */
 
-Output.prototype.getDustThreshold = function getDustThreshold(rate) {
-  var size;
-
-  if (rate == null)
-    rate = constants.tx.MIN_RELAY;
-
-  if (this.script.isUnspendable())
-    return 0;
-
-  size = Framer.output(this, new BufferWriter()).written;
-  size += 148;
-
-  return 3 * bcoin.tx.getMinFee(size, rate);
+HTTPWallet.prototype.getBalance = function getBalance(account, callback) {
+  return this.client.getWalletBalance(this.id, account, callback);
 };
 
 /**
- * Test whether the output should be considered dust.
- * @param {Rate?} rate
- * @returns {Boolean}
+ * @see Wallet#getLast
  */
 
-Output.prototype.isDust = function isDust(rate) {
-  return this.value &lt; this.getDustThreshold(rate);
+HTTPWallet.prototype.getLast = function getLast(account, limit, callback) {
+  return this.client.getWalletLast(this.id, account, limit, callback);
 };
 
 /**
- * Handle a deserialized JSON output object.
- * @returns {NakedOutput} A "naked" output (a
- * plain javascript object which is suitable
- * for passing to the Output constructor).
+ * @see Wallet#getRange
  */
 
-Output.parseJSON = function parseJSON(json) {
-  return {
-    value: utils.satoshi(json.value),
-    script: bcoin.script.parseRaw(json.script, 'hex')
-  };
+HTTPWallet.prototype.getRange = function getRange(account, options, callback) {
+  return this.client.getWalletRange(this.id, account, options, callback);
 };
 
 /**
- * Instantiate an Output from a jsonified output object.
- * @param {Object} json - The jsonified output object.
- * @returns {Output}
+ * @see Wallet#getTX
  */
 
-Output.fromJSON = function fromJSON(json) {
-  return new Output(Output.parseJSON(json));
+HTTPWallet.prototype.getTX = function getTX(account, hash, callback) {
+  return this.client.getWalletTX(this.id, account, hash, callback);
 };
 
 /**
- * Serialize the output.
- * @param {String?} enc - Encoding, can be `'hex'` or null.
- * @returns {Buffer|String}
+ * @see Wallet#getCoin
  */
 
-Output.prototype.toRaw = function toRaw(enc) {
-  var data = Framer.output(this);
-
-  if (enc === 'hex')
-    data = data.toString('hex');
-
-  return data;
+HTTPWallet.prototype.getCoin = function getCoin(account, hash, index, callback) {
+  return this.client.getWalletCoin(this.id, account, hash, index, callback);
 };
 
 /**
- * Parse a serialized output.
- * @param {Buffer} data
- * @param {String?} enc - Encoding, can be `'hex'` or null.
- * @returns {NakedOutput} A "naked" output object.
+ * @see Wallet#zap
  */
 
-Output.parseRaw = function parseRaw(data, enc) {
-  if (enc === 'hex')
-    data = new Buffer(data, 'hex');
-
-  data = bcoin.protocol.parser.parseOutput(data);
-
-  return data;
+HTTPWallet.prototype.zap = function zap(account, age, callback) {
+  return this.client.walletZap(this.id, account, age, callback);
 };
 
 /**
- * Instantiate an output from a serialized Buffer.
- * @param {Buffer} data
- * @param {String?} enc - Encoding, can be `'hex'` or null.
- * @returns {Output}
+ * @see Wallet#createTX
  */
 
-Output.fromRaw = function fromRaw(data, enc) {
-  return new Output(Output.parseRaw(data, enc));
+HTTPWallet.prototype.createTX = function createTX(tx, options, outputs, callback) {
+  return this.client.walletCreate(this.id, tx, options, outputs, callback);
 };
 
 /**
- * Test an object to see if it is an Output.
- * @param {Object} obj
- * @returns {Boolean}
+ * @see HTTPClient#walletSend
  */
 
-Output.isOutput = function isOutput(obj) {
-  return obj
-    &amp;&amp; obj.value
-    &amp;&amp; obj.script
-    &amp;&amp; typeof obj.getAddress === 'function';
+HTTPWallet.prototype.send = function send(tx, options, outputs, callback) {
+  return this.client.walletSend(this.id, tx, options, outputs, callback);
+};
+
+/**
+ * @see Wallet#sign
+ */
+
+HTTPWallet.prototype.sign = function sign(tx, options, callback) {
+  return this.client.walletSign(this.id, tx, options, callback);
+};
+
+/**
+ * @see Wallet#fillCoins
+ */
+
+HTTPWallet.prototype.fillCoins = function fillCoins(tx, callback) {
+  return this.client.walletFill(tx, callback);
+};
+
+/**
+ * @see HTTPClient#getWallet
+ */
+
+HTTPWallet.prototype.getInfo = function getInfo(callback) {
+  return this.client.getWallet(this.id, callback);
+};
+
+/**
+ * @see Wallet#getAccounts
+ */
+
+HTTPWallet.prototype.getAccounts = function getAccounts(callback) {
+  return this.client.getWalletAccounts(this.id, callback);
+};
+
+/**
+ * @see Wallet#createAccount
+ */
+
+HTTPWallet.prototype.createAccount = function createAccount(options, callback) {
+  return this.client.createWalletAccount(this.id, options, callback);
 };
 
 /*
  * Expose
  */
 
-module.exports = Output;
+module.exports = HTTPWallet;
 </code></pre>
         </article>
     </section>

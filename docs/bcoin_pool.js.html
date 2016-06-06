@@ -36,9 +36,11 @@
 var bcoin = require('./env');
 var EventEmitter = require('events').EventEmitter;
 var utils = require('./utils');
+var IP = require('./ip');
 var assert = utils.assert;
 var constants = bcoin.protocol.constants;
 var VerifyError = bcoin.errors.VerifyError;
+var NetworkAddress = bcoin.peer.NetworkAddress;
 
 /**
  * A pool of peers for handling all network activity.
@@ -72,7 +74,7 @@ var VerifyError = bcoin.errors.VerifyError;
  * Only deal with witness peers.
  * @param {Boolean} [options.discoverPeers=true] Automatically discover new
  * peers.
- * @param {(String[]|Seed[])?} options.seeds
+ * @param {String[]} options.seeds
  * @param {Function?} options.createSocket - Custom function to create a socket.
  * Must accept (port, host) and return a node-like socket.
  * @param {Function?} options.createServer - Custom function to create a server.
@@ -127,15 +129,19 @@ function Pool(options) {
   if (options.headers == null)
     options.headers = options.spv;
 
-  seeds = (options.seeds || this.network.seeds).slice();
+  seeds = options.seeds || this.network.seeds;
 
-  if (process.env.BCOIN_SEED)
+  if (process.env.BCOIN_SEED) {
+    seeds = seeds.slice();
     seeds.unshift(process.env.BCOIN_SEED);
+  }
 
-  this.originalSeeds = seeds.map(utils.parseHost);
-  this.seeds = [];
-  this.hosts = {};
-  this.setSeeds([]);
+  this.seeds = seeds.map(function(hostname) {
+    return NetworkAddress.fromHostname(hostname, self.network);
+  });
+
+  this.hosts = [];
+  this.hostMap = {};
   this.host = '0.0.0.0';
   this.port = this.network.port;
 
@@ -160,12 +166,10 @@ function Pool(options) {
 
   this.requestTimeout = options.requestTimeout || 20 * 60000;
 
-  this.watchMap = {};
-
   this.feeRate = options.feeRate != null ? options.feeRate : -1;
 
   this.spvFilter = options.spv
-    ? bcoin.bloom.fromRate(10000, 0.01, constants.bloom.NONE)
+    ? bcoin.bloom.fromRate(10000, 0.001, constants.bloom.NONE)
     : null;
 
   this.localNonce = utils.nonce();
@@ -247,6 +251,7 @@ Pool.prototype.open = function open(callback) {
 
 Pool.prototype.connect = function connect() {
   var self = this;
+  var i;
 
   assert(this.loaded, 'Pool is not loaded.');
 
@@ -273,7 +278,7 @@ Pool.prototype.connect = function connect() {
     });
   }
 
-  if (this.originalSeeds.length > 0) {
+  if (this.seeds.length > 0) {
     this._addLoader();
 
     for (i = 0; i &lt; this.size - 1; i++)
@@ -285,7 +290,6 @@ Pool.prototype.connect = function connect() {
 
 Pool.prototype._init = function _init() {
   var self = this;
-  var i;
 
   if (this.mempool) {
     this.mempool.on('bad orphan', function(tx) {
@@ -294,18 +298,7 @@ Pool.prototype._init = function _init() {
   }
 
   this.chain.on('block', function(block, entry, peer) {
-    // Emit merkle txs after the fact
-    if (self.options.spv) {
-      utils.forEachSerial(block.txs, function(tx, next) {
-        self._handleTX(tx, peer, next);
-      }, function(err) {
-        if (err)
-          return self.emit('error', err);
-        self.emit('block', block, peer);
-      });
-    } else {
-      self.emit('block', block, peer);
-    }
+    self.emit('block', block, peer);
   });
 
   this.chain.on('fork', function(block, data, peer) {
@@ -457,10 +450,30 @@ Pool.prototype.listen = function listen(callback) {
   }
 
   this.server.on('connection', function(socket) {
-    if (self.peers.leeches.length >= self.maxLeeches) {
+    var hostname, host;
+
+    if (!socket.remoteAddress) {
+      bcoin.debug('Ignoring disconnected leech.');
       socket.destroy();
       return;
     }
+
+    host = IP.normalize(socket.remoteAddress);
+
+    if (self.peers.leeches.length >= self.maxLeeches) {
+      hostname = IP.hostname(host, socket.remotePort);
+      bcoin.debug('Ignoring leech: too many leeches (%s).', hostname);
+      socket.destroy();
+      return;
+    }
+
+    if (self.isMisbehaving(host)) {
+      hostname = IP.hostname(host, socket.remotePort);
+      bcoin.debug('Ignoring misbehaving leech (%s).', hostname);
+      socket.destroy();
+      return;
+    }
+
     self._addLeech(socket);
   });
 
@@ -563,8 +576,7 @@ Pool.prototype._addLoader = function _addLoader() {
     return;
 
   peer = this._createPeer({
-    seed: this.getSeed(true),
-    priority: true,
+    host: this.getLoaderHost(),
     network: true,
     spv: this.options.spv,
     witness: this.options.witness
@@ -741,12 +753,12 @@ Pool.prototype._handleHeaders = function _handleHeaders(headers, peer, callback)
     var hash = header.hash('hex');
 
     if (last &amp;&amp; header.prevBlock !== last) {
-      peer.sendReject(block, 'invalid', 'bad-prevblk', 100);
+      peer.sendReject(header, 'invalid', 'bad-prevblk', 100);
       return next(new Error('Bad header chain.'));
     }
 
     if (!header.verify(ret)) {
-      peer.sendReject(block, 'invalid', ret.reason, 100);
+      peer.sendReject(header, 'invalid', ret.reason, 100);
       self.rejects.add(header.hash());
       return next(new VerifyError(header, 'invalid', ret.reason, ret.score));
     }
@@ -899,7 +911,6 @@ Pool.prototype._handleBlock = function _handleBlock(block, peer, callback) {
       if (err.reason === 'bad-prevblk') {
         if (self.options.headers) {
           peer.setMisbehavior(10);
-          peer.destroy();
           return callback(err);
         }
         return self.resolveOrphan(peer, null, block.hash('hex'), function(e) {
@@ -975,10 +986,9 @@ Pool.prototype._createPeer = function _createPeer(options) {
   var self = this;
 
   var peer = new bcoin.peer(this, {
-    seed: options.seed,
+    host: options.host,
     createSocket: this.options.createSocket,
     relay: this.options.relay,
-    priority: options.priority,
     socket: options.socket,
     network: options.network,
     spv: options.spv,
@@ -1013,7 +1023,7 @@ Pool.prototype._createPeer = function _createPeer(options) {
   });
 
   peer.on('notfound', function(items) {
-    var i, item;
+    var i, item, req;
 
     for (i = 0; i &lt; items.length; i++) {
       item = items[i];
@@ -1030,34 +1040,33 @@ Pool.prototype._createPeer = function _createPeer(options) {
     });
   });
 
-  peer.on('addr', function(data) {
+  peer.on('addr', function(hosts) {
+    var i, host;
+
     if (self.options.discoverPeers === false)
       return;
 
-    if (!(data.services &amp; constants.services.NETWORK))
-      return;
+    for (i = 0; i &lt; hosts.length; i++) {
+      host = hosts[i];
 
-    if (self.options.headers) {
-      if (data.version &lt; 31800)
-        return;
+      if (!host.hasNetwork())
+        continue;
+
+      if (self.options.spv) {
+        if (!host.hasBloom())
+          continue;
+      }
+
+      if (self.options.witness) {
+        if (!host.hasWitness())
+          continue;
+      }
+
+      if (self.addHost(host))
+        self.emit('host', host, peer);
     }
 
-    if (self.options.spv) {
-      if (data.version &lt; 70011 || !(data.services &amp; constants.services.BLOOM))
-        return;
-    }
-
-    if (self.options.witness) {
-      if (!(data.services &amp; constants.services.WITNESS))
-        return;
-    }
-
-    if (self.seeds.length > 300)
-      self.setSeeds(self.seeds.slice(-150));
-
-    self.addSeed(data);
-
-    self.emit('addr', data, peer);
+    self.emit('addr', hosts, peer);
   });
 
   peer.on('txs', function(txs) {
@@ -1157,7 +1166,6 @@ Pool.prototype._addLeech = function _addLeech(socket) {
 
   peer = this._createPeer({
     socket: socket,
-    priority: false,
     network: false,
     spv: false,
     witness: false,
@@ -1204,7 +1212,7 @@ Pool.prototype._addLeech = function _addLeech(socket) {
 
 Pool.prototype._addPeer = function _addPeer() {
   var self = this;
-  var peer, seed;
+  var peer, host;
 
   if (this.destroyed)
     return;
@@ -1212,16 +1220,15 @@ Pool.prototype._addPeer = function _addPeer() {
   if (this.peers.regular.length + this.peers.pending.length >= this.size - 1)
     return;
 
-  seed = this.getSeed(false);
+  host = this.getHost();
 
-  if (!seed) {
+  if (!host) {
     setTimeout(this._addPeer.bind(this), 5000);
     return;
   }
 
   peer = this._createPeer({
-    seed: seed,
-    priority: false,
+    host: host,
     network: true,
     spv: this.options.spv,
     witness: this.options.witness
@@ -1239,8 +1246,6 @@ Pool.prototype._addPeer = function _addPeer() {
   });
 
   peer.once('ack', function() {
-    var i;
-
     if (self.destroyed)
       return;
 
@@ -1300,58 +1305,26 @@ Pool.prototype._removePeer = function _removePeer(peer) {
 };
 
 /**
- * Watch a piece of data (filterload, SPV-only).
+ * Watch a an address hash (filterload, SPV-only).
  * @param {Buffer|Hash} data
+ * @param {String?} enc
  */
 
-Pool.prototype.watch = function watch(data) {
-  var self = this;
-
-  if (Buffer.isBuffer(data))
-    data = data.toString('hex');
-
-  if (data instanceof bcoin.wallet) {
-    this.watchWallet(data);
+Pool.prototype.watch = function watch(data, enc) {
+  if (!this.options.spv)
     return;
-  }
-
-  if (this.watchMap[data]) {
-    this.watchMap[data]++;
-    return;
-  }
-
-  this.watchMap[data] = 1;
-
-  this.spvFilter.add(data, 'hex');
-
+  this.spvFilter.add(data, enc);
   this.updateWatch();
 };
 
 /**
- * Unwatch a piece of data (filterload, SPV-only).
- * @param {Buffer|Hash} data
+ * Reset the spv filter (filterload, SPV-only).
  */
 
-Pool.prototype.unwatch = function unwatch(data) {
-  var self = this;
-
-  if (Buffer.isBuffer(data))
-    data = data.toString('hex');
-
-  if (!this.watchMap[data])
+Pool.prototype.unwatch = function unwatch() {
+  if (!this.options.spv)
     return;
-
-  if (--this.watchMap[data] !== 0)
-    return;
-
-  delete this.watchMap[data];
-
   this.spvFilter.reset();
-
-  Object.keys(this.watchMap).forEach(function(data) {
-    this.spvFilter.add(data, 'hex');
-  }, this);
-
   this.updateWatch();
 };
 
@@ -1368,7 +1341,7 @@ Pool.prototype.updateWatch = function updateWatch() {
 
   this._pendingWatch = true;
 
-  utils.nextTick(function() {
+  setTimeout(function() {
     self._pendingWatch = false;
 
     if (self.peers.load)
@@ -1376,50 +1349,7 @@ Pool.prototype.updateWatch = function updateWatch() {
 
     for (i = 0; i &lt; self.peers.regular.length; i++)
       self.peers.regular[i].updateWatch();
-  });
-};
-
-/**
- * Add a wallet to bloom filter (SPV-only). Resend pending transactions.
- * @param {Wallet} wallet
- * @param {Function} callback
- */
-
-Pool.prototype.addWallet = function addWallet(wallet, callback) {
-  var self = this;
-  var i;
-
-  callback = utils.asyncify(callback);
-
-  if (this.options.spv)
-    this.watchWallet(wallet);
-
-  wallet.getUnconfirmed(function(err, txs) {
-    if (err)
-      return callback(err);
-
-    for (i = 0; i &lt; txs.length; i++)
-      self.broadcast(txs[i]);
-
-    if (!self.options.spv)
-      return callback();
-
-    self.searchWallet(wallet, callback);
-  });
-};
-
-/**
- * Remove a wallet from the bloom filter (SPV-only).
- * @param {Wallet} wallet
- */
-
-Pool.prototype.removeWallet = function removeWallet(wallet) {
-  if (!this.options.spv)
-    return;
-
-  assert(this.loaded, 'Pool is not loaded.');
-
-  this.unwatchWallet(wallet);
+  }, 50);
 };
 
 /**
@@ -1428,105 +1358,7 @@ Pool.prototype.removeWallet = function removeWallet(wallet) {
  */
 
 Pool.prototype.watchAddress = function watchAddress(address) {
-  this.watch(bcoin.address.getHash(address));
-};
-
-/**
- * Remove an address from the bloom filter (SPV-only).
- * @param {Address|Base58Address} address
- */
-
-Pool.prototype.unwatchAddress = function unwatchAddress(address) {
-  this.unwatch(bcoin.address.getHash(address));
-};
-
-/**
- * Add a wallet to the bloom filter (SPV-only).
- * @param {Base58Address} address
- */
-
-Pool.prototype.watchWallet = function watchWallet(wallet) {
-  Object.keys(wallet.addressMap).forEach(function(address) {
-    this.watch(address);
-  }, this);
-};
-
-/**
- * Remove a wallet from the bloom filter (SPV-only).
- * @param {Base58Address} address
- */
-
-Pool.prototype.unwatchWallet = function unwatchWallet(wallet) {
-  Object.keys(wallet.addressMap).forEach(function(address) {
-    this.unwatch(address);
-  }, this);
-};
-
-/**
- * Reset the chain to the wallet's last
- * active transaction's timestamp/height (SPV-only).
- * @param {Wallet} wallet
- * @param {Function} callback
- */
-
-Pool.prototype.searchWallet = function(wallet, callback) {
-  var self = this;
-
-  assert(this.loaded, 'Pool is not loaded.');
-
-  callback = utils.asyncify(callback);
-
-  if (!this.options.spv)
-    return callback();
-
-  wallet.getLastTime(function(err, ts, height) {
-    if (err)
-      return callback(err);
-
-    // Always prefer height
-    if (height > 0) {
-      // Back one week
-      if (!height || height === -1)
-        height = self.chain.height - (7 * 24 * 6);
-
-      self.chain.reset(height, function(err) {
-        if (err) {
-          bcoin.error(err);
-          return callback(err);
-        }
-
-        bcoin.debug('Wallet height: %s.', height);
-        bcoin.debug(
-          'Reverted chain to height=%d (%s).',
-          self.chain.height,
-          utils.date(self.chain.tip.ts)
-        );
-
-        callback();
-      });
-
-      return;
-    }
-
-    if (!ts)
-      ts = utils.now() - 7 * 24 * 3600;
-
-    self.chain.resetTime(ts, function(err) {
-      if (err) {
-        bcoin.error(err);
-        return callback(err);
-      }
-
-      bcoin.debug('Wallet time is %s.', utils.date(ts));
-      bcoin.debug(
-        'Reverted chain to height=%d (%s).',
-        self.chain.height,
-        utils.date(self.chain.tip.ts)
-      );
-
-      callback();
-    });
-  });
+  this.watch(bcoin.address.getHash(address), 'hex');
 };
 
 /**
@@ -1674,7 +1506,7 @@ Pool.prototype.scheduleRequests = function scheduleRequests(peer) {
 
   this._scheduled = true;
 
-  this.chain.onFlush(function() {
+  this.chain.onDrain(function() {
     utils.nextTick(function() {
       self._sendRequests(peer);
       self._scheduled = false;
@@ -1853,12 +1685,12 @@ Pool.prototype.destroy = function destroy(callback) {
 
 /**
  * Get peer by host.
- * @param {Seed|String} addr
+ * @param {String} addr
  * @returns {Peer?}
  */
 
 Pool.prototype.getPeer = function getPeer(host) {
-  return this.peers.map[host.host || host];
+  return this.peers.map[host];
 };
 
 /**
@@ -1868,7 +1700,23 @@ Pool.prototype.getPeer = function getPeer(host) {
  */
 
 Pool.prototype.getUTXOs = function getUTXOs(utxos, callback) {
-  var peer = this.peers.load || this.peers.regular[0];
+  var i, peer;
+
+  if (this.peers.load &amp;&amp; this.peers.load.version) {
+    if (this.peers.load.version.services &amp; constants.services.BLOOM)
+      peer = this.peers.load;
+  }
+
+  if (!peer) {
+    for (i = 0; i &lt; this.peers.regular.length; i++) {
+      peer = this.peers.regular[i];
+      if (peer.version.services &amp; constants.services.BLOOM)
+        break;
+
+    }
+    if (i === this.peers.regular.length)
+      peer = null;
+  }
 
   if (!peer)
     return utils.asyncify(callback)(new Error('No peer available.'));
@@ -1882,9 +1730,8 @@ Pool.prototype.getUTXOs = function getUTXOs(utxos, callback) {
  * @param {Function} callback - Returns [Error, {@link TX}].
  */
 
-Pool.prototype.fillHistory = function fillHistory(tx, callback) {
+Pool.prototype.fillCoins = function fillCoins(tx, callback) {
   var utxos = [];
-  var reqs = [];
   var i, input;
 
   for (i = 0; i &lt; tx.inputs.length; i++) {
@@ -1907,135 +1754,119 @@ Pool.prototype.fillHistory = function fillHistory(tx, callback) {
 };
 
 /**
- * Allocate a new seed which is not currently being used.
- * @param {Boolean?} priority - If true, the peer that
- * is going to use this seed is high-priority.
- * @returns {Seed}
+ * Allocate a new loader host.
+ * @returns {NetworkAddress}
  */
 
-Pool.prototype.getSeed = function getSeed(priority) {
-  var addr;
+Pool.prototype.getLoaderHost = function getLoaderHost() {
+  var host;
 
-  if (priority) {
-    if (!this.connected)
-      return this.originalSeeds[0];
+  if (!this.connected)
+    return this.seeds[0];
 
-    addr = this._getRandom(this.originalSeeds);
-    if (addr)
-      return addr;
+  host = this.getRandom(this.seeds);
+  if (host)
+    return host;
 
-    addr = this._getRandom(this.seeds);
-    if (addr)
-      return addr;
+  return this.getRandom(this.hosts);
+};
 
-    addr = this.seeds[Math.random() * this.seeds.length | 0];
-    if (addr)
-      return addr;
+/**
+ * Allocate a new host which is not currently being used.
+ * @returns {NetworkAddress}
+ */
 
-    return this.originalSeeds[Math.random() * this.originalSeeds.length | 0];
-  }
+Pool.prototype.getHost = function getHost() {
+  var host;
 
   // Hang back if we don't have a loader peer yet.
   if (!this.peers.load)
     return;
 
-  addr = this._getRandom(this.originalSeeds, true);
-  if (addr)
-    return addr;
+  host = this.getRandom(this.seeds, true);
+  if (host)
+    return host;
 
-  addr = this._getRandom(this.seeds, true);
-  if (addr)
-    return addr;
+  return this.getRandom(this.hosts, true);
 };
 
-Pool.prototype._getRandom = function _getRandom(seeds, uniq) {
+/**
+ * Get a random host from collection of hosts.
+ * @param {NetworkAddress[]} hosts
+ * @param {Boolean} unique
+ * @returns {NetworkAddress}
+ */
+
+Pool.prototype.getRandom = function getRandom(hosts, unique) {
   var tried = {};
   var tries = 0;
-  var index, addr;
+  var index, host;
 
   for (;;) {
-    if (tries === seeds.length)
+    if (tries === hosts.length)
       return;
 
-    index = Math.random() * seeds.length | 0;
-    addr = seeds[index];
+    index = Math.random() * hosts.length | 0;
+    host = hosts[index];
 
     if (!tried[index]) {
       tried[index] = true;
       tries++;
     }
 
-    if (this.isMisbehaving(addr.host))
+    if (this.isMisbehaving(host.host))
       continue;
 
-    if (uniq &amp;&amp; this.getPeer(addr.host))
+    if (unique &amp;&amp; this.getPeer(host.host))
       continue;
 
-    return addr;
+    return host;
   }
 };
 
 /**
- * Reset seeds list.
- * @param {String[]|Seed[]} seeds
- */
-
-Pool.prototype.setSeeds = function setSeeds(seeds) {
-  var i, seed;
-
-  this.seeds = [];
-  this.hosts = {};
-
-  for (i = 0; i &lt; seeds.length; i++)
-    this.addSeed(seeds[i]);
-};
-
-/**
- * Add seed to seed list.
- * @param {String|Seed} seed
+ * Add host to host list.
+ * @param {String|NetworkAddress} host
  * @returns {Boolean}
  */
 
-Pool.prototype.addSeed = function addSeed(seed) {
-  seed = utils.parseHost(seed);
+Pool.prototype.addHost = function addHost(host) {
+  if (typeof host === 'string')
+    host = NetworkAddress.fromHostname(host);
 
-  if (this.hosts[seed.host] != null)
-    return false;
+  if (this.hosts.length > 500)
+    return;
 
-  this.seeds.push({
-    host: seed.host,
-    port: seed.port || this.network.port
-  });
+  if (this.hostMap[host.host])
+    return;
 
-  this.hosts[seed.host] = true;
+  utils.binaryInsert(this.hosts, host, compare);
 
-  return true;
+  this.hostMap[host.host] = host;
+
+  return host;
 };
 
 /**
- * Remove seed from seed list.
- * @param {String|Seed} seed
+ * Remove host from host list.
+ * @param {String|NetworkAddress} host
  * @returns {Boolean}
  */
 
-Pool.prototype.removeSeed = function removeSeed(seed) {
-  var i;
+Pool.prototype.removeHost = function removeHost(host) {
+  if (host.host)
+    host = host.host;
 
-  seed = utils.parseHost(seed);
+  host = this.hostMap[host];
 
-  if (this.hosts[seed.host] == null)
-    return false;
+  if (!host)
+    return;
 
-  for (i = 0; i &lt; this.seeds.length; i++) {
-    if (this.seeds[i].host === seed.host) {
-      this.seeds.splice(i, 1);
-      break;
-    }
-  }
+  utils.binaryRemove(this.hosts, host, compare);
 
-  delete this.hosts[seed.host];
+  delete this.hostMap[host];
 
-  return true;
+  return host;
 };
 
 /**
@@ -2050,6 +1881,7 @@ Pool.prototype.setMisbehavior = function setMisbehavior(peer, score) {
 
   if (peer.banScore >= constants.BAN_SCORE) {
     this.peers.misbehaving[peer.host] = utils.now();
+    this.removeHost(peer.host);
     bcoin.debug('Ban threshold exceeded (%s).', peer.host);
     peer.destroy();
     return true;
@@ -2072,7 +1904,7 @@ Pool.prototype.isMisbehaving = function isMisbehaving(host) {
 
   time = this.peers.misbehaving[host];
 
-  if (time) {
+  if (time != null) {
     if (utils.now() > time + constants.BAN_TIME) {
       delete this.peers.misbehaving[host];
       peer = this.getPeer(host);
@@ -2151,10 +1983,10 @@ Pool.prototype.getIP = function getIP(callback) {
 
     ip = body.trim();
 
-    if (!utils.isIP(ip))
+    if (IP.version(ip) === -1)
       return self.getIP2(callback);
 
-    return callback(null, ip);
+    return callback(null, IP.normalize(ip));
   });
 };
 
@@ -2178,12 +2010,12 @@ Pool.prototype.getIP2 = function getIP2(callback) {
     if (err)
       return callback(err);
 
-    ip = /IP Address:\s*([0-9.:]+)/i.exec(body);
+    ip = /IP Address:\s*([0-9a-f.:]+)/i.exec(body);
 
-    if (!ip || !utils.isIP(ip[1]))
+    if (!ip || IP.version(ip[1]) === -1)
       return callback(new Error('Could not find IP.'));
 
-    return callback(null, ip[1]);
+    return callback(null, IP.normalize(ip[1]));
   });
 };
 
@@ -2374,9 +2206,6 @@ BroadcastItem.prototype.addCallback = function addCallback(callback) {
  */
 
 BroadcastItem.prototype.start = function start() {
-  var self = this;
-  var i;
-
   assert(!this.timeout, 'Already started.');
   assert(!this.pool.inv.map[this.hash], 'Already started.');
 
@@ -2425,7 +2254,7 @@ BroadcastItem.prototype.finish = function finish(err) {
   assert(this.timeout, 'Already finished.');
   assert(this.pool.inv.map[this.hash], 'Already finished.');
 
-  clearInterval(this.timeout);
+  clearTimeout(this.timeout);
   this.timeout = null;
 
   delete this.pool.inv.map[this.hash];
@@ -2445,7 +2274,6 @@ BroadcastItem.prototype.finish = function finish(err) {
  */
 
 BroadcastItem.prototype.send = function send(peer, witness) {
-  var self = this;
   var data;
 
   if (!this.msg) {
@@ -2454,8 +2282,12 @@ BroadcastItem.prototype.send = function send(peer, witness) {
   }
 
   if (this.type === constants.inv.TX) {
+    // Failsafe - we never want to relay coinbases.
+    // They are an insta-ban from any bitcoind node.
     if (this.msg.isCoinbase()) {
       peer.write(peer.framer.notFound([this]));
+      bcoin.debug('Failsafe: tried to relay a coinbase.');
+      this.finish(new Error('Coinbase.'));
       return true;
     }
 
@@ -2547,13 +2379,13 @@ module.exports = Pool;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

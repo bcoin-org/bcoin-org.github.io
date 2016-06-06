@@ -141,6 +141,9 @@ function Mnemonic(options) {
   if (!options)
     options = {};
 
+  if (typeof options === 'string')
+    options = { phrase: options };
+
   this.bits = options.bits || 128;
   this.entropy = options.entropy;
   this.phrase = options.phrase;
@@ -248,7 +251,7 @@ Mnemonic.getWordlist = function getWordlist(language) {
 };
 
 /**
- * Test an object to see if it is an Mnemonic.
+ * Test whether an object is a Mnemonic.
  * @param {Object} obj
  * @returns {Boolean}
  */
@@ -328,11 +331,23 @@ HD.fromMnemonic = function fromMnemonic(options, network) {
  * Instantiate an HD key from a jsonified key object.
  * @param {Object} json - The jsonified transaction object.
  * @param {String?} passphrase
- * @returns {HDPrivateKey}
+ * @returns {HDPrivateKey|HDPublicKey}
  */
 
 HD.fromJSON = function fromJSON(json, passphrase) {
   return HDPrivateKey.fromJSON(json, passphrase);
+};
+
+/**
+ * Instantiate an HD key from serialized data.
+ * @param {Buffer} data
+ * @returns {HDPrivateKey|HDPublicKey}
+ */
+
+HD.fromRaw = function fromRaw(data) {
+  if (HDPrivateKey.hasPrefix(data))
+    return HDPrivateKey.fromRaw(data);
+  return HDPublicKey.fromRaw(data);
 };
 
 /**
@@ -363,6 +378,9 @@ HD.fromAny = function fromAny(options, network) {
   if (HDPublicKey.isExtended(xkey))
     return HDPublicKey.fromBase58(xkey);
 
+  if (HD.hasPrefix(options))
+    return HD.fromRaw(options);
+
   return HDPrivateKey.fromMnemonic(options, network);
 };
 
@@ -375,6 +393,17 @@ HD.fromAny = function fromAny(options, network) {
 HD.isExtended = function isExtended(data) {
   return HDPrivateKey.isExtended(data)
     || HDPublicKey.isExtended(data);
+};
+
+/**
+ * Test whether an object is in the form of a serialized hd key.
+ * @param {Buffer} data
+ * @returns {NetworkType}
+ */
+
+HD.hasPrefix = function hasPrefix(data) {
+  return HDPrivateKey.hasPrefix(data)
+    || HDPublicKey.hasPrefix(data);
 };
 
 /**
@@ -433,7 +462,7 @@ HD.parsePath = function parsePath(path, max) {
 HD.cache = new LRU(500);
 
 /**
- * Test an object to see if it is an HD key.
+ * Test whether an object is an HD key.
  * @param {Object} obj
  * @returns {Boolean}
  */
@@ -449,7 +478,7 @@ HD.isHD = function isHD(obj) {
  * @constructor
  * @param {Object|Base58String} options
  * @param {Base58String?} options.xkey - Serialized base58 key.
- * @param {(Mnemonic|Object)?} options.mnemonic - mnemonic or mnemonic options.
+ * @param {Mnemonic?} options.mnemonic
  * @param {Number?} options.depth
  * @param {Buffer?} options.parentFingerPrint
  * @param {Number?} options.childIndex
@@ -484,9 +513,9 @@ function HDPrivateKey(options) {
   this.publicKey = ec.publicKeyCreate(options.privateKey, true);
   this.fingerPrint = null;
 
-  this.mnemonic = options.mnemonic;
+  this.mnemonic = options.mnemonic || null;
 
-  this._xprivkey = options.xprivkey;
+  this._xprivkey = options.xprivkey || null;
 
   this.hdPrivateKey = this;
   this._hdPublicKey = null;
@@ -565,7 +594,7 @@ HDPrivateKey.prototype.derive = function derive(index, hardened) {
   privateKey = left
     .add(new bn(this.privateKey))
     .mod(ec.elliptic.curve.n)
-    .toBuffer('be', 32);
+    .toArrayLike(Buffer, 'be', 32);
 
   if (!this.fingerPrint)
     this.fingerPrint = utils.ripesha(this.publicKey).slice(0, 4);
@@ -617,8 +646,6 @@ HDPrivateKey.prototype.deriveAccount44 = function deriveAccount44(accountIndex) 
  */
 
 HDPrivateKey.prototype.derivePurpose45 = function derivePurpose45() {
-  var child;
-
   if (this instanceof HDPublicKey) {
     assert(this.isPurpose45(), 'Cannot derive purpose 45.');
     return this;
@@ -686,6 +713,30 @@ HDPrivateKey.isExtended = function isExtended(data) {
 };
 
 /**
+ * Test whether a buffer has a valid network prefix.
+ * @param {Buffer} data
+ * @returns {NetworkType}
+ */
+
+HDPrivateKey.hasPrefix = function hasPrefix(data) {
+  var i, version, prefix, type;
+
+  if (!Buffer.isBuffer(data))
+    return false;
+
+  version = data.readUInt32BE(0, true);
+
+  for (i = 0; i &lt; network.types.length; i++) {
+    type = network.types[i];
+    prefix = network[type].prefixes.xprivkey;
+    if (version === prefix)
+      return type;
+  }
+
+  return false;
+};
+
+/**
  * Test whether a string is a valid path.
  * @param {String} path
  * @param {Boolean?} hardened
@@ -720,6 +771,24 @@ HDPrivateKey.prototype.derivePath = function derivePath(path) {
     key = key.derive(indexes[i]);
 
   return key;
+};
+
+/**
+ * Compare a key against an object.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+HDPrivateKey.prototype.equal = function equal(obj) {
+  if (!HDPrivateKey.isHDPrivateKey(obj))
+    return false;
+
+  return this.network === obj.network
+    &amp;&amp; this.depth === obj.depth
+    &amp;&amp; utils.equal(this.parentFingerPrint, obj.parentFingerPrint)
+    &amp;&amp; this.childIndex === obj.childIndex
+    &amp;&amp; utils.equal(this.chainCode, obj.chainCode)
+    &amp;&amp; utils.equal(this.privateKey, obj.privateKey);
 };
 
 /**
@@ -872,8 +941,19 @@ HDPrivateKey.generate = function generate(options, network) {
  */
 
 HDPrivateKey.parseBase58 = function parseBase58(xkey) {
-  var raw = utils.fromBase58(xkey);
-  var p = new BufferReader(raw, true);
+  var data = HDPrivateKey.parseRaw(utils.fromBase58(xkey));
+  data.xprivkey = xkey;
+  return data;
+};
+
+/**
+ * Parse a raw serialized key.
+ * @param {Buffer} raw
+ * @returns {Object}
+ */
+
+HDPrivateKey.parseRaw = function parseRaw(raw) {
+  var p = new BufferReader(raw);
   var data = {};
   var i, type, prefix;
 
@@ -896,7 +976,6 @@ HDPrivateKey.parseBase58 = function parseBase58(xkey) {
   assert(i &lt; network.types.length, 'Network not found.');
 
   data.network = type;
-  data.xprivkey = xkey;
 
   return data;
 };
@@ -908,7 +987,17 @@ HDPrivateKey.parseBase58 = function parseBase58(xkey) {
  */
 
 HDPrivateKey.prototype.toBase58 = function toBase58(network) {
-  var p = new BufferWriter();
+  return utils.toBase58(this.toRaw(network));
+};
+
+/**
+ * Serialize the key.
+ * @param {Network|NetworkType} network
+ * @returns {Buffer}
+ */
+
+HDPrivateKey.prototype.toRaw = function toRaw(network, writer) {
+  var p = new BufferWriter(writer);
 
   if (!network)
     network = this.network;
@@ -924,7 +1013,10 @@ HDPrivateKey.prototype.toBase58 = function toBase58(network) {
   p.writeBytes(this.privateKey);
   p.writeChecksum();
 
-  return utils.toBase58(p.render());
+  if (!writer)
+    p = p.render();
+
+  return p;
 };
 
 /**
@@ -938,6 +1030,16 @@ HDPrivateKey.fromBase58 = function fromBase58(xkey) {
 };
 
 /**
+ * Instantiate key from serialized data.
+ * @param {Buffer} raw
+ * @returns {HDPrivateKey}
+ */
+
+HDPrivateKey.fromRaw = function fromRaw(raw) {
+  return new HDPrivateKey(HDPrivateKey.parseRaw(raw));
+};
+
+/**
  * Convert key to a more json-friendly object.
  * @param {String?} passphrase - Address passphrase
  * @returns {Object}
@@ -945,8 +1047,6 @@ HDPrivateKey.fromBase58 = function fromBase58(xkey) {
 
 HDPrivateKey.prototype.toJSON = function toJSON(passphrase) {
   var json = {
-    v: 1,
-    name: 'hdkey',
     network: this.network,
     encrypted: false
   };
@@ -980,9 +1080,6 @@ HDPrivateKey.prototype.toJSON = function toJSON(passphrase) {
 
 HDPrivateKey.parseJSON = function parseJSON(json, passphrase) {
   var data = {};
-
-  assert.equal(json.v, 1);
-  assert.equal(json.name, 'hdkey');
 
   if (json.encrypted &amp;&amp; !passphrase)
     throw new Error('Cannot decrypt address');
@@ -1044,15 +1141,15 @@ HDPrivateKey.fromJSON = function fromJSON(json, passphrase) {
 };
 
 /**
- * Test an object to see if it is a HDPrivateKey.
+ * Test whether an object is an HDPrivateKey.
  * @param {Object} obj
  * @returns {Boolean}
  */
 
 HDPrivateKey.isHDPrivateKey = function isHDPrivateKey(obj) {
   return obj
-    &amp;&amp; obj.hdPublicKey
-    &amp;&amp; obj.hdPublicKey !== obj
+    &amp;&amp; obj.privateKey
+    &amp;&amp; Buffer.isBuffer(obj.chainCode)
     &amp;&amp; typeof obj.derive === 'function';
 };
 
@@ -1250,6 +1347,24 @@ HDPublicKey.prototype.derivePath = function derivePath(path) {
 };
 
 /**
+ * Compare a key against an object.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+HDPublicKey.prototype.equal = function equal(obj) {
+  if (!HDPublicKey.isHDPublicKey(obj))
+    return false;
+
+  return this.network === obj.network
+    &amp;&amp; this.depth === obj.depth
+    &amp;&amp; utils.equal(this.parentFingerPrint, obj.parentFingerPrint)
+    &amp;&amp; this.childIndex === obj.childIndex
+    &amp;&amp; utils.equal(this.chainCode, obj.chainCode)
+    &amp;&amp; utils.equal(this.publicKey, obj.publicKey);
+};
+
+/**
  * Convert key to a more json-friendly object.
  * @method
  * @returns {Object}
@@ -1297,14 +1412,49 @@ HDPublicKey.isExtended = function isExtended(data) {
 };
 
 /**
+ * Test whether a buffer has a valid network prefix.
+ * @param {Buffer} data
+ * @returns {NetworkType}
+ */
+
+HDPublicKey.hasPrefix = function hasPrefix(data) {
+  var i, version, prefix, type;
+
+  if (!Buffer.isBuffer(data))
+    return false;
+
+  version = data.readUInt32BE(0, true);
+
+  for (i = 0; i &lt; network.types.length; i++) {
+    type = network.types[i];
+    prefix = network[type].prefixes.xpubkey;
+    if (version === prefix)
+      return type;
+  }
+
+  return false;
+};
+
+/**
  * Parse a base58 extended public key.
  * @param {Base58String} xkey
  * @returns {Object}
  */
 
 HDPublicKey.parseBase58 = function parseBase58(xkey) {
-  var raw = utils.fromBase58(xkey);
-  var p = new BufferReader(raw, true);
+  var data = HDPublicKey.parseRaw(utils.fromBase58(xkey));
+  data.xpubkey = xkey;
+  return data;
+};
+
+/**
+ * Parse a raw serialized key.
+ * @param {Buffer} raw
+ * @returns {Object}
+ */
+
+HDPublicKey.parseRaw = function parseRaw(raw) {
+  var p = new BufferReader(raw);
   var data = {};
   var i, type, prefix;
 
@@ -1326,7 +1476,6 @@ HDPublicKey.parseBase58 = function parseBase58(xkey) {
   assert(i &lt; network.types.length, 'Network not found.');
 
   data.network = type;
-  data.xpubkey = xkey;
 
   return data;
 };
@@ -1338,7 +1487,17 @@ HDPublicKey.parseBase58 = function parseBase58(xkey) {
  */
 
 HDPublicKey.prototype.toBase58 = function toBase58(network) {
-  var p = new BufferWriter();
+  return utils.toBase58(this.toRaw(network));
+};
+
+/**
+ * Serialize the key.
+ * @param {Network|NetworkType} network
+ * @returns {Buffer}
+ */
+
+HDPublicKey.prototype.toRaw = function toRaw(network, writer) {
+  var p = new BufferWriter(writer);
 
   if (!network)
     network = this.network;
@@ -1353,7 +1512,10 @@ HDPublicKey.prototype.toBase58 = function toBase58(network) {
   p.writeBytes(this.publicKey);
   p.writeChecksum();
 
-  return utils.toBase58(p.render());
+  if (!writer)
+    p = p.render();
+
+  return p;
 };
 
 /**
@@ -1367,15 +1529,25 @@ HDPublicKey.fromBase58 = function fromBase58(xkey) {
 };
 
 /**
- * Test an object to see if it is a HDPublicKey.
+ * Instantiate key from serialized data.
+ * @param {Buffer} raw
+ * @returns {HDPublicKey}
+ */
+
+HDPublicKey.fromRaw = function fromRaw(data) {
+  return new HDPublicKey(HDPublicKey.parseRaw(data));
+};
+
+/**
+ * Test whether an object is a HDPublicKey.
  * @param {Object} obj
  * @returns {Boolean}
  */
 
 HDPublicKey.isHDPublicKey = function isHDPublicKey(obj) {
   return obj
-    &amp;&amp; obj.hdPublicKey
-    &amp;&amp; obj.hdPublicKey === obj
+    &amp;&amp; !obj.privateKey
+    &amp;&amp; Buffer.isBuffer(obj.chainCode)
     &amp;&amp; typeof obj.derive === 'function';
 };
 
@@ -1420,7 +1592,8 @@ HDPublicKey.isHDPublicKey = function isHDPublicKey(obj) {
    * @memberof HDPublicKey#
    * @param {Buffer} msg
    * @param {Buffer} sig
-   * @returns {Buffer}
+   * @param {Buffer} key
+   * @returns {Boolean}
    */
 
   HD.prototype.verify = function verify() {
@@ -1472,13 +1645,13 @@ module.exports = HD;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

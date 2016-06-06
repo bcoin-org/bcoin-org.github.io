@@ -36,15 +36,18 @@
 /*
  * Database Layout:
  *  (inherits all from txdb)
- *  W/[address]/[id] -> dummy (map address to id)
+ *  W/[address] -> id &amp; path data
  *  w/[id] -> wallet
+ *  a/[id]/[index] -> account
+ *  i/[id]/[name] -> account index
  */
 
 var bcoin = require('./env');
 var EventEmitter = require('events').EventEmitter;
 var utils = require('./utils');
 var assert = utils.assert;
-var DUMMY = new Buffer([0]);
+var BufferReader = require('./reader');
+var BufferWriter = require('./writer');
 
 /**
  * WalletDB
@@ -68,6 +71,7 @@ function WalletDB(options) {
 
   EventEmitter.call(this);
 
+  this.watchers = [];
   this.options = options;
   this.loaded = false;
   this.network = bcoin.network.get(options.network);
@@ -135,13 +139,59 @@ WalletDB.prototype._init = function _init() {
     writeBufferSize: 4 &lt;&lt; 20
   });
 
-  this.tx = new bcoin.txdb(this.db, {
+  this.tx = new bcoin.txdb(this, {
     network: this.network,
-    indexExtra: true,
-    indexAddress: true,
-    mapAddress: true,
     verify: this.options.verify,
     useFilter: true
+  });
+
+  this.tx.on('error', function(err) {
+    self.emit('error', err);
+  });
+
+  this.tx.on('tx', function(tx, map) {
+    self.emit('tx', tx, map);
+    map.all.forEach(function(path) {
+      self.fire(path.id, 'tx', tx, path.name);
+    });
+  });
+
+  this.tx.on('conflict', function(tx, map) {
+    self.emit('conflict', tx, map);
+    map.all.forEach(function(path) {
+      self.fire(path.id, 'conflict', tx, path.name);
+    });
+  });
+
+  this.tx.on('confirmed', function(tx, map) {
+    self.emit('confirmed', tx, map);
+    map.all.forEach(function(path) {
+      self.fire(path.id, 'confirmed', tx, path.name);
+    });
+  });
+
+  this.tx.on('unconfirmed', function(tx, map) {
+    self.emit('unconfirmed', tx, map);
+    map.all.forEach(function(path) {
+      self.fire(path.id, 'unconfirmed', tx, path.name);
+    });
+  });
+
+  this.tx.on('updated', function(tx, map) {
+    self.emit('updated', tx, map);
+    map.all.forEach(function(path) {
+      self.fire(path.id, 'updated', tx, path.name);
+    });
+    self.updateBalances(tx, map, function(err, balances) {
+      if (err)
+        return self.emit('error', err);
+
+      Object.keys(balances).forEach(function(id) {
+        self.fire(id, 'balance', balances[id]);
+      });
+
+      self.emit('balances', balances, map);
+    });
   });
 
   this.db.open(function(err) {
@@ -156,70 +206,48 @@ WalletDB.prototype._init = function _init() {
       self.loaded = true;
     });
   });
+};
 
-  this.tx.on('error', function(err) {
-    self.emit('error', err);
-  });
+WalletDB.prototype.updateBalances = function updateBalances(tx, map, callback) {
+  var self = this;
+  var balances = {};
 
-  this.tx.on('tx', function(tx, map) {
-    self.emit('tx', tx, map);
-    map.all.forEach(function(id) {
-      self.emit(id + ' tx', tx);
-    });
-  });
+  utils.forEachSerial(map.output, function(path, next) {
+    if (self.listeners('balance').length === 0
+        &amp;&amp; !self.hasListener(path.id, 'balance')) {
+      return next();
+    }
 
-  this.tx.on('confirmed', function(tx, map) {
-    self.emit('confirmed', tx, map);
-    map.all.forEach(function(id) {
-      self.emit(id + ' confirmed', tx);
-    });
-    utils.forEachSerial(map.output, function(id, next) {
-      self.syncOutputDepth(id, tx, next);
-    }, function(err) {
+    if (balances[path.id] != null)
+      return next();
+
+    self.getBalance(path.id, function(err, balance) {
       if (err)
-        self.emit('error', err);
+        return next(err);
+
+      balances[path.id] = balance;
+
+      next();
     });
+  }, function(err) {
+    if (err)
+      return callback(err);
+
+    return callback(null, balances);
   });
+};
 
-  this.tx.on('unconfirmed', function(tx, map) {
-    self.emit('unconfirmed', tx, map);
-    map.all.forEach(function(id) {
-      self.emit(id + ' unconfirmed', tx);
-    });
-  });
-
-  this.tx.on('updated', function(tx, map) {
-    var balances = {};
-
-    self.emit('updated', tx, map);
-    map.all.forEach(function(id) {
-      self.emit(id + ' updated', tx);
-    });
-
-    utils.forEachSerial(map.output, function(id, next) {
-      if (self.listeners('balance').length === 0
-          &amp;&amp; self.listeners(id + ' balance').length === 0) {
-        return next();
-      }
-
-      self.getBalance(id, function(err, balance) {
-        if (err)
-          return next(err);
-
-        balances[id] = balance;
-
-        self.emit('balance', balance, id);
-        self.emit(id + ' balance', balance);
-
-        next();
-      });
-    }, function(err) {
+WalletDB.prototype.syncOutputs = function syncOutputs(tx, map, callback) {
+  var self = this;
+  utils.forEachSerial(map.output, function(path, next) {
+    self.syncOutputDepth(path.id, tx, function(err, receive, change) {
       if (err)
-        return self.emit('error', err);
-
-      self.emit('balances', balances, map);
+        return next(err);
+      self.fire(path.id, 'address', receive, change, path.name);
+      self.emit('address', receive, change, map);
+      next();
     });
-  });
+  }, callback);
 };
 
 /**
@@ -247,434 +275,214 @@ WalletDB.prototype.destroy = function destroy(callback) {
 };
 
 /**
- * Sync address depths based on a transaction's outputs.
- * This is used for deriving new addresses when
- * a confirmed transaction is seen.
+ * Register a wallet with the walletdb.
  * @param {WalletID} id
- * @param {TX} tx
- * @param {Function} callback
+ * @param {Wallet} wallet
  */
 
-WalletDB.prototype.syncOutputDepth = function syncOutputDepth(id, tx, callback) {
-  var self = this;
+WalletDB.prototype.register = function register(wallet) {
+  var id = wallet.id;
 
-  callback = utils.ensure(callback);
+  if (!this.watchers[id])
+    this.watchers[id] = { wallet: wallet, refs: 0 };
 
-  this.getJSON(id, function(err, json) {
-    if (err)
-      return callback(err);
+  // Should never happen, and if it does, I will cry.
+  assert(this.watchers[id].wallet === wallet, 'I\'m crying.');
 
-    // Allocate new addresses if necessary.
-    json = bcoin.wallet.syncOutputDepth(json, tx);
-
-    if (!json)
-      return callback();
-
-    self.saveJSON(id, json, function(err) {
-      if (err)
-        return callback(err);
-
-      self.emit('sync output depth', id, tx);
-
-      callback();
-    });
-  });
+  // We do some reference counting here
+  // because we're thug like that (police
+  // have a fit when your papers legit).
+  this.watchers[id].refs++;
 };
 
 /**
- * Set receiving/change depth (depth is the index of the _next_ address).
- * Allocate all addresses up to depth. Note that this also allocates
- * new lookahead addresses.
+ * Unregister a wallet with the walletdb.
  * @param {WalletID} id
- * @param {Number} receive - Receive address depth.
- * @param {Number} change - Change address depth.
- * @param {Function} callback
+ * @param {Wallet} wallet
  */
 
-WalletDB.prototype.setDepth = function setDepth(id, receive, change, callback) {
-  var self = this;
+WalletDB.prototype.unregister = function unregister(wallet) {
+  var id = wallet.id;
+  var watcher = this.watchers[id];
 
-  callback = utils.ensure(callback);
+  if (!watcher)
+    return;
 
-  this.getJSON(id, function(err, json) {
-    if (err)
-      return callback(err);
+  assert(watcher.wallet === wallet);
+  assert(watcher.refs !== 0, '`wallet.destroy()` called twice!');
 
-    // Allocate new addresses if necessary.
-    json = bcoin.wallet.setDepth(json, receive, change);
-
-    if (!json)
-      return callback();
-
-    self.saveJSON(id, json, function(err) {
-      if (err)
-        return callback(err);
-
-      self.emit('set depth', id, receive, change);
-
-      callback();
-    });
-  });
+  if (--watcher.refs === 0)
+    delete this.watchers[id];
 };
 
 /**
- * Add a public account/purpose key to the wallet for multisig.
+ * Fire an event for a registered wallet.
  * @param {WalletID} id
- * @param {HDPublicKey|Base58String} key - Account (bip44) or
- * Purpose (bip45) key (can be in base58 form).
- * @param {Function} callback
+ * @param {...Object} args
  */
 
-WalletDB.prototype.addKey = function addKey(id, key, callback) {
-  var self = this;
+WalletDB.prototype.fire = function fire(id) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  var watcher = this.watchers[id];
 
-  callback = utils.ensure(callback);
+  if (!watcher)
+    return;
 
-  this.getJSON(id, function(err, json) {
-    if (err)
-      return callback(err);
-
-    try {
-      json = bcoin.wallet.addKey(json, key);
-    } catch (e) {
-      return callback(e);
-    }
-
-    self.saveJSON(id, json, callback);
-  });
+  watcher.wallet.emit.apply(watcher.wallet, args);
 };
 
 /**
- * Remove a public account/purpose key to the wallet for multisig.
+ * Test for a listener on a registered wallet.
  * @param {WalletID} id
- * @param {HDPublicKey|Base58String} key - Account (bip44) or Purpose
- * (bip45) key (can be in base58 form).
- * @param {Function} callback
+ * @param {String} event
+ * @returns {Boolean}
  */
 
-WalletDB.prototype.removeKey = function removeKey(id, key, callback) {
-  var self = this;
+WalletDB.prototype.hasListener = function hasListener(id, event) {
+  var watcher = this.watchers[id];
 
-  callback = utils.ensure(callback);
+  if (!watcher)
+    return false;
 
-  this.getJSON(id, function(err, json) {
-    if (err)
-      return callback(err);
+  if (watcher.wallet.listeners(event).length !== 0)
+    return true;
 
-    try {
-      json = bcoin.wallet.removeKey(json, key);
-    } catch (e) {
-      return callback(e);
-    }
-
-    self.saveJSON(id, json, callback);
-  });
+  return false;
 };
 
 /**
- * Retrieve wallet without instantiating it.
+ * Get a wallet from the database, setup watcher.
  * @param {WalletID} id
- * @param {Function} callback - Returns [Error, Object(nakedWallet)].
- */
-
-WalletDB.prototype.getJSON = function getJSON(id, callback) {
-  if (typeof id === 'object')
-    id = id.id;
-
-  callback = utils.ensure(callback);
-
-  return this._getDB(id, callback);
-};
-
-/**
- * Save a "naked" (non-instantiated) wallet. Will
- * also index the address table.
- * @param {WalletID}
- * @param {Object} json - "Naked" wallet.
- * @param {Function} callback - Returns [Error, Object].
- */
-
-WalletDB.prototype.saveJSON = function saveJSON(id, json, callback) {
-  var self = this;
-
-  callback = utils.ensure(callback);
-
-  return this._saveDB(id, json, function(err, json) {
-    var batch;
-
-    if (err)
-      return callback(err);
-
-    if (json) {
-      batch = self.db.batch();
-
-      Object.keys(json.addressMap).forEach(function(address) {
-        if (self.tx.filter)
-          self.tx.filter.add(address, 'hex');
-
-        batch.put('W/' + address + '/' + json.id, DUMMY);
-      });
-
-      return batch.write(function(err) {
-        if (err)
-          return callback(err);
-        return callback(null, json);
-      });
-    }
-
-    return callback(null, json);
-  });
-};
-
-/**
- * Remove wallet from the database.
- * @param {WalletID} id
- * @param {Function} callback - Returns [Error, Object].
- */
-
-WalletDB.prototype.removeJSON = function removeJSON(id, callback) {
-  var self = this;
-
-  callback = utils.ensure(callback);
-
-  if (typeof id === 'object')
-    id = id.id;
-
-  return this._removeDB(id, function(err, json) {
-    var batch;
-
-    if (err)
-      return callback(err);
-
-    if (json) {
-      batch = self.db.batch();
-      Object.keys(json.addressMap).forEach(function(address) {
-        batch.del('W/' + address + '/' + json.id);
-      });
-      return batch.write(function(err) {
-        if (err)
-          return callback(err);
-        return callback(null, json);
-      });
-    }
-
-    return callback(null, json);
-  });
-};
-
-/**
- * Retrieve object from the database.
- * @private
- * @param {WalletID} id
- * @param {Function} callback - Returns [Error, Object(nakedWallet)].
- */
-
-WalletDB.prototype._getDB = function _getDB(id, callback) {
-  var key = 'w/' + id;
-
-  callback = utils.ensure(callback);
-
-  this.db.get(key, function(err, json) {
-    if (err &amp;&amp; err.type === 'NotFoundError')
-      return callback();
-
-    if (err)
-      return callback(err);
-
-    try {
-      json = JSON.parse(json.toString('utf8'));
-    } catch (e) {
-      return callback(e);
-    }
-
-    return callback(null, json);
-  });
-};
-
-/**
- * Save object to the database.
- * @private
- * @param {WalletID} id
- * @param {Object} json
- * @param {Function} callback - Returns [Error, nakedWallet].
- */
-
-WalletDB.prototype._saveDB = function _saveDB(id, json, callback) {
-  var key = 'w/' + id;
-  var data;
-
-  callback = utils.ensure(callback);
-
-  data = new Buffer(JSON.stringify(json), 'utf8');
-
-  this.db.put(key, data, function(err) {
-    if (err)
-      return callback(err);
-
-    return callback(null, json);
-  });
-};
-
-/**
- * Remove object from the database.
- * @private
- * @param {WalletID} id
- * @param {Function} callback - Returns [Error, Object].
- */
-
-WalletDB.prototype._removeDB = function _removeDB(id, callback) {
-  var self = this;
-  var key = 'w/' + id;
-
-  callback = utils.ensure(callback);
-
-  this._getDB(id, function(err, json) {
-    if (err)
-      return callback(err);
-
-    self.db.del(key, function(err) {
-      if (err &amp;&amp; err.type !== 'NotFoundError')
-        return callback(err);
-
-      return callback(null, json);
-    });
-  });
-};
-
-/**
- * Get a wallet from the database, instantiate, decrypt, and setup provider.
- * @param {WalletID} id
- * @param {String?} passphrase
  * @param {Function} callback - Returns [Error, {@link Wallet}].
  */
 
-WalletDB.prototype.get = function get(id, passphrase, callback) {
+WalletDB.prototype.get = function get(id, callback) {
   var self = this;
+  var wallet;
 
-  if (typeof passphrase === 'function') {
-    callback = passphrase;
-    passphrase = null;
+  if (!id)
+    return callback();
+
+  if (this.watchers[id]) {
+    this.watchers[id].refs++;
+    return callback(null, this.watchers[id].wallet);
   }
 
-  callback = utils.ensure(callback);
+  this.db.get('w/' + id, function(err, data) {
+    if (err &amp;&amp; err.type !== 'NotFoundError')
+      return callback();
 
-  return this.getJSON(id, function(err, options) {
-    var wallet;
-
-    if (err)
-      return callback(err);
-
-    if (!options)
+    if (!data)
       return callback();
 
     try {
-      options = bcoin.wallet.parseJSON(options, passphrase);
-      options.provider = new Provider(self);
-      wallet = new bcoin.wallet(options);
+      data = bcoin.wallet.parseRaw(data);
+      data.db = self;
+      wallet = new bcoin.wallet(data);
     } catch (e) {
       return callback(e);
     }
 
-    return callback(null, wallet);
-  });
-};
-
-/**
- * Save a wallet to the database (setup ida and encrypt).
- * @param {WalletID?} id
- * @param {Wallet} options
- * @param {Function} callback
- */
-
-WalletDB.prototype.save = function save(id, options, callback) {
-  if (id &amp;&amp; typeof id === 'object') {
-    callback = options;
-    options = id;
-    id = null;
-  }
-
-  if (!id)
-    id = options.id;
-  else
-    options.id = id;
-
-  callback = utils.ensure(callback);
-
-  assert(options instanceof bcoin.wallet);
-  options = options.toJSON();
-
-  this.saveJSON(id, options, callback);
-};
-
-/**
- * Remove wallet from the database. Destroy wallet if passed in.
- * @param {WalletID|Wallet} id
- * @param {Function} callback
- */
-
-WalletDB.prototype.remove = function remove(id, callback) {
-  if (id instanceof bcoin.wallet)
-    id.destroy();
-
-  if (id &amp;&amp; id.id)
-    id = id.id;
-
-  callback = utils.ensure(callback);
-
-  return this.removeJSON(id, callback);
-};
-
-/**
- * Create a new wallet, save to database, setup provider.
- * @param {WalletID?} id
- * @param {Object} options - See {@link Wallet}.
- * @param {Function} callback - Returns [Error, {@link Wallet}].
- */
-
-WalletDB.prototype.create = function create(id, options, callback) {
-  var self = this;
-
-  if (id &amp;&amp; typeof id === 'object') {
-    callback = options;
-    options = id;
-    id = null;
-  }
-
-  if (!id)
-    id = options.id;
-  else
-    options.id = id;
-
-  callback = utils.ensure(callback);
-
-  function create(err, json) {
-    var wallet;
-
-    if (err)
-      return callback(err);
-
-    if (json)
-      return callback(new Error('`' + id + '` already exists.'), null, json);
-
-    if (self.network.witness)
-      options.witness = options.witness !== false;
-
-    options.provider = new Provider(self);
-    options.network = self.network;
-    wallet = new bcoin.wallet(options);
-
-    self.saveJSON(wallet.id, wallet.toJSON(), function(err) {
+    wallet.open(function(err) {
       if (err)
         return callback(err);
 
       return callback(null, wallet);
     });
+  });
+};
+
+/**
+ * Get raw wallet from the database, do not instantiate.
+ * @param {WalletID} id
+ * @param {Function} callback - Returns [Error, {@link Wallet}].
+ */
+
+WalletDB.prototype.getRaw = function getRaw(id, callback) {
+  if (!id)
+    return callback();
+
+  this.db.get('w/' + id, function(err, data) {
+    if (err &amp;&amp; err.type !== 'NotFoundError')
+      return callback();
+
+    if (!data)
+      return callback();
+
+    try {
+      data = bcoin.wallet.parseRaw(data);
+    } catch (e) {
+      return callback(e);
+    }
+
+    return callback(null, data);
+  });
+};
+
+/**
+ * Save a wallet to the database.
+ * @param {Wallet} wallet
+ * @param {Function} callback
+ */
+
+WalletDB.prototype.save = function save(wallet, callback) {
+  if (!isAlpha(wallet.id))
+    return callback(new Error('Wallet IDs must be alphanumeric.'));
+
+  this.db.put('w/' + wallet.id, wallet.toRaw(), callback);
+};
+
+/**
+ * Create a new wallet, save to database, setup watcher.
+ * @param {Object} options - See {@link Wallet}.
+ * @param {Function} callback - Returns [Error, {@link Wallet}].
+ */
+
+WalletDB.prototype.create = function create(options, callback) {
+  var self = this;
+  var wallet;
+
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
   }
 
-  if (!id)
-    return create();
+  this.has(options.id, function(err, exists) {
+    if (err)
+      return callback(err);
 
-  return this.getJSON(id, create);
+    if (err)
+      return callback(err);
+
+    if (exists)
+      return callback(new Error('Wallet already exists.'));
+
+    options = utils.merge({}, options);
+
+    options.network = self.network;
+    options.db = self;
+    wallet = new bcoin.wallet(options);
+
+    wallet.open(function(err) {
+      if (err)
+        return callback(err);
+
+      return callback(null, wallet);
+    });
+  });
+};
+
+/**
+ * Test for the existence of a wallet.
+ * @param {WalletID?} id
+ * @param {Function} callback
+ */
+
+WalletDB.prototype.has = function has(id, callback) {
+  if (!id)
+    return callback(null, false);
+
+  this.db.has('w/' + id, callback);
 };
 
 /**
@@ -684,94 +492,333 @@ WalletDB.prototype.create = function create(id, options, callback) {
  * @param {Function} callback
  */
 
-WalletDB.prototype.ensure = function ensure(id, options, callback) {
+WalletDB.prototype.ensure = function ensure(options, callback) {
   var self = this;
-
-  if (id &amp;&amp; typeof id === 'object') {
-    callback = options;
-    options = id;
-    id = null;
-  }
-
-  if (!id)
-    id = options.id;
-  else
-    options.id = id;
-
-  callback = utils.ensure(callback);
-
-  return this.create(id, options, function(err, wallet, json) {
-    if (err &amp;&amp; !json)
+  return this.get(options.id, function(err, wallet) {
+    if (err)
       return callback(err);
 
     if (wallet)
       return callback(null, wallet);
 
-    assert(json);
-
-    try {
-      options = bcoin.wallet.parseJSON(json, options.passphrase);
-      options.provider = new Provider(self);
-      wallet = new bcoin.wallet(options);
-    } catch (e) {
-      return callback(e);
-    }
-
-    return callback(null, wallet);
+    self.create(options, callback);
   });
 };
 
 /**
- * Notify the database that a new address
- * has been derived. Save to address table. Save wallet.
- * @param {Wallet} wallet
- * @param {Address} address
+ * Get an account from the database.
+ * @param {WalletID} id
+ * @param {String|Number} name - Account name/index.
+ * @param {Function} callback - Returns [Error, {@link Wallet}].
  */
 
-WalletDB.prototype.update = function update(wallet, address) {
+WalletDB.prototype.getAccount = function getAccount(id, name, callback) {
   var self = this;
-  var batch;
+  var account;
 
-  // Ugly hack to avoid extra writes.
-  if (!wallet.changeAddress &amp;&amp; wallet.changeDepth > 1)
-    return;
+  return this.getAccountIndex(id, name, function(err, index) {
+    if (err)
+      return callback(err);
+
+    if (index === -1)
+      return callback();
+
+    self.db.get('a/' + id + '/' + index, function(err, data) {
+      if (err &amp;&amp; err.type !== 'NotFoundError')
+        return callback(err);
+
+      if (!data)
+        return callback();
+
+      try {
+        data = bcoin.account.parseRaw(data);
+        data.db = self;
+        account = new bcoin.account(data);
+      } catch (e) {
+        return callback(e);
+      }
+
+      account.open(function(err) {
+        if (err)
+          return callback(err);
+
+        return callback(null, account);
+      });
+    });
+  });
+};
+
+/**
+ * List account names and indexes from the db.
+ * @param {WalletID} id
+ * @param {Function} callback - Returns [Error, Array].
+ */
+
+WalletDB.prototype.getAccounts = function getAccounts(id, callback) {
+  var accounts = [];
+  this.db.iterate({
+    gte: 'i/' + id + '/',
+    lte: 'i/' + id + '/~',
+    values: true,
+    parse: function(value, key) {
+      var name = key.split('/')[2];
+      var index = value.readUInt32LE(0, true);
+      accounts[index] = name;
+    }
+  }, function(err) {
+    if (err)
+      return callback(err);
+
+    return callback(null, accounts);
+  });
+};
+
+/**
+ * Lookup the corresponding account name's index.
+ * @param {WalletID} id
+ * @param {String|Number} name - Account name/index.
+ * @param {Function} callback - Returns [Error, Number].
+ */
+
+WalletDB.prototype.getAccountIndex = function getAccountIndex(id, name, callback) {
+  if (name == null)
+    return callback(null, -1);
+
+  if (typeof name === 'number')
+    return callback(null, name);
+
+  return this.db.get('i/' + id + '/' + name, function(err, index) {
+    if (err &amp;&amp; err.type !== 'NotFoundError')
+      return callback();
+
+    if (!index)
+      return callback(null, -1);
+
+    return callback(null, index.readUInt32LE(0, true));
+  });
+};
+
+/**
+ * Save an account to the database.
+ * @param {Account} account
+ * @param {Function} callback
+ */
+
+WalletDB.prototype.saveAccount = function saveAccount(account, callback) {
+  var index, batch;
+
+  if (!isAlpha(account.name))
+    return callback(new Error('Account names must be alphanumeric.'));
 
   batch = this.db.batch();
 
-  batch.put(
-    'W/' + address.getKeyHash('hex') + '/' + wallet.id,
-    DUMMY);
+  index = new Buffer(4);
+  index.writeUInt32LE(account.accountIndex, 0, true);
 
-  if (this.tx.filter)
-    this.tx.filter.add(address.getKeyHash());
+  batch.put('a/' + account.id + '/' + account.accountIndex, account.toRaw());
+  batch.put('i/' + account.id + '/' + account.name, index);
 
-  if (address.type === 'multisig') {
-    batch.put(
-      'W/' + address.getScriptHash('hex') + '/' + wallet.id,
-      DUMMY);
+  batch.write(callback);
+};
 
-    if (this.tx.filter)
-      this.tx.filter.add(address.getScriptHash());
-  }
+/**
+ * Create an account.
+ * @param {Object} options - See {@link Account} options.
+ * @param {Function} callback - Returns [Error, {@link Account}].
+ */
 
-  if (address.witness) {
-    batch.put(
-      'W/' + address.getProgramHash('hex') + '/' + wallet.id,
-      DUMMY);
+WalletDB.prototype.createAccount = function createAccount(options, callback) {
+  var self = this;
+  var account;
 
-    if (this.tx.filter)
-      this.tx.filter.add(address.getProgramHash());
-  }
-
-  batch.write(function(err) {
+  this.hasAccount(options.id, options.accountIndex, function(err, exists) {
     if (err)
-      self.emit('error', err);
+      return callback(err);
 
-    // XXX might have to encrypt key - slow
-    self._saveDB(wallet.id, wallet.toJSON(), function(err) {
+    if (err)
+      return callback(err);
+
+    if (exists)
+      return callback(new Error('Account already exists.'));
+
+    options = utils.merge({}, options);
+
+    if (self.network.witness)
+      options.witness = options.witness !== false;
+
+    options.network = self.network;
+    options.db = self;
+    account = new bcoin.account(options);
+
+    account.open(function(err) {
       if (err)
-        self.emit('error', err);
+        return callback(err);
+
+      return callback(null, account);
     });
+  });
+};
+
+/**
+ * Test for the existence of an account.
+ * @param {WalletID} id
+ * @param {String|Number} account
+ * @param {Function} callback - Returns [Error, Boolean].
+ */
+
+WalletDB.prototype.hasAccount = function hasAccount(id, account, callback) {
+  var self = this;
+
+  if (!id)
+    return callback(null, false);
+
+  this.getAccountIndex(id, account, function(err, index) {
+    if (err)
+      return callback(err);
+
+    if (index === -1)
+      return callback(null, false);
+
+    self.db.has('a/' + id + '/' + index, callback);
+  });
+};
+
+/**
+ * Save an address to the path map.
+ * The path map exists in the form of:
+ * `W/[address-hash] -> {walletid1=path1, walletid2=path2, ...}`
+ * @param {WalletID} id
+ * @param {KeyRing[]} addresses
+ * @param {Function} callback
+ */
+
+WalletDB.prototype.saveAddress = function saveAddress(id, addresses, callback) {
+  var self = this;
+  var hashes = [];
+  var batch = this.db.batch();
+  var i, address;
+
+  if (!Array.isArray(addresses))
+    addresses = [addresses];
+
+  for (i = 0; i &lt; addresses.length; i++) {
+    address = addresses[i];
+
+    hashes.push([address.getKeyHash('hex'), address]);
+
+    if (address.type === 'multisig')
+      hashes.push([address.getScriptHash('hex'), address]);
+
+    if (address.witness)
+      hashes.push([address.getProgramHash('hex'), address]);
+  }
+
+  utils.forEach(hashes, function(hash, next) {
+    if (self.tx.filter)
+      self.tx.filter.add(hash[0], 'hex');
+
+    self.emit('save address', hash[0], hash[1]);
+
+    self.db.fetch('W/' + hash[0], parsePaths, function(err, paths) {
+      if (err)
+        return next(err);
+
+      if (!paths)
+        paths = {};
+
+      if (paths[id])
+        return next();
+
+      paths[id] = hash[1];
+
+      batch.put('W/' + hash[0], serializePaths(paths));
+
+      next();
+    });
+  }, function(err) {
+    if (err)
+      return callback(err);
+
+    batch.write(callback);
+  });
+};
+
+/**
+ * Test whether an address hash exists in the
+ * path map and is relevant to the wallet id.
+ * @param {WalletID} id
+ * @param {Hash} address
+ * @param {Function} callback
+ */
+
+WalletDB.prototype.hasAddress = function hasAddress(id, address, callback) {
+  this.getAddress(address, function(err, paths) {
+    if (err)
+      return callback(err);
+
+    if (!paths || !paths[id])
+      return callback(null, false);
+
+    return callback(null, true);
+  });
+};
+
+/**
+ * Get path data for the specified address hash.
+ * @param {Hash} address
+ * @param {Function} callback
+ */
+
+WalletDB.prototype.getAddress = function getAddress(address, callback) {
+  if (!address)
+    return callback();
+
+  this.db.fetch('W/' + address, parsePaths, callback);
+};
+
+/**
+ * Get all address hashes.
+ * @param {WalletId} id
+ * @param {Function} callback
+ */
+
+WalletDB.prototype.getAddresses = function getAddresses(id, callback) {
+  if (!callback) {
+    callback = id;
+    id = null;
+  }
+
+  this.db.iterate({
+    gte: 'W',
+    lte: 'W~',
+    values: true,
+    parse: function(value, key) {
+      var paths = parsePaths(value);
+
+      if (id &amp;&amp; !paths[id])
+        return;
+
+      return key.split('/')[1];
+    }
+  }, callback);
+};
+
+/**
+ * Get the corresponding path for an address hash.
+ * @param {WalletID} id
+ * @param {Hash} address
+ * @param {Function} callback
+ */
+
+WalletDB.prototype.getPath = function getPath(id, address, callback) {
+  this.getAddress(address, function(err, paths) {
+    if (err)
+      return callback(err);
+
+    if (!paths || !paths[id])
+      return callback();
+
+    return callback(null, paths[id]);
   });
 };
 
@@ -800,66 +847,114 @@ WalletDB.prototype.getCoin = function getCoin(hash, index, callback) {
 };
 
 /**
- * @see {@link TXDB#getHistoryByAddress}.
+ * @see {@link TXDB#getHistory}.
  */
 
-WalletDB.prototype.getHistory = function getHistory(id, callback) {
-  id = id.id || id;
-  return this.tx.getHistoryByAddress(id, callback);
+WalletDB.prototype.getHistory = function getHistory(id, account, callback) {
+  var self = this;
+  this._getKey(id, account, callback, function(id, callback) {
+    self.tx.getHistory(id, callback);
+  });
 };
 
 /**
- * @see {@link TXDB#getCoinsByAddress}.
+ * @see {@link TXDB#getCoins}.
  */
 
-WalletDB.prototype.getCoins = function getCoins(id, callback) {
-  id = id.id || id;
-  return this.tx.getCoinsByAddress(id, callback);
+WalletDB.prototype.getCoins = function getCoins(id, account, callback) {
+  var self = this;
+  this._getKey(id, account, callback, function(id, callback) {
+    self.tx.getCoins(id, callback);
+  });
 };
 
 /**
- * @see {@link TXDB#getUnconfirmedByAddress}.
+ * @see {@link TXDB#getUnconfirmed}.
  */
 
-WalletDB.prototype.getUnconfirmed = function getUnconfirmed(id, callback) {
-  id = id.id || id;
-  return this.tx.getUnconfirmedByAddress(id, callback);
+WalletDB.prototype.getUnconfirmed = function getUnconfirmed(id, account, callback) {
+  var self = this;
+  this._getKey(id, account, callback, function(id, callback) {
+    self.tx.getUnconfirmed(id, callback);
+  });
 };
 
 /**
- * @see {@link TXDB#getBalanceByAddress}.
+ * @see {@link TXDB#getBalance}.
  */
 
-WalletDB.prototype.getBalance = function getBalance(id, callback) {
-  id = id.id || id;
-  return this.tx.getBalanceByAddress(id, callback);
+WalletDB.prototype.getBalance = function getBalance(id, account, callback) {
+  var self = this;
+  this._getKey(id, account, callback, function(id, callback) {
+    self.tx.getBalance(id, callback);
+  });
 };
 
 /**
  * @see {@link TXDB#getLastTime}.
  */
 
-WalletDB.prototype.getLastTime = function getLastTime(id, callback) {
-  id = id.id || id;
-  return this.tx.getLastTime(id, callback);
+WalletDB.prototype.getLastTime = function getLastTime(id, account, callback) {
+  var self = this;
+
+  if (typeof account === 'function') {
+    callback = account;
+    account = null;
+  }
+
+  this._getKey(id, account, callback, function(id, callback) {
+    self.tx.getLastTime(id, callback);
+  });
 };
 
 /**
  * @see {@link TXDB#getLast}.
  */
 
-WalletDB.prototype.getLast = function getLast(id, limit, callback) {
-  id = id.id || id;
-  return this.tx.getLast(id, limit, callback);
+WalletDB.prototype.getLast = function getLast(id, account, limit, callback) {
+  var self = this;
+
+  if (typeof limit === 'function') {
+    callback = limit;
+    limit = account;
+    account = null;
+  }
+
+  this._getKey(id, account, callback, function(id, callback) {
+    self.tx.getLast(id, limit, callback);
+  });
+};
+
+WalletDB.prototype.getTimeRange = function getTimeRange(id, account, options, callback) {
+  var self = this;
+
+  if (typeof options === 'function') {
+    callback = options;
+    options = account;
+    account = null;
+  }
+
+  this._getKey(id, account, callback, function(id, callback) {
+    self.tx.getTimeRange(id, options, callback);
+  });
 };
 
 /**
  * @see {@link TXDB#getRange}.
  */
 
-WalletDB.prototype.getRange = function getRange(id, options, callback) {
-  id = id.id || id;
-  return this.tx.getRange(id, options, callback);
+WalletDB.prototype.getRange = function getRange(id, account, options, callback) {
+  var self = this;
+
+  if (typeof options === 'function') {
+    callback = options;
+    options = account;
+    account = null;
+  }
+
+  this._getKey(id, account, callback, function(id, callback) {
+    self.tx.getRange(id, options, callback);
+  });
 };
 
 /**
@@ -867,7 +962,7 @@ WalletDB.prototype.getRange = function getRange(id, options, callback) {
  */
 
 WalletDB.prototype.fillHistory = function fillHistory(tx, callback) {
-  return this.tx.fillHistory(tx, callback);
+  this.tx.fillHistory(tx, callback);
 };
 
 /**
@@ -875,7 +970,56 @@ WalletDB.prototype.fillHistory = function fillHistory(tx, callback) {
  */
 
 WalletDB.prototype.fillCoins = function fillCoins(tx, callback) {
-  return this.tx.fillCoins(tx, callback);
+  this.tx.fillCoins(tx, callback);
+};
+
+/**
+ * Zap all walletdb transactions.
+ * @see {@link TXDB#zap}.
+ */
+
+WalletDB.prototype.zap = function zap(id, account, age, callback) {
+  var self = this;
+
+  if (typeof age === 'function') {
+    callback = age;
+    age = account;
+    account = null;
+  }
+
+  this._getKey(id, account, callback, function(id, callback) {
+    self.tx.zap(id, age, callback);
+  });
+};
+
+/**
+ * Parse arguments and return an id
+ * consisting of `walletid/accountname`.
+ * @private
+ * @param {WalletID} id
+ * @param {String|Number} account
+ * @param {Function} errback
+ * @param {Function} callback - Returns [String, Function].
+ */
+
+WalletDB.prototype._getKey = function _getKey(id, account, errback, callback) {
+  if (typeof account === 'function') {
+    errback = account;
+    account = null;
+  }
+
+  if (account == null)
+    return callback(id, errback);
+
+  this.getAccountIndex(id, account, function(err, index) {
+    if (err)
+      return errback(err);
+
+    if (index === -1)
+      return errback(new Error('Account not found.'));
+
+    return callback(id + '/' + index, errback);
+  });
 };
 
 /**
@@ -890,12 +1034,12 @@ WalletDB.prototype.removeBlockSPV = function removeBlockSPV(block, callback) {
 
   callback = utils.ensure(callback);
 
-  this.tx.getHeightHashes(block.height, function(err, txs) {
+  this.tx.getHeightHashes(block.height, function(err, hashes) {
     if (err)
       return callback(err);
 
-    utils.forEachSerial(txs, function(tx, next) {
-      self.tx.unconfirm(tx, next);
+    utils.forEachSerial(hashes, function(hash, next) {
+      self.tx.unconfirm(hash, next);
     }, callback);
   });
 };
@@ -918,312 +1062,170 @@ WalletDB.prototype.removeBlock = function removeBlock(block, callback) {
 };
 
 /**
- * Zap all walletdb transactions.
- * @see {@link TXDB#zap}.
+ * Helper function to get a wallet.
+ * @private
+ * @param {WalletID} id
+ * @param {Function} callback
+ * @param {Function} handler
  */
 
-WalletDB.prototype.zap = function zap(now, age, callback) {
-  return this.tx.zap(now, age, callback);
+WalletDB.prototype.fetchWallet = function fetchWallet(id, callback, handler) {
+  var self = this;
+
+  this.get(id, function(err, wallet) {
+    if (err)
+      return callback(err);
+
+    if (!wallet)
+      return callback(new Error('No wallet.'));
+
+    handler(wallet, function(err, result) {
+      // Kill the reference.
+      self.unregister(wallet);
+
+      if (err)
+        return callback(err);
+
+      callback(null, result);
+    });
+  });
 };
 
-/**
- * Zap transactions for wallet.
- * @see {@link TXDB#zap}.
- */
-
-WalletDB.prototype.zapWallet = function zapWallet(id, now, age, callback) {
-  id = id.id || id;
-  return this.tx.zap(id, now, age, callback);
+WalletDB.prototype.syncOutputDepth = function syncOutputDepth(id, tx, callback) {
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    wallet.syncOutputDepth(tx, callback);
+  });
 };
 
-/**
- * Instantiate a {@link Provider}.
- * @returns {Provider}
- */
-
-WalletDB.prototype.provider = function provider() {
-  return new Provider(this);
+WalletDB.prototype.createAddress = function createAddress(id, name, change, callback) {
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    wallet.createAddress(name, change, callback);
+  });
 };
 
-/**
- * Represents {@link Wallet} Provider. This is what
- * allows the {@link Wallet} object to access
- * transactions and utxos, as well as listen for
- * events like confirmations, etc. Any object that
- * follows this model can be used as a wallet provider.
- * @exports Provider
- * @constructor
- * @param {WalletDB} db
- * @property {WalletDB} db
- * @property {WalletID?} id
+WalletDB.prototype.fill = function fill(id, tx, options, callback) {
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    wallet.fill(tx, options, callback);
+  });
+};
+
+WalletDB.prototype.scriptInputs = function scriptInputs(id, tx, callback) {
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    wallet.scriptInputs(tx, callback);
+  });
+};
+
+WalletDB.prototype.sign = function sign(id, tx, options, callback) {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    wallet.sign(tx, options, callback);
+  });
+};
+
+WalletDB.prototype.createTX = function createTX(id, options, outputs, callback) {
+  if (typeof outputs === 'function') {
+    callback = outputs;
+    outputs = null;
+  }
+
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    wallet.createTX(options, outputs, callback);
+  });
+};
+
+WalletDB.prototype.addKey = function addKey(id, name, key, callback) {
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    wallet.addKey(name, key, callback);
+  });
+};
+
+WalletDB.prototype.removeKey = function removeKey(id, name, key, callback) {
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    wallet.removeKey(name, key, callback);
+  });
+};
+
+WalletDB.prototype.getInfo = function getInfo(id, callback) {
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    callback(null, wallet);
+  });
+};
+
+WalletDB.prototype.ensureAccount = function ensureAccount(id, options, callback) {
+  var self = this;
+  var account = options.name || options.account;
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    self.hasAccount(wallet.id, account, function(err, exists) {
+      if (err)
+        return callback(err);
+      if (exists)
+        return wallet.getAccount(account, callback);
+      return wallet.createAccount(options, callback);
+    });
+  });
+};
+
+WalletDB.prototype.getRedeem = function getRedeem(id, hash, callback) {
+  this.fetchWallet(id, callback, function(wallet, callback) {
+    wallet.getRedeem(hash, callback);
+  });
+};
+
+/*
+ * Helpers
  */
 
-function Provider(db) {
-  if (!(this instanceof Provider))
-    return new Provider(db);
+function parsePaths(data) {
+  var p = new BufferReader(data);
+  var out = {};
+  var id;
 
-  EventEmitter.call(this);
+  while (p.left()) {
+    id = p.readVarString('utf8');
+    out[id] = {
+      id: id,
+      name: p.readVarString('utf8'),
+      account: p.readU32(),
+      change: p.readU32(),
+      index: p.readU32()
+    };
+  }
 
-  this.loaded = false;
-  this.db = db;
-  this.id = null;
-
-  this._init();
+  return out;
 }
 
-utils.inherits(Provider, EventEmitter);
+function serializePaths(out) {
+  var p = new BufferWriter();
+  var keys = Object.keys(out);
+  var i, id, path;
 
-Provider.prototype._init = function _init() {
-  var self = this;
-
-  if (this.db.loaded) {
-    this.loaded = true;
-    return;
+  for (i = 0; i &lt; keys.length; i++) {
+    id = keys[i];
+    path = out[id];
+    p.writeVarString(id, 'utf8');
+    p.writeVarString(path.name, 'utf8');
+    p.writeU32(path.account);
+    p.writeU32(path.change);
+    p.writeU32(path.index);
   }
 
-  this.db.once('open', function() {
-    self.loaded = true;
-    self.emit('open');
-  });
-};
+  return p.render();
+}
 
-/**
- * Open the provider, wait for the database to load.
- * @param {Function} callback
- */
-
-Provider.prototype.open = function open(callback) {
-  return this.db.open(callback);
-};
-
-/**
- * Set the ID, telling the provider backend
- * which wallet we want to listen for events on.
- * @param {WalletID}
- */
-
-Provider.prototype.setID = function setID(id) {
-  var self = this;
-
-  assert(!this.id, 'ID has already been set.');
-
-  this.id = id;
-
-  this.db.on(id + ' tx', this._onTX = function(tx) {
-    self.emit('tx', tx);
-  });
-
-  this.db.on(id + ' updated', this._onUpdated = function(tx) {
-    self.emit('updated', tx);
-  });
-
-  this.db.on(id + ' confirmed', this._onConfirmed = function(tx) {
-    self.emit('confirmed', tx);
-  });
-
-  this.db.on(id + ' unconfirmed', this._onUnconfirmed = function(tx) {
-    self.emit('unconfirmed', tx);
-  });
-
-  this.db.on(id + ' balance', this._onBalance = function(balance) {
-    self.emit('balance', balance);
-  });
-};
-
-/**
- * Close the provider, unlisten on wallet.
- * @method
- * @param {Function} callback
- */
-
-Provider.prototype.close =
-Provider.prototype.destroy = function destroy(callback) {
-  callback = utils.ensure(callback);
-
-  if (!this.db)
-    return utils.nextTick(callback);
-
-  if (this._onTX) {
-    this.db.removeListener(this.id + ' tx', this._onTX);
-    delete this._onTX;
-  }
-
-  if (this._onUpdated) {
-    this.db.removeListener(this.id + ' updated', this._onUpdated);
-    delete this._onUpdated;
-  }
-
-  if (this._onConfirmed) {
-    this.db.removeListener(this.id + ' confirmed', this._onConfirmed);
-    delete this._onConfirmed;
-  }
-
-  if (this._onUnconfirmed) {
-    this.db.removeListener(this.id + ' unconfirmed', this._onUnconfirmed);
-    delete this._onUnconfirmed;
-  }
-
-  if (this._onBalance) {
-    this.db.removeListener(this.id + ' balance', this._onBalance);
-    delete this._onBalance;
-  }
-
-  this.db = null;
-
-  return utils.nextTick(callback);
-};
-
-/**
- * Get all transactions for wallet.
- * @param {Function} callback - Returns [Error, {@link TX}[]].
- */
-
-Provider.prototype.getHistory = function getHistory(callback) {
-  return this.db.getHistory(this.id, callback);
-};
-
-/**
- * Get all coins for wallet.
- * @param {Function} callback - Returns [Error, {@link Coin}[]].
- */
-
-Provider.prototype.getCoins = function getCoins(callback) {
-  return this.db.getCoins(this.id, callback);
-};
-
-/**
- * Get all unconfirmed transactions for wallet.
- * @param {Function} callback - Returns [Error, {@link TX}[]].
- */
-
-Provider.prototype.getUnconfirmed = function getUnconfirmed(callback) {
-  return this.db.getUnconfirmed(this.id, callback);
-};
-
-/**
- * Calculate wallet balance.
- * @param {Function} callback - Returns [Error, {@link Balance}].
- */
-
-Provider.prototype.getBalance = function getBalance(callback) {
-  return this.db.getBalance(this.id, callback);
-};
-
-/**
- * Get last active timestamp and height.
- * @param {Function} callback - Returns [Error, Number(ts), Number(height)].
- */
-
-Provider.prototype.getLastTime = function getLastTime(callback) {
-  return this.db.getLastTime(this.id, callback);
-};
-
-/**
- * Get last N transactions.
- * @param {Number} limit - Max number of transactions.
- * @param {Function} callback - Returns [Error, {@link TX}[]].
- */
-
-Provider.prototype.getLast = function getLast(limit, callback) {
-  return this.db.getLast(this.id, limit, callback);
-};
-
-/**
- * Get transactions by timestamp range.
- * @param {Object} options
- * @param {Number} options.start - Start time.
- * @param {Number} options.end - End time.
- * @param {Number?} options.limit - Max number of records.
- * @param {Boolean?} options.reverse - Reverse order.
- * @param {Function} callback - Returns [Error, {@link TX}[]].
- */
-
-Provider.prototype.getRange = function getRange(options, callback) {
-  return this.db.getRange(this.id, options, callback);
-};
-
-/**
- * Get transaction.
- * @param {Hash} hash
- * @param {Function} callback - Returns [Error, {@link TX}].
- */
-
-Provider.prototype.getTX = function getTX(hash, callback) {
-  return this.db.getTX(hash, callback);
-};
-
-/**
- * Get coin.
- * @param {Hash} hash
- * @param {Number} index
- * @param {Function} callback - Returns [Error, {@link Coin}].
- */
-
-Provider.prototype.getCoin = function getCoin(hash, index, callback) {
-  return this.db.getCoin(hash, index, callback);
-};
-
-/**
- * Fill a transaction with coins (all historical coins).
- * @param {TX} tx
- * @param {Function} callback - Returns [Error, {@link TX}].
- */
-
-Provider.prototype.fillHistory = function fillHistory(tx, callback) {
-  return this.db.fillHistory(tx, callback);
-};
-
-/**
- * Fill a transaction with coins.
- * @param {TX} tx
- * @param {Function} callback - Returns [Error, {@link TX}].
- */
-
-Provider.prototype.fillCoins = function fillCoins(tx, callback) {
-  return this.db.fillCoins(tx, callback);
-};
-
-/**
- * Add a transaction to the provider backend (not
- * technically necessary if you're implementing a provider).
- * @param {TX} tx
- * @param {Function} callback
- */
-
-Provider.prototype.addTX = function addTX(tx, callback) {
-  return this.db.tx.add(tx, callback);
-};
-
-/**
- * Notify the provider backend that a new address was
- * derived (not technically necessary if you're
- * implementing a provider).
- * @param {Wallet} wallet
- * @param {Address} address
- */
-
-Provider.prototype.update = function update(wallet, address) {
-  return this.db.update(wallet, address);
-};
-
-/**
- * Zap stale transactions.
- * @param {Number} now - Current time.
- * @param {Number} age - Age delta (delete transactions older than `now - age`).
- * @param {Function} callback
- */
-
-Provider.prototype.zap = function zap(now, age, callback) {
-  return this.db.zapWallet(this.id, now, age, callback);
-};
+function isAlpha(key) {
+  // We allow /-~ (exclusive), 0-} (inclusive)
+  return /^[\u0030-\u007d]+$/.test(key);
+}
 
 /*
  * Expose
  */
 
 exports = WalletDB;
-
-exports.Provider = Provider;
 
 module.exports = exports;
 </code></pre>
@@ -1236,13 +1238,13 @@ module.exports = exports;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -37,34 +37,26 @@ var bcoin = require('./env');
 var EventEmitter = require('events').EventEmitter;
 var utils = require('./utils');
 var assert = utils.assert;
-var constants = bcoin.protocol.constants;
+var BufferReader = require('./reader');
 var BufferWriter = require('./writer');
 
 /**
- * HD BIP-44/45 wallet
+ * BIP44 Wallet
  * @exports Wallet
  * @constructor
  * @param {Object} options
- * @param {Provider?} options.provider - Wallet Provider. If not
+ * @param {WalletDB} options.db
  * present, no coins will be available.
  * @param {(HDPrivateKey|HDPublicKey)?} options.master - Master HD key. If not
  * present, it will be generated.
- * @param {AddressHashMap?} options.addressMap - Map of address
- * hashes to paths (internal).
  * @param {Boolean?} options.witness - Whether to use witness programs.
  * @param {Number?} options.accountIndex - The BIP44 account index (default=0).
  * @param {Number?} options.receiveDepth - The index of the _next_ receiving
  * address.
  * @param {Number?} options.changeDepth - The index of the _next_ change
  * address.
- * @param {Boolean?} options.copayBIP45 - Use copay-style BIP45 if bip45
- * derivation is used.
- * @param {Number?} options.lookahead - Amount of lookahead addresses
- * (default=5).
  * @param {String?} options.type - Type of wallet (pubkeyhash, multisig)
  * (default=pubkeyhash).
- * @param {String?} options.derivation - Derivation type (bip44, bip45)
- * (default=bip44).
  * @param {Boolean?} options.compressed - Whether to use compressed
  * public keys (default=true).
  * @param {Number?} options.m - `m` value for multisig.
@@ -74,174 +66,91 @@ var BufferWriter = require('./writer');
  */
 
 function Wallet(options) {
-  var i;
+  var master;
 
   if (!(this instanceof Wallet))
     return new Wallet(options);
 
   EventEmitter.call(this);
 
-  if (!options)
-    options = {};
-
-  options = utils.merge({}, options);
+  assert(options, 'Options required.');
+  assert(options.db, 'DB required.');
 
   this.options = options;
   this.network = bcoin.network.get(options.network);
+  this.db = options.db;
+  this.locker = new bcoin.locker(this);
 
-  if (typeof options.master === 'string')
-    options.master = { xkey: options.master };
+  master = options.master;
 
-  if (options.master
-      &amp;&amp; typeof options.master === 'object'
-      &amp;&amp; !(options.master instanceof bcoin.hd)) {
-    options.master = bcoin.hd.fromAny(options.master, this.network);
-  }
+  if (!master)
+    master = bcoin.hd.fromMnemonic(null, this.network);
 
-  if (!options.master)
-    options.master = bcoin.hd.fromMnemonic(null, this.network);
+  if (!bcoin.hd.isHD(master) &amp;&amp; !MasterKey.isMasterKey(master))
+    master = bcoin.hd.fromAny(master, this.network);
 
-  this.provider = options.provider || null;
-  this.master = options.master || null;
-  this.addressMap = options.addressMap || {};
-  this.witness = options.witness || false;
+  if (!MasterKey.isMasterKey(master))
+    master = MasterKey.fromKey(master);
+
+  this.id = options.id || null;
+  this.master = master;
+  this.initialized = options.initialized || false;
+  this.accountDepth = options.accountDepth || 0;
+
   this.loaded = false;
+  this.loading = false;
+  this.account = null;
 
-  this.accountIndex = options.accountIndex || 0;
-  this.receiveDepth = options.receiveDepth || 1;
-  this.changeDepth = options.changeDepth || 1;
-  this.copayBIP45 = options.copayBIP45 || false;
-  this.lookahead = options.lookahead != null ? options.lookahead : 5;
-  this.cosignerIndex = -1;
+  if (!this.id)
+    this.id = this.getID();
 
-  this.type = options.type || 'pubkeyhash';
-  this.derivation = options.derivation || 'bip44';
-  this.compressed = options.compressed !== false;
-  this.keys = [];
-  this.m = options.m || 1;
-  this.n = options.n || 1;
-
-  this.cache = new bcoin.lru(20);
-
-  if (this.n > 1)
-    this.type = 'multisig';
-
-  assert(this.type === 'pubkeyhash' || this.type === 'multisig',
-    '`type` must be multisig or pubkeyhash.');
-
-  if (this.m &lt; 1 || this.m > this.n)
-    throw new Error('m ranges between 1 and n');
-
-  if (this.derivation === 'bip45') {
-    this.accountKey = this.master.isPurpose45()
-      ? this.master
-      : this.master.derivePurpose45();
-  } else if (this.derivation === 'bip44') {
-    this.accountKey = this.master.isAccount44()
-      ? this.master
-      : this.master.deriveAccount44(this.accountIndex);
-  }
-
-  this.id = this.getID();
-
-  // Non-alphanumeric IDs will break leveldb sorting.
-  assert(/^[a-zA-Z0-9]+$/.test(this.id), 'Wallet IDs must be alphanumeric.');
-
-  this.addKey(this.accountKey);
-
-  if (options.keys) {
-    for (i = 0; i &lt; options.keys.length; i++)
-      this.addKey(options.keys[i]);
-  }
+  if (this.options.passphrase)
+    this.master.encrypt(this.options.passphrase);
 }
 
 utils.inherits(Wallet, EventEmitter);
 
-Wallet.prototype._init = function _init() {
-  var self = this;
-  var i;
-
-  assert(!this._initialized);
-  this._initialized = true;
-
-  if (Object.keys(this.addressMap).length === 0) {
-    for (i = 0; i &lt; this.receiveDepth - 1; i++)
-      this.deriveReceive(i);
-
-    for (i = 0; i &lt; this.changeDepth - 1; i++)
-      this.deriveChange(i);
-
-    for (i = this.receiveDepth; i &lt; this.receiveDepth + this.lookahead; i++)
-      this.deriveReceive(i);
-
-    for (i = this.changeDepth; i &lt; this.changeDepth + this.lookahead; i++)
-      this.deriveChange(i);
-  }
-
-  this.receiveAddress = this.deriveReceive(this.receiveDepth - 1);
-  this.changeAddress = this.deriveChange(this.changeDepth - 1);
-
-  assert(this.receiveAddress);
-  assert(!this.receiveAddress.change);
-  assert(this.changeAddress.change);
-
-  if (!this.provider)
-    return;
-
-  this.provider.setID(this.id);
-
-  this.on('error', function(err) {
-    bcoin.debug('Wallet Error: %s', err.message);
-  });
-
-  this.provider.on('error', function(err) {
-    self.emit('error', err);
-  });
-
-  this.provider.on('tx', function(tx) {
-    self.emit('tx', tx);
-  });
-
-  this.provider.on('updated', function(tx) {
-    self.emit('updated', tx);
-  });
-
-  this.provider.on('balance', function(balance) {
-    self.emit('balance', balance);
-  });
-
-  this.provider.on('confirmed', function(tx) {
-    self.syncOutputDepth(tx);
-    self.emit('confirmed', tx);
-  });
-
-  this.provider.on('unconfirmed', function(tx) {
-    self.emit('unconfirmed', tx);
-  });
-
-  this.provider.open(function(err) {
-    if (err)
-      return self.emit('error', err);
-
-    self.loaded = true;
-    self.emit('open');
-  });
-};
-
 /**
- * Open the wallet, wait for the database to load.
+ * Open the wallet, register with the database.
  * @param {Function} callback
  */
 
 Wallet.prototype.open = function open(callback) {
+  var self = this;
+
+  callback = utils.ensure(callback);
+
   if (this.loaded)
     return utils.nextTick(callback);
 
-  this.once('open', callback);
+  if (this.loading)
+    return this.once('open', callback);
+
+  this.loading = true;
+
+  try {
+    this.db.register(this);
+  } catch (e) {
+    this.emit('error', e);
+    return callback(e);
+  }
+
+  this.init(function(err) {
+    if (err) {
+      self.emit('error', err);
+      return callback(err);
+    }
+
+    self.loading = false;
+    self.loaded = true;
+    self.emit('open');
+
+    return callback();
+  });
 };
 
 /**
- * Close the wallet, wait for the database to close.
+ * Close the wallet, unregister with the database.
  * @method
  * @param {Function} callback
  */
@@ -250,450 +159,378 @@ Wallet.prototype.close =
 Wallet.prototype.destroy = function destroy(callback) {
   callback = utils.ensure(callback);
 
-  if (!this.provider)
+  if (!this.loaded)
     return utils.nextTick(callback);
 
-  this.provider.destroy(callback);
-  this.provider = null;
+  assert(!this.loading);
+
+  this.master.destroy();
+
+  try {
+    this.db.unregister(this);
+  } catch (e) {
+    this.emit('error', e);
+    return callback(e);
+  }
+
+  this.loaded = false;
+
+  return utils.nextTick(callback);
 };
 
 /**
- * Add a public account/purpose key to the wallet for multisig.
- * @param {HDPublicKey|Base58String} key - Account (bip44) or
- * Purpose (bip45) key (can be in base58 form).
- * @throws Error on non-hdkey/non-accountkey.
+ * Attempt to intialize the wallet (generating
+ * the first addresses along with the lookahead
+ * addresses). Called automatically from the
+ * walletdb and open().
+ * @param {Function} callback
  */
 
-Wallet.prototype.addKey = function addKey(key) {
-  var index, i;
+Wallet.prototype.init = function init(callback) {
+  var self = this;
 
-  assert(key, 'Key required.');
+  function done(err, account) {
+    if (err)
+      return callback(err);
 
-  if (key instanceof bcoin.wallet) {
-    assert(key.derivation === this.derivation);
-    key = key.accountKey;
+    if (!account)
+      return callback(new Error('Account not found.'));
+
+    self.account = account;
+
+    return callback();
   }
 
-  if (bcoin.hd.isExtended(key))
-    key = bcoin.hd.fromBase58(key);
+  this.db.open(function(err) {
+    if (err)
+      return callback(err);
 
-  if (key.hdPublicKey)
-    key = key.hdPublicKey;
+    if (self.initialized)
+      return self.getAccount(0, done);
 
-  assert(key instanceof bcoin.hd, 'Must add HD keys to wallet.');
-
-  if (this.derivation === 'bip44') {
-    if (!key || !key.isAccount44())
-      throw new Error('Must add HD account keys to BIP44 wallet.');
-  } else if (this.derivation === 'bip45') {
-    if (!key || !key.isPurpose45())
-      throw new Error('Must add HD purpose keys to BIP45 wallet.');
-  }
-
-  for (i = 0; i &lt; this.keys.length; i++) {
-    if (this.keys[i].xpubkey === key.xpubkey) {
-      index = i;
-      break;
-    }
-  }
-
-  if (index != null)
-    return;
-
-  assert(!this._keysFinalized);
-
-  this.keys.push(key);
-
-  if (this.keys.length === this.n)
-    this._finalizeKeys();
+    self.initialized = true;
+    self.createAccount(self.options, done);
+  });
 };
 
 /**
- * Remove a public account/purpose key to the wallet for multisig.
- * @param {HDPublicKey|Base58String} key - Account (bip44) or Purpose
- * (bip45) key (can be in base58 form).
- * @throws Error on non-hdkey/non-accountkey.
+ * Add a public account key to the wallet (multisig).
+ * Saves the key in the wallet database.
+ * @param {HDPublicKey} key
+ * @param {Function} callback
  */
 
-Wallet.prototype.removeKey = function removeKey(key) {
-  var index, i;
+Wallet.prototype.addKey = function addKey(account, key, callback) {
+  var unlock;
 
-  assert(!this._keysFinalized);
-
-  assert(key, 'Key required.');
-
-  if (key instanceof bcoin.wallet) {
-    assert(key.derivation === this.derivation);
-    key = key.accountKey;
+  if (typeof key === 'function') {
+    callback = key;
+    key = account;
+    account = 0;
   }
 
-  if (bcoin.hd.isExtended(key))
-    key = bcoin.hd.fromBase58(key);
+  unlock = this.locker.lock(addKey, [account, key, callback]);
 
-  if (key.hdPublicKey)
-    key = key.hdPublicKey;
-
-  assert(key instanceof bcoin.hd, 'Must add HD keys to wallet.');
-
-  if (this.derivation === 'bip44') {
-    if (!key || !key.isAccount44())
-      throw new Error('Must add HD account keys to BIP44 wallet.');
-  } else if (this.derivation === 'bip45') {
-    if (!key || !key.isPurpose45())
-      throw new Error('Must add HD purpose keys to BIP45 wallet.');
-  }
-
-  for (i = 0; i &lt; this.keys.length; i++) {
-    if (this.keys[i].xpubkey === key.xpubkey) {
-      index = i;
-      break;
-    }
-  }
-
-  if (index == null)
+  if (!unlock)
     return;
 
-  this.keys.splice(index, 1);
-};
+  callback = utils.wrap(callback, unlock);
 
-Wallet.prototype._finalizeKeys = function _finalizeKeys() {
-  var i;
+  this.getAccount(account, function(err, account) {
+    if (err)
+      return callback(err);
 
-  assert(!this._keysFinalized);
-  this._keysFinalized = true;
+    if (!account)
+      return callback(new Error('Account not found.'));
 
-  this.keys = utils.sortHDKeys(this.keys);
-
-  for (i = 0; i &lt; this.keys.length; i++) {
-    if (this.keys[i].xpubkey === this.accountKey.xpubkey) {
-      this.cosignerIndex = i;
-      break;
-    }
-  }
-
-  assert(this.cosignerIndex !== -1);
-
-  this._init();
+    account.addKey(key, callback);
+  }, true);
 };
 
 /**
- * Get the wallet ID which is either the passed in `id`
- * option, or the account/purpose key converted to an
- * address with a prefix of `0x03be04` (`WLT`).
+ * Remove a public account key from the wallet (multisig).
+ * Remove the key from the wallet database.
+ * @param {HDPublicKey} key
+ * @param {Function} callback
+ */
+
+Wallet.prototype.removeKey = function removeKey(account, key, callback) {
+  var unlock;
+
+  if (typeof key === 'function') {
+    callback = key;
+    key = account;
+    account = 0;
+  }
+
+  unlock = this.locker.lock(removeKey, [account, key, callback]);
+
+  if (!unlock)
+    return;
+
+  callback = utils.wrap(callback, unlock);
+
+  this.getAccount(account, function(err, account) {
+    if (err)
+      return callback(err);
+
+    if (!account)
+      return callback(new Error('Account not found.'));
+
+    account.removeKey(key, callback);
+  }, true);
+};
+
+/**
+ * Change or set master key's passphrase.
+ * @param {(String|Buffer)?} old
+ * @param {(String|Buffer)?} new_
+ * @param {Function} callback
+ */
+
+Wallet.prototype.setPassphrase = function setPassphrase(old, new_, callback) {
+  if (typeof new_ === 'function') {
+    callback = new_;
+    new_ = old;
+    old = null;
+  }
+
+  if (old) {
+    try {
+      this.master.decrypt(old);
+    } catch (e) {
+      return callback(e);
+    }
+  }
+
+  if (new_) {
+    try {
+      this.master.encrypt(new_);
+    } catch (e) {
+      return callback(e);
+    }
+  }
+
+  return this.save(callback);
+};
+
+
+/**
+ * Lock the wallet, destroy decrypted key.
+ */
+
+Wallet.prototype.lock = function lock() {
+  this.master.destroy();
+};
+
+/**
+ * Unlock the key for `timeout` milliseconds.
+ * @param {Buffer|String} passphrase
+ * @param {Number?} [timeout=60000] - ms.
+ */
+
+Wallet.prototype.unlock = function unlock(passphrase, timeout) {
+  this.master.toKey(passphrase, timeout);
+};
+
+/**
+ * Generate the wallet ID if none was passed in.
+ * It is represented as `m/44'` (public) hashed
+ * and converted to an address with a prefix
+ * of `0x03be04` (`WLT` in base58).
  * @returns {Base58String}
  */
 
 Wallet.prototype.getID = function getID() {
-  var publicKey = this.accountKey.publicKey;
-  var p;
+  var key, p;
 
-  if (this.options.id)
-    return this.options.id;
+  assert(this.master.key, 'Cannot derive id.');
+
+  key = this.master.key.derive(44, true);
 
   p = new BufferWriter();
   p.writeU8(0x03);
   p.writeU8(0xbe);
   p.writeU8(0x04);
-  p.writeBytes(utils.ripesha(publicKey));
+  p.writeBytes(utils.ripesha(key.publicKey));
   p.writeChecksum();
 
   return utils.toBase58(p.render());
 };
 
 /**
- * Create a new receiving address (increments receiveDepth).
- * @returns {KeyRing}
+ * Create an account. Requires passphrase if master key is encrypted.
+ * @param {Object} options - See {@link Account} options.
+ * @param {Function} callback - Returns [Error, {@link Account}].
  */
 
-Wallet.prototype.createReceive = function createReceive() {
-  return this.createAddress(false);
+Wallet.prototype.createAccount = function createAccount(options, callback, force) {
+  var self = this;
+  var master, key, unlock;
+
+  unlock = this.locker.lock(createAccount, [options, callback], force);
+
+  if (!unlock)
+    return;
+
+  callback = utils.wrap(callback, unlock);
+
+  try {
+    master = this.master.toKey(options.passphrase, options.timeout);
+  } catch (e) {
+    return callback(e);
+  }
+
+  key = master.deriveAccount44(this.accountDepth);
+
+  options = {
+    network: this.network,
+    id: this.id,
+    name: this.accountDepth === 0 ? 'default' : options.name,
+    witness: options.witness,
+    accountKey: key.hdPublicKey,
+    accountIndex: this.accountDepth,
+    type: options.type,
+    keys: options.keys,
+    m: options.m,
+    n: options.n
+  };
+
+  this.db.createAccount(options, function(err, account) {
+    if (err)
+      return callback(err);
+
+    self.accountDepth++;
+
+    self.save(function(err) {
+      if (err)
+        return callback(err);
+      return callback(null, account);
+    });
+  });
+};
+
+/**
+ * List account names and indexes from the db.
+ * @param {Function} callback - Returns [Error, Array].
+ */
+
+Wallet.prototype.getAccounts = function getAccounts(callback) {
+  this.db.getAccounts(this.id, callback);
+};
+
+/**
+ * Retrieve an account from the database.
+ * @param {Number|String} account
+ * @param {Function} callback - Returns [Error, {@link Account}].
+ */
+
+Wallet.prototype.getAccount = function getAccount(account, callback, force) {
+  var unlock = this.locker.lock(getAccount, [account, callback], force);
+
+  if (!unlock)
+    return;
+
+  callback = utils.wrap(callback, unlock);
+
+  if (this.account) {
+    if (account === 0 || account === 'default')
+      return callback(null, this.account);
+  }
+
+  return this.db.getAccount(this.id, account, callback);
+};
+
+/**
+ * Create a new receiving address (increments receiveDepth).
+ * @param {(Number|String)?} account
+ * @param {Function} callback - Returns [Error, {@link KeyRing}].
+ */
+
+Wallet.prototype.createReceive = function createReceive(account, callback) {
+  if (typeof account === 'function') {
+    callback = account;
+    account = 0;
+  }
+  return this.createAddress(account, false, callback);
 };
 
 /**
  * Create a new change address (increments receiveDepth).
- * @returns {KeyRing}
+ * @param {(Number|String)?} account
+ * @param {Function} callback - Returns [Error, {@link KeyRing}].
  */
 
-Wallet.prototype.createChange = function createChange() {
-  return this.createAddress(true);
+Wallet.prototype.createChange = function createChange(account, callback) {
+  if (typeof account === 'function') {
+    callback = account;
+    account = 0;
+  }
+  return this.createAddress(account, true, callback);
 };
 
 /**
  * Create a new address (increments depth).
+ * @param {(Number|String)?} account
  * @param {Boolean} change
- * @returns {KeyRing}
+ * @param {Function} callback - Returns [Error, {@link KeyRing}].
  */
 
-Wallet.prototype.createAddress = function createAddress(change) {
-  var address;
+Wallet.prototype.createAddress = function createAddress(account, change, callback) {
+  var unlock;
 
-  if (typeof change === 'string')
-    change = this.parsePath(change).change;
-
-  if (change) {
-    address = this.deriveChange(this.changeDepth);
-    this.deriveChange(this.changeDepth + this.lookahead);
-    this.changeDepth++;
-    this.changeAddress = address;
-  } else {
-    address = this.deriveReceive(this.receiveDepth);
-    this.deriveReceive(this.receiveDepth + this.lookahead);
-    this.receiveDepth++;
-    this.receiveAddress = address;
+  if (typeof change === 'function') {
+    callback = change;
+    change = account;
+    account = 0;
   }
 
-  if (this.provider &amp;&amp; this.provider.sync) {
-    assert(!this.provider.update);
-    this.provider.sync(this, address);
-  }
+  unlock = this.locker.lock(createAddress, [account, change, callback]);
 
-  return address;
+  if (!unlock)
+    return;
+
+  callback = utils.wrap(callback, unlock);
+
+  this.getAccount(account, function(err, account) {
+    if (err)
+      return callback(err);
+
+    if (!account)
+      return callback(new Error('Account not found.'));
+
+    account.createAddress(change, callback);
+  }, true);
 };
 
 /**
- * Derive a receiving address at `index`. Do not increment depth.
- * @param {Number} index
- * @returns {KeyRing}
+ * Save the wallet to the database. Necessary
+ * when address depth and keys change.
+ * @param {Function} callback
  */
 
-Wallet.prototype.deriveReceive = function deriveReceive(index) {
-  if (typeof index === 'string')
-    index = this.parsePath(index).index;
-
-  return this.deriveAddress(false, index);
+Wallet.prototype.save = function save(callback) {
+  return this.db.save(this, callback);
 };
 
 /**
- * Derive a change address at `index`. Do not increment depth.
- * @param {Number} index
- * @returns {KeyRing}
- */
-
-Wallet.prototype.deriveChange = function deriveChange(index) {
-  if (typeof index === 'string')
-    index = this.parsePath(index).index;
-
-  return this.deriveAddress(true, index);
-};
-
-/**
- * Derive an address at `index`. Do not increment depth.
- * @param {Boolean} change - Whether the address on the change branch.
- * @param {Number} index
- * @returns {KeyRing}
- */
-
-Wallet.prototype.deriveAddress = function deriveAddress(change, index) {
-  var path, data, key, options, address;
-
-  assert(this._initialized);
-
-  if (typeof change === 'string')
-    path = change;
-
-  if (path) {
-    // Map address to path
-    if (path.indexOf('/') === -1) {
-      path = this.addressMap[path];
-      if (!path)
-        return;
-    }
-    data = this.parsePath(path);
-  } else {
-    data = {
-      path: this.createPath(this.cosignerIndex, change, index),
-      cosignerIndex: this.copayBIP45
-        ? constants.hd.HARDENED - 1
-        : this.cosignerIndex,
-      change: change,
-      index: index
-    };
-  }
-
-  if (this.cache.has(data.path))
-    return this.cache.get(data.path);
-
-  key = this.accountKey.derive(data.path);
-
-  options = {
-    network: this.network,
-    key: key,
-    change: data.change,
-    index: data.index,
-    path: data.path,
-    type: this.type,
-    witness: this.witness,
-    m: this.m,
-    n: this.n,
-    keys: [],
-    derived: true
-  };
-
-  this.keys.forEach(function(key, cosignerIndex) {
-    var path = this.createPath(cosignerIndex, data.change, data.index);
-    key = key.derive(path);
-    options.keys.push(key.publicKey);
-  }, this);
-
-  address = new bcoin.keyring(options);
-
-  this.addressMap[address.getKeyHash('hex')] = data.path;
-
-  if (this.type === 'multisig')
-    this.addressMap[address.getScriptHash('hex')] = data.path;
-
-  if (this.witness)
-    this.addressMap[address.getProgramHash('hex')] = data.path;
-
-  // Update the DB with the new address.
-  if (this.provider &amp;&amp; this.provider.update)
-    this.provider.update(this, address);
-
-  this.emit('add address', address);
-
-  this.cache.set(data.path, address);
-
-  return address;
-};
-
-/**
- * Test whether the wallet posesses an address.
+ * Test whether the wallet possesses an address.
  * @param {Base58Address} address
- * @returns {Boolean}
+ * @param {Function} callback - Returns [Error, Boolean].
  */
 
-Wallet.prototype.hasAddress = function hasAddress(address) {
-  return this.addressMap[address] != null;
+Wallet.prototype.hasAddress = function hasAddress(address, callback) {
+  return this.db.hasAddress(this.id, address, callback);
 };
 
 /**
- * Create a path.
- * @param {Number} cosignerIndex - The index of the target key.
- * Note that this will always be `0x80000000 - 1` if `copayBIP45`
- * is enabled.
- * @param {Boolean} change - Whether the key is on the change branch.
- * @param {Number} index - The index to derive to.
- * @returns {String} path
+ * Get path by address hash.
+ * @param {Hash} address
+ * @param {Function} callback - Returns [Error, {@link Path}].
  */
 
-Wallet.prototype.createPath = function createPath(cosignerIndex, change, index) {
-  if (this.copayBIP45)
-    cosignerIndex = constants.hd.HARDENED - 1;
-
-  return 'm'
-    + (this.derivation === 'bip45' ? '/' + cosignerIndex : '')
-    + '/' + (change ? 1 : 0)
-    + '/' + index;
-};
-
-/**
- * Parse a path.
- * @param {String} path
- * @returns {Object} {
- *   path: String, cosignerIndex: Number?,
- *   change: Boolean, index: Number
- * }
- */
-
-Wallet.prototype.parsePath = function parsePath(path) {
-  var parts;
-
-  if (this.derivation === 'bip45')
-    assert(/^m\/\d+\/\d+\/\d+$/.test(path));
-  else
-    assert(/^m\/\d+\/\d+$/.test(path));
-
-  parts = path.split('/');
-
-  if (this.derivation === 'bip45' &amp;&amp; this.copayBIP45)
-    assert(+parts[parts.length - 3] === constants.hd.HARDENED - 1);
-
-  return {
-    path: path,
-    cosignerIndex: this.derivation === 'bip45'
-      ? +parts[parts.length - 3]
-      : null,
-    change: +parts[parts.length - 2] === 1,
-    index: +parts[parts.length - 1]
-  };
-};
-
-/**
- * Set receiving depth (depth is the index of the _next_ address).
- * Allocate all addresses up to depth. Note that this also allocates
- * new lookahead addresses.
- * @param {Number} depth
- * @returns {Boolean} True if new addresses were allocated.
- */
-
-Wallet.prototype.setReceiveDepth = function setReceiveDepth(depth) {
-  var i;
-
-  if (!(depth > this.receiveDepth))
-    return false;
-
-  for (i = this.receiveDepth; i &lt; depth; i++)
-    this.receiveAddress = this.deriveReceive(i);
-
-  for (i = this.receiveDepth + this.lookahead; i &lt; depth + this.lookahead; i++)
-    this.deriveReceive(i);
-
-  this.receiveDepth = depth;
-
-  return true;
-};
-
-/**
- * Set change depth (depth is the index of the _next_ address).
- * Allocate all addresses up to depth. Note that this also allocates
- * new lookahead addresses.
- * @param {Number} depth
- * @returns {Boolean} True if new addresses were allocated.
- */
-
-Wallet.prototype.setChangeDepth = function setChangeDepth(depth) {
-  var i;
-
-  if (!(depth > this.changeDepth))
-    return false;
-
-  for (i = this.changeDepth; i &lt; depth; i++)
-    this.changeAddress = this.deriveChange(i);
-
-  for (i = this.changeDepth + this.lookahead; i &lt; depth + this.lookahead; i++)
-    this.deriveChange(i);
-
-  this.changeDepth = depth;
-
-  return true;
-};
-
-/**
- * Check whether transaction input belongs to this wallet.
- * @param {TX|Output} tx - Transaction or Output.
- * @param {Number?} index - Output index.
- * @returns {Boolean}
- */
-
-Wallet.prototype.ownInput = function ownInput(tx, index) {
-  if (tx instanceof bcoin.input)
-    return tx.test(this.addressMap);
-
-  return tx.testInputs(this.addressMap, index);
-};
-
-/**
- * Check whether transaction output belongs to this wallet.
- * @param {TX|Output} tx - Transaction or Output.
- * @param {Number?} index - Output index.
- * @returns {Boolean}
- */
-
-Wallet.prototype.ownOutput = function ownOutput(tx, index) {
-  if (tx instanceof bcoin.output)
-    return tx.test(this.addressMap);
-
-  return tx.testOutputs(this.addressMap, index);
+Wallet.prototype.getPath = function getPath(address, callback) {
+  return this.db.getPath(this.id, address, callback);
 };
 
 /**
@@ -703,6 +540,8 @@ Wallet.prototype.ownOutput = function ownOutput(tx, index) {
  * @see MTX#fill
  * @param {MTX} tx - _Must_ be a mutable transaction.
  * @param {Object?} options
+ * @param {(String|Number)?} options.account - If no account is
+ * specified, coins from the entire wallet will be filled.
  * @param {String?} options.selection - Coin selection priority. Can
  * be `age`, `random`, or `all`. (default=age).
  * @param {Boolean} options.round - Whether to round to the nearest
@@ -728,81 +567,56 @@ Wallet.prototype.fill = function fill(tx, options, callback) {
   if (!options)
     options = {};
 
-  assert(this._initialized);
+  if (!this.initialized)
+    return callback(new Error('Wallet is not initialized.'));
 
-  this.getCoins(function(err, coins) {
+  this.getAccount(options.account, function(err, account) {
     if (err)
       return callback(err);
 
-    try {
-      tx.fill(coins, {
-        selection: options.selection || 'age',
-        round: options.round,
-        confirmed: options.confirmed,
-        free: options.free,
-        fee: options.fee,
-        subtractFee: options.subtractFee,
-        changeAddress: self.changeAddress.getAddress(),
-        height: self.network.height,
-        rate: options.rate != null
-          ? options.rate
-          : self.network.getRate(),
-        wallet: self,
-        m: self.m,
-        n: self.n
-      });
-    } catch (e) {
-      return callback(e);
+    if (!account) {
+      if (options.account != null)
+        return callback(new Error('Account not found.'));
+      account = self.account;
     }
 
-    return callback();
+    if (!account.initialized)
+      return callback(new Error('Account is not initialized.'));
+
+    self.getCoins(options.account, function(err, coins) {
+      if (err)
+        return callback(err);
+
+      try {
+        tx.fill(coins, {
+          selection: options.selection || 'age',
+          round: options.round,
+          confirmed: options.confirmed,
+          free: options.free,
+          fee: options.fee,
+          subtractFee: options.subtractFee,
+          changeAddress: account.changeAddress.getAddress(),
+          height: self.network.height,
+          rate: options.rate != null
+            ? options.rate
+            : self.network.getRate(),
+          wallet: self,
+          m: self.m,
+          n: self.n
+        });
+      } catch (e) {
+        return callback(e);
+      }
+
+      return callback();
+    });
   });
-};
-
-/**
- * Fill transaction with coins (accesses provider).
- * @param {TX} tx
- * @param {Function} callback - Returns [Error, {@link TX}].
- */
-
-Wallet.prototype.fillCoins = function fillCoins(tx, callback) {
-  if (!this.provider)
-    return callback(new Error('No wallet provider available.'));
-
-  return this.provider.fillHistory(tx, callback);
-};
-
-/**
- * Get a coin from the wallet (accesses provider).
- * @param {Hash} hash
- * @param {Number} index
- * @param {Function} callback - Returns [Error, {@link Coin}].
- */
-
-Wallet.prototype.getCoin = function getCoin(hash, index, callback) {
-  if (!this.provider)
-    return callback(new Error('No wallet provider available.'));
-
-  return this.provider.getCoin(hash, index, callback);
-};
-
-/**
- * Get a transaction from the wallet (accesses provider).
- * @param {Hash} hash
- * @param {Function} callback - Returns [Error, {@link TX}].
- */
-
-Wallet.prototype.getTX = function getTX(hash, callback) {
-  if (!this.provider)
-    return callback(new Error('No wallet provider available.'));
-
-  return this.provider.getTX(hash, callback);
 };
 
 /**
  * Build a transaction, fill it with outputs and inputs,
  * sort the members according to BIP69, set locktime,
- * and sign it (accesses provider).
+ * and sign it (accesses db).
  * @param {Object} options - See {@link Wallet#fill options}.
  * @param {Object[]} outputs - See {@link Script.createOutputScript}.
  * @param {Function} callback - Returns [Error, {@link MTX}].
@@ -837,7 +651,8 @@ Wallet.prototype.createTX = function createTX(options, outputs, callback) {
     try {
       tx.addOutput(outputs[i]);
     } catch (e) {
-      return utils.asyncify(callback)(e);
+      callback = utils.asyncify(callback);
+      return callback(e);
     }
   }
 
@@ -862,23 +677,16 @@ Wallet.prototype.createTX = function createTX(options, outputs, callback) {
     if (!tx.checkInputs(height))
       return callback(new Error('CheckInputs failed.'));
 
-    // Sign the transaction
-    if (!self.sign(tx))
-      return callback(new Error('Could not sign transaction.'));
+    self.scriptInputs(tx, function(err, total) {
+      if (err)
+        return callback(err);
 
-    return callback(null, tx);
+      if (total === 0)
+        return callback(new Error('scriptInputs failed.'));
+
+      return callback(null, tx);
+    });
   });
-};
-
-/**
- * Derive an address for a single transaction input.
- * @param {TX} tx
- * @param {Number} index
- * @returns {KeyRing}
- */
-
-Wallet.prototype.deriveInput = function deriveInput(tx, index) {
-  return this.deriveInputs(tx, index)[0];
 };
 
 /**
@@ -888,128 +696,114 @@ Wallet.prototype.deriveInput = function deriveInput(tx, index) {
  * @returns {KeyRing[]}
  */
 
-Wallet.prototype.deriveInputs = function deriveInputs(tx, index) {
-  var paths = this.getInputPaths(tx, index);
+Wallet.prototype.deriveInputs = function deriveInputs(tx, callback) {
+  var self = this;
   var addresses = [];
-  var i;
 
-  for (i = 0; i &lt; paths.length; i++)
-    addresses.push(this.deriveAddress(paths[i]));
+  this.getInputPaths(tx, function(err, paths) {
+    if (err)
+      return callback(err);
 
-  return addresses;
-};
+    utils.forEachSerial(paths, function(path, next) {
+      self.getAccount(path.account, function(err, account) {
+        if (err)
+          return next(err);
 
-/**
- * Get path by address.
- * @param {Base58Address} address - Base58 address.
- */
+        if (!account)
+          return next();
 
-Wallet.prototype.getPath = function getPath(address) {
-  if (!address || typeof address !== 'string')
-    return;
-  return this.addressMap[address];
+        addresses.push(account.deriveAddress(path.change, path.index));
+
+        return next();
+      });
+    }, function(err) {
+      if (err)
+        return callback(err);
+
+      return callback(null, addresses);
+    });
+  });
 };
 
 /**
  * Map input addresses to paths.
  * @param {TX|Input} tx
- * @param {Number?} index
- * @returns {String[]}
+ * @param {Function} callback - Returns [Error, {@link Path}[]].
  */
 
-Wallet.prototype.getInputPaths = function getInputPaths(tx, index) {
+Wallet.prototype.getInputPaths = function getInputPaths(tx, callback) {
+  var self = this;
   var paths = [];
-  var i, input, address, path;
+  var hashes;
+
+  function done() {
+    utils.forEachSerial(hashes, function(hash, next, i) {
+      self.getPath(hash, function(err, path) {
+        if (err)
+          return next(err);
+
+        if (path)
+          paths.push(path);
+
+        return next();
+      });
+    }, function(err) {
+      if (err)
+        return callback(err);
+      return callback(null, paths);
+    });
+  }
 
   if (tx instanceof bcoin.input) {
-    path = this.getPath(tx.coin.getHash());
-    if (path)
-      paths.push(path);
-    return paths;
+    if (!tx.coin)
+      return callback(new Error('Not all coins available.'));
+    hashes = [tx.coin.getHash()];
+    return done();
   }
 
-  for (i = 0; i &lt; tx.inputs.length; i++) {
-    input = tx.inputs[i];
+  this.fillCoins(tx, function(err) {
+    if (err)
+      return callback(err);
 
-    if (index != null &amp;&amp; i !== index)
-      continue;
+    if (!tx.hasCoins())
+      return callback(new Error('Not all coins available.'));
 
-    assert(input.coin, 'Not all coins available.');
-
-    address = input.coin.getHash();
-    path = this.getPath(address);
-
-    if (!path)
-      continue;
-
-    paths.push(path);
-  }
-
-  return utils.uniq(paths);
+    hashes = tx.getInputHashes();
+    done();
+  });
 };
 
 /**
  * Map output addresses to paths.
- * @param {TX|Output}
- * @param {Number?} index
- * @returns {String[]}
+ * @param {TX|Output} tx
+ * @param {Function} callback - Returns [Error, {@link Path}[]].
  */
 
-Wallet.prototype.getOutputPaths = function getOutputPaths(tx, index) {
+Wallet.prototype.getOutputPaths = function getOutputPaths(tx, callback) {
+  var self = this;
   var paths = [];
-  var i, output, address, path;
+  var hashes;
 
-  if (tx instanceof bcoin.output) {
-    path = this.getPath(tx.getHash());
-    if (path)
-      paths.push(path);
-    return paths;
-  }
+  if (tx instanceof bcoin.output)
+    hashes = [tx.getHash()];
+  else
+    hashes = tx.getOutputHashes();
 
-  for (i = 0; i &lt; tx.outputs.length; i++) {
-    output = tx.outputs[i];
+  utils.forEachSerial(hashes, function(hash, next, i) {
+    self.getPath(hash, function(err, path) {
+      if (err)
+        return next(err);
 
-    if (index != null &amp;&amp; i !== index)
-      continue;
+      if (path)
+        paths.push(path);
 
-    address = output.getHash();
-    path = this.getPath(address);
-
-    if (!path)
-      continue;
-
-    paths.push(path);
-  }
-
-  return utils.uniq(paths);
-};
-
-/**
- * Get the maximum address depth based on a transactions outputs.
- * @param {TX} tx
- * @returns {Object} { changeDepth: Number, receiveDepth: Number }
- */
-
-Wallet.prototype.getOutputDepth = function getOutputDepth(tx) {
-  var paths = this.getOutputPaths(tx);
-  var depth = { changeDepth: -1, receiveDepth: -1 };
-  var i, path;
-
-  for (i = 0; i &lt; paths.length; i++) {
-    path = this.parsePath(paths[i]);
-    if (path.change) {
-      if (path.index > depth.changeDepth)
-        depth.changeDepth = path.index;
-    } else {
-      if (path.index > depth.receiveDepth)
-        depth.receiveDepth = path.index;
-    }
-  }
-
-  depth.changeDepth++;
-  depth.receiveDepth++;
-
-  return depth;
+      return next();
+    });
+  }, function(err) {
+    if (err)
+      return callback(err);
+    return callback(null, paths);
+  });
 };
 
 /**
@@ -1017,176 +811,165 @@ Wallet.prototype.getOutputDepth = function getOutputDepth(tx) {
  * This is used for deriving new addresses when
  * a confirmed transaction is seen.
  * @param {TX} tx
- * @returns {Boolean} Whether new addresses were allocated.
+ * @param {Function} callback - Returns [Errr, Boolean]
+ * (true if new addresses were allocated).
  */
 
-Wallet.prototype.syncOutputDepth = function syncOutputDepth(tx) {
-  var depth = this.getOutputDepth(tx);
-  var res = false;
+Wallet.prototype.syncOutputDepth = function syncOutputDepth(tx, callback) {
+  var self = this;
+  var accounts = {};
+  var change = [];
+  var receive = [];
+  var i, path, unlock;
 
-  if (this.setChangeDepth(depth.changeDepth + 1))
-    res = true;
+  unlock = this.locker.lock(syncOutputDepth, [tx, callback]);
 
-  if (this.setReceiveDepth(depth.receiveDepth + 1))
-    res = true;
+  if (!unlock)
+    return;
 
-  return res;
+  callback = utils.wrap(callback, unlock);
+
+  this.getOutputPaths(tx, function(err, paths) {
+    if (err)
+      return callback(err);
+
+    for (i = 0; i &lt; paths.length; i++) {
+      path = paths[i];
+
+      if (!accounts[path.account])
+        accounts[path.account] = [];
+
+      accounts[path.account].push(path);
+    }
+
+    utils.forEachSerial(Object.keys(accounts), function(index, next) {
+      var paths = accounts[index];
+      var receiveDepth = -1;
+      var changeDepth = -1;
+
+      for (i = 0; i &lt; paths.length; i++) {
+        path = paths[i];
+
+        if (path.change) {
+          if (path.index > changeDepth)
+            changeDepth = path.index;
+        } else {
+          if (path.index > receiveDepth)
+            receiveDepth = path.index;
+        }
+      }
+
+      receiveDepth += 2;
+      changeDepth += 2;
+
+      self.getAccount(+index, function(err, account) {
+        if (err)
+          return next(err);
+
+        if (!account)
+          return next();
+
+        account.setDepth(receiveDepth, changeDepth, function(err, rcv, chng) {
+          if (err)
+            return next(err);
+
+          if (rcv)
+            receive.push(rcv);
+
+          if (chng)
+            change.push(chng);
+
+          next();
+        });
+      }, true);
+    }, function(err) {
+      if (err)
+        return callback(err);
+
+      return callback(null, receive, change);
+    });
+  });
 };
 
 /**
  * Get a redeem script or witness script by hash.
  * @param {Hash} hash - Can be a ripemd160 or a sha256.
- * @param {Number} prefix - See {@link network.address.prefixes}.
  * @returns {Script}
  */
 
-Wallet.prototype.getRedeem = function getRedeem(hash, prefix) {
-  var addr, address;
+Wallet.prototype.getRedeem = function getRedeem(hash, callback) {
+  var self = this;
+  var address;
 
   if (typeof hash === 'string')
     hash = new Buffer(hash, 'hex');
 
-  address = this.deriveAddress(hash.toString('hex'));
-
-  if (!address)
-    return;
-
-  if (address.program &amp;&amp; hash.length === 20) {
-    if (utils.equal(hash, address.programHash))
-      return address.program;
-  }
-
-  return address.script;
-};
-
-/**
- * Zap stale TXs from wallet (accesses provider).
- * @param {Number} now - Current time (unix time).
- * @param {Number} age - Age threshold (unix time, default=72 hours).
- * @param {Function} callback - Returns [Error].
- */
-
-Wallet.prototype.zap = function zap(now, age, callback) {
-  if (!this.provider.zap) {
-    return utils.asyncify(callback)(
-      new Error('Provider does not support zapping.'));
-  }
-  return this.provider.zap(now, age, callback);
-};
-
-/**
- * Scan for addresses.
- * @param {Function} getByAddress - Must be a callback which accepts
- * a callback and returns transactions by address.
- * @param {Function} callback - Returns [Boolean, TX[]].
- */
-
-Wallet.prototype.scan = function scan(getByAddress, callback) {
-  var self = this;
-  var res = false;
-  var i;
-
-  return this._scan({}, getByAddress, function(err, depth, txs) {
+  this.getPath(hash.toString('hex'), function(err, path) {
     if (err)
       return callback(err);
 
-    if (self.setChangeDepth(depth.changeDepth + 1))
-      res = true;
+    if (!path)
+      return callback();
 
-    if (self.setReceiveDepth(depth.receiveDepth + 1))
-      res = true;
+    self.getAccount(path.account, function(err, account) {
+      if (err)
+        return callback(err);
 
-    if (self.provider &amp;&amp; self.provider.addTX) {
-      utils.forEachSerial(txs, function(tx, next) {
-        self.addTX(tx, next);
-      }, function(err) {
-        if (err)
-          return callback(err);
-        return callback(null, res, txs);
-      });
-      return;
-    }
+      if (!account)
+        return callback();
 
-    return callback(null, res, txs);
+      address = account.deriveAddress(path.change, path.index);
+
+      if (address.program &amp;&amp; hash.length === 20) {
+        if (utils.equal(hash, address.programHash))
+          return callback(null, address.program);
+      }
+
+      return callback(null, address.script);
+    });
   });
 };
 
 /**
- * Clone the wallet (used for scanning).
- * @returns {Wallet}
+ * Scan for active accounts and addresses. Used for importing a wallet.
+ * @param {Function} getByAddress - Must be a function which accepts
+ * a {@link Base58Address} as well as a callback and returns
+ * transactions by address.
+ * @param {Function} callback - Return [Error, Number] (total number
+ * of addresses allocated).
  */
 
-Wallet.prototype.clone = function clone() {
-  var passphrase = this.options.passphrase;
-  var wallet;
+Wallet.prototype.scan = function scan(getByAddress, callback) {
+  var self = this;
+  var total = 0;
+  var unlock;
 
-  delete this.options.passphrase;
+  unlock = this.locker.lock(scan, [getByAddress, callback]);
 
-  wallet = Wallet.fromJSON(this.toJSON());
+  if (!unlock)
+    return;
 
-  this.options.passphrase = passphrase;
+  callback = utils.wrap(callback, unlock);
 
-  return wallet;
-};
+  if (!this.initialized)
+    return callback(new Error('Wallet is not initialized.'));
 
-Wallet.prototype._scan = function _scan(options, getByAddress, callback) {
-  var depth = { changeDepth: 0, receiveDepth: 0 };
-  var wallet = this.clone();
-  var all = [];
+  (function next(err, account) {
+    if (err)
+      return callback(err);
 
-  assert(this._initialized);
+    account.scan(getByAddress, function(err, result) {
+      if (err)
+        return callback(err);
 
-  (function chainCheck(change) {
-    var addressIndex = 0;
-    var total = 0;
-    var gap = 0;
+      if (result === 0)
+        return callback(null, total);
 
-    (function next() {
-      var address = wallet.deriveAddress(change, addressIndex++);
+      total += result;
 
-      getByAddress(address.getAddress(), function(err, txs) {
-        var result;
-
-        if (err)
-          return callback(err);
-
-        if (txs) {
-          if (typeof txs === 'boolean')
-            result = txs;
-          else if (typeof txs === 'number')
-            result = txs > 0;
-          else if (Array.isArray(txs))
-            result = txs.length > 0;
-          else
-            result = false;
-
-          if (Array.isArray(txs) &amp;&amp; (txs[0] instanceof bcoin.tx))
-            all = all.concat(txs);
-        }
-
-        if (result) {
-          total++;
-          gap = 0;
-          return next();
-        }
-
-        if (++gap &lt; 20)
-          return next();
-
-        assert(depth.receiveDepth === 0 || change === true);
-
-        if (change === false)
-          depth.receiveDepth = addressIndex - gap;
-        else
-          depth.changeDepth = addressIndex - gap;
-
-        if (change === false)
-          return chainCheck(true);
-
-        return callback(null, depth, all);
-      });
-    })();
-  })(false);
+      self.createAccount(self.options, next, true);
+    });
+  })(null, this.account);
 };
 
 /**
@@ -1196,39 +979,23 @@ Wallet.prototype._scan = function _scan(options, getByAddress, callback) {
  * @param {MTX} tx
  * @param {Number?} index - Index of input. If not present,
  * it will attempt to sign all redeemable inputs.
- * @returns {Number} Total number of scripts built.
+ * @param {Function} callback - Returns [Error, Number]
+ * (total number of scripts built).
  */
 
-Wallet.prototype.scriptInputs = function scriptInputs(tx, index) {
-  var addresses = this.deriveInputs(tx, index);
+Wallet.prototype.scriptInputs = function scriptInputs(tx, callback) {
   var total = 0;
   var i;
 
-  for (i = 0; i &lt; addresses.length; i++)
-    total += addresses[i].scriptInputs(tx, index);
+  this.deriveInputs(tx, function(err, addresses) {
+    if (err)
+      return callback(err);
 
-  return total;
-};
+    for (i = 0; i &lt; addresses.length; i++)
+      total += addresses[i].scriptInputs(tx);
 
-/**
- * Sign inputs for a transaction. Only attempts to sign inputs
- * that are redeemable by this wallet.
- * @param {MTX} tx
- * @param {Number?} index - Index of input. If not present,
- * it will attempt to sign all redeemable inputs.
- * @param {SighashType?} type
- * @returns {Number} Total number of inputs signed.
- */
-
-Wallet.prototype.signInputs = function signInputs(tx, index, type) {
-  var addresses = this.deriveInputs(tx, index);
-  var total = 0;
-  var i;
-
-  for (i = 0; i &lt; addresses.length; i++)
-    total += addresses[i].signInputs(tx, index, type);
-
-  return total;
+    return callback(null, total);
+  });
 };
 
 /**
@@ -1238,131 +1005,178 @@ Wallet.prototype.signInputs = function signInputs(tx, index, type) {
  * @param {Number?} index - Index of input. If not present,
  * it will attempt to build and sign all redeemable inputs.
  * @param {SighashType?} type
- * @returns {Number} Total number of inputs scripts built and signed.
+ * @param {Function} callback - Returns [Error, Number] (total number
+ * of inputs scripts built and signed).
  */
 
-Wallet.prototype.sign = function sign(tx, index, type) {
-  var addresses = this.deriveInputs(tx, index);
+Wallet.prototype.sign = function sign(tx, options, callback) {
+  var self = this;
   var total = 0;
-  var i;
+  var i, address, key, master;
 
-  for (i = 0; i &lt; addresses.length; i++)
-    total += addresses[i].sign(tx, index, type);
+  if (Array.isArray(tx)) {
+    utils.forEachSerial(tx, function(tx, next) {
+      self.sign(tx, options, next);
+    }, callback);
+    return;
+  }
 
-  return total;
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+
+  if (typeof options === 'string' || Buffer.isBuffer(options))
+    options = { passphrase: options };
+
+  this.deriveInputs(tx, function(err, addresses) {
+    if (err)
+      return callback(err);
+
+    try {
+      master = self.master.toKey(options.passphrase, options.timeout);
+    } catch (e) {
+      return callback(e);
+    }
+
+    for (i = 0; i &lt; addresses.length; i++) {
+      address = addresses[i];
+      key = master.deriveAccount44(address.account);
+      key = key.derive(address.change).derive(address.index);
+      assert(utils.equal(key.getPublicKey(), address.key));
+      total += address.sign(tx, key, options.index, options.type);
+    }
+
+    return callback(null, total);
+  });
 };
 
 /**
- * Add a transaction to the wallets TX history (accesses provider).
+ * Fill transaction with coins (accesses db).
+ * @param {TX} tx
+ * @param {Function} callback - Returns [Error, {@link TX}].
+ */
+
+Wallet.prototype.fillCoins = function fillCoins(tx, callback) {
+  return this.db.fillCoins(tx, callback);
+};
+
+/**
+ * Get a coin from the wallet (accesses db).
+ * @param {Hash} hash
+ * @param {Number} index
+ * @param {Function} callback - Returns [Error, {@link Coin}].
+ */
+
+Wallet.prototype.getCoin = function getCoin(hash, index, callback) {
+  return this.db.getCoin(hash, index, callback);
+};
+
+/**
+ * Get a transaction from the wallet (accesses db).
+ * @param {Hash} hash
+ * @param {Function} callback - Returns [Error, {@link TX}].
+ */
+
+Wallet.prototype.getTX = function getTX(hash, callback) {
+  return this.db.getTX(hash, callback);
+};
+
+/**
+ * Add a transaction to the wallets TX history (accesses db).
  * @param {TX} tx
  * @param {Function} callback
  */
 
 Wallet.prototype.addTX = function addTX(tx, callback) {
-  if (!this.provider || !this.provider.addTX)
-    return utils.asyncify(callback)(new Error('No transaction pool available.'));
-
-  return this.provider.addTX(tx, callback);
+  return this.db.addTX(tx, callback);
 };
 
 /**
- * Get all transactions in transaction history (accesses provider).
+ * Get all transactions in transaction history (accesses db).
+ * @param {(String|Number)?} account
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-Wallet.prototype.getHistory = function getHistory(callback) {
-  if (!this.provider)
-    return utils.asyncify(callback)(new Error('No wallet provider available.'));
-
-  return this.provider.getHistory(callback);
+Wallet.prototype.getHistory = function getHistory(account, callback) {
+  return this.db.getHistory(this.id, account, callback);
 };
 
 /**
- * Get all available coins (accesses provider).
+ * Get all available coins (accesses db).
+ * @param {(String|Number)?} account
  * @param {Function} callback - Returns [Error, {@link Coin}[]].
  */
 
-Wallet.prototype.getCoins = function getCoins(callback) {
-  if (!this.provider)
-    return utils.asyncify(callback)(new Error('No wallet provider available.'));
-
-  return this.provider.getCoins(callback);
+Wallet.prototype.getCoins = function getCoins(account, callback) {
+  return this.db.getCoins(this.id, account, callback);
 };
 
 /**
- * Get all pending/unconfirmed transactions (accesses provider).
+ * Get all pending/unconfirmed transactions (accesses db).
+ * @param {(String|Number)?} account
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-Wallet.prototype.getUnconfirmed = function getUnconfirmed(callback) {
-  if (!this.provider)
-    return utils.asyncify(callback)(new Error('No wallet provider available.'));
-
-  return this.provider.getUnconfirmed(callback);
+Wallet.prototype.getUnconfirmed = function getUnconfirmed(account, callback) {
+  return this.db.getUnconfirmed(this.id, account, callback);
 };
 
 /**
- * Get wallet balance (accesses provider).
+ * Get wallet balance (accesses db).
+ * @param {(String|Number)?} account
  * @param {Function} callback - Returns [Error, {@link Balance}].
  */
 
-Wallet.prototype.getBalance = function getBalance(callback) {
-  if (!this.provider)
-    return utils.asyncify(callback)(new Error('No wallet provider available.'));
-
-  return this.provider.getBalance(callback);
+Wallet.prototype.getBalance = function getBalance(account, callback) {
+  return this.db.getBalance(this.id, account, callback);
 };
 
 /**
  * Get last timestamp and height this wallet was active
- * at (accesses provider). Useful for resetting the chain
+ * at (accesses db). Useful for resetting the chain
  * to a certain height when in SPV mode.
+ * @param {(String|Number)?} account
  * @param {Function} callback - Returns [Error, Number(ts), Number(height)].
  */
 
-Wallet.prototype.getLastTime = function getLastTime(callback) {
-  if (!this.provider)
-    return utils.asyncify(callback)(new Error('No wallet provider available.'));
-
-  return this.provider.getLastTime(callback);
+Wallet.prototype.getLastTime = function getLastTime(account, callback) {
+  return this.db.getLastTime(this.id, account, callback);
 };
 
 /**
- * Get the last N transactions (accesses provider).
+ * Get the last N transactions (accesses db).
+ * @param {(String|Number)?} account
  * @param {Number} limit
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-Wallet.prototype.getLast = function getLast(limit, callback) {
-  if (!this.provider)
-    return utils.asyncify(callback)(new Error('No wallet provider available.'));
-
-  return this.provider.getLast(limit, callback);
+Wallet.prototype.getLast = function getLast(account, limit, callback) {
+  return this.db.getLast(this.id, account, limit, callback);
 };
 
 /**
- * Get a range of transactions between two timestamps (accesses provider).
+ * Get a range of transactions between two timestamps (accesses db).
+ * @param {(String|Number)?} account
  * @param {Object} options
  * @param {Number} options.start
  * @param {Number} options.end
  * @param {Function} callback - Returns [Error, {@link TX}[]].
  */
 
-Wallet.prototype.getTimeRange = function getTimeRange(options, callback) {
-  if (!this.provider)
-    return utils.asyncify(callback)(new Error('No wallet provider available.'));
-
-  return this.provider.getTimeRange(options, callback);
+Wallet.prototype.getTimeRange = function getTimeRange(account, options, callback) {
+  return this.db.getTimeRange(this.id, account, options, callback);
 };
 
 /**
- * Get private key for current receiving address.
- * @param {String?} enc - `"hex"` or `null`.
- * @returns {Buffer}
+ * Zap stale TXs from wallet (accesses db).
+ * @param {(Number|String)?} account
+ * @param {Number} age - Age threshold (unix time, default=72 hours).
+ * @param {Function} callback - Returns [Error].
  */
 
-Wallet.prototype.getPrivateKey = function getPrivateKey(enc) {
-  return this.receiveAddress.getPrivateKey(enc);
+Wallet.prototype.zap = function zap(account, age, callback) {
+  return this.db.zap(this.id, account, age, callback);
 };
 
 /**
@@ -1372,6 +1186,8 @@ Wallet.prototype.getPrivateKey = function getPrivateKey(enc) {
  */
 
 Wallet.prototype.getPublicKey = function getPublicKey(enc) {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getPublicKey(enc);
 };
 
@@ -1381,6 +1197,8 @@ Wallet.prototype.getPublicKey = function getPublicKey(enc) {
  */
 
 Wallet.prototype.getScript = function getScript() {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getScript();
 };
 
@@ -1391,6 +1209,8 @@ Wallet.prototype.getScript = function getScript() {
  */
 
 Wallet.prototype.getScriptHash = function getScriptHash(enc) {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getScriptHash(enc);
 };
 
@@ -1401,6 +1221,8 @@ Wallet.prototype.getScriptHash = function getScriptHash(enc) {
  */
 
 Wallet.prototype.getScriptHash160 = function getScriptHash160(enc) {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getScriptHash160(enc);
 };
 
@@ -1411,6 +1233,8 @@ Wallet.prototype.getScriptHash160 = function getScriptHash160(enc) {
  */
 
 Wallet.prototype.getScriptHash256 = function getScriptHash256(enc) {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getScriptHash256(enc);
 };
 
@@ -1420,6 +1244,8 @@ Wallet.prototype.getScriptHash256 = function getScriptHash256(enc) {
  */
 
 Wallet.prototype.getScriptAddress = function getScriptAddress() {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getScriptAddress();
 };
 
@@ -1429,6 +1255,8 @@ Wallet.prototype.getScriptAddress = function getScriptAddress() {
  */
 
 Wallet.prototype.getProgram = function getProgram() {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getProgram();
 };
 
@@ -1440,6 +1268,8 @@ Wallet.prototype.getProgram = function getProgram() {
  */
 
 Wallet.prototype.getProgramHash = function getProgramHash(enc) {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getProgramHash(enc);
 };
 
@@ -1450,6 +1280,8 @@ Wallet.prototype.getProgramHash = function getProgramHash(enc) {
  */
 
 Wallet.prototype.getProgramAddress = function getProgramAddress() {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getProgramAddress();
 };
 
@@ -1460,6 +1292,8 @@ Wallet.prototype.getProgramAddress = function getProgramAddress() {
  */
 
 Wallet.prototype.getKeyHash = function getKeyHash(enc) {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getKeyHash(enc);
 };
 
@@ -1469,6 +1303,8 @@ Wallet.prototype.getKeyHash = function getKeyHash(enc) {
  */
 
 Wallet.prototype.getKeyAddress = function getKeyAddress() {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getKeyAddress();
 };
 
@@ -1479,6 +1315,8 @@ Wallet.prototype.getKeyAddress = function getKeyAddress() {
  */
 
 Wallet.prototype.getHash = function getHash(enc) {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getHash(enc);
 };
 
@@ -1488,12 +1326,10 @@ Wallet.prototype.getHash = function getHash(enc) {
  */
 
 Wallet.prototype.getAddress = function getAddress() {
+  if (!this.receiveAddress)
+    return;
   return this.receiveAddress.getAddress();
 };
-
-Wallet.prototype.__defineGetter__('privateKey', function() {
-  return this.getPrivateKey();
-});
 
 Wallet.prototype.__defineGetter__('publicKey', function() {
   return this.getPublicKey();
@@ -1547,6 +1383,36 @@ Wallet.prototype.__defineGetter__('address', function() {
   return this.getAddress();
 });
 
+Wallet.prototype.__defineGetter__('receiveDepth', function() {
+  if (!this.account)
+    return -1;
+  return this.account.receiveDepth;
+});
+
+Wallet.prototype.__defineGetter__('changeDepth', function() {
+  if (!this.account)
+    return -1;
+  return this.account.changeDepth;
+});
+
+Wallet.prototype.__defineGetter__('accountKey', function() {
+  if (!this.account)
+    return;
+  return this.account.accountKey;
+});
+
+Wallet.prototype.__defineGetter__('receiveAddress', function() {
+  if (!this.account)
+    return;
+  return this.account.receiveAddress;
+});
+
+Wallet.prototype.__defineGetter__('changeAddress', function() {
+  if (!this.account)
+    return;
+  return this.account.changeAddress;
+});
+
 /**
  * Convert the wallet to a more inspection-friendly object.
  * @returns {Object}
@@ -1555,31 +1421,11 @@ Wallet.prototype.__defineGetter__('address', function() {
 Wallet.prototype.inspect = function inspect() {
   return {
     id: this.id,
-    type: this.type,
     network: this.network.type,
-    m: this.m,
-    n: this.n,
-    keyAddress: this._initialized
-      ? this.keyAddress
-      : null,
-    scriptAddress: this._initialized
-      ? this.scriptAddress
-      : null,
-    programAddress: this._initialized
-      ? this.programAddress
-      : null,
-    witness: this.witness,
-    derivation: this.derivation,
-    copayBIP45: this.copayBIP45,
-    accountIndex: this.accountIndex,
-    receiveDepth: this.receiveDepth,
-    changeDepth: this.changeDepth,
+    initialized: this.initialized,
+    accountDepth: this.accountDepth,
     master: this.master.toJSON(),
-    accountKey: this.accountKey.xpubkey,
-    addressMap: this.addressMap,
-    keys: this.keys.map(function(key) {
-      return key.xpubkey;
-    })
+    account: this.account
   };
 };
 
@@ -1592,25 +1438,12 @@ Wallet.prototype.inspect = function inspect() {
 
 Wallet.prototype.toJSON = function toJSON() {
   return {
-    v: 3,
-    name: 'wallet',
     network: this.network.type,
     id: this.id,
-    type: this.type,
-    m: this.m,
-    n: this.n,
-    witness: this.witness,
-    derivation: this.derivation,
-    copayBIP45: this.copayBIP45,
-    accountIndex: this.accountIndex,
-    receiveDepth: this.receiveDepth,
-    changeDepth: this.changeDepth,
-    master: this.master.toJSON(this.options.passphrase),
-    accountKey: this.accountKey.xpubkey,
-    addressMap: this.addressMap,
-    keys: this.keys.map(function(key) {
-      return key.xpubkey;
-    })
+    initialized: this.initialized,
+    accountDepth: this.accountDepth,
+    master: this.master.toJSON(),
+    account: this.account ? this.account.toJSON() : null
   };
 };
 
@@ -1625,187 +1458,80 @@ Wallet.prototype.toJSON = function toJSON() {
  * @throws Error on bad decrypt
  */
 
-Wallet.parseJSON = function parseJSON(json, passphrase) {
-  assert.equal(json.v, 3);
-  assert.equal(json.name, 'wallet');
-
+Wallet.parseJSON = function parseJSON(json) {
   return {
     network: json.network,
     id: json.id,
-    type: json.type,
-    m: json.m,
-    n: json.n,
-    witness: json.witness,
-    derivation: json.derivation,
-    copayBIP45: json.copayBIP45,
-    accountIndex: json.accountIndex,
-    receiveDepth: json.receiveDepth,
-    changeDepth: json.changeDepth,
-    master: bcoin.hd.fromJSON(json.master, passphrase),
-    addressMap: json.addressMap,
-    keys: json.keys,
-    passphrase: passphrase
+    initialized: json.initialized,
+    accountDepth: json.accountDepth,
+    master: MasterKey.fromJSON(json.master)
   };
+};
+
+/**
+ * Serialize the wallet.
+ * @returns {Buffer}
+ */
+
+Wallet.prototype.toRaw = function toRaw(writer) {
+  var p = new BufferWriter(writer);
+
+  p.writeU32(this.network.magic);
+  p.writeVarString(this.id, 'utf8');
+  p.writeU8(this.initialized ? 1 : 0);
+  p.writeU32(this.accountDepth);
+  p.writeVarBytes(this.master.toRaw());
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Parse a serialized wallet. Return a "naked"
+ * wallet object, suitable for passing into
+ * the wallet constructor.
+ * @param {Buffer} data
+ * @returns {Object}
+ */
+
+Wallet.parseRaw = function parseRaw(data) {
+  var p = new BufferReader(data);
+  var network = bcoin.network.fromMagic(p.readU32());
+  var id = p.readVarString('utf8');
+  var initialized = p.readU8() === 1;
+  var accountDepth = p.readU32();
+  var master = MasterKey.fromRaw(p.readVarBytes());
+
+  return {
+    network: network.type,
+    id: id,
+    initialized: initialized,
+    accountDepth: accountDepth,
+    master: master
+  };
+};
+
+/**
+ * Instantiate a wallet from serialized data.
+ * @param {Buffer} data
+ * @returns {Wallet}
+ */
+
+Wallet.fromRaw = function fromRaw(data) {
+  return new Wallet(Wallet.parseRaw(data));
 };
 
 /**
  * Instantiate a Wallet from a
  * jsonified wallet object.
  * @param {Object} json - The jsonified wallet object.
- * @param {String?} passphrase
  * @returns {Wallet}
  */
 
-Wallet.fromJSON = function fromJSON(json, passphrase) {
-  return new Wallet(Wallet.parseJSON(json, passphrase));
-};
-
-Wallet._syncDepth = function _syncDepth(json, options) {
-  var master, wallet;
-  var res = false;
-
-  assert.equal(json.v, 3);
-  assert.equal(json.name, 'wallet');
-
-  master = json.master;
-  json.master = json.accountKey;
-  wallet = new Wallet(json);
-
-  if (!wallet._initialized)
-    return;
-
-  if (options.tx != null) {
-    if (wallet.syncOutputDepth(options.tx))
-      res = true;
-  }
-
-  if (options.receiveDepth != null) {
-    if (wallet.setReceiveDepth(options.receiveDepth))
-      res = true;
-  }
-
-  if (options.changeDepth != null) {
-    if (wallet.setChangeDepth(options.changeDepth))
-      res = true;
-  }
-
-  if (!res)
-    return;
-
-  wallet = wallet.toJSON();
-  wallet.master = master;
-
-  return wallet;
-};
-
-/**
- * Sync output depth of a jsonified wallet object.
- * Useful for increasing depth without decrypting
- * the key and instantiating the wallet.
- * @param {json}
- * @param {TX} tx
- * @returns {json}
- */
-
-Wallet.syncOutputDepth = function syncOutputDepth(json, tx) {
-  return Wallet._syncDepth(json, { tx: tx });
-};
-
-/**
- * Increase receive depth of a jsonified wallet object.
- * Useful for increasing depth without decrypting
- * the key and instantiating the wallet.
- * @param {json}
- * @param {Number} receiveDepth
- * @returns {json}
- */
-
-Wallet.setReceiveDepth = function setReceiveDepth(json, receiveDepth) {
-  return Wallet._syncDepth(json, {
-    receiveDepth: receiveDepth || 0
-  });
-};
-
-/**
- * Increase change depth of a jsonified wallet object.
- * Useful for increasing depth without decrypting
- * the key and instantiating the wallet.
- * @param {json}
- * @param {Number} changeDepth
- * @returns {json}
- */
-
-Wallet.setChangeDepth = function setChangeDepth(json, changeDepth) {
-  return Wallet._syncDepth(json, {
-    changeDepth: changeDepth || 0
-  });
-};
-
-/**
- * Increase depths of a jsonified wallet object.
- * Useful for increasing depth without decrypting
- * the key and instantiating the wallet.
- * @param {json}
- * @param {Number} receiveDepth
- * @param {Number} changeDepth
- * @returns {json}
- */
-
-Wallet.setDepth = function setDepth(json, receiveDepth, changeDepth) {
-  return Wallet._syncDepth(json, {
-    receiveDepth: receiveDepth || 0,
-    changeDepth: changeDepth || 0
-  });
-};
-
-Wallet._addKey = function _addKey(json, keys, remove) {
-  var master, wallet;
-
-  assert.equal(json.v, 3);
-  assert.equal(json.name, 'wallet');
-
-  if (!Array.isArray(keys))
-    keys = [keys];
-
-  master = json.master;
-  json.master = json.accountKey;
-  wallet = new Wallet(json);
-  keys.forEach(function(key) {
-    if (remove)
-      wallet.removeKey(key);
-    else
-      wallet.addKey(key);
-  });
-  wallet = wallet.toJSON();
-  wallet.master = master;
-
-  return wallet;
-};
-
-/**
- * Add keys to a jsonified wallet object.
- * Useful for managing keys without decrypting
- * the key and instantiating the wallet.
- * @param {json}
- * @param {Buffer[]|Base58String[]} keys
- * @returns {json}
- */
-
-Wallet.addKey = function addKey(json, keys) {
-  return Wallet._addKey(json, keys, false);
-};
-
-/**
- * Remove keys from a jsonified wallet object.
- * Useful for managing keys without decrypting
- * the key and instantiating the wallet.
- * @param {json}
- * @param {Buffer[]|Base58String[]} keys
- * @returns {json}
- */
-
-Wallet.removeKey = function removeKey(json, keys) {
-  return Wallet._addKey(json, keys, true);
+Wallet.fromJSON = function fromJSON(json) {
+  return new Wallet(Wallet.parseJSON(json));
 };
 
 /**
@@ -1816,15 +1542,1136 @@ Wallet.removeKey = function removeKey(json, keys) {
 
 Wallet.isWallet = function isWallet(obj) {
   return obj
+    &amp;&amp; typeof obj.accountDepth === 'number'
+    &amp;&amp; obj.scriptInputs === 'function';
+};
+
+/**
+ * Represents a BIP44 Account belonging to a {@link Wallet}.
+ * Note that this object does not enforce locks. Any method
+ * that does a write is internal API only and will lead
+ * to race conditions if used elsewhere.
+ * @exports Account
+ * @constructor
+ * @param {Object} options
+ * @param {WalletDB} options.db
+ * @param {HDPublicKey} options.accountKey
+ * @param {Boolean?} options.witness - Whether to use witness programs.
+ * @param {Number} options.accountIndex - The BIP44 account index.
+ * @param {Number?} options.receiveDepth - The index of the _next_ receiving
+ * address.
+ * @param {Number?} options.changeDepth - The index of the _next_ change
+ * address.
+ * @param {String?} options.type - Type of wallet (pubkeyhash, multisig)
+ * (default=pubkeyhash).
+ * @param {Number?} options.m - `m` value for multisig.
+ * @param {Number?} options.n - `n` value for multisig.
+ * @param {String?} options.id - Wallet ID
+ * @param {String?} options.name - Account name
+ */
+
+function Account(options) {
+  var i;
+
+  if (!(this instanceof Account))
+    return new Account(options);
+
+  EventEmitter.call(this);
+
+  assert(options, 'Options are required.');
+  assert(options.db, 'Database is required.');
+  assert(options.id, 'Wallet ID is required.');
+  assert(options.accountKey, 'Account key is required.');
+  assert(utils.isNumber(options.accountIndex), 'Account index is required.');
+
+  this.options = options;
+  this.network = bcoin.network.get(options.network);
+  this.db = options.db;
+  this.lookahead = Account.LOOKAHEAD;
+
+  this.id = options.id;
+  this.name = options.name;
+  this.witness = options.witness || false;
+  this.accountKey = options.accountKey;
+  this.accountIndex = options.accountIndex;
+  this.receiveDepth = options.receiveDepth || 0;
+  this.changeDepth = options.changeDepth || 0;
+  this.type = options.type || 'pubkeyhash';
+  this.keys = [];
+  this.m = options.m || 1;
+  this.n = options.n || 1;
+  this.initialized = options.initialized || false;
+
+  this.loaded = false;
+  this.loading = false;
+  this.receiveAddress = null;
+  this.changeAddress = null;
+
+  this.cache = new bcoin.lru(20, 1);
+
+  if (this.n > 1)
+    this.type = 'multisig';
+
+  assert(this.type === 'pubkeyhash' || this.type === 'multisig',
+    '`type` must be multisig or pubkeyhash.');
+
+  if (this.m &lt; 1 || this.m > this.n)
+    throw new Error('m ranges between 1 and n');
+
+  if (!this.name)
+    this.name = this.accountIndex + '';
+
+  this.pushKey(this.accountKey);
+
+  if (options.keys) {
+    for (i = 0; i &lt; options.keys.length; i++)
+      this.pushKey(options.keys[i]);
+  }
+}
+
+utils.inherits(Account, EventEmitter);
+
+/*
+ * Default address lookahead.
+ * @const {Number}
+ */
+
+Account.LOOKAHEAD = 5;
+
+/**
+ * Open the account, register with the database.
+ * @param {Function} callback
+ */
+
+Account.prototype.open = function open(callback) {
+  var self = this;
+
+  callback = utils.ensure(callback);
+
+  if (this.loaded)
+    return utils.nextTick(callback);
+
+  if (this.loading)
+    return this.once('open', callback);
+
+  this.loading = true;
+
+  this.init(function(err) {
+    if (err) {
+      self.emit('error', err);
+      return callback(err);
+    }
+
+    self.loading = false;
+    self.loaded = true;
+    self.emit('open');
+
+    return callback();
+  });
+};
+
+/**
+ * Close the account, unregister with the database.
+ * @method
+ * @param {Function} callback
+ */
+
+Account.prototype.close =
+Account.prototype.destroy = function destroy(callback) {
+  callback = utils.ensure(callback);
+
+  if (!this.loaded)
+    return utils.nextTick(callback);
+
+  assert(!this.loading);
+
+  this.loaded = false;
+
+  return utils.nextTick(callback);
+};
+
+/**
+ * Attempt to intialize the account (generating
+ * the first addresses along with the lookahead
+ * addresses). Called automatically from the
+ * walletdb and open().
+ * @param {Function} callback
+ */
+
+Account.prototype.init = function init(callback) {
+  // Waiting for more keys.
+  if (this.keys.length !== this.n) {
+    assert(!this.initialized);
+    return this.save(callback);
+  }
+
+  if (this.initialized) {
+    this.receiveAddress = this.deriveReceive(this.receiveDepth - 1);
+    this.changeAddress = this.deriveChange(this.changeDepth - 1);
+    return callback();
+  }
+
+  this.initialized = true;
+
+  assert(this.receiveDepth === 0);
+  assert(this.changeDepth === 0);
+
+  this.setDepth(1, 1, callback);
+};
+
+/**
+ * Add a public account key to the account (multisig).
+ * Does not update the database.
+ * @param {HDPublicKey} key - Account (bip44)
+ * key (can be in base58 form).
+ * @throws Error on non-hdkey/non-accountkey.
+ */
+
+Account.prototype.pushKey = function pushKey(key) {
+  var result = false;
+  var index = -1;
+  var i;
+
+  assert(key, 'Key required.');
+
+  if (Array.isArray(key)) {
+    for (i = 0; i &lt; key.length; i++) {
+      if (this.pushKey(key[i]))
+        result = true;
+    }
+    return result;
+  }
+
+  if (key.accountKey)
+    key = key.accountKey;
+
+  if (bcoin.hd.isExtended(key))
+    key = bcoin.hd.fromBase58(key);
+
+  if (key.hdPublicKey)
+    key = key.hdPublicKey;
+
+  if (!bcoin.hd.isHD(key))
+    throw new Error('Must add HD keys to wallet.');
+
+  if (!key.isAccount44())
+    throw new Error('Must add HD account keys to BIP44 wallet.');
+
+  for (i = 0; i &lt; this.keys.length; i++) {
+    if (this.keys[i].equal(key)) {
+      index = i;
+      break;
+    }
+  }
+
+  if (index !== -1)
+    return false;
+
+  if (this.keys.length === this.n)
+    throw new Error('Cannot add more keys.');
+
+  this.keys.push(key);
+
+  return true;
+};
+
+/**
+ * Remove a public account key to the account (multisig).
+ * Does not update the database.
+ * @param {HDPublicKey} key - Account (bip44)
+ * key (can be in base58 form).
+ * @throws Error on non-hdkey/non-accountkey.
+ */
+
+Account.prototype.spliceKey = function spliceKey(key) {
+  var result = false;
+  var index = -1;
+  var i;
+
+  if (Array.isArray(key)) {
+    for (i = 0; i &lt; key.length; i++) {
+      if (this.spliceKey(key[i]))
+        result = true;
+    }
+    return result;
+  }
+
+  assert(key, 'Key required.');
+
+  if (key.accountKey)
+    key = key.accountKey;
+
+  if (bcoin.hd.isExtended(key))
+    key = bcoin.hd.fromBase58(key);
+
+  if (key.hdPublicKey)
+    key = key.hdPublicKey;
+
+  if (!bcoin.hd.isHD(key))
+    throw new Error('Must add HD keys to wallet.');
+
+  if (!key.isAccount44())
+    throw new Error('Must add HD account keys to BIP44 wallet.');
+
+  for (i = 0; i &lt; this.keys.length; i++) {
+    if (this.keys[i].equal(key)) {
+      index = i;
+      break;
+    }
+  }
+
+  if (index === -1)
+    return false;
+
+  if (this.keys.length === this.n)
+    throw new Error('Cannot remove key.');
+
+  this.keys.splice(index, 1);
+
+  return true;
+};
+
+/**
+ * Add a public account key to the account (multisig).
+ * Saves the key in the wallet database.
+ * @param {HDPublicKey} key
+ * @param {Function} callback
+ */
+
+Account.prototype.addKey = function addKey(key, callback) {
+  var result = false;
+  var error;
+
+  try {
+    result = this.pushKey(key);
+  } catch (e) {
+    error = e;
+  }
+
+  this.init(function(err) {
+    if (err)
+      return callback(err);
+
+    if (error)
+      return callback(error);
+
+    return callback(null, result);
+  });
+};
+
+/**
+ * Remove a public account key from the account (multisig).
+ * Remove the key from the wallet database.
+ * @param {HDPublicKey} key
+ * @param {Function} callback
+ */
+
+Account.prototype.removeKey = function removeKey(key, callback) {
+  var result = false;
+  var error;
+
+  try {
+    result = this.spliceKey(key);
+  } catch (e) {
+    error = e;
+  }
+
+  this.save(function(err) {
+    if (err)
+      return callback(err);
+
+    if (error)
+      return callback(error);
+
+    return callback(null, result);
+  });
+};
+
+/**
+ * Create a new receiving address (increments receiveDepth).
+ * @returns {KeyRing}
+ */
+
+Account.prototype.createReceive = function createReceive(callback) {
+  return this.createAddress(false, callback);
+};
+
+/**
+ * Create a new change address (increments receiveDepth).
+ * @returns {KeyRing}
+ */
+
+Account.prototype.createChange = function createChange(callback) {
+  return this.createAddress(true, callback);
+};
+
+/**
+ * Create a new address (increments depth).
+ * @param {Boolean} change
+ * @param {Function} callback - Returns [Error, {@link KeyRing}].
+ */
+
+Account.prototype.createAddress = function createAddress(change, callback) {
+  var self = this;
+  var addresses = [];
+  var address;
+
+  if (typeof change === 'function') {
+    callback = change;
+    change = null;
+  }
+
+  if (change) {
+    address = this.deriveChange(this.changeDepth);
+    addresses.push(address);
+    addresses.push(this.deriveChange(this.changeDepth + this.lookahead));
+    this.changeDepth++;
+    this.changeAddress = address;
+  } else {
+    address = this.deriveReceive(this.receiveDepth);
+    addresses.push(address);
+    addresses.push(this.deriveReceive(this.receiveDepth + this.lookahead));
+    this.receiveDepth++;
+    this.receiveAddress = address;
+  }
+
+  this.saveAddress(addresses, function(err) {
+    if (err)
+      return callback(err);
+
+    self.save(function(err) {
+      if (err)
+        return callback(err);
+      return callback(null, address);
+    });
+  });
+};
+
+/**
+ * Derive a receiving address at `index`. Do not increment depth.
+ * @param {Number} index
+ * @returns {KeyRing}
+ */
+
+Account.prototype.deriveReceive = function deriveReceive(index) {
+  return this.deriveAddress(false, index);
+};
+
+/**
+ * Derive a change address at `index`. Do not increment depth.
+ * @param {Number} index
+ * @returns {KeyRing}
+ */
+
+Account.prototype.deriveChange = function deriveChange(index) {
+  return this.deriveAddress(true, index);
+};
+
+/**
+ * Derive an address at `index`. Do not increment depth.
+ * @param {Boolean} change - Whether the address on the change branch.
+ * @param {Number} index
+ * @returns {KeyRing}
+ */
+
+Account.prototype.deriveAddress = function deriveAddress(change, index) {
+  var keys = [];
+  var i, key, shared;
+
+  assert(this.initialized, 'Account is not initialized.');
+
+  change = +change;
+
+  key = this.accountKey.derive(change).derive(index);
+
+  for (i = 0; i &lt; this.keys.length; i++) {
+    shared = this.keys[i];
+    shared = shared.derive(change).derive(index);
+    keys.push(shared.publicKey);
+  }
+
+  return new bcoin.keyring({
+    network: this.network,
+    key: key.publicKey,
+    name: this.name,
+    account: this.accountIndex,
+    change: change,
+    index: index,
+    type: this.type,
+    witness: this.witness,
+    m: this.m,
+    n: this.n,
+    keys: keys
+  });
+};
+
+/**
+ * Save the account to the database. Necessary
+ * when address depth and keys change.
+ * @param {Function} callback
+ */
+
+Account.prototype.save = function save(callback) {
+  return this.db.saveAccount(this, callback);
+};
+
+/**
+ * Save addresses to path map.
+ * @param {KeyRing[]} address
+ * @param {Function} callback
+ */
+
+Account.prototype.saveAddress = function saveAddress(address, callback) {
+  return this.db.saveAddress(this.id, address, callback);
+};
+
+/**
+ * Set change and receiving depth (depth is the index of the _next_ address).
+ * Allocate all addresses up to depth. Note that this also allocates
+ * new lookahead addresses.
+ * @param {Number} depth
+ * @param {Function} callback - Returns [Error, {@link KeyRing}, {@link KeyRing}].
+ */
+
+Account.prototype.setDepth = function setDepth(receiveDepth, changeDepth, callback) {
+  var self = this;
+  var addresses = [];
+  var i, receive, change;
+
+  if (receiveDepth > this.receiveDepth) {
+    for (i = this.receiveDepth; i &lt; receiveDepth; i++) {
+      receive = this.deriveReceive(i);
+      addresses.push(receive);
+    }
+
+    for (i = receiveDepth; i &lt; receiveDepth + this.lookahead; i++)
+      addresses.push(this.deriveReceive(i));
+
+    this.receiveAddress = receive;
+    this.receiveDepth = receiveDepth;
+  }
+
+  if (changeDepth > this.changeDepth) {
+    for (i = this.changeDepth; i &lt; changeDepth; i++) {
+      change = this.deriveChange(i);
+      addresses.push(change);
+    }
+
+    for (i = changeDepth; i &lt; changeDepth + this.lookahead; i++)
+      addresses.push(this.deriveChange(i));
+
+    this.changeAddress = change;
+    this.changeDepth = changeDepth;
+  }
+
+  if (addresses.length === 0)
+    return callback(null, false);
+
+  this.saveAddress(addresses, function(err) {
+    if (err)
+      return callback(err);
+
+    self.save(function(err) {
+      if (err)
+        return callback(err);
+
+      return callback(null, receive, change);
+    });
+  });
+};
+
+/**
+ * Scan for addresses.
+ * @param {Function} getByAddress - Must be a callback which accepts
+ * a callback and returns transactions by address.
+ * @param {Function} callback - Return [Error, Number] (total number
+ * of addresses allocated).
+ */
+
+Account.prototype.scan = function scan(getByAddress, callback) {
+  var self = this;
+  var total = 0;
+
+  if (!this.initialized)
+    return callback(new Error('Account is not initialized.'));
+
+  function addTX(txs, calback) {
+    if (!Array.isArray(txs) || txs.length === 0)
+      return callback(null, false);
+
+    utils.forEachSerial(txs, function(tx, next) {
+      self.db.addTX(tx, next);
+    }, function(err) {
+      if (err)
+        return callback(err);
+
+      return callback(null, true);
+    });
+  }
+
+  (function chainCheck(change) {
+    var address = change ? self.changeAddress : self.receiveAddress;
+    var gap = 0;
+
+    (function next(err, address) {
+      if (err)
+        return callback(err);
+
+      getByAddress(address.getAddress(), function(err, txs) {
+        if (err)
+          return callback(err);
+
+        addTX(txs, function(err, result) {
+          if (err)
+            return callback(err);
+
+          if (result) {
+            total++;
+            gap = 0;
+            return self.createAddress(change, next);
+          }
+
+          if (++gap &lt; 20)
+            return self.createAddress(change, next);
+
+          if (!change)
+            return chainCheck(true);
+
+          return callback(null, total);
+        });
+      });
+    })(null, address);
+  })(false);
+};
+
+/**
+ * Convert the account to a more inspection-friendly object.
+ * @returns {Object}
+ */
+
+Account.prototype.inspect = function inspect() {
+  return {
+    id: this.id,
+    name: this.name,
+    network: this.network,
+    initialized: this.initialized,
+    type: this.type,
+    m: this.m,
+    n: this.n,
+    keyAddress: this.initialized
+      ? this.receiveAddress.getKeyAddress()
+      : null,
+    scriptAddress: this.initialized
+      ? this.receiveAddress.getScriptAddress()
+      : null,
+    programAddress: this.initialized
+      ? this.receiveAddress.getProgramAddress()
+      : null,
+    witness: this.witness,
+    accountIndex: this.accountIndex,
+    receiveDepth: this.receiveDepth,
+    changeDepth: this.changeDepth,
+    accountKey: this.accountKey.xpubkey,
+    keys: this.keys.map(function(key) {
+      return key.xpubkey;
+    })
+  };
+};
+
+/**
+ * Convert the account to an object suitable for
+ * serialization. Will automatically encrypt the
+ * master key based on the `passphrase` option.
+ * @returns {Object}
+ */
+
+Account.prototype.toJSON = function toJSON() {
+  return {
+    network: this.network.type,
+    id: this.id,
+    name: this.name,
+    initialized: this.initialized,
+    type: this.type,
+    m: this.m,
+    n: this.n,
+    witness: this.witness,
+    accountIndex: this.accountIndex,
+    receiveDepth: this.receiveDepth,
+    changeDepth: this.changeDepth,
+    receiveAddress: this.receiveAddress
+      ? this.receiveAddress.getAddress()
+      : null,
+    programAddress: this.receiveAddress
+      ? this.receiveAddress.getProgramAddress()
+      : null,
+    changeAddress: this.changeAddress
+      ? this.changeAddress.getAddress()
+      : null,
+    accountKey: this.accountKey.xpubkey,
+    keys: this.keys.map(function(key) {
+      return key.xpubkey;
+    })
+  };
+};
+
+/**
+ * Handle a deserialized JSON account object.
+ * @returns {Object} A "naked" account (a
+ * plain javascript object which is suitable
+ * for passing to the Account constructor).
+ * @param {Object} json
+ * @param {String?} passphrase
+ * @returns {Object}
+ * @throws Error on bad decrypt
+ */
+
+Account.parseJSON = function parseJSON(json) {
+  return {
+    network: json.network,
+    id: json.id,
+    name: json.name,
+    initialized: json.initialized,
+    type: json.type,
+    m: json.m,
+    n: json.n,
+    witness: json.witness,
+    accountIndex: json.accountIndex,
+    receiveDepth: json.receiveDepth,
+    changeDepth: json.changeDepth,
+    accountKey: bcoin.hd.fromBase58(json.accountKey),
+    keys: json.keys.map(function(key) {
+      return bcoin.hd.fromBase58(key);
+    })
+  };
+};
+
+/**
+ * Serialize the account.
+ * @returns {Buffer}
+ */
+
+Account.prototype.toRaw = function toRaw(writer) {
+  var p = new BufferWriter(writer);
+  var i;
+
+  p.writeU32(this.network.magic);
+  p.writeVarString(this.id, 'utf8');
+  p.writeVarString(this.name, 'utf8');
+  p.writeU8(this.initialized ? 1 : 0);
+  p.writeU8(this.type === 'pubkeyhash' ? 0 : 1);
+  p.writeU8(this.m);
+  p.writeU8(this.n);
+  p.writeU8(this.witness ? 1 : 0);
+  p.writeU32(this.accountIndex);
+  p.writeU32(this.receiveDepth);
+  p.writeU32(this.changeDepth);
+  p.writeBytes(this.accountKey.toRaw());
+  p.writeU8(this.keys.length);
+
+  for (i = 0; i &lt; this.keys.length; i++)
+    p.writeBytes(this.keys[i].toRaw());
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Parse a serialized account. Return a "naked"
+ * account object, suitable for passing into
+ * the account constructor.
+ * @param {Buffer} data
+ * @returns {Object}
+ */
+
+Account.parseRaw = function parseRaw(data) {
+  var p = new BufferReader(data);
+  var network = bcoin.network.fromMagic(p.readU32());
+  var id = p.readVarString('utf8');
+  var name = p.readVarString('utf8');
+  var initialized = p.readU8() === 1;
+  var type = p.readU8() === 0 ? 'pubkeyhash' : 'multisig';
+  var m = p.readU8();
+  var n = p.readU8();
+  var witness = p.readU8() === 1;
+  var accountIndex = p.readU32();
+  var receiveDepth = p.readU32();
+  var changeDepth = p.readU32();
+  var accountKey = bcoin.hd.fromRaw(p.readBytes(82));
+  var count = p.readU8();
+  var keys = [];
+  var i;
+
+  for (i = 0; i &lt; count; i++)
+    keys.push(bcoin.hd.fromRaw(p.readBytes(82)));
+
+  return {
+    network: network.type,
+    id: id,
+    name: name,
+    initialized: initialized,
+    type: type,
+    m: m,
+    n: n,
+    witness: witness,
+    accountIndex: accountIndex,
+    receiveDepth: receiveDepth,
+    changeDepth: changeDepth,
+    accountKey: accountKey,
+    keys: keys
+  };
+};
+
+/**
+ * Instantiate a account from serialized data.
+ * @param {Buffer} data
+ * @returns {Account}
+ */
+
+Account.fromRaw = function fromRaw(data) {
+  return new Account(Account.parseRaw(data));
+};
+
+/**
+ * Instantiate a Account from a
+ * jsonified account object.
+ * @param {Object} json - The jsonified account object.
+ * @returns {Account}
+ */
+
+Account.fromJSON = function fromJSON(json) {
+  return new Account(Account.parseJSON(json));
+};
+
+/**
+ * Test an object to see if it is a Account.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+Account.isAccount = function isAccount(obj) {
+  return obj
     &amp;&amp; typeof obj.receiveDepth === 'number'
     &amp;&amp; obj.deriveAddress === 'function';
+};
+
+/**
+ * Master BIP32 key which can exist
+ * in an timed out encrypted state.
+ * @exports Master
+ * @constructor
+ * @param {Object} options
+ */
+
+function MasterKey(options) {
+  if (!(this instanceof MasterKey))
+    return new MasterKey(options);
+
+  this.encrypted = !!options.encrypted;
+  this.xprivkey = options.xprivkey;
+  this.phrase = options.phrase;
+  this.passphrase = options.passphrase;
+  this.key = options.key || null;
+  this.timer = null;
+  this._destroy = this.destroy.bind(this);
+
+  assert(this.encrypted ? !this.key : this.key);
+}
+
+/**
+ * Decrypt the key and set a timeout to destroy decrypted data.
+ * @param {Buffer|String} passphrase - Zero this yourself.
+ * @param {Number} [timeout=60000] timeout in ms.
+ * @returns {HDPrivateKey}
+ */
+
+MasterKey.prototype.toKey = function toKey(passphrase, timeout) {
+  var xprivkey;
+
+  if (!this.key) {
+    assert(this.encrypted);
+    xprivkey = utils.decrypt(this.xprivkey, passphrase);
+    this.key = bcoin.hd.fromRaw(xprivkey);
+    xprivkey.fill(0);
+    this.start(timeout);
+  }
+
+  return this.key;
+};
+
+/**
+ * Start the destroy timer.
+ * @private
+ * @param {Number} [timeout=60000] timeout in ms.
+ */
+
+MasterKey.prototype.start = function start(timeout) {
+  if (!timeout)
+    timeout = 60000;
+
+  this.stop();
+
+  if (timeout === -1)
+    return;
+
+  this.timer = setTimeout(this._destroy, timeout);
+};
+
+/**
+ * Stop the destroy timer.
+ * @private
+ */
+
+MasterKey.prototype.stop = function stop() {
+  if (this.timer != null) {
+    clearTimeout(this.timer);
+    this.timer = null;
+  }
+};
+
+/**
+ * Destroy the key by zeroing the
+ * privateKey and chainCode. Stop
+ * the timer if there is one.
+ */
+
+MasterKey.prototype.destroy = function destroy() {
+  if (!this.encrypted) {
+    assert(this.timer == null);
+    assert(this.key);
+    return;
+  }
+
+  this.stop();
+
+  if (this.key) {
+    this.key.chainCode.fill(0);
+    this.key.privateKey.fill(0);
+    this.key.publicKey.fill(0);
+    this.key = null;
+  }
+};
+
+/**
+ * Decrypt the key permanently.
+ * @param {Buffer|String} passphrase - Zero this yourself.
+ */
+
+MasterKey.prototype.decrypt = function decrypt(passphrase) {
+  if (!this.encrypted) {
+    assert(this.key);
+    return;
+  }
+
+  assert(passphrase, 'Passphrase is required.');
+
+  this.destroy();
+
+  this.encrypted = false;
+  this.xprivkey = utils.decrypt(this.xprivkey, passphrase);
+
+  if (this.phrase) {
+    this.phrase = utils.decrypt(this.phrase, passphrase);
+    this.passphrase = utils.decrypt(this.passphrase, passphrase);
+  }
+
+  this.key = bcoin.hd.fromRaw(this.xprivkey);
+};
+
+/**
+ * Encrypt the key permanently.
+ * @param {Buffer|String} passphrase - Zero this yourself.
+ */
+
+MasterKey.prototype.encrypt = function encrypt(passphrase) {
+  var xprivkey = this.xprivkey;
+  var phrase = this.phrase;
+  var pass = this.passphrase;
+
+  if (this.encrypted)
+    return;
+
+  assert(passphrase, 'Passphrase is required.');
+
+  this.key = null;
+  this.encrypted = true;
+  this.xprivkey = utils.encrypt(xprivkey, passphrase);
+  xprivkey.fill(0);
+
+  if (this.phrase) {
+    this.phrase = utils.encrypt(phrase, passphrase);
+    this.passphrase = utils.encrypt(pass, passphrase);
+    phrase.fill(0);
+    pass.fill(0);
+  }
+};
+
+/**
+ * Serialize the key in the form of:
+ * `[enc-flag][phrase-marker][phrase?][passphrase?][xprivkey]`
+ * @returns {Buffer}
+ */
+
+MasterKey.prototype.toRaw = function toRaw(writer) {
+  var p = new BufferWriter(writer);
+
+  p.writeU8(this.encrypted ? 1 : 0);
+
+  if (this.phrase) {
+    p.writeU8(1);
+    p.writeVarBytes(this.phrase);
+    p.writeVarBytes(this.passphrase);
+  } else {
+    p.writeU8(0);
+  }
+
+  p.writeBytes(this.xprivkey);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Instantiate master key from serialized data.
+ * @returns {MasterKey}
+ */
+
+MasterKey.fromRaw = function fromRaw(raw) {
+  var p = new BufferReader(raw);
+  var encrypted, phrase, passphrase, xprivkey, key;
+
+  encrypted = p.readU8() === 1;
+
+  if (p.readU8() === 1) {
+    phrase = p.readVarBytes();
+    passphrase = p.readVarBytes();
+  }
+
+  xprivkey = p.readBytes(82);
+
+  if (!encrypted)
+    key = bcoin.hd.fromRaw(xprivkey);
+
+  return new MasterKey({
+    encrypted: encrypted,
+    phrase: phrase,
+    passphrase: passphrase,
+    xprivkey: xprivkey,
+    key: key
+  });
+};
+
+/**
+ * Instantiate master key from an HDPrivateKey.
+ * @param {HDPrivateKey} key
+ * @returns {MasterKey}
+ */
+
+MasterKey.fromKey = function fromKey(key) {
+  var phrase, passphrase;
+
+  if (key.mnemonic) {
+    phrase = new Buffer(key.mnemonic.phrase, 'utf8');
+    passphrase = new Buffer(key.mnemonic.passphrase, 'utf8');
+  }
+
+  return new MasterKey({
+    encrypted: false,
+    phrase: phrase,
+    passphrase: passphrase,
+    xprivkey: key.toRaw(),
+    key: key
+  });
+};
+
+/**
+ * Convert master key to a jsonifiable object.
+ * @returns {Object}
+ */
+
+MasterKey.prototype.toJSON = function toJSON() {
+  var phrase, passphrase, xprivkey;
+
+  if (this.encrypted) {
+    if (this.phrase) {
+      phrase = this.phrase.toString('hex');
+      passphrase = this.passphrase.toString('hex');
+    }
+    xprivkey = this.xprivkey.toString('hex');
+  } else {
+    if (this.phrase) {
+      phrase = this.phrase.toString('utf8');
+      passphrase = this.passphrase.toString('utf8');
+    }
+    xprivkey = utils.toBase58(this.xprivkey);
+  }
+
+  return {
+    encrypted: this.encrypted,
+    phrase: phrase,
+    passphrase: passphrase,
+    xprivkey: xprivkey
+  };
+};
+
+/**
+ * Instantiate master key from jsonified object.
+ * @returns {MasterKey}
+ */
+
+MasterKey.fromJSON = function fromJSON(json) {
+  var phrase, passphrase, xprivkey, key;
+
+  if (json.encrypted) {
+    if (json.phrase) {
+      phrase = new Buffer(json.phrase, 'hex');
+      passphrase = new Buffer(json.passphrase, 'hex');
+    }
+    xprivkey = new Buffer(json.xprivkey, 'hex');
+  } else {
+    if (json.phrase) {
+      phrase = new Buffer(json.phrase, 'utf8');
+      passphrase = new Buffer(json.passphrase, 'utf8');
+    }
+    xprivkey = utils.fromBase58(json.xprivkey);
+  }
+
+  if (!json.encrypted)
+    key = bcoin.hd.fromRaw(xprivkey);
+
+  return new MasterKey({
+    encrypted: json.encrypted,
+    phrase: phrase,
+    passphrase: passphrase,
+    xprivkey: xprivkey,
+    key: key
+  });
+};
+
+/**
+ * Test whether an object is a MasterKey.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+MasterKey.isMasterKey = function isMasterKey(obj) {
+  return obj
+    &amp;&amp; typeof obj.encrypted === 'boolean'
+    &amp;&amp; typeof obj.decrypt === 'function';
 };
 
 /*
  * Expose
  */
 
-module.exports = Wallet;
+exports = Wallet;
+exports.Account = Account;
+exports.MasterKey = MasterKey;
+
+module.exports = exports;
 </code></pre>
         </article>
     </section>
@@ -1835,13 +2682,13 @@ module.exports = Wallet;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

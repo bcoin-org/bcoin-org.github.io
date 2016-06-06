@@ -35,6 +35,7 @@
 
 var bcoin = require('./env');
 var utils = require('./utils');
+var assert = utils.assert;
 var constants = bcoin.protocol.constants;
 
 /**
@@ -69,13 +70,11 @@ function MerkleBlock(data) {
 
   bcoin.abstractblock.call(this, data);
 
-  this.hashes = (data.hashes || []).map(function(hash) {
-    if (typeof hash === 'string')
-      hash = new Buffer(hash, 'hex');
-    return hash;
-  });
+  assert(Array.isArray(data.hashes));
+  assert(Buffer.isBuffer(data.flags));
 
-  this.flags = data.flags || [];
+  this.hashes = data.hashes;
+  this.flags = data.flags;
 
   // List of matched TXs
   this.map = {};
@@ -193,20 +192,17 @@ MerkleBlock.prototype.verifyPartial = function verifyPartial() {
  */
 
 MerkleBlock.prototype.extractTree = function extractTree() {
-  var self = this;
-  var hashes = this.hashes;
-  var flags = this.flags;
   var bitsUsed = 0;
   var hashUsed = 0;
   var matches = [];
   var indexes = [];
   var map = {};
   var failed = false;
-  var bits = new Array(flags.length * 8);
+  var hashes = [];
+  var flags = this.flags;
   var totalTX = this.totalTX;
   var height = 0;
-  var root;
-  var p;
+  var root, p;
 
   function width(height) {
     return (totalTX + (1 &lt;&lt; height) - 1) >>> height;
@@ -215,12 +211,13 @@ MerkleBlock.prototype.extractTree = function extractTree() {
   function traverse(height, pos) {
     var parent, hash, left, right, txid;
 
-    if (bitsUsed >= bits.length) {
+    if (bitsUsed >= flags.length * 8) {
       failed = true;
       return constants.ZERO_HASH;
     }
 
-    parent = bits[bitsUsed++];
+    parent = (flags[bitsUsed / 8 | 0] >>> (bitsUsed % 8)) &amp; 1;
+    bitsUsed++;
 
     if (height === 0 || !parent) {
       if (hashUsed >= hashes.length) {
@@ -249,10 +246,10 @@ MerkleBlock.prototype.extractTree = function extractTree() {
     return utils.dsha256(Buffer.concat([left, right]));
   }
 
-  for (p = 0; p &lt; bits.length; p++)
-    bits[p] = (flags[p / 8 | 0] &amp; (1 &lt;&lt; (p % 8))) !== 0;
+  for (p = 0; p &lt; this.hashes.length; p++)
+    hashes.push(new Buffer(this.hashes[p], 'hex'));
 
-  if (totalTX == 0)
+  if (totalTX === 0)
     return;
 
   if (totalTX > constants.block.MAX_SIZE / 60)
@@ -261,7 +258,7 @@ MerkleBlock.prototype.extractTree = function extractTree() {
   if (hashes.length > totalTX)
     return;
 
-  if (bits.length &lt; hashes.length)
+  if (flags.length * 8 &lt; hashes.length)
     return;
 
   height = 0;
@@ -273,10 +270,10 @@ MerkleBlock.prototype.extractTree = function extractTree() {
   if (failed)
     return;
 
-  if (((bitsUsed + 7) / 8 | 0) !== ((bits.length + 7) / 8 | 0))
+  if (((bitsUsed + 7) / 8 | 0) !== flags.length)
     return;
 
-  if (hashUsed != hashes.length)
+  if (hashUsed !== hashes.length)
     return;
 
   return {
@@ -340,11 +337,10 @@ MerkleBlock.prototype.inspect = function inspect() {
     bits: this.bits,
     nonce: this.nonce,
     totalTX: this.totalTX,
-    hashes: this.hashes.map(function(hash) {
-      return hash.toString('hex');
-    }),
+    hashes: this.hashes,
+    flags: this.flags,
     map: this.map,
-    flags: this.flags
+    txs: this.txs.length
   };
 };
 
@@ -394,11 +390,11 @@ MerkleBlock.fromRaw = function fromRaw(data, enc) {
  * it through a filter first. This will build the partial
  * merkle tree.
  * @param {Block} block
- * @param {Bloom} bloom
+ * @param {Bloom} filter
  * @returns {MerkleBlock}
  */
 
-MerkleBlock.fromBlock = function fromBlock(block, bloom) {
+MerkleBlock.fromBlock = function fromBlock(block, filter) {
   var matches = [];
   var txs = [];
   var leaves = [];
@@ -408,7 +404,7 @@ MerkleBlock.fromBlock = function fromBlock(block, bloom) {
 
   for (i = 0; i &lt; block.txs.length; i++) {
     tx = block.txs[i];
-    if (tx.isWatched(bloom)) {
+    if (tx.isWatched(filter)) {
       matches.push(1);
       txs.push(tx);
     } else {
@@ -449,7 +445,7 @@ MerkleBlock.fromBlock = function fromBlock(block, bloom) {
     bits.push(parent);
 
     if (height === 0 || !parent) {
-      hashes.push(hash(height, pos, leaves));
+      hashes.push(hash(height, pos, leaves).toString('hex'));
       return;
     }
 
@@ -516,13 +512,13 @@ module.exports = MerkleBlock;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

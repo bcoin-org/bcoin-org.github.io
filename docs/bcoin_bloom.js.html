@@ -33,8 +33,6 @@
  * https://github.com/indutny/bcoin
  */
 
-var utils = require('./utils');
-var assert = utils.assert;
 var constants = require('./protocol/constants');
 
 /*
@@ -71,7 +69,7 @@ function Bloom(size, n, tweak, update) {
     this.reset();
   }
 
-  if (tweak == null || tweak == -1)
+  if (tweak == null || tweak === -1)
     tweak = (Math.random() * 0x100000000) >>> 0;
 
   if (update == null || update === -1)
@@ -276,7 +274,7 @@ RollingFilter.prototype.reset = function reset() {
  */
 
 RollingFilter.prototype.add = function add(val, enc) {
-  var i, j, hash, bits, pos, pos1, pos2, bit, oct;
+  var i, hash, bits, pos, pos1, pos2, bit, oct;
   var m1, m2, v1, v2, mhi, mlo;
 
   if (typeof val === 'string')
@@ -397,58 +395,50 @@ RollingFilter.prototype.added = function added(val, enc) {
  */
 
 function murmur3(data, seed) {
+  var tail = data.length - (data.length % 4);
   var c1 = 0xcc9e2d51;
   var c2 = 0x1b873593;
-  var r1 = 15;
-  var r2 = 13;
-  var m = 5;
-  var n = 0xe6546b64;
-  var hash = seed;
-  var i, w, r, j;
+  var h1 = seed;
+  var i, k1;
 
-  assert(Buffer.isBuffer(data));
-
-  for (i = 0; i + 4 &lt;= data.length; i += 4) {
-    w = data[i]
-      | (data[i + 1] &lt;&lt; 8)
+  for (i = 0; i &lt; tail; i += 4) {
+    k1 = (data[i + 3] &lt;&lt; 24)
       | (data[i + 2] &lt;&lt; 16)
-      | (data[i + 3] &lt;&lt; 24);
-
-    w = mul32(w, c1);
-    w = rotl32(w, r1);
-    w = mul32(w, c2);
-
-    hash ^= w;
-    hash = rotl32(hash, r2);
-    hash = mul32(hash, m);
-    hash = sum32(hash, n);
+      | (data[i + 1] &lt;&lt; 8)
+      | data[i];
+    k1 = mul32(k1, c1);
+    k1 = rotl32(k1, 15);
+    k1 = mul32(k1, c2);
+    h1 ^= k1;
+    h1 = rotl32(h1, 13);
+    h1 = sum32(mul32(h1, 5), 0xe6546b64);
   }
 
-  if (i !== data.length) {
-    r = 0;
-    for (j = data.length - 1; j >= i; j--)
-      r = (r &lt;&lt; 8) | data[j];
-
-    r = mul32(r, c1);
-    r = rotl32(r, r1);
-    if (r &lt; 0)
-      r += 0x100000000;
-    r = mul32(r, c2);
-
-    hash ^= r;
+  k1 = 0;
+  switch (data.length &amp; 3) {
+    case 3:
+      k1 ^= data[tail + 2] &lt;&lt; 16;
+    case 2:
+      k1 ^= data[tail + 1] &lt;&lt; 8;
+    case 1:
+      k1 ^= data[tail + 0];
+      k1 = mul32(k1, c1);
+      k1 = rotl32(k1, 15);
+      k1 = mul32(k1, c2);
+      h1 ^= k1;
   }
 
-  hash ^= data.length;
-  hash ^= hash >>> 16;
-  hash = mul32(hash, 0x85ebca6b);
-  hash ^= hash >>> 13;
-  hash = mul32(hash, 0xc2b2ae35);
-  hash ^= hash >>> 16;
+  h1 ^= data.length;
+  h1 ^= h1 >>> 16;
+  h1 = mul32(h1, 0x85ebca6b);
+  h1 ^= h1 >>> 13;
+  h1 = mul32(h1, 0xc2b2ae35);
+  h1 ^= h1 >>> 16;
 
-  if (hash &lt; 0)
-    hash += 0x100000000;
+  if (h1 &lt; 0)
+    h1 += 0x100000000;
 
-  return hash;
+  return h1;
 }
 
 function mul32(a, b) {
@@ -504,7 +494,7 @@ exports = Bloom;
 exports.murmur3 = murmur3;
 exports.rolling = RollingFilter;
 
-module.exports = Bloom;
+module.exports = exports;
 </code></pre>
         </article>
     </section>
@@ -515,13 +505,13 @@ module.exports = Bloom;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

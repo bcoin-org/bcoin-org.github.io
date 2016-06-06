@@ -112,9 +112,20 @@ function ChainDB(chain, options) {
   // check.
   this.cacheWindow = (this.network.pow.retargetInterval + 1) * 2 + 100;
 
-  this.coinCache = new NullCache(100000);
-  this.cacheHash = new bcoin.lru(this.cacheWindow);
-  this.cacheHeight = new bcoin.lru(this.cacheWindow);
+  // We want to keep the last 5 blocks of unspents in memory.
+  // Some explanation for the numbers:
+  // Average block output size: 165kb
+  // Average number of outputs: 5000
+  // Average output size: 33.6b
+  // Average number of outputs per tx: 2.2
+  // Average size of outputs per tx: 74b
+  // Average number of txs: 2300
+  // Key size: 68b (* 2)
+  this.coinWindow = ((165 * 1024 + 5000 * 9) + (5000 * 68 * 2)) * 5;
+
+  this.coinCache = new bcoin.lru(this.coinWindow);
+  this.cacheHash = new bcoin.lru(this.cacheWindow, 1);
+  this.cacheHeight = new bcoin.lru(this.cacheWindow, 1);
 
   this._init();
 }
@@ -297,19 +308,25 @@ ChainDB.prototype.getCache = function getCache(hash) {
  */
 
 ChainDB.prototype.getHeight = function getHeight(hash, callback) {
-  callback = utils.asyncify(callback);
-
-  if (hash == null || hash &lt; 0)
+  if (hash == null || hash &lt; 0) {
+    callback = utils.asyncify(callback);
     return callback(null, -1);
+  }
 
-  if (typeof hash === 'number')
+  if (typeof hash === 'number') {
+    callback = utils.asyncify(callback);
     return callback(null, hash);
+  }
 
-  if (hash === constants.NULL_HASH)
+  if (hash === constants.NULL_HASH) {
+    callback = utils.asyncify(callback);
     return callback(null, -1);
+  }
 
-  if (this.cacheHash.has(hash))
+  if (this.cacheHash.has(hash)) {
+    callback = utils.asyncify(callback);
     return callback(null, this.cacheHash.get(hash).height);
+  }
 
   this.db.fetch('h/' + hash, function(data) {
     assert(data.length === 4, 'Database corruption.');
@@ -333,16 +350,20 @@ ChainDB.prototype.getHeight = function getHeight(hash, callback) {
  */
 
 ChainDB.prototype.getHash = function getHash(height, callback) {
-  callback = utils.asyncify(callback);
-
-  if (height == null || height &lt; 0)
+  if (height == null || height &lt; 0) {
+    callback = utils.asyncify(callback);
     return callback(null, null);
+  }
 
-  if (typeof height === 'string')
+  if (typeof height === 'string') {
+    callback = utils.asyncify(callback);
     return callback(null, height);
+  }
 
-  if (this.cacheHeight.has(height))
+  if (this.cacheHeight.has(height)) {
+    callback = utils.asyncify(callback);
     return callback(null, this.cacheHeight.get(height).hash);
+  }
 
   this.db.fetch('H/' + pad32(height), function(data) {
     assert(data.length === 32, 'Database corruption.');
@@ -473,7 +494,6 @@ ChainDB.prototype.get = function get(hash, callback) {
  */
 
 ChainDB.prototype.save = function save(entry, block, connect, callback) {
-  var self = this;
   var batch, hash, height;
 
   callback = utils.ensure(callback);
@@ -543,7 +563,6 @@ ChainDB.prototype.getTip = function getTip(callback) {
  */
 
 ChainDB.prototype.connect = function connect(entry, block, callback) {
-  var self = this;
   var batch = this.db.batch();
   var hash = new Buffer(entry.hash, 'hex');
 
@@ -753,8 +772,6 @@ ChainDB.prototype.has = function has(height, callback) {
  */
 
 ChainDB.prototype.saveBlock = function saveBlock(block, batch, connect, callback) {
-  var i, j, tx, hash, addresses, address;
-
   if (this.options.spv)
     return utils.nextTick(callback);
 
@@ -776,7 +793,6 @@ ChainDB.prototype.saveBlock = function saveBlock(block, batch, connect, callback
 
 ChainDB.prototype.removeBlock = function removeBlock(hash, batch, callback) {
   var self = this;
-  var i, tx;
 
   if (this.options.spv)
     return utils.nextTick(callback);
@@ -866,7 +882,7 @@ ChainDB.prototype.connectBlock = function connectBlock(block, batch, callback) {
         if (output.script.isUnspendable())
           continue;
 
-        coin = bcoin.coin.fromTX(tx, j);
+        coin = bcoin.coin.fromTX(tx, j).toRaw();
 
         if (self.options.indexAddress) {
           address = output.getHash();
@@ -874,7 +890,7 @@ ChainDB.prototype.connectBlock = function connectBlock(block, batch, callback) {
             batch.put('C/' + address + '/' + key, DUMMY);
         }
 
-        batch.put('c/' + key, coin.toRaw());
+        batch.put('c/' + key, coin);
 
         self.coinCache.set(key, coin);
       }
@@ -902,7 +918,7 @@ ChainDB.prototype.connectBlock = function connectBlock(block, batch, callback) {
 
 ChainDB.prototype.disconnectBlock = function disconnectBlock(block, batch, callback) {
   var self = this;
-  var i, j, tx, input, output, key, addresses, address, hash;
+  var i, j, tx, input, output, key, addresses, address, hash, coin;
 
   if (this.options.spv)
     return utils.nextTick(callback);
@@ -944,9 +960,11 @@ ChainDB.prototype.disconnectBlock = function disconnectBlock(block, batch, callb
             batch.put('C/' + address + '/' + key, DUMMY);
         }
 
-        batch.put('c/' + key, input.coin.toRaw());
+        coin = input.coin.toRaw();
 
-        self.coinCache.set(key, input.coin);
+        batch.put('c/' + key, coin);
+
+        self.coinCache.set(key, coin);
       }
 
       for (j = 0; j &lt; tx.outputs.length; j++) {
@@ -1073,14 +1091,23 @@ ChainDB.prototype.getCoin = function getCoin(hash, index, callback) {
   var coin;
 
   coin = this.coinCache.get(key);
-  if (coin)
-    return utils.asyncify(callback)(null, coin);
+  if (coin) {
+    callback = utils.asyncify(callback);
+    try {
+      coin = bcoin.coin.fromRaw(coin);
+      coin.hash = hash;
+      coin.index = index;
+    } catch (e) {
+      return callback(e);
+    }
+    return callback(null, coin);
+  }
 
   this.db.fetch('c/' + key, function(data) {
     var coin = bcoin.coin.fromRaw(data);
     coin.hash = hash;
     coin.index = index;
-    self.coinCache.set(key, coin);
+    self.coinCache.set(key, data);
     return coin;
   }, callback);
 };
@@ -1161,6 +1188,10 @@ ChainDB.prototype.getCoinsByAddress = function getCoinsByAddress(addresses, call
       coins = coins.concat(coin);
       next();
     });
+  }, function(err) {
+    if (err)
+      return callback(err);
+    return callback(null, coins);
   });
 };
 
@@ -1278,8 +1309,6 @@ ChainDB.prototype._ensureBlock = function _ensureBlock(hash, callback) {
 };
 
 ChainDB.prototype._ensureHistory = function _ensureHistory(hash, callback) {
-  var self = this;
-
   if (hash instanceof bcoin.block)
     return utils.asyncify(callback)(null, hash);
 
@@ -1293,13 +1322,14 @@ ChainDB.prototype._ensureHistory = function _ensureHistory(hash, callback) {
  */
 
 ChainDB.prototype.fillBlock = function fillBlock(block, callback) {
-  return this.fillCoins(block.txs, function(err) {
-    var coins, i, tx, hash, j, input, key;
+  var coins, spent, i, tx, hash, j, input, key;
 
+  return this.fillCoins(block.txs, function(err) {
     if (err)
       return callback(err);
 
     coins = {};
+    spent = {};
 
     for (i = 0; i &lt; block.txs.length; i++) {
       tx = block.txs[i];
@@ -1308,6 +1338,14 @@ ChainDB.prototype.fillBlock = function fillBlock(block, callback) {
       for (j = 0; j &lt; tx.inputs.length; j++) {
         input = tx.inputs[j];
         key = input.prevout.hash + '/' + input.prevout.index;
+
+        if (spent[key]) {
+          delete input.coin;
+          continue;
+        }
+
+        spent[key] = true;
+
         if (!input.coin &amp;&amp; coins[key]) {
           input.coin = coins[key];
           delete coins[key];
@@ -1457,7 +1495,7 @@ ChainDB.prototype.isSpentTX = function isSpentTX(hash, callback) {
 };
 
 ChainDB.prototype._pruneBlock = function _pruneBlock(block, batch, callback) {
-  var futureHeight, i, j, key, tx, input;
+  var futureHeight, key;
 
   if (this.options.spv)
     return callback();
@@ -1521,13 +1559,13 @@ module.exports = ChainDB;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

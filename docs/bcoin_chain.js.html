@@ -35,7 +35,6 @@
 
 var bcoin = require('./env');
 var EventEmitter = require('events').EventEmitter;
-var bn = require('bn.js');
 var constants = bcoin.protocol.constants;
 var utils = require('./utils');
 var assert = utils.assert;
@@ -131,6 +130,9 @@ Chain.prototype._init = function _init() {
   // Hook into events for debugging
   this.on('block', function(block, entry) {
     if (!self.synced &amp;&amp; self.height &lt; self.network.block.slowHeight)
+      return;
+
+    if (self.options.spv)
       return;
 
     bcoin.debug('Block %s (%d) added to chain.',
@@ -313,6 +315,7 @@ Chain.prototype._preload = function _preload(callback) {
   var buf, height, stream;
   var request = require('./http/request');
   var locker = new bcoin.locker();
+  var flushed = 0;
 
   if (!this.options.preload)
     return callback();
@@ -323,7 +326,7 @@ Chain.prototype._preload = function _preload(callback) {
   if (this.network.type !== 'main')
     return callback();
 
-  bcoin.debug('Loading %s', url);
+  bcoin.debug('Loading %s.', url);
 
   function parseHeader(buf) {
     var headers = bcoin.protocol.parser.parseBlockHeaders(buf);
@@ -342,6 +345,9 @@ Chain.prototype._preload = function _preload(callback) {
         locker.destroy();
         return callback(err);
       }
+
+      if ((++flushed % 50000) === 0)
+        utils.print('Flushed %d headers to DB.', flushed);
 
       if (locker.jobs.length === 0 &amp;&amp; save.ended)
         return callback();
@@ -362,9 +368,15 @@ Chain.prototype._preload = function _preload(callback) {
     };
 
     stream.on('response', function(res) {
+      var height = +res.headers['content-length'] / 80 | 0;
       if (res.statusCode >= 400) {
         stream.destroy();
         return callback(new Error('Bad response code: ' + res.statusCode));
+      }
+      if (chainHeight > height - 30000) {
+        bcoin.debug('Preload height is %d. Skipping.', height);
+        stream.destroy();
+        return callback();
       }
     });
 
@@ -376,7 +388,7 @@ Chain.prototype._preload = function _preload(callback) {
     stream.on('data', function(data) {
       var blocks = [];
       var need = 80 - buf.size;
-      var lastEntry, block, data, entry;
+      var i, lastEntry, block, entry;
 
       while (data.length >= need) {
         buf.data.push(data.slice(0, need));
@@ -392,9 +404,6 @@ Chain.prototype._preload = function _preload(callback) {
         buf.data.push(data);
         buf.size += data.length;
       }
-
-      if (blocks.length === 0)
-        return;
 
       for (i = 0; i &lt; blocks.length; i++) {
         data = blocks[i];
@@ -433,9 +442,7 @@ Chain.prototype._preload = function _preload(callback) {
         // Create a chain entry.
         entry = new bcoin.chainentry(self, data, lastEntry);
 
-        if (entry.height &lt;= chainHeight)
-          self.db.addCache(entry);
-        else
+        if (entry.height > chainHeight)
           save(entry);
 
         if ((height + 1) % 50000 === 0)
@@ -469,7 +476,7 @@ Chain.prototype._verifyContext = function _verifyContext(block, prev, callback) 
     if (err)
       return callback(err);
 
-    self._checkDuplicates(block, prev, function(err, result) {
+    self._checkDuplicates(block, prev, function(err) {
       if (err)
         return callback(err);
 
@@ -1030,19 +1037,17 @@ Chain.prototype._reorganize = function _reorganize(entry, block, callback) {
     function disconnect(callback) {
       var entries = [];
 
-      entries.push(tip);
-
       (function collect(entry) {
+        if (entry.hash === fork.hash)
+          return finish();
+
+        entries.push(entry);
+
         entry.getPrevious(function(err, entry) {
           if (err)
             return callback(err);
 
           assert(entry);
-
-          if (entry.hash === fork.hash)
-            return finish();
-
-          entries.push(entry);
 
           collect(entry);
         });
@@ -1060,16 +1065,16 @@ Chain.prototype._reorganize = function _reorganize(entry, block, callback) {
       var entries = [];
 
       (function collect(entry) {
+        if (entry.hash === fork.hash)
+          return finish();
+
+        entries.push(entry);
+
         entry.getPrevious(function(err, entry) {
           if (err)
             return callback(err);
 
           assert(entry);
-
-          if (entry.hash === fork.hash)
-            return finish();
-
-          entries.push(entry);
 
           collect(entry);
         });
@@ -1077,6 +1082,11 @@ Chain.prototype._reorganize = function _reorganize(entry, block, callback) {
 
       function finish() {
         entries = entries.slice().reverse();
+
+        // We don't want to connect the new tip here.
+        // That will be done outside in setBestChain.
+        entries.pop();
+
         utils.forEachSerial(entries, function(entry, next) {
           self.connect(entry, next);
         }, callback);
@@ -1281,8 +1291,8 @@ Chain.prototype._setBestChain = function _setBestChain(entry, block, prev, callb
 
 Chain.prototype.reset = function reset(height, callback, force) {
   var self = this;
-
   var unlock = this._lock(reset, [height, callback], force);
+
   if (!unlock)
     return;
 
@@ -1312,8 +1322,8 @@ Chain.prototype.reset = function reset(height, callback, force) {
 
 Chain.prototype.resetTime = function resetTime(ts, callback, force) {
   var self = this;
-
   var unlock = this._lock(resetTime, [ts, callback], force);
+
   if (!unlock)
     return;
 
@@ -1331,13 +1341,13 @@ Chain.prototype.resetTime = function resetTime(ts, callback, force) {
 };
 
 /**
- * Wait for the chain to flush (finish processing
+ * Wait for the chain to drain (finish processing
  * all of the blocks in its queue).
  * @param {Function} callback
  */
 
-Chain.prototype.onFlush = function onFlush(callback) {
-  return this.locker.onFlush(callback);
+Chain.prototype.onDrain = function onDrain(callback) {
+  return this.locker.onDrain(callback);
 };
 
 /**
@@ -1359,10 +1369,12 @@ Chain.prototype.add = function add(block, callback, force) {
   var self = this;
   var total = 0;
   var ret = {};
+  var unlock;
 
   assert(this.loaded);
 
-  var unlock = this._lock(add, [block, callback], force);
+  unlock = this._lock(add, [block, callback], force);
+
   if (!unlock)
     return;
 
@@ -1476,7 +1488,7 @@ Chain.prototype.add = function add(block, callback, force) {
 
         if (height > self.bestHeight) {
           self.bestHeight = height;
-          self.network.height = height;
+          self.network.updateHeight(height);
         }
 
         // If previous block wasn't ever seen,
@@ -1493,7 +1505,7 @@ Chain.prototype.add = function add(block, callback, force) {
           // getblocks sync, making it an orphan).
           if (block.getCoinbaseHeight() > self.bestHeight) {
             self.bestHeight = block.getCoinbaseHeight();
-            self.network.height = self.bestHeight;
+            self.network.updateHeight(self.bestHeight);
           }
 
           self.emit('orphan', block, {
@@ -1906,9 +1918,10 @@ Chain.prototype.getLocator = function getLocator(start, callback, force) {
   var self = this;
   var hashes = [];
   var step = 1;
-  var height;
+  var unlock, height;
 
-  var unlock = this._lock(getLocator, [start, callback], force);
+  unlock = this._lock(getLocator, [start, callback], force);
+
   if (!unlock)
     return;
 
@@ -2008,7 +2021,7 @@ Chain.prototype.getOrphanRoot = function getOrphanRoot(hash) {
 
 Chain.prototype.getCurrentTarget = function getCurrentTarget(callback) {
   if (!this.tip)
-    return callback(null, utils.toCompact(this.network.pow.limit));
+    return callback(null, this.network.pow.bits);
   return this.getTargetAsync(null, this.tip, callback);
 };
 
@@ -2046,12 +2059,11 @@ Chain.prototype.getTargetAsync = function getTargetAsync(block, prev, callback) 
  */
 
 Chain.prototype.getTarget = function getTarget(block, prev, ancestors) {
-  var powLimit = utils.toCompact(this.network.pow.limit);
   var ts, first, i;
 
   // Genesis
   if (!prev)
-    return powLimit;
+    return this.network.pow.bits;
 
   // Do not retarget
   if ((prev.height + 1) % this.network.pow.retargetInterval !== 0) {
@@ -2059,12 +2071,12 @@ Chain.prototype.getTarget = function getTarget(block, prev, ancestors) {
       // Special behavior for testnet:
       ts = block ? (block.ts || block) : bcoin.now();
       if (ts > prev.ts + this.network.pow.targetSpacing * 2)
-        return powLimit;
+        return this.network.pow.bits;
 
       i = 1;
       while (ancestors[i]
         &amp;&amp; prev.height % this.network.pow.retargetInterval !== 0
-        &amp;&amp; prev.bits === powLimit) {
+        &amp;&amp; prev.bits === this.network.pow.bits) {
         prev = ancestors[i++];
       }
     }
@@ -2088,32 +2100,32 @@ Chain.prototype.getTarget = function getTarget(block, prev, ancestors) {
  */
 
 Chain.prototype.retarget = function retarget(prev, first) {
-  var powTargetTimespan = new bn(this.network.pow.targetTimespan);
+  var targetTimespan = this.network.pow.targetTimespan;
   var actualTimespan, target;
 
   if (this.network.pow.noRetargeting)
     return prev.bits;
 
-  actualTimespan = new bn(prev.ts - first.ts);
+  actualTimespan = prev.ts - first.ts;
   target = utils.fromCompact(prev.bits);
 
-  if (actualTimespan.cmp(powTargetTimespan.divn(4)) &lt; 0)
-    actualTimespan = powTargetTimespan.divn(4);
+  if (actualTimespan &lt; targetTimespan / 4)
+    actualTimespan = targetTimespan / 4;
 
-  if (actualTimespan.cmp(powTargetTimespan.muln(4)) > 0)
-    actualTimespan = powTargetTimespan.muln(4);
+  if (actualTimespan > targetTimespan * 4)
+    actualTimespan = targetTimespan * 4;
 
-  target.imul(actualTimespan);
-  target = target.div(powTargetTimespan);
+  target.imuln(actualTimespan);
+  target.idivn(targetTimespan);
 
   if (target.cmp(this.network.pow.limit) > 0)
-    target = this.network.pow.limit.clone();
+    return this.network.pow.bits;
 
   return utils.toCompact(target);
 };
 
 /**
- * Find a locator. Analagous to bitcoind's `FindForkInMainChain()`.
+ * Find a locator. Analagous to bitcoind's `FindForkInGlobalIndex()`.
  * @param {Hash[]} locator - Hashes.
  * @param {Function} callback - Returns [Error, {@link Hash}] (the
  * hash of the latest known block).
@@ -2122,11 +2134,8 @@ Chain.prototype.retarget = function retarget(prev, first) {
 Chain.prototype.findLocator = function findLocator(locator, callback) {
   var self = this;
 
-  if (!locator)
-    return utils.nextTick(callback);
-
   utils.forEachSerial(locator, function(hash, next) {
-    self.db.has(hash, function(err, result) {
+    self.db.isMainChain(hash, function(err, result) {
       if (err)
         return next(err);
 
@@ -2135,7 +2144,12 @@ Chain.prototype.findLocator = function findLocator(locator, callback) {
 
       next();
     });
-  }, callback);
+  }, function(err) {
+    if (err)
+      return callback(err);
+
+    return callback(null, self.network.genesis.hash);
+  });
 };
 
 /**
@@ -2343,9 +2357,6 @@ Chain.prototype.computeBlockVersion = function computeBlockVersion(prev, callbac
     if (err)
       return callback(err);
 
-    if (version === 0)
-      return callback(null, constants.versionbits.LAST_OLD_BLOCK_VERSION);
-
     version |= constants.versionbits.TOP_BITS;
     version >>>= 0;
 
@@ -2546,13 +2557,13 @@ module.exports = Chain;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

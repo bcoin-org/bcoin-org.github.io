@@ -36,17 +36,14 @@
 var bcoin = require('./env');
 var utils = bcoin.utils;
 var assert = utils.assert;
-var networks = bcoin.protocol.network;
-var BufferWriter = require('./writer');
 var BufferReader = require('./reader');
+var BufferWriter = require('./writer');
 
 /**
  * Represents a key ring which amounts to an address. Used for {@link Wallet}.
  * @exports KeyRing
  * @constructor
  * @param {Object} options
- * @param {String?} options.label
- * @param {Boolean?} options.derived
  * @param {HDPrivateKey|HDPublicKey} options.key
  * @param {String?} options.path
  * @param {Boolean?} options.change
@@ -64,64 +61,35 @@ function KeyRing(options) {
   if (!(this instanceof KeyRing))
     return new KeyRing(options);
 
-  if (options instanceof KeyRing)
-    return options;
-
-  if (!options)
-    options = {};
-
-  this.options = options;
-  this.label = options.label || '';
-  this.derived = !!options.derived;
-  this.addressMap = null;
-
-  this.key = options.key || bcoin.keypair(options);
-  this.path = options.path;
-  this.change = !!options.change;
-  this.index = options.index;
-
+  this.network = bcoin.network.get(options.network);
   this.type = options.type || 'pubkeyhash';
-  this.keys = [];
   this.m = options.m || 1;
   this.n = options.n || 1;
   this.witness = options.witness || false;
+  this.name = options.name;
+  this.account = options.account;
+  this.change = options.change;
+  this.index = options.index;
+  this.key = options.key;
+  this.keys = [];
 
   if (this.n > 1)
     this.type = 'multisig';
+
+  this.addressMap = null;
 
   assert(this.type === 'pubkeyhash' || this.type === 'multisig');
 
   if (this.m &lt; 1 || this.m > this.n)
     throw new Error('m ranges between 1 and n');
 
-  this.addKey(this.getPublicKey());
+  this.addKey(this.key);
 
   if (options.keys) {
     for (i = 0; i &lt; options.keys.length; i++)
       this.addKey(options.keys[i]);
   }
 }
-
-/**
- * Test an object to see if it is an KeyRing.
- * @param {Object} obj
- * @returns {Boolean}
- */
-
-KeyRing.isKeyRing = function isKeyRing(obj) {
-  return obj
-    &amp;&amp; Array.isArray(obj.keys)
-    &amp;&amp; typeof obj._getAddressMap === 'function';
-};
-
-/**
- * Return address ID (pubkeyhash address of pubkey).
- * @returns {Base58Address}
- */
-
-KeyRing.prototype.getID = function getID() {
-  return this.getKeyAddress();
-};
 
 /**
  * Add a key to shared keys.
@@ -132,9 +100,10 @@ KeyRing.prototype.addKey = function addKey(key) {
   if (utils.indexOf(this.keys, key) !== -1)
     return;
 
-  this.keys.push(key);
+  if (this.keys.length === this.n)
+    throw new Error('Cannot add more keys.');
 
-  this.keys = utils.sortKeys(this.keys);
+  utils.binaryInsert(this.keys, key, utils.cmp);
 };
 
 /**
@@ -143,24 +112,10 @@ KeyRing.prototype.addKey = function addKey(key) {
  */
 
 KeyRing.prototype.removeKey = function removeKey(key) {
-  var index = utils.indexOf(this.keys, key);
+  if (this.keys.length === this.n)
+    throw new Error('Cannot remove key.');
 
-  if (index === -1)
-    return;
-
-  this.keys.splice(index, 1);
-
-  this.keys = utils.sortKeys(this.keys);
-};
-
-/**
- * Get private key.
- * @param {String?} enc - `"hex"` or `null`.
- * @returns {Buffer}
- */
-
-KeyRing.prototype.getPrivateKey = function getPrivateKey(enc) {
-  return this.key.getPrivateKey(enc);
+  utils.binaryRemove(this.keys, key, utils.cmp);
 };
 
 /**
@@ -170,7 +125,13 @@ KeyRing.prototype.getPrivateKey = function getPrivateKey(enc) {
  */
 
 KeyRing.prototype.getPublicKey = function getPublicKey(enc) {
-  return this.key.getPublicKey(enc);
+  if (enc === 'base58')
+    return utils.toBase58(this.key);
+
+  if (enc === 'hex')
+    return this.key.toString('hex');
+
+  return this.key;
 };
 
 /**
@@ -408,7 +369,12 @@ KeyRing.prototype.getAddress = function getAddress() {
   return this.getKeyAddress();
 };
 
-KeyRing.prototype._getAddressMap = function _getAddressMap() {
+/**
+ * Create the address map for testing txs.
+ * @returns {AddressMap}
+ */
+
+KeyRing.prototype.getAddressMap = function getAddressMap() {
   if (!this.addressMap) {
     this.addressMap = {};
 
@@ -432,7 +398,7 @@ KeyRing.prototype._getAddressMap = function _getAddressMap() {
  */
 
 KeyRing.prototype.ownInput = function ownInput(tx, index) {
-  var addressMap = this._getAddressMap();
+  var addressMap = this.getAddressMap();
 
   if (tx instanceof bcoin.input)
     return tx.test(addressMap);
@@ -448,7 +414,7 @@ KeyRing.prototype.ownInput = function ownInput(tx, index) {
  */
 
 KeyRing.prototype.ownOutput = function ownOutput(tx, index) {
-  var addressMap = this._getAddressMap();
+  var addressMap = this.getAddressMap();
 
   if (tx instanceof bcoin.output)
     return tx.test(addressMap);
@@ -493,63 +459,22 @@ KeyRing.prototype.scriptInputs = function scriptInputs(tx, index) {
 };
 
 /**
- * Sign inputs for a transaction. Only attempts to sign inputs
- * that are redeemable by this address.
- * @param {MTX} tx
- * @param {Number?} index - Index of input. If not present,
- * it will attempt to sign all redeemable inputs.
- * @param {SighashType?} type
- * @returns {Number} Total number of inputs signed.
- */
-
-KeyRing.prototype.signInputs = function signInputs(tx, index, type) {
-  var total = 0;
-  var i, input;
-
-  if (index &amp;&amp; typeof index === 'object')
-    index = tx.inputs.indexOf(index);
-
-  if (!this.key.privateKey)
-    return 0;
-
-  for (i = 0; i &lt; tx.inputs.length; i++) {
-    input = tx.inputs[i];
-
-    if (index != null &amp;&amp; index !== i)
-      continue;
-
-    if (!input.coin)
-      continue;
-
-    if (!this.ownOutput(input.coin))
-      continue;
-
-    if (tx.signInput(i, this, type))
-      total++;
-  }
-
-  return total;
-};
-
-/**
  * Build input scripts and sign inputs for a transaction. Only attempts
  * to build/sign inputs that are redeemable by this address.
  * @param {MTX} tx
+ * @param {HDPrivateKey|KeyPair|Buffer} key - Private key.
  * @param {Number?} index - Index of input. If not present,
  * it will attempt to build and sign all redeemable inputs.
  * @param {SighashType?} type
  * @returns {Number} Total number of inputs scripts built and signed.
  */
 
-KeyRing.prototype.sign = function sign(tx, index, type) {
+KeyRing.prototype.sign = function sign(tx, key, index, type) {
   var total = 0;
   var i, input;
 
   if (index &amp;&amp; typeof index === 'object')
     index = tx.inputs.indexOf(index);
-
-  if (!this.key.privateKey)
-    return 0;
 
   for (i = 0; i &lt; tx.inputs.length; i++) {
     input = tx.inputs[i];
@@ -563,16 +488,12 @@ KeyRing.prototype.sign = function sign(tx, index, type) {
     if (!this.ownOutput(input.coin))
       continue;
 
-    if (tx.sign(i, this, type))
+    if (tx.sign(i, this, key, type))
       total++;
   }
 
   return total;
 };
-
-KeyRing.prototype.__defineGetter__('privateKey', function() {
-  return this.getPrivateKey();
-});
 
 KeyRing.prototype.__defineGetter__('publicKey', function() {
   return this.getPublicKey();
@@ -632,28 +553,20 @@ KeyRing.prototype.__defineGetter__('address', function() {
  * @returns {Object}
  */
 
-KeyRing.prototype.toJSON = function toJSON(passphrase) {
-  var key = this.key;
-
-  if (!(key instanceof bcoin.keypair))
-    key = new bcoin.keypair({ privateKey: key.getPrivateKey() });
-
+KeyRing.prototype.toJSON = function toJSON() {
   return {
-    v: 1,
-    name: 'address',
     network: this.network.type,
-    label: this.label,
-    change: this.change,
-    derived: this.derived,
-    index: this.index,
-    path: this.path,
-    address: this.getAddress(),
-    key: key.toJSON(passphrase),
     type: this.type,
-    witness: this.witness,
-    keys: this.keys.map(utils.toBase58),
     m: this.m,
-    n: this.n
+    n: this.n,
+    witness: this.witness,
+    name: this.name,
+    account: this.account,
+    change: this.change,
+    index: this.index,
+    key: utils.toBase58(this.key),
+    keys: this.keys.map(utils.toBase58),
+    address: this.getAddress()
   };
 };
 
@@ -664,27 +577,101 @@ KeyRing.prototype.toJSON = function toJSON(passphrase) {
  * @returns {KeyRing}
  */
 
-KeyRing.fromJSON = function fromJSON(json, passphrase) {
-  var w;
-
-  assert.equal(json.v, 1);
-  assert.equal(json.name, 'address');
-
-  w = new KeyRing({
-    label: json.label,
-    change: json.change,
-    derived: json.derived,
-    index: json.index,
-    path: json.path,
-    key: bcoin.keypair.fromJSON(json.key, passphrase),
+KeyRing.fromJSON = function fromJSON(json) {
+  return new KeyRing({
+    nework: json.network,
     type: json.type,
-    witness: json.witness,
-    keys: json.keys.map(utils.fromBase58),
     m: json.m,
-    n: json.n
+    n: json.n,
+    witness: json.witness,
+    name: json.name,
+    account: json.account,
+    change: json.change,
+    index: json.index,
+    key: utils.fromBase58(json.key),
+    keys: json.keys.map(utils.fromBase58)
   });
+};
 
-  return w;
+/**
+ * Serialize the keyring.
+ * @returns {Buffer}
+ */
+
+KeyRing.prototype.toRaw = function toRaw(writer) {
+  var p = new BufferWriter(writer);
+  var i;
+
+  p.writeU32(this.network.magic);
+  p.writeU8(this.type === 'pubkeyhash' ? 0 : 1);
+  p.writeU8(this.m);
+  p.writeU8(this.n);
+  p.writeU8(this.witness ? 1 : 0);
+  p.writeVarString(this.name, 'utf8');
+  p.writeU32(this.account);
+  p.writeU32(this.change);
+  p.writeU32(this.index);
+  p.writeVarBytes(this.key);
+  p.writeU8(this.keys.length);
+
+  for (i = 0; i &lt; this.keys.length; i++)
+    p.writeVarBytes(this.keys[i]);
+
+  if (!writer)
+    p = p.render();
+
+  return p;
+};
+
+/**
+ * Instantiate a keyring from serialized data.
+ * @returns {KeyRing}
+ */
+
+KeyRing.fromRaw = function fromRaw(data) {
+  var p = new BufferReader(data);
+  var network = bcoin.network.fromMagic(p.readU32());
+  var type = p.readU8() === 0 ? 'pubkeyhash' : 'multisig';
+  var m = p.readU8();
+  var n = p.readU8();
+  var witness = p.readU8() === 1;
+  var name = p.readVarString('utf8');
+  var account = p.readU32();
+  var change = p.readU32();
+  var index = p.readU32();
+  var key = p.readVarBytes();
+  var count = p.readU8();
+  var keys = [];
+  var i;
+
+  for (i = 0; i &lt; count; i++)
+    keys.push(p.readVarBytes());
+
+  return new KeyRing({
+    nework: network,
+    type: type,
+    m: m,
+    n: n,
+    witness: witness,
+    name: name,
+    account: account,
+    change: change,
+    index: index,
+    key: key,
+    keys: keys
+  });
+};
+
+/**
+ * Test whether an object is a KeyRing.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+KeyRing.isKeyRing = function isKeyRing(obj) {
+  return obj
+    &amp;&amp; Array.isArray(obj.keys)
+    &amp;&amp; typeof obj.getAddressMap === 'function';
 };
 
 /*
@@ -702,13 +689,13 @@ module.exports = KeyRing;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPProvider.html">HTTPProvider</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="Provider.html">Provider</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#scrypt">scrypt</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-constants.html">constants</a></li><li><a href="module-ec.html">ec</a></li><li><a href="module-ldb.html">ldb</a></li><li><a href="module-network.html">network</a></li><li><a href="module-profiler.html">profiler</a></li><li><a href="module-request.html">request</a></li><li><a href="module-uri.html">uri</a></li><li><a href="module-utils.html">utils</a></li></ul><h3>Classes</h3><ul><li><a href="AbstractBlock.html">AbstractBlock</a></li><li><a href="Account.html">Account</a></li><li><a href="Address.html">Address</a></li><li><a href="AES.html">AES</a></li><li><a href="Block.html">Block</a></li><li><a href="Bloom.html">Bloom</a></li><li><a href="BroadcastItem.html">BroadcastItem</a></li><li><a href="BST.html">BST</a></li><li><a href="BufferReader.html">BufferReader</a></li><li><a href="BufferWriter.html">BufferWriter</a></li><li><a href="Chain.html">Chain</a></li><li><a href="ChainDB.html">ChainDB</a></li><li><a href="ChainEntry.html">ChainEntry</a></li><li><a href="Coin.html">Coin</a></li><li><a href="Coins.html">Coins</a></li><li><a href="CoinView.html">CoinView</a></li><li><a href="CompactBlock.html">CompactBlock</a></li><li><a href="Environment.html">Environment</a></li><li><a href="Framer.html">Framer</a></li><li><a href="Fullnode.html">Fullnode</a></li><li><a href="HD.html">HD</a></li><li><a href="HDPrivateKey.html">HDPrivateKey</a></li><li><a href="HDPublicKey.html">HDPublicKey</a></li><li><a href="Headers.html">Headers</a></li><li><a href="HTTPBase.html">HTTPBase</a></li><li><a href="HTTPClient.html">HTTPClient</a></li><li><a href="HTTPServer.html">HTTPServer</a></li><li><a href="HTTPWallet.html">HTTPWallet</a></li><li><a href="Input.html">Input</a></li><li><a href="KeyPair.html">KeyPair</a></li><li><a href="KeyRing.html">KeyRing</a></li><li><a href="LoadRequest.html">LoadRequest</a></li><li><a href="Locker.html">Locker</a></li><li><a href="LowlevelUp.html">LowlevelUp</a></li><li><a href="LRU.html">LRU</a></li><li><a href="Master.html">Master</a></li><li><a href="Mempool.html">Mempool</a></li><li><a href="MempoolEntry.html">MempoolEntry</a></li><li><a href="MerkleBlock.html">MerkleBlock</a></li><li><a href="Miner.html">Miner</a></li><li><a href="MinerBlock.html">MinerBlock</a></li><li><a href="Mnemonic.html">Mnemonic</a></li><li><a href="MTX.html">MTX</a></li><li><a href="Network.html">Network</a></li><li><a href="NetworkAddress.html">NetworkAddress</a></li><li><a href="Node.html">Node</a></li><li><a href="NullCache.html">NullCache</a></li><li><a href="Output.html">Output</a></li><li><a href="Parser.html">Parser</a></li><li><a href="Peer.html">Peer</a></li><li><a href="Pool.html">Pool</a></li><li><a href="Profile.html">Profile</a></li><li><a href="RollingFilter.html">RollingFilter</a></li><li><a href="Script.html">Script</a></li><li><a href="ScriptError.html">ScriptError</a></li><li><a href="Snapshot.html">Snapshot</a></li><li><a href="SPVNode.html">SPVNode</a></li><li><a href="Stack.html">Stack</a></li><li><a href="TimeData.html">TimeData</a></li><li><a href="TX.html">TX</a></li><li><a href="TXDB.html">TXDB</a></li><li><a href="VerifyError.html">VerifyError</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletDB.html">WalletDB</a></li><li><a href="Witness.html">Witness</a></li><li><a href="Worker.html">Worker</a></li><li><a href="Workers.html">Workers</a></li></ul><h3>Global</h3><ul><li><a href="global.html#hostname">hostname</a></li><li><a href="global.html#isMapped">isMapped</a></li><li><a href="global.html#mkdirp">mkdirp</a></li><li><a href="global.html#normalize">normalize</a></li><li><a href="global.html#parseHost">parseHost</a></li><li><a href="global.html#scrypt">scrypt</a></li><li><a href="global.html#toBuffer">toBuffer</a></li><li><a href="global.html#toString">toString</a></li><li><a href="global.html#version">version</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue May 24 2016 04:17:20 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Sun Jun 05 2016 20:46:56 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
