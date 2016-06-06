@@ -2,8 +2,15 @@
 <title>BCoin - A javascript bitcoin library</title>
 <style>
 html, body, p, div { padding: 0; margin: 0; }
+p { margin: 15px; }
+body > div > h1 {
+  font-family: monospace;
+  font-size: 25px;
+  margin: 15px;
+  padding: 0;
+}
 body > div {
-  height: 240px;
+  height: 400px;
   width: 466px;
   font-family: monospace;
   font-size: 18px;
@@ -12,13 +19,18 @@ body > div {
   left: 50%;
   top: 50%;
   margin-left: -233px;
-  margin-top: -120px;
-  white-space: pre-wrap;
+  margin-top: -220px;
 }
 </style>
 <div>
-  <p>Welcome. This is the entry page for starting a bcoin full node in your browser.</p>
-  <p><b>Warning</b>: this will use a lot of your bandwidth, cpu, and potentially disk space.</p>
+  <h1>A bitcoin full node in the browser</h1>
+  <p>Welcome. This is the entry page for starting a bitcoin full node in your
+  browser (using <a href="http://github.com/bcoin-org/bcoin">bcoin</a>).
+  This will create a real full node in your browser: your <em>browser</em> will
+  be doing the block verification/serving, it will maintain a mempool and
+  wallet database.</p>
+  <p><b>Warning</b>: this will use a lot of your bandwidth, cpu, and
+  potentially disk space.</p>
   <p><a href="http://browser.bcoin.io/">Click here to start a full node on segnet4.</a></p>
 </div>
 
