@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: workers/master.js</title>
+    <title>JSDoc: Class: ScriptError</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,292 +17,396 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: workers/master.js</h1>
+    <h1 class="page-title">Class: ScriptError</h1>
 
     
 
 
 
+
+<section>
+
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>/*!
- * workers.js - worker processes for bcoin
- * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
- * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
- * https://github.com/bcoin-org/bcoin
- */
+        <h2>
+            <span class="ancestors"><a href="module-script.html">script</a>.</span>ScriptError</h2>
+        
+    
+</header>
 
-'use strict';
+<article>
+    <div class="container-overview">
+    
+        
 
-var assert = require('assert');
-var EventEmitter = require('events').EventEmitter;
-var util = require('../utils/util');
-var Network = require('../protocol/network');
-var jobs = require('./jobs');
-var Parser = require('./parser-client');
-var Framer = require('./framer');
-var packets = require('./packets');
-var global = util.global;
-var server;
+    
 
-/**
- * Represents the master process.
- * @alias module:workers.Master
- * @constructor
- */
+    <h4 class="name" id="ScriptError"><span class="type-signature"></span>new ScriptError<span class="signature">(code, op, ip<span class="signature-attributes">nullable</span>)</span><span class="type-signature"></span></h4>
 
-function Master() {
-  if (!(this instanceof Master))
-    return new Master();
+    
 
-  EventEmitter.call(this);
 
-  this.framer = new Framer();
-  this.parser = new Parser();
-  this.env = {};
-  this.listening = false;
-  this.color = false;
 
-  this._init();
-}
+<div class="description">
+    <p>An error thrown from the scripting system,
+potentially pertaining to Script execution.</p>
+</div>
 
-util.inherits(Master, EventEmitter);
 
-/**
- * Initialize master. Bind events.
- * @private
- */
 
-Master.prototype._init = function _init() {
-  var self = this;
+    <h5>Extends:</h5>
+    
 
-  this.on('data', function(data) {
-    self.parser.feed(data);
-  });
 
-  this.parser.on('error', function(err) {
-    self.emit('error', err);
-  });
+    <ul>
+        <li>Error</li>
+    </ul>
 
-  this.parser.on('packet', function(packet) {
-    self.emit('packet', packet);
-  });
 
-  if (util.isBrowser) {
-    // Web workers
-    this._initWebWorkers();
-  } else {
-    // Child process + pipes
-    this._initChildProcess();
-  }
-};
 
-/**
- * Initialize master (web workers).
- * @private
- */
 
-Master.prototype._initWebWorkers = function _initWebWorkers() {
-  var self = this;
 
-  global.onerror = function onerror(err) {
-    self.emit('error', err);
-  };
 
-  global.onmessage = function onmessage(event) {
-    var data;
-    if (typeof event.data !== 'string') {
-      data = event.data.buf;
-      data.__proto__ = Buffer.prototype;
-    } else {
-      data = new Buffer(event.data, 'hex');
-    }
-    self.emit('data', data);
-  };
-};
 
-/**
- * Initialize master (node.js).
- * @private
- */
 
-Master.prototype._initChildProcess = function _initChildProcess() {
-  var self = this;
 
-  process.stdin.on('data', function(data) {
-    self.emit('data', data);
-  });
+    <h5>Parameters:</h5>
+    
 
-  // Nowhere to send these errors:
-  process.stdin.on('error', util.nop);
-  process.stdout.on('error', util.nop);
-  process.stderr.on('error', util.nop);
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
 
-  process.on('uncaughtException', function(err) {
-    self.send(new packets.ErrorPacket(err));
-    util.nextTick(function() {
-      process.exit(1);
-    });
-  });
-};
+        <th>Type</th>
 
-/**
- * Set primary network.
- * @param {NetworkType|Network} network
- */
+        
+        <th>Attributes</th>
+        
 
-Master.prototype.set = function set(network) {
-  return Network.set(network);
-};
+        
 
-/**
- * Send data to worker.
- * @param {Buffer} data
- * @returns {Boolean}
- */
+        <th class="last">Description</th>
+    </tr>
+    </thead>
 
-Master.prototype.write = function write(data) {
-  if (util.isBrowser) {
-    if (global.postMessage.length === 2) {
-      data.__proto__ = Uint8Array.prototype;
-      global.postMessage({ buf: data }, [data]);
-    } else {
-      global.postMessage(data.toString('hex'));
-    }
-    return true;
-  }
-  return process.stdout.write(data);
-};
+    <tbody>
+    
 
-/**
- * Frame and send a packet.
- * @param {Packet} packet
- * @returns {Boolean}
- */
+        <tr>
+            
+                <td class="name"><code>code</code></td>
+            
 
-Master.prototype.send = function send(packet) {
-  return this.write(this.framer.packet(packet));
-};
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
 
-/**
- * Emit an event on the worker side.
- * @param {String} event
- * @param {...Object} arg
- * @returns {Boolean}
- */
 
-Master.prototype.sendEvent = function sendEvent() {
-  var items = new Array(arguments.length);
-  var i;
+            
+            </td>
 
-  for (i = 0; i &lt; items.length; i++)
-    items[i] = arguments[i];
+            
+                <td class="attributes">
+                
 
-  return this.send(new packets.EventPacket(items));
-};
+                
 
-/**
- * Destroy the worker.
- */
+                
+                </td>
+            
 
-Master.prototype.destroy = function destroy() {
-  if (util.isBrowser)
-    return global.close();
-  return process.exit(0);
-};
+            
 
-/**
- * Write a message to stdout in the master process.
- * @param {Object|String} obj
- * @param {...String} args
- */
+            <td class="description last"><p>Error code.</p></td>
+        </tr>
 
-Master.prototype.log = function log() {
-  var items = new Array(arguments.length);
-  var i, text;
+    
 
-  for (i = 0; i &lt; items.length; i++)
-    items[i] = arguments[i];
+        <tr>
+            
+                <td class="name"><code>op</code></td>
+            
 
-  text = util.format(items, this.color);
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
 
-  this.send(new packets.LogPacket(text));
-};
 
-/**
- * Listen for messages from master process (only if worker).
- * @param {Object} env
- * @returns {Master}
- */
+            
+            </td>
 
-Master.prototype.listen = function listen(env) {
-  var self = this;
+            
+                <td class="attributes">
+                
 
-  assert(!this.listening, 'Already listening.');
+                
 
-  this.env = env;
-  this.listening = true;
-  this.color = +env.BCOIN_WORKER_ISTTY === 1;
+                
+                </td>
+            
 
-  this.set(env.BCOIN_WORKER_NETWORK);
+            
 
-  util.log = this.log.bind(this);
-  util.error = util.log;
+            <td class="description last"><p>Opcode.</p></td>
+        </tr>
 
-  this.on('error', function(err) {
-    self.send(new packets.ErrorPacket(err));
-  });
+    
 
-  this.on('packet', function(packet) {
-    try {
-      self.handlePacket(packet);
-    } catch (e) {
-      self.emit('error', e);
-    }
-  });
+        <tr>
+            
+                <td class="name"><code>ip</code></td>
+            
 
-  return this;
-};
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
 
-/**
- * Handle packet.
- * @private
- * @param {Packet}
- */
 
-Master.prototype.handlePacket = function handlePacket(packet) {
-  var result;
+            
+            </td>
 
-  switch (packet.cmd) {
-    case packets.types.EVENT:
-      this.emit('event', packet.items);
-      this.emit.apply(this, packet.items);
-      break;
-    case packets.types.ERROR:
-      this.emit('error', packet.error);
-      break;
-    default:
-      result = jobs.execute(packet);
-      result.id = packet.id;
-      this.send(result);
-      break;
-  }
-};
+            
+                <td class="attributes">
+                
 
-/*
- * Expose
- */
+                
+                    &lt;nullable><br>
+                
 
-server = new Master();
+                
+                </td>
+            
 
-if (util.isBrowser)
-  global.master = server;
+            
 
-module.exports = server;
-</code></pre>
-        </article>
-    </section>
+            <td class="description last"><p>Instruction pointer.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>message</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Error message.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>code</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Original code passed in.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>op</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Opcode.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>ip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Instruction pointer.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="script_common.js.html">script/common.js</a>, <a href="script_common.js.html#line784">line 784</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+        <h3 class="subsection-title">Extends</h3>
+
+        
+
+
+    <ul>
+        <li>Error</li>
+    </ul>
+
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
 
 
 
@@ -316,7 +420,7 @@ module.exports = server;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Feb 07 2017 16:09:44 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Feb 07 2017 16:09:48 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>
