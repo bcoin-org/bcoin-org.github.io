@@ -40,6 +40,25 @@ Dark Blue BG for Parallax Docs Callout*/
     margin-left:70px;
 }
 
+/* display none */
+
+.display-none {
+       display: none;
+    }
+
+/* Clients fix for larger screens*/
+@media screen and (min-width: 991px) {
+    .large-fix {
+       margin-left: 25% !important;
+    }
+}
+
+/* Menu Fix for smaller screens*/
+@media screen and (max-width: 530px) {
+    .hide-me {
+       display: none;
+    }
+}
 
 /* Hero paragraph */
 .hero-para{
@@ -1112,7 +1131,7 @@ table th {
     font-size: 11px;
     border-width: 2px;
     border-radius: 0;
-    padding: 10px 24px;
+    /*padding: 10px 24px;*/
     -webkit-transition: all 0.3s ease-out;
             transition: all 0.3s ease-out;
 }
