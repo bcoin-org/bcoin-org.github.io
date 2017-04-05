@@ -60,10 +60,48 @@ Dark Blue BG for Parallax Docs Callout*/
     }
 }
 
-/* Hero paragraph */
+/* Hero paragraph 
+
+*/
+@media screen and (max-width: 452px) {
+    .hero-para {
+       font-size: 68%;
+       line-height: 2.5 !important;
+    }
+}
+
+
+@media (min-width: 452px) and (max-width: 621px) {
+    .hero-para {
+       font-size: 90%;
+       line-height: 2.5 !important;
+    }
+}
+
+/* going up to 1198 with added padding, default was 991*/
+@media (min-width:768px) and (max-width: 1198px) {
+    .hero-para {
+       font-size: 95%;
+       line-height: 2 !important;
+    }
+}
+
 .hero-para{
     line-height: 1.8;
+
 }
+
+.text-highlight-black{
+    background-color: #000;
+    color: #fff;
+    padding: 2px;
+    white-space: pre-wrap;
+
+}
+
+
+
+
 
 /* Button spacing for 2+ buttons */
 .button-gap {
