@@ -60,31 +60,7 @@ Dark Blue BG for Parallax Docs Callout*/
     }
 }
 
-/* Hero paragraph 
-
-*/
-@media screen and (max-width: 452px) {
-    .hero-para {
-       font-size: 68%;
-       line-height: 2.5 !important;
-    }
-}
-
-
-@media (min-width: 452px) and (max-width: 621px) {
-    .hero-para {
-       font-size: 90%;
-       line-height: 2.5 !important;
-    }
-}
-
-/* going up to 1198 with added padding, default was 991*/
-@media (min-width:768px) and (max-width: 1198px) {
-    .hero-para {
-       font-size: 95%;
-       line-height: 2 !important;
-    }
-}
+/* Hero paragraph */
 
 .hero-para{
     line-height: 1.8;
@@ -96,6 +72,7 @@ Dark Blue BG for Parallax Docs Callout*/
     color: #fff;
     padding: 2px;
     white-space: pre-wrap;
+    word-spacing: -1px;
 
 }
 
