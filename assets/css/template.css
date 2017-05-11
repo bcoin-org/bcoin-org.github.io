@@ -119,8 +119,10 @@ position: relative;
 }
 
 
-
-
+/* QR Code Resize */
+.QR-code {
+    max-width:150px;
+}
 
 
 /* STATIC Terminal Window */
