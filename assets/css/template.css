@@ -49,7 +49,7 @@ Dark Blue BG for Parallax Docs Callout*/
 /* Clients fix for larger screens*/
 @media screen and (min-width: 991px) {
     .large-fix {
-       margin-left: 25% !important;
+       /*margin-left: 25% !important;*/
     }
 }
 
@@ -60,11 +60,18 @@ Dark Blue BG for Parallax Docs Callout*/
     }
 }
 
+/* Smallest screens*/
+@media screen and (max-width: 320px) {
+    .auto-margin-sides {
+    margin:inherit !important;
+    }
+}
+
 /* Hero paragraph */
 
 .hero-para{
     line-height: 1.8;
-
+    max-width:400px;
 }
 
 .text-highlight-black{
@@ -76,7 +83,9 @@ Dark Blue BG for Parallax Docs Callout*/
 
 }
 
-
+.hero-module-header {
+    margin:0 auto 50px;
+}
 
 
 
@@ -85,6 +94,9 @@ Dark Blue BG for Parallax Docs Callout*/
     margin-left:15px;
 }
 
+.auto-margin-sides {
+    margin:0 auto;
+}
 
 /*IDEA
 Fixes a small gap where different screen sizes might look funny. Maybe.
@@ -2061,7 +2073,7 @@ body.off-canvas-cart-open:after {
     top: 45%;
     margin:auto;
     width:25%;
-    max-width:350px;
+    max-width:250px;
     text-align:center;
     animation: heartbeat 2s infinite cubic-bezier(0.5, 0.49, 0.49, 0.49);
     -webkit-animation: heartbeat 2s infinite cubic-bezier(0.5, 0.49, 0.49, 0.49);      
