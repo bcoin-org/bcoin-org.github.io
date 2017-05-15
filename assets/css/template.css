@@ -67,6 +67,7 @@ Dark Blue BG for Parallax Docs Callout*/
     }
 }
 
+
 /* Hero paragraph */
 
 .hero-para{
@@ -135,6 +136,10 @@ position: relative;
 .QR-code {
     max-width:150px;
 }
+
+
+/*Slack Invite Page */
+
 
 
 /* STATIC Terminal Window */
