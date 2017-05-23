@@ -46,6 +46,10 @@ Dark Blue BG for Parallax Docs Callout*/
        display: none;
     }
 
+.full-width{
+    width:100%;
+}
+
 /* Clients fix for larger screens*/
 @media screen and (min-width: 991px) {
     .large-fix {
@@ -88,7 +92,16 @@ Dark Blue BG for Parallax Docs Callout*/
     margin:0 auto 50px;
 }
 
+@media screen and (min-width: 768px){
+    .hero-image {width: 50%;}
+}
 
+@media screen and (max-width: 767px){
+    .hero-image {
+        width: 80%;
+        margin-bottom:50px !important;
+    }
+}
 
 /* Button spacing for 2+ buttons */
 .button-gap {
