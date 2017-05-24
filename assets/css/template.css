@@ -188,6 +188,12 @@ p.signin a:hover{background-color:#38a2e6;color:#fff}
         }
 }
 
+@media screen and (min-width: 1500px) {
+    .slack-footer {
+        bottom:-150px !important;
+        }
+}
+
 .slack-footer {
     position: fixed;
     bottom: 0;
@@ -202,7 +208,14 @@ p.signin a:hover{background-color:#38a2e6;color:#fff}
         }
 }
 
-@media screen and (min-width: 1441px) {
+@media (min-width:768px) and (max-width: 1600px) {
+    .slack-footer img {
+        max-width:50%;
+        margin: 0 auto;
+        }
+}
+
+@media screen and (min-width: 1600px) {
     .slack-footer img {
         max-width:50%;
         margin: 0 auto;
