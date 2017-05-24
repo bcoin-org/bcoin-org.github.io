@@ -152,7 +152,60 @@ position: relative;
 
 
 /*Slack Invite Page */
+.splash{width:30rem;margin:10rem auto;text-align:center;}
 
+@media (max-width: 530px) {
+    .splash{margin-top:13rem}
+}
+
+@media (min-width:530px) and (max-width: 50rem) {
+    .splash{margin-top:15rem}
+}
+
+.head{margin-bottom:4rem}
+
+p{font-size:1.5rem;margin:.5rem 0}
+select{background:none}
+button, .form-item{font-size:1.2rem;margin-top:1.4rem;vertical-align:middle;display:block;text-align:center;box-sizing:border-box;width:100%;padding:.9rem}
+button{color:#fff;font-weight:bold;border-width:0;background:#38a2e6;text-transform:uppercase;cursor:pointer;appearance:none;-webkit-appearence:none;outline:0;transition:background-color 150ms ease-in, color 150ms ease-in}
+
+p.signin{padding:1rem 0 1rem;font-size:1.1rem}
+p.signin a{color:#38a2e6;text-decoration:none}
+p.signin a:hover{background-color:#38a2e6;color:#fff}
+
+.slack-footer{color:#D6D6D6;font-size:1.1rem;margin:0rem auto 0;/*width:30rem;*/text-align:center}
+.slack-footer a{color:#9B9B9B;text-decoration:none;border-bottom:.1rem solid #9B9B9B}
+.slack-footer a:hover{color:#fff;background-color:#9B9B9B}
+
+
+.slack-footer {
+    position: fixed;
+    bottom: 0;
+}
+
+@media screen and (min-width: 530px) {
+    .slack-footer img {
+        max-width:66%;
+        margin: 0 auto;
+        }
+}
+
+@media screen and (min-width: 1440px) {
+    .slack-footer img {
+        max-width:50%;
+        margin: 0 auto;
+        }
+}
+
+.slack-returntext {
+    font-size: 1.2rem;
+    font-weight: 500;
+    text-transform: uppercase !important;
+    color:#488d7f;
+}
+
+
+.capitalize {text-transform: capitalize;}
 
 
 /* STATIC Terminal Window */
