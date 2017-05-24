@@ -154,11 +154,11 @@ position: relative;
 /*Slack Invite Page */
 .splash{width:30rem;margin:10rem auto;text-align:center;}
 
-@media (max-width: 340px) {
-    .splash{margin-top:8rem}
+@media (max-width: 375px) {
+    .splash{margin-top:6rem}
 }
 
-@media (min-width:340px) and (max-width: 530px) {
+@media (min-width:376px) and (max-width: 530px) {
     .splash{margin-top:13rem}
 }
 
@@ -182,10 +182,18 @@ p.signin a:hover{background-color:#38a2e6;color:#fff}
 .slack-sponsor a:hover{color:#fff;background-color:#9B9B9B}
 
 
+@media screen and (max-width: 375px) {
+    .slack-footer {
+        bottom:-50px !important;
+        }
+}
+
 .slack-footer {
     position: fixed;
     bottom: 0;
 }
+
+
 
 @media screen and (min-width: 530px) {
     .slack-footer img {
@@ -194,7 +202,7 @@ p.signin a:hover{background-color:#38a2e6;color:#fff}
         }
 }
 
-@media screen and (min-width: 1440px) {
+@media screen and (min-width: 1441px) {
     .slack-footer img {
         max-width:50%;
         margin: 0 auto;
