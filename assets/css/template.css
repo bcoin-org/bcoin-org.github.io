@@ -144,6 +144,12 @@ position: relative;
     margin-left:15px;
 }
 
+/* Flowchart Image */
+@media screen and (min-width: 1400px) {
+    .flowchart-image {
+        max-width:529px;
+    }
+}
 
 /* QR Code Resize */
 .QR-code {
