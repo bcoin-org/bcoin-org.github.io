@@ -435,6 +435,29 @@ body {
 .terminal-window .purple {color: #9072e6;}
 .terminal-window .blue {color:#90d3ff;}
 
+/* Guides & Tutorials */
+.guide-active {
+    font-weight: 600;
+    color:#000 !important;
+}
+
+.guide-active:hover {
+    color:#385dc1 !important;
+}
+
+.post-content .post-video {
+    max-height:550px;
+}
+
+.post-content > p {
+    margin-top:20px;
+}
+
+.fluid-width-video-wrapper {
+    padding-top:40% !important;
+}
+
+
 /*
 [General Styles]
 */
