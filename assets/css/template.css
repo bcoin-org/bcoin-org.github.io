@@ -2524,7 +2524,7 @@ body.off-canvas-cart-open:after {
 }
 
 /* this moves the accordian arrow to the left side */
-.panel-heading a:after {
+.panel-heading a#title-logo :after {
     position: absolute;
     content: "\f107";
     top: 50%;
@@ -2534,10 +2534,10 @@ body.off-canvas-cart-open:after {
     font-size: 11px;
     line-height: 1;
 }
-
+/*
 .panel-heading a.collapsed:after {
     content: "\f105";
-}
+}*/
 
 .panel-group .panel + .panel {
     margin-top: 0;
@@ -5310,6 +5310,15 @@ body.off-canvas-cart-open:after {
     margin: 0 0 20px;
 }
 
+.title-link {
+    display: inline-block !important;
+    padding-left: 20px;
+    text-transform: lowercase;
+    letter-spacing: 0px;
+    font-family: "Open Sans";
+    color: #385dc1;
+}
+
 .hero-link {
     padding: 20px 0 40px 0;
 }
@@ -5339,8 +5348,8 @@ a.hero-link:after {
     background: #385dc1;
     color: #ffffff;
 }
-
- --- [Comments] --- 
+/*
+ --- [Comments] --- */
 
 .comments .bottom-line:after,
 .comment-form .bottom-line:after {
