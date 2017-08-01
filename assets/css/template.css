@@ -284,7 +284,7 @@ p.signin a:hover{background-color:#38a2e6;color:#fff}
     font-weight: 400;
     overflow: hidden;
     background: transparent;
-    height: 450px;
+    /*height: 450px;*/
     padding: 0;
     margin: 0;
     font-size: 13px;
@@ -454,6 +454,7 @@ body {
 
 .post-content .post-video {
     max-height:550px;
+    margin: 0 0 30px 0;
 }
 
 .post-content > p {
@@ -2500,17 +2501,21 @@ body.off-canvas-cart-open:after {
 }
 
 .panel-title {
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 700;
+    /*text-transform: uppercase;
+    letter-spacing: 1px;*/
+    font-weight: 500;
     font-size: 12px;
+}
+
+.panel-title .fa {
+    margin:0 20px 0 30px;
 }
 
 .panel-default > .panel-heading {
     border: 0;
     background: transparent;
     border-radius: 0;
-    border-top: 1px solid #eee;
+    /* border-top: 1px solid #eee; */
     padding: 20px 15px;
 }
 
@@ -2518,20 +2523,21 @@ body.off-canvas-cart-open:after {
     border-top-color: #eee;
 }
 
-.panel-heading a:after {
+/* this moves the accordian arrow to the left side */
+.panel-heading a#title-logo :after {
     position: absolute;
     content: "\f107";
     top: 50%;
-    right: 0px;
+    left: 0px;
     margin-top: -5px;
     font-family: "FontAwesome";
     font-size: 11px;
     line-height: 1;
 }
-
+/*
 .panel-heading a.collapsed:after {
     content: "\f105";
-}
+}*/
 
 .panel-group .panel + .panel {
     margin-top: 0;
@@ -2542,10 +2548,10 @@ body.off-canvas-cart-open:after {
     border-radius: 0;
     box-shadow: none;
 }
-
+/* nahhh
 .panel-group .panel:last-child {
     border-bottom: 1px solid #eee;
-}
+}*/
 
 /*------------------------------------------------------------------
 [Testimonials]
@@ -5172,16 +5178,22 @@ body.off-canvas-cart-open:after {
 }
 
 /*------------------------------------------------------------------
-[Blog]
+[Guides / Install section (formerly blog from template)
 */
 
+
 .post {
-    margin: 0 0 70px;
+    margin: 0 0 10px;
 }
 
 .post .post-title {
     font-size: 23px;
     margin-bottom: 10px;
+}
+@media screen and (max-width:425px) {
+    .post .post-title {
+        font-size:18px;
+    }
 }
 
 .post .post-content {
@@ -5192,11 +5204,21 @@ body.off-canvas-cart-open:after {
     padding: 30px 25px;
 }
 
+.post:nth-child(4) {
+    margin: 0 0 50px 0;
+}
+
+@media screen and (max-width:425px) {
+    .guide-list {
+        display: none;
+    }
+}
+
 /* --- [Post Meta] --- */
 
 .post-meta {
     list-style: none;
-    margin: 0 0 25px;
+    margin: 0 0 5px;
     padding: 0;
 }
 
@@ -5288,6 +5310,27 @@ body.off-canvas-cart-open:after {
     margin: 0 0 20px;
 }
 
+.title-link {
+    display: inline-block !important;
+    padding-left: 20px;
+    text-transform: lowercase;
+    letter-spacing: 0px;
+    font-family: "Open Sans";
+    color: #385dc1;
+}
+
+.hero-link {
+    padding: 20px 0 40px 0;
+}
+
+a.hero-link:after {
+    content: "" !important;
+}
+
+.no-hover:hover {
+    width:100% !important;
+}
+
 /* --- [Tags] --- */
 
 .tags a {
@@ -5305,8 +5348,8 @@ body.off-canvas-cart-open:after {
     background: #385dc1;
     color: #ffffff;
 }
-
- --- [Comments] --- 
+/*
+ --- [Comments] --- */
 
 .comments .bottom-line:after,
 .comment-form .bottom-line:after {
