@@ -150,7 +150,17 @@
 								</a>
                             </div>
 						</div>
-                        
+
+						<!-- STACK EXCHANGE LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://bitcoin.stackexchange.com/questions/tagged/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Questions! Checkout Stack Exchange.">								
+									<img src="assets/images/stack-exchange-icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
 						<!-- GITHUB STUFF -->
 						<div class="menu-item">
 							<div class="">						
@@ -179,22 +189,22 @@
 					<ul class="inner-nav pull-right">
 			
 						<!-- HOME -->
-						<li><a href="index.html">Home</a></li>
+						<li><a href="./index.html">Home</a></li>
 						<!-- END HOME -->
 
 						<!-- FEATURES -->
-						<li><a href="index.html#features">bcoin</a></li>
+						<li><a href="./index.html#features">What is Bcoin</a></li>
 						<!-- END FEATURES -->
-
-						<!-- GET STARTED -->
-						<li><a href="index.html#get-started">Get Started</a></li>
-						<!-- END GET STARTED -->
 
 						<!-- GUIDES -->
 						<li><a href="guides.html">Guides</a></li>						
 						<!-- GUIDES -->
 
-						<!-- DOCS -->
+						<!-- API REFERENCE - newer, how to interact once you're setup 
+						<li><a href="http://bcoin.io/docs/index.html">API Docs</a></li>-->
+						<!-- END API -->
+
+						<!-- FULL DOCS - older, full reference -->
 						<li><a href="http://bcoin.io/docs/index.html">Docs</a></li>
 						<!-- END DOCS -->
 			
@@ -237,170 +247,65 @@
 
 					<!-- SIDEBAR -->
 					<div class="col-sm-3 sidebar">
-
-						
 						<!-- CATEGORIES WIDGET -->
 						<div class="widget guide-list">
-							<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+							<h6 class="montserrat text-uppercase bottom-line">Install</h6>
 							<ul class="icons-list">
-								<li><a data-toggle="collapse" href="#collapse1">Install on Linux</a></li>
-								<li><a data-toggle="collapse" href="#collapse2">Install on Mac OS</a></li>
-								<li><a data-toggle="collapse" href="#collapse3">Install on Windows</a></li>
+								<li><a href="install-linux.html">Install on Linux</a></li>
+								<li><a href="install-mac.html">Install on Mac OS</a></li>
+								<li><a href="install-windows.html">Install on Windows</a></li>
 								<!--<li><a data-toggle="" href="">Quick Sync (Torrent) </a></li>-->
 							</ul>
-                            <!--
+							<!-- guides added soon 
 							<br>
-							<h6 class="montserrat text-uppercase bottom-line">Tutorials</h6>
+							<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
 							<ul class="icons-list">
-								<li><a href="#">Journey </a></li>
-								<li><a href="#">Development </a></li>
-								<li><a href="#">Sport </a></li>
-								<li><a href="#">Photography </a></li>
-								<li><a href="#">Symphony </a></li>
-							</ul>-->							
+								<li><a data-toggle="collapse" href="#collapse1">Generate Bitcoin Addresses</a></li>
+								<li><a data-toggle="collapse" href="#collapse2">Guide 2</a></li>
+								<li><a data-toggle="collapse" href="#collapse3">Guide 3</a></li>
+								<!--<li><a data-toggle="" href="">Quick Sync (Torrent) </a></li>
+							</ul> -->
 						</div>
 						<!-- END CATEGORIES WIDGET -->
-						
+
 						<!-- TEXT WIDGET -->
 						<div class="widget">
-							<h6 class="montserrat text-uppercase bottom-line">Want to Help?</h6>
+							<h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+							<p>We've got that: <a href="http://bcoin.io/docs/index.html"> Full Docs</a></p>
+						</div>
+						<!-- END TEXT WIDGET -->
+
+						<!-- TEXT WIDGET -->
+						<div class="widget">
+							<h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
 							<p>If you think you've got what it takes to make your own bcoin guides and tutorials, reach out to us on <a href="slack-signup.html"> Slack!</a></p>
 							<p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
 						</div>
 						<!-- END TEXT WIDGET -->
-						
-
 					</div>
 					<!-- END SIDEBAR -->
 
-					<!-- BLOG CONTENT -->
+					<!-- NEW BLOG CONTENT -->
 					<div class="col-sm-9 blog-content post-thumbnail">
-						<h2>OS Install Guides</h2>
+
 						<!-- POST IMAGE -->
 						<article class="post format-image">
 							<div class="row">
-								<!--<div class="col-sm-5">
+								<div class="col-sm-1"></div>
+								<!-- images not used yet
+								<div class="col-sm-3">
 									<div class="post-preview">
 										<a href="#"><img src="assets/images/guides/get-started.png" alt=""></a>
 									</div>
-								</div>-->
-
-								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
-								<div class="panel-group">
-									<div class="col-sm-12 panel panel-default">
-										<div class="post-content panel-heading" style="color:#000;">
-											<h2 class="post-title panel-title"><a data-toggle="collapse" href="#collapse1" id="title-logo"><i class="fa fa-linux"></i>Install on Linux (Video)</a></h2>
-											<div id="collapse1" class="panel-collapse collapse">
-												<ul class="post-meta">
-													<li>By HeKaz</li>
-												</ul>
-												<p>A quick step-by-step video to learn the basics of running a bcoin fullnode on Linux.</p>
-												<div class="post-video">
-													<iframe width="100%" height="315" src="https://www.youtube.com/embed/tRICg7kJvpo" frameborder="0" allowfullscreen></iframe>
-												</div>
-												<p></p>
-												<!-- package manager -->
-												<h6 class="montserrat text-uppercase pull-left">Source Install (Requires: Node >= 7.6)</h6>
-												<div class="page-terminal m-b-30 no-hover">
-<div>
-<pre class="code-dkgray">1
-2
-3
-4
-</pre>
-</div>
-<div>
-<pre class="select-auto hide-this">
-git clone https://github.com/bcoin-org/bcoin.git
-cd bcoin
-npm install
-bin/bcoin  #run
-</pre></div>
-</div> <!-- end of package manager -->
-												<!-- docker -->
-												<h6 class="montserrat text-uppercase pull-left">Archlinux AUR Package </h6>
-												<div class="page-terminal m-b-30 no-hover">
-<div>
-<pre class="code-dkgray">1
-</pre>
-</div>
-<div>
-<pre class="select-auto hide-this">yaourt -S bcoin-git
-</pre></div>
-</div> <!-- end of docker -->
-Pkg Source:
-<a>https://aur.archlinux.org/packages/bcoin-git/</a>
-
-												<!-- torrent 
-												<h6 class="montserrat text-uppercase pull-left">Quick Sync (Torrent))</h6>
-												<br>
-												<p>A quick step-by-step video to learn the basics of running a bcoin fullnode on Mac OS. A quick step-by-step video to learn the basics of running a bcoin fullnode on Mac OS.</p>
-												<a class="hero-link text-center">https://torrent.bcoin.io/u4ij23rfgu34hnvd4.torrent</a>
-												end of torrent -->
-
-												<!-- full size code snippet 
-												<h6 class="montserrat text-uppercase pull-left">Full Code</h6>
-												<div class="page-terminal m-b-30 no-hover">
-<div>
-<pre class="code-dkgray">1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-
-</pre>
-</div>
-<div>
-<pre class="select-auto hide-this">'use strict';
-
-<span>var</span> <span class="code-blue">bcoin</span> = require('bcoin');
-
-<span>var</span> <span class="code-blue">node</span> = <span>new</span> <span class="code-teal">bcoin</span>.<span class="code-teal">fullnode</span>({
-  <span class="code-blue">network:</span> 'testnet',
-  <span class="code-blue">db:</span> 'memory'
-});
-
-(<span>async function</span>() {
-  <span class="code-red">await</span> <span class="code-blue">node</span>.open();
-  <span class="code-red">await</span> <span class="code-blue">node</span>.connect();
-
-  <span class="code-blue">node</span>.on('connect', <span>function</span>(<span class="code-blue">entry</span>, <span class="code-blue">block</span>) {
-    <span class="code-teal">console</span>.log('%s (%d) added to chain.', <span class="code-blue">entry</span>.rhash(), <span class="code-blue">entry</span>.<span class="code-blue">height</span>);
-  });
-
-  <span class="code-blue">node</span>.on('<span class="code-blue">tx</span>', <span>function</span>(tx) {
-    <span class="code-teal">console</span>.log('%s added to mempool.', <span class="code-blue">tx</span>.txid());
-  });
-
-  <span class="code-blue">node</span>.startSync();
-})();
-
-</pre></div>
-</div>
-												end of full code snippet -->
-												<a class="hero-link text-center" href="#collapse1" data-toggle="collapse">close</a>
-											</div>
-										</div>
+								</div> -->
+								<div class="col-sm-9">
+									<div class="post-content" style="color:#000;">
+										<h2 class="post-title"><a href="guides/install-linux.html"><i class="fa fa-linux"></i>Install on Linux (Video)</a></h2>
+										<ul class="post-meta">
+											<li>By Hekaz</li>
+										</ul>
+										<p>A quick step-by-step video to learn the basics of running a bcoin fullnode on Linux.</p>
+										<a href="guides/install-linux.html" class="btn btn-lg btn-link btn-base">Install ›</a>
 									</div>
 								</div>
 							</div>
@@ -410,257 +315,72 @@ Pkg Source:
 						<!-- POST IMAGE -->
 						<article class="post format-image">
 							<div class="row">
-								<!--<div class="col-sm-5">
+								<div class="col-sm-1"></div>
+								<!-- images not used yet
+								<div class="col-sm-3">
 									<div class="post-preview">
 										<a href="#"><img src="assets/images/guides/get-started.png" alt=""></a>
 									</div>
 								</div>-->
-
-								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
-								<div class="panel-group">
-									<div class="col-sm-12 panel panel-default">
-										<div class="post-content panel-heading" style="color:#000;">
-											<h2 class="post-title panel-title"><a data-toggle="collapse" href="#collapse2" id="title-logo"><i class="fa fa-apple"></i>Install on Mac OS (Video)</a></h2>
-											<div id="collapse2" class="panel-collapse collapse">
-												<ul class="post-meta">
-													<li>By HeKaz</li>
-												</ul>
-												<p></p>
-												<div class="post-video">
-													<iframe width="100%" height="315" src="https://www.youtube.com/embed/TWjucnmYSKY" frameborder="0" allowfullscreen></iframe>
-												</div>
-												<p> </p>
-												<!-- package manager -->
-												<h6 class="montserrat text-uppercase pull-left">Source Install (Requires: Node >= 7.6)</h6>
-												<div class="page-terminal m-b-30 no-hover">
-<div>
-<pre class="code-dkgray">1
-2
-3
-4
-</pre>
-</div>
-<div>
-<pre class="select-auto hide-this">
-git clone https://github.com/bcoin-org/bcoin.git
-cd bcoin
-npm install
-bin/bcoin  #run
-</pre></div>
-</div> <!-- end of package manager -->
-
-
-												<!-- torrent 
-												<h6 class="montserrat text-uppercase pull-left">Quick Sync (Torrent))</h6>
-												<br>
-												<p>A quick step-by-step video to learn the basics of running a bcoin fullnode on Mac OS. A quick step-by-step video to learn the basics of running a bcoin fullnode on Mac OS.</p>
-												<a class="hero-link text-center">https://torrent.bcoin.io/u4ij23rfgu34hnvd4.torrent</a>
-												end of torrent -->
-
-												<!-- full size code snippet 
-												<h6 class="montserrat text-uppercase pull-left">Full Code</h6>
-												<div class="page-terminal m-b-30 no-hover">
-<div>
-<pre class="code-dkgray">1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-
-</pre>
-</div>
-<div>
-<pre class="select-auto hide-this">'use strict';
-
-<span>var</span> <span class="code-blue">bcoin</span> = require('bcoin');
-
-<span>var</span> <span class="code-blue">node</span> = <span>new</span> <span class="code-teal">bcoin</span>.<span class="code-teal">fullnode</span>({
-  <span class="code-blue">network:</span> 'testnet',
-  <span class="code-blue">db:</span> 'memory'
-});
-
-(<span>async function</span>() {
-  <span class="code-red">await</span> <span class="code-blue">node</span>.open();
-  <span class="code-red">await</span> <span class="code-blue">node</span>.connect();
-
-  <span class="code-blue">node</span>.on('connect', <span>function</span>(<span class="code-blue">entry</span>, <span class="code-blue">block</span>) {
-    <span class="code-teal">console</span>.log('%s (%d) added to chain.', <span class="code-blue">entry</span>.rhash(), <span class="code-blue">entry</span>.<span class="code-blue">height</span>);
-  });
-
-  <span class="code-blue">node</span>.on('<span class="code-blue">tx</span>', <span>function</span>(tx) {
-    <span class="code-teal">console</span>.log('%s added to mempool.', <span class="code-blue">tx</span>.txid());
-  });
-
-  <span class="code-blue">node</span>.startSync();
-})();
-
-</pre></div>
-</div>
-												end of full code snippet -->
-												<a class="hero-link text-center" href="#collapse2" data-toggle="collapse">close</a>
-											</div>
-										</div>
+								<div class="col-sm-9">
+									<div class="post-content" style="color:#000;">
+										<h2 class="post-title"><a href="guides/install-mac.html"><i class="fa fa-apple"></i>Install on Mac OS (Video)</a></h2>
+										<ul class="post-meta">
+											<li>By Hekaz</li>
+										</ul>
+										<p>A quick step-by-step video to learn the basics of running a bcoin fullnode on Mac OS.</p>
+										<a href="guides/install-mac.html" class="btn btn-lg btn-link btn-base">Install ›</a>
 									</div>
 								</div>
 							</div>
 						</article>
 						<!-- END POST IMAGE -->
 
-						<!-- POST IMAGE -->
-						<article class="post format-image">
-							<div class="row">
-								<!--<div class="col-sm-5">
-									<div class="post-preview">
-										<a href="#"><img src="assets/images/guides/get-started.png" alt=""></a>
-									</div>
-								</div>-->
-
-								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
-								<div class="panel-group">
-									<div class="col-sm-12 panel panel-default">
-										<div class="post-content panel-heading" style="color:#000;">
-											<h2 class="post-title panel-title"><a data-toggle="collapse" href="#collapse3" id="title-logo"><i class="fa fa-windows"></i>Install on Windows (Video)</a></h2>
-											<div id="collapse3" class="panel-collapse collapse">
-												<ul class="post-meta">
-													<li>By HeKaz</li>
-												</ul>
-												<p></p>
-												<div class="post-video">
-													<iframe width="100%" height="315" src="https://www.youtube.com/embed/H6T72CJ50M8" frameborder="0" allowfullscreen></iframe>
-												</div>
-												<p></p>
-												<!-- package manager -->
-												<h6 class="montserrat text-uppercase pull-left">Source Install (Requires: Node >= 7.6)</h6>
-												<div class="page-terminal m-b-30 no-hover">
-<div>
-<pre class="code-dkgray">1
-2
-3
-4
-</pre>
-</div>
-<div>
-<pre class="select-auto hide-this">
-git clone https://github.com/bcoin-org/bcoin.git
-cd bcoin
-npm install
-bin/bcoin  #run
-</pre></div>
-</div> <!-- end of package manager -->
-
-
-												<!-- torrent 
-												<h6 class="montserrat text-uppercase pull-left">Quick Sync (Torrent))</h6>
-												<br>
-												<p>A quick step-by-step video to learn the basics of running a bcoin fullnode on Mac OS. A quick step-by-step video to learn the basics of running a bcoin fullnode on Mac OS.</p>
-												<a class="hero-link text-center">https://torrent.bcoin.io/u4ij23rfgu34hnvd4.torrent</a>
-												end of torrent -->
-
-												<!-- full size code snippet 
-												<h6 class="montserrat text-uppercase pull-left">Full Code</h6>
-												<div class="page-terminal m-b-30 no-hover">
-<div>
-<pre class="code-dkgray">1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-
-</pre>
-</div>
-<div>
-<pre class="select-auto hide-this">'use strict';
-
-<span>var</span> <span class="code-blue">bcoin</span> = require('bcoin');
-
-<span>var</span> <span class="code-blue">node</span> = <span>new</span> <span class="code-teal">bcoin</span>.<span class="code-teal">fullnode</span>({
-  <span class="code-blue">network:</span> 'testnet',
-  <span class="code-blue">db:</span> 'memory'
-});
-
-(<span>async function</span>() {
-  <span class="code-red">await</span> <span class="code-blue">node</span>.open();
-  <span class="code-red">await</span> <span class="code-blue">node</span>.connect();
-
-  <span class="code-blue">node</span>.on('connect', <span>function</span>(<span class="code-blue">entry</span>, <span class="code-blue">block</span>) {
-    <span class="code-teal">console</span>.log('%s (%d) added to chain.', <span class="code-blue">entry</span>.rhash(), <span class="code-blue">entry</span>.<span class="code-blue">height</span>);
-  });
-
-  <span class="code-blue">node</span>.on('<span class="code-blue">tx</span>', <span>function</span>(tx) {
-    <span class="code-teal">console</span>.log('%s added to mempool.', <span class="code-blue">tx</span>.txid());
-  });
-
-  <span class="code-blue">node</span>.startSync();
-})();
-
-</pre></div>
-</div>
-												end of full code snippet -->
-												<a class="hero-link text-center" href="#collapse3" data-toggle="collapse">close</a>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</article>
-						<!-- END POST IMAGE -->
-						
-						<!-- POST QUOTE 
+						<!-- POST QUOTE - USE LATER
 						<article class="post format-quote">
 							<div class="post-content">
 								<a href="#">
 									<blockquote>
-										<p>Talk is cheap. Show me the code.</p>
-										<footer>- Linus Torvalds</footer>
+										<p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa.</p>
+										<footer>Somebody</footer>
 									</blockquote>
 								</a>
 							</div>
 						</article>
-						-->
+						END POST QUOTE -->
 
-					<!--<h2>Quick Sync (Torrent)</h2>-->
+						<!-- POST IMAGE -->
+						<article class="post format-image">
+							<div class="row">
+								<div class="col-sm-1"></div>
+								<!-- images not used yet
+								<div class="col-sm-3">
+									<div class="post-preview">
+										<a href="#"><img src="assets/images/guides/get-started.png" alt=""></a>
+									</div>
+								</div> -->
+								<div class="col-sm-9">
+									<div class="post-content" style="color:#000;">
+										<h2 class="post-title"><a href="guides/install-windows.html"><i class="fa fa-windows"></i>Install on Windows (Video)</a></h2>
+										<ul class="post-meta">
+											<li>By Richard Tejada</li>
+										</ul>
+										<p>A quick step-by-step video to learn the basics of running a bcoin fullnode on Windows.</p>
+										<a href="guides/install-windows.html" class="btn btn-lg btn-link btn-base">Install ›</a>
+									</div>
+								</div>
+							</div>
+						</article>
+						<!-- END POST IMAGE -->
+
 					</div>
 					<!-- END BLOG CONTENT -->
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END NEW BLOGS -->
 
 				</div><!-- .row -->
 

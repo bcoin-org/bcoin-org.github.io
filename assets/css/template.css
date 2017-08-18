@@ -458,7 +458,8 @@ body {
 }
 
 .post-content > p {
-    margin-top:20px;
+    margin-top:0px !important;
+    margin-bottom:10px;
 }
 
 .fluid-width-video-wrapper {
@@ -2508,7 +2509,7 @@ body.off-canvas-cart-open:after {
 }
 
 .panel-title .fa {
-    margin:0 20px 0 30px;
+    margin:0 20px 0 0;
 }
 
 .panel-default > .panel-heading {
@@ -5183,7 +5184,7 @@ body.off-canvas-cart-open:after {
 
 
 .post {
-    margin: 0 0 10px;
+    margin: 0 0 30px;
 }
 
 .post .post-title {
@@ -5194,6 +5195,10 @@ body.off-canvas-cart-open:after {
     .post .post-title {
         font-size:18px;
     }
+}
+
+.post .post-title a i {
+    padding-right: 15px;
 }
 
 .post .post-content {
