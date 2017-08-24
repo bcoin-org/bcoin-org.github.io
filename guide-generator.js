@@ -78,9 +78,9 @@ renderer.code = function (code, language) {
     return postMeta ? '' : getPostMeta(code);
   }
 
-  return `<pre class="language-${language}">` 
-           + `<code class="language-${language}">`
-           + Prism.highlight(code, Prism.languages[language]) 
+  return `<pre class="line-numbers language-${language}">` 
+           + `<code class="line-numbers language-${language}">`
+           + Prism.highlight(code, PrismLanguages[language]) 
            + '</code></pre>';
 }
 
@@ -115,7 +115,7 @@ const createHTML = markdownFile => {
   template.splice(startLine, 0, blogText);
 
   fs.writeFileSync(htmlFile, template.join('\n'));
-  console.log(`Finished converting ${file}`);
+  console.log(`Finished ${path.basename(htmlFile)}`);
 }
 
 let markdownFile;
@@ -131,7 +131,8 @@ if (all) {
       console.log('Starting file conversion: ', file);
         markdownFile = path.resolve(markdownDir, file);
         htmlFile = path.resolve(guidesDir, file.replace(/\.[^/.]+$/, ".html"));
-      }  
+        createHTML(markdownFile);
+    }  
     }
     console.log('All files done!');
   });

@@ -390,7 +390,9 @@
 	<script src="../assets/bootstrap/js/bootstrap.min.js"></script>
 	<script src="../assets/js/plugins.min.js"></script>
 	<script src="../assets/js/custom.min.js"></script>
-
+	
+	<script async defer src="../assets/js/prism.js"></script>	
+  
   <!-- github button js -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>	
 	
