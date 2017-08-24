@@ -303,26 +303,15 @@
 									<div class="col-sm-12 panel panel-default">
 										<div class="post-content panel-heading" style="color:#000;">
 					<!-- START OF GUIDE -->
-<div class="post-content panel-heading" style="color:#000"><h2 class="post-title panel-title">Hello World</h2><ul class="post-meta"><li class="author">By   daenerys targaryen</li></ul><p>I&#39;m just testing some markdown right now</p>
-<pre class="language-javascript"><code class="language-javascript">console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'hello world!'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token comment" spellcheck="true">// do cool stuff with bcoin!</span>
-<span class="token comment" spellcheck="true">// https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses</span>
+<div class="post-content panel-heading" style="color:#000"><h2 class="post-title panel-title"><i class="fa fa-linux"></i>Install on Linux (Video)</h2><ul class="post-meta"><li class="author">By HeKaz</li></ul><p>A quick step-by-step video to learn the basics of running a bcoin fullnode on Linux.</p>
+<div class="post-video">
+  <iframe width="100%" height="315" src="https://www.youtube.com/embed/tRICg7kJvpo" frameborder="0" allowfullscreen></iframe>
+</div>
 
-secp256k1 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/crypto/secp256k1"</span><span class="token punctuation">)</span>
-crypto <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/crypto"</span><span class="token punctuation">)</span>
-base58 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/utils/base58"</span><span class="token punctuation">)</span>
-
-<span class="token comment" spellcheck="true">// 0 - Having a private ECDSA key</span>
-privkey <span class="token operator">=</span> buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token keyword">from</span><span class="token punctuation">(</span><span class="token string">"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725"</span><span class="token punctuation">,</span> <span class="token string">"hex"</span><span class="token punctuation">)</span>
-
-<span class="token comment" spellcheck="true">// 1 - Take the corresponding public key generated with it (65 bytes, 1 byte 0x04, 32 bytes corresponding to X coordinate, 32 bytes corresponding to Y coordinate)</span>
-pubkey <span class="token operator">=</span> secp256k1<span class="token punctuation">.</span><span class="token function">publicKeyCreate</span><span class="token punctuation">(</span>privkey<span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span>
-
-<span class="token comment" spellcheck="true">// 2 - Perform SHA-256 hashing on the public key</span>
-step2 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">sha256</span><span class="token punctuation">(</span>pubkey<span class="token punctuation">)</span>
-<span class="token operator">...</span></code></pre><h4>This is an example of a fourth level header</h4><h3>Embeded gist?</h3><p><em>We</em> can <strong>DO</strong> that too!</p>
-<script src="https://gist.github.com/tuxcanfly/23f77cfcc9fe6e61b67d38c8d737e4ad.js"></script></div>
+<h6>Source Install (Requires: Node &gt;= 7.6)</h6><pre class="language-bash"><code class="language-bash"><span class="token function">git</span> clone https://github.com/bcoin-org/bcoin.git
+<span class="token function">cd</span> bcoin
+npm <span class="token function">install</span>
+bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code></pre><h6>Archlinux AUR Package</h6><pre class="language-bash"><code class="language-bash">yaourt -S bcoin-git</code></pre></div>
 
 					<!-- END OF GUIDE -->
 									</div>
