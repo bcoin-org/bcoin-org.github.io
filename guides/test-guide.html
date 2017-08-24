@@ -39,8 +39,6 @@
 	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
 	<!-- Code Snippet CSS -->
-	<link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css">
 	<link href="../assets/css/prism.css" rel="stylesheet">
 	
 	<!-- Icon Fonts -->
@@ -178,8 +176,8 @@
 
 						<div class="menu-item">    
                             <div class="ghbuttons">
-                                <a class="github-button" href="https://github.com/bcoin-org/bcoin" data-icon="octicon-star" data-count-href="/bcoin-org/bcoin/stargazers" data-count-api="/repos/bcoin-org/bcoin#stargazers_count" data-count-aria-label="# stargazers on GitHub" aria-label="Star bcoin-org/bcoin on GitHub">Star</a>
-                                <a class="github-button" href="https://github.com/bcoin-org/bcoin/fork" data-icon="octicon-repo-forked" data-count-href="/bcoin-org/bcoin/network" data-count-api="/repos/bcoin-org/bcoin#forks_count" data-count-aria-label="# forks on GitHub" aria-label="Fork bcoin-org/bcoin on GitHub">Fork</a>
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin" data-icon="octicon-star" data-count-href="/bcoin-org/bcoin/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star bcoin-org/bcoin on GitHub">Star</a>
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin/fork" data-icon="octicon-repo-forked" data-count-href="/bcoin-org/bcoin/network" data-show-count="true" data-count-aria-label="# forks on GitHub" aria-label="Fork bcoin-org/bcoin on GitHub">Fork</a>
                             </div>  
                         </div>
                         
@@ -306,7 +304,7 @@
 										<div class="post-content panel-heading" style="color:#000;">
 					<!-- START OF GUIDE -->
 <div class="post-content panel-heading" style="color:#000"><h2 class="post-title panel-title">Hello World</h2><ul class="post-meta"><li class="author">By Buck Perley</li></ul><p>I&#39;m just testing some markdown right now</p>
-<pre><code class="lang-javascript">console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'hello world!'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<pre class="language-javascript"><code class="language-javascript">console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'hello world!'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token comment" spellcheck="true">// do cool stuff with bcoin!</span>
 <span class="token comment" spellcheck="true">// https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses</span>
@@ -323,10 +321,8 @@ pubkey <span class="token operator">=</span> secp256k1<span class="token punctua
 
 <span class="token comment" spellcheck="true">// 2 - Perform SHA-256 hashing on the public key</span>
 step2 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">sha256</span><span class="token punctuation">(</span>pubkey<span class="token punctuation">)</span>
-<span class="token operator">...</span>
-</code></pre>
-<h3>Embeded gist?</h3><p><script src="https://gist.github.com/tuxcanfly/23f77cfcc9fe6e61b67d38c8d737e4ad.js"></script></p>
-<h4>This is an example of a fourth level header</h4></div>
+<span class="token operator">...</span></code></pre><h4>This is an example of a fourth level header</h4><h3>Embeded gist?</h3><p><em>We</em> can <strong>DO</strong> that too!</p>
+<script src="https://gist.github.com/tuxcanfly/23f77cfcc9fe6e61b67d38c8d737e4ad.js"></script></div>
 
 					<!-- END OF GUIDE -->
 									</div>
@@ -415,7 +411,8 @@ step2 <span class="token operator">=</span> crypto<span class="token punctuation
 	<script src="../assets/js/plugins.min.js"></script>
 	<script src="../assets/js/custom.min.js"></script>
 
-    <!-- github button js -->
-    <script async defer src="https://buttons.github.io/buttons.js"></script>	
+  <!-- github button js -->
+  <script async defer src="https://buttons.github.io/buttons.js"></script>	
+	
 </body>
 </html>

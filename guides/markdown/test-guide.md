@@ -22,6 +22,8 @@ pubkey = secp256k1.publicKeyCreate(privkey, false)
 step2 = crypto.sha256(pubkey)
 ...
 ```
-### Embeded gist?
-<script src="https://gist.github.com/tuxcanfly/23f77cfcc9fe6e61b67d38c8d737e4ad.js"></script>
 #### This is an example of a fourth level header 
+
+### Embeded gist?
+_We_ can __DO__ that too!
+<script src="https://gist.github.com/tuxcanfly/23f77cfcc9fe6e61b67d38c8d737e4ad.js"></script>

@@ -1,8 +1,9 @@
 const marked = require('marked');
 const fs = require('fs');
 const path = require('path');
+const Prism = require('prismjs');
 
-const renderer = new marked.Renderer();
+
 
 const guidesDir = path.resolve(__dirname, 'guides');
 const markdownDir = path.resolve(__dirname, 'guides/markdown/');
@@ -36,6 +37,9 @@ const htmlFile = path.resolve(guidesDir, file.replace(/\.[^/.]+$/, ".html"));
 /******
 Prepare the HTML FIlE
 ******/
+const renderer = new marked.Renderer();
+
+// Custom renderer for top two level headers
 renderer.heading = (text, level) => {
   if (level == '2' || level == '1' ) {
     return '<h2 class="post-title panel-title">'
@@ -48,14 +52,18 @@ renderer.heading = (text, level) => {
   }
 }
 
+// Custom renderer for code snippet highlighting
+renderer.code = function (code, language) {
+  return `<pre class="language-${language}">` 
+           + `<code class="language-${language}">`
+           + Prism.highlight(code, Prism.languages[language]) 
+           + '</code></pre>';
+}
+
 marked.setOptions({
   renderer,
   gfm: true,
-  highlight: function (code, lang) {
-      return require('node-prismjs').highlight(code, Prism.languages[lang]);
-    }
 });
-
 
 const markdownString = fs.readFileSync(markdownFile, 'utf8');
 
