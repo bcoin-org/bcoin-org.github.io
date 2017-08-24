@@ -37,6 +37,9 @@
 	
 	<!-- Bootstrap core CSS -->
 	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+	<!-- Code Snippet CSS -->
+	<link href="../assets/css/prism.css" rel="stylesheet">
 	
 	<!-- Icon Fonts -->
 	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
@@ -283,11 +286,32 @@
 						</div>
 						<!-- END TEXT WIDGET -->
 					</div>
-					<!-- END SIDEBAR ->-
+					<!-- END SIDEBAR -->
+					<!-- START OF ARTICLE CONTAINER -->
+					<div class="col-sm-9 blog-content post-thumbnail">
+						<!-- POST IMAGE -->
+						<article class="post format-image">
+							<div class="row">
+								<!--<div class="col-sm-5">
+									<div class="post-preview">
+										<a href="#"><img src="../assets/images/guides/get-started.png" alt=""></a>
+									</div>
+								</div>-->
 
+								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
+								<div class="panel-group">
+									<div class="col-sm-12 panel panel-default">
+										<div class="post-content panel-heading" style="color:#000;">
 					<!-- START OF GUIDE -->
 
 					<!-- END OF GUIDE -->
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<!-- END OF ARTICLE CONTAINER -->
+					
 					</div>
 					<!-- END BLOG CONTENT -->
 

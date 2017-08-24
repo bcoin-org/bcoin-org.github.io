@@ -7,7 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "convert-markdown": "node guide-generator.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,7 @@
   "homepage": "https://github.com/bcoin-org/bcoin-org.github.io#readme",
   "dependencies": {
     "highlight.js": "^9.12.0",
-    "marked": "^0.3.6"
+    "marked": "^0.3.6",
+    "node-prismjs": "^0.1.0"
   }
 }

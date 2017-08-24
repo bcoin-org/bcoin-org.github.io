@@ -37,6 +37,11 @@
 	
 	<!-- Bootstrap core CSS -->
 	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+	<!-- Code Snippet CSS -->
+	<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css">
+	<link href="../assets/css/prism.css" rel="stylesheet">
 	
 	<!-- Icon Fonts -->
 	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
@@ -283,15 +288,54 @@
 						</div>
 						<!-- END TEXT WIDGET -->
 					</div>
-					<!-- END SIDEBAR ->-
+					<!-- END SIDEBAR -->
+					<!-- START OF ARTICLE CONTAINER -->
+					<div class="col-sm-9 blog-content post-thumbnail">
+						<!-- POST IMAGE -->
+						<article class="post format-image">
+							<div class="row">
+								<!--<div class="col-sm-5">
+									<div class="post-preview">
+										<a href="#"><img src="../assets/images/guides/get-started.png" alt=""></a>
+									</div>
+								</div>-->
 
+								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
+								<div class="panel-group">
+									<div class="col-sm-12 panel panel-default">
+										<div class="post-content panel-heading" style="color:#000;">
 					<!-- START OF GUIDE -->
-<h1 id="hello-world">Hello World</h1>
-<p>I&#39;m just testing some markdown right now</p>
-<pre class="line-numbers"><code class="javascript">console.log('hello world!');</code></pre><h4 id="cool-headers-too">Cool headers too</h4>
+<div class="post-content panel-heading" style="color:#000"><h2 class="post-title panel-title">Hello World</h2><ul class="post-meta"><li class="author">By Buck Perley</li></ul><p>I&#39;m just testing some markdown right now</p>
+<pre><code class="lang-javascript">console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'hello world!'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">// do cool stuff with bcoin!</span>
+<span class="token comment" spellcheck="true">// https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses</span>
 
+secp256k1 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/crypto/secp256k1"</span><span class="token punctuation">)</span>
+crypto <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/crypto"</span><span class="token punctuation">)</span>
+base58 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/utils/base58"</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 0 - Having a private ECDSA key</span>
+privkey <span class="token operator">=</span> buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token keyword">from</span><span class="token punctuation">(</span><span class="token string">"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725"</span><span class="token punctuation">,</span> <span class="token string">"hex"</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 1 - Take the corresponding public key generated with it (65 bytes, 1 byte 0x04, 32 bytes corresponding to X coordinate, 32 bytes corresponding to Y coordinate)</span>
+pubkey <span class="token operator">=</span> secp256k1<span class="token punctuation">.</span><span class="token function">publicKeyCreate</span><span class="token punctuation">(</span>privkey<span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 2 - Perform SHA-256 hashing on the public key</span>
+step2 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">sha256</span><span class="token punctuation">(</span>pubkey<span class="token punctuation">)</span>
+<span class="token operator">...</span>
+</code></pre>
+<h3>Embeded gist?</h3><p><script src="https://gist.github.com/tuxcanfly/23f77cfcc9fe6e61b67d38c8d737e4ad.js"></script></p>
+<h4>This is an example of a fourth level header</h4></div>
 
 					<!-- END OF GUIDE -->
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<!-- END OF ARTICLE CONTAINER -->
+					
 					</div>
 					<!-- END BLOG CONTENT -->
 
