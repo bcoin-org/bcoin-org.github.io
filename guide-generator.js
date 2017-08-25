@@ -95,9 +95,7 @@ const createHTML = markdownFile => {
   const markdownString = fs.readFileSync(markdownFile, 'utf8');
 
   // Assemble guide text container
-  let blogText = '<div class="post-content panel-heading" style="color:#000">'; 
-  blogText += marked(markdownString);
-  blogText += '</div>'
+  let blogText = marked(markdownString);
 
   // Get the guide html template and find start of guide section
   const template = fs.readFileSync(path.resolve(markdownDir, 'guides-template.txt'))

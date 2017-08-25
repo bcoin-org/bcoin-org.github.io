@@ -301,7 +301,7 @@
 								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
 								<div class="panel-group">
 									<div class="col-sm-12 panel panel-default">
-										<div class="post-content panel-heading" style="color:#000;">
+										<div class="post-content" style="color:#000;">
 					<!-- START OF GUIDE -->
 
 					<!-- END OF GUIDE -->

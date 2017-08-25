@@ -22,3 +22,5 @@ bin/bcoin  #run
 ```bash
 yaourt -S bcoin-git
 ```
+Pkg Source:
+[https://aur.archlinux.org/packages/bcoin-git/](https://aur.archlinux.org/packages/bcoin-git/)
