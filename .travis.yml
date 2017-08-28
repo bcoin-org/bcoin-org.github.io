@@ -12,5 +12,5 @@ deploy:
   github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
   target_branch: gh-pages
   on:
-    all_branches: true
+    branch: master
     repo: Bucko13/bcoin-org.github.io
