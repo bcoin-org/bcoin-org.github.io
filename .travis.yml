@@ -5,13 +5,12 @@ before_script:
 - npm run clear-guides
 - npm run convert-markdown -- --all
 deploy:
-  provider: releases
-  api_key:
-    secure: Um9qSOuCkWooIF2WkSiTS3oqsfkKWH3ZsSjTjHF9rtarmZML2HYpHwIVvK6BXqyWveTyF3P35AxRJucw+V+EHYg8gPaLNFnmSN/+74hO9n53lueDkf4Dl9EI8xSWBSRp+gaZcooDHk7L1F+k/eRyZKhe6OsH3KniHCF4OY1EkCHM32bxi4yvXWSS3xuWfbk+sA3jJAXPYhsD8vP3N8xYTnLaT5UveSVAApKot+Yp1lY+uL8G3gzmxwhuVMOkcUwnq0q2hoI8yDQTca0kY04Mee/h8nPCh9Q07sPTW2fXWEJ5IQYkefZ7xXS73L8dhFqErv9I9gFhoGos1Qng/XkLmS3Ie1/GZFABw9UTITUHcQYQzGwfUufgixbS7v5+mQxq7hKCaQA++zReJNxIMWnPeKpGDoFkJcPev9viLbVnZ5ZOjwv+qo9B/nOhfQvZkEMbLrzozZcQzAo82RQUpLP/Pe3cBMC7X/hQRrh7Udw7LiPRPOiLBxgjgxzlR68IAA4fCKoGrj2tCuHN2f0qKfRUdyi5vnlj8f6Ul/QTLCDDe9t17QNxTjaiviAd373RjTRpnq4U9wpJMCQItDX30cwgBHxnQmg2z7FJpkTsz4pJc5O+RqlmcJQmV9JOA+vD6MfzUsiHMo+d9ulSI5d/v5HvBNhEGLu3eFyvx8d/tofjNuo=
-  file_glob: true
+  provider: pages
   skip_cleanup: true
   file: guides/*
+  local_dir: guides
   target_branch: gh-pages
   on:
+    all_branches: true
     repo: Bucko13/bcoin-org.github.io
     tags: true
