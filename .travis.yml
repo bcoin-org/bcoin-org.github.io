@@ -2,4 +2,5 @@ language: node_js
 node_js:
   - "stable"
 before_script:
+  - npm run clear-guides
   - npm run convert-markdown -- --all

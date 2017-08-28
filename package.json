@@ -7,7 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "clear-guides": "rm -rf ./guides; mkdir ./guides",
     "convert-markdown": "node guide-generator.js"
   },
   "repository": {
