@@ -14,4 +14,3 @@ deploy:
   on:
     all_branches: true
     repo: Bucko13/bcoin-org.github.io
-    tags: true
