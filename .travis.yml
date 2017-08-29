@@ -1,0 +1,16 @@
+language: node_js
+node_js:
+- stable
+before_script:
+- npm run clear-guides
+- npm run convert-markdown -- --all
+deploy:
+  provider: pages
+  skip_cleanup: true
+  file: ./*
+  local_dir: .
+  github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+  target_branch: gh-pages
+  on:
+    branch: master
+    repo: bcoin-org/bcoin-org.github.io
