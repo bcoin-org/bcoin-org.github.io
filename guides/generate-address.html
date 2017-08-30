@@ -301,17 +301,43 @@
 									<div class="col-sm-12 panel panel-default">
 										<div class="post-content" style="color:#000;">
 					<!-- START OF GUIDE -->
-<h2 class="post-title panel-title"><i class="fa fa-linux"></i>Install on Linux (Video)</h2><ul class="post-meta"><li class="author">By HeKaz</li></ul><p>A quick step-by-step video to learn the basics of running a bcoin fullnode on Linux.</p>
-<div class="post-video">
-  <iframe width="100%" height="315" src="https://www.youtube.com/embed/tRICg7kJvpo" frameborder="0" allowfullscreen></iframe>
-</div>
+<h2 class="post-title panel-title">Generate an Address</h2><ul class="post-meta"><li class="author">By Javed Khan</li></ul><p>Following these steps, you should be able to build a transaction from scratch using built-in bcoin utilities. These steps are based on those outlined in the <a href="https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses">Bitcoin Wiki</a>.</p>
+<p>Of course, if you&#39;re using the bcoin wallet module, it will do these steps for you automatically when you <a href="../api-docs/index.html#generate-receiving-address">generate an address</a>!</p>
+<pre class="line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses</span>
 
-<h6>Source Install (Requires: Node &gt;= 7.6)</h6><pre class="line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">git</span> clone https://github.com/bcoin-org/bcoin.git
-<span class="token function">cd</span> bcoin
-npm <span class="token function">install</span>
-bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code></pre><h6>Archlinux AUR Package</h6><pre class="line-numbers language-bash"><code class="line-numbers language-bash">yaourt -S bcoin-git</code></pre><p>Pkg Source:
-<a href="https://aur.archlinux.org/packages/bcoin-git/">https://aur.archlinux.org/packages/bcoin-git/</a></p>
+secp256k1 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/crypto/secp256k1"</span><span class="token punctuation">)</span>
+crypto <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/crypto"</span><span class="token punctuation">)</span>
+base58 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/utils/base58"</span><span class="token punctuation">)</span>
 
+<span class="token comment" spellcheck="true">// 0 - Having a private ECDSA key</span>
+privkey <span class="token operator">=</span> buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token keyword">from</span><span class="token punctuation">(</span><span class="token string">"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725"</span><span class="token punctuation">,</span> <span class="token string">"hex"</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 1 - Take the corresponding public key generated with it (65 bytes, 1 byte 0x04, 32 bytes corresponding to X coordinate, 32 bytes corresponding to Y coordinate)</span>
+pubkey <span class="token operator">=</span> secp256k1<span class="token punctuation">.</span><span class="token function">publicKeyCreate</span><span class="token punctuation">(</span>privkey<span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 2 - Perform SHA-256 hashing on the public key</span>
+step2 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">sha256</span><span class="token punctuation">(</span>pubkey<span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 3 - Perform RIPEMD-160 hashing on the result of SHA-256</span>
+step3 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">ripemd160</span><span class="token punctuation">(</span>step2<span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 4 - Add version byte in front of RIPEMD-160 hash (0x00 for Main Network)</span>
+step4 <span class="token operator">=</span> buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span><span class="token punctuation">[</span>buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token function">alloc</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> step3<span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 5 - Perform SHA-256 hash on the extended RIPEMD-160 result</span>
+step5 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">sha256</span><span class="token punctuation">(</span>step4<span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 6 - Perform SHA-256 hash on the result of the previous SHA-256 hash</span>
+step6 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">sha256</span><span class="token punctuation">(</span>step5<span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 7 - Take the first 4 bytes of the second SHA-256 hash. This is the address checksum</span>
+step7 <span class="token operator">=</span> step6<span class="token punctuation">.</span><span class="token function">slice</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 8 - Add the 4 checksum bytes from stage 7 at the end of extended RIPEMD-160 hash from stage 4. This is the 25-byte binary Bitcoin Address.</span>
+step8 <span class="token operator">=</span> buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span><span class="token punctuation">[</span>step4<span class="token punctuation">,</span> step7<span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 9 - Convert the result from a byte string into a base58 string using Base58Check encoding. This is the most commonly used Bitcoin Address format</span>
+addr <span class="token operator">=</span> base58<span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span>step8<span class="token punctuation">)</span></code></pre>
 
 					<!-- END OF GUIDE -->
 									</div>

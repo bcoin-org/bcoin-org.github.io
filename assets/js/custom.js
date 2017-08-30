@@ -50,7 +50,8 @@
 			navbarAnimation();
 		});
 
-		$('.js-stick').stick_in_parent();
+		// $('.js-stick').stick_in_parent();
+		$('.js-stick').Stickyfill(); // replace with different sticky plugin since old one is no longer supported and has phantom scroll bug
 
 		$('.nav-icon-toggle').on('click', function() {
 			$(this).toggleClass('open');
