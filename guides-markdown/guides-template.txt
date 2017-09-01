@@ -203,12 +203,12 @@
 						<li><a href="../guides.html">Guides</a></li>
 						<!-- GUIDES -->
 
-						<!-- API REFERENCE - newer, how to interact once you're setup
-						<li><a href="http://bcoin.io/docs/index.html">API Docs</a></li>-->
+						<!-- API REFERENCE - newer, how to interact once you're setup -->
+						<li><a href="../api-docs/index.html">API Docs</a></li>
 						<!-- END API -->
 
-						<!-- FULL DOCS - older, full reference -->
-						<li><a href="http://bcoin.io/docs/index.html">Docs</a></li>
+						<!-- FULL DOCS - older, full reference
+						<li><a href="http://bcoin.io/docs/index.html">Docs</a></li> -->
 						<!-- END DOCS -->
 
 						<!-- DIVIDER
@@ -274,7 +274,7 @@
 						<!-- TEXT WIDGET -->
 						<div class="widget">
 							<h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
-							<p>We've got that: <a href="http://bcoin.io/docs/index.html"> Full Docs</a></p>
+							<p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="http://bcoin.io/docs/index.html">Full Documentation</a></p>
 						</div>
 						<!-- END TEXT WIDGET -->
 
