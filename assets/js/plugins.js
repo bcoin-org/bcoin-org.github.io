@@ -221,7 +221,7 @@
  *  Contact   : jbdemonte@gmail.com
  *  Web site  : http://gmap3.net
  *  Licence   : GPL v3 : http://www.gnu.org/licenses/gpl.html
- *  
+ *
  *  Copyright (c) 2010-2014 Jean-Baptiste DEMONTE
  *  All rights reserved.
  */
@@ -3818,7 +3818,7 @@ if ( typeof define === 'function' && define.amd ) {
  */
 
 (function () {
-    
+
 
     /**
      * Class for managing events.
@@ -4601,7 +4601,7 @@ if ( typeof define === 'function' && define.amd ) {
 
 ( function( ElemProto ) {
 
-  
+
 
   var matchesMethod = ( function() {
     // check un-prefixed
@@ -8678,24 +8678,24 @@ if ( typeof define === 'function' && define.amd ) {
 /*! Magnific Popup - v1.1.0 - 2016-02-20
 * http://dimsemenov.com/plugins/magnific-popup/
 * Copyright (c) 2016 Dmitry Semenov; */
-;(function (factory) { 
-if (typeof define === 'function' && define.amd) { 
- // AMD. Register as an anonymous module. 
- define(['jquery'], factory); 
- } else if (typeof exports === 'object') { 
- // Node/CommonJS 
- factory(require('jquery')); 
- } else { 
- // Browser globals 
- factory(window.jQuery || window.Zepto); 
- } 
- }(function($) { 
+;(function (factory) {
+if (typeof define === 'function' && define.amd) {
+ // AMD. Register as an anonymous module.
+ define(['jquery'], factory);
+ } else if (typeof exports === 'object') {
+ // Node/CommonJS
+ factory(require('jquery'));
+ } else {
+ // Browser globals
+ factory(window.jQuery || window.Zepto);
+ }
+ }(function($) {
 
 /*>>core*/
 /**
- * 
+ *
  * Magnific Popup Core JS file
- * 
+ *
  */
 
 
@@ -8717,7 +8717,7 @@ var CLOSE_EVENT = 'Close',
 
 
 /**
- * Private vars 
+ * Private vars
  */
 /*jshint -W079 */
 var mfp, // As we have only one instance of MagnificPopup object, we define it locally to not to use 'this'
@@ -8786,15 +8786,15 @@ var _mfpOn = function(name, f) {
 			v = ['ms','O','Moz','Webkit']; // 'v' for vendor
 
 		if( s['transition'] !== undefined ) {
-			return true; 
+			return true;
 		}
-			
+
 		while( v.length ) {
 			if( v.pop() + 'Transition' in s ) {
 				return true;
 			}
 		}
-				
+
 		return false;
 	};
 
@@ -8808,7 +8808,7 @@ MagnificPopup.prototype = {
 	constructor: MagnificPopup,
 
 	/**
-	 * Initializes Magnific Popup plugin. 
+	 * Initializes Magnific Popup plugin.
 	 * This function is triggered only once when $.fn.magnificPopup or $.magnificPopup is executed
 	 */
 	init: function() {
@@ -8834,7 +8834,7 @@ MagnificPopup.prototype = {
 
 		var i;
 
-		if(data.isObj === false) { 
+		if(data.isObj === false) {
 			// convert jQuery collection to array to avoid conflicts later
 			mfp.items = data.items.toArray();
 
@@ -8861,8 +8861,8 @@ MagnificPopup.prototype = {
 			mfp.updateItemHTML();
 			return;
 		}
-		
-		mfp.types = []; 
+
+		mfp.types = [];
 		_wrapClasses = '';
 		if(data.mainEl && data.mainEl.length) {
 			mfp.ev = data.mainEl.eq(0);
@@ -8881,7 +8881,7 @@ MagnificPopup.prototype = {
 
 
 
-		mfp.st = $.extend(true, {}, $.magnificPopup.defaults, data ); 
+		mfp.st = $.extend(true, {}, $.magnificPopup.defaults, data );
 		mfp.fixedContentPos = mfp.st.fixedContentPos === 'auto' ? !mfp.probablyMobile : mfp.st.fixedContentPos;
 
 		if(mfp.st.modal) {
@@ -8890,7 +8890,7 @@ MagnificPopup.prototype = {
 			mfp.st.showCloseBtn = false;
 			mfp.st.enableEscapeKey = false;
 		}
-		
+
 
 		// Building markup
 		// main containers are created only once
@@ -8942,7 +8942,7 @@ MagnificPopup.prototype = {
 			_wrapClasses += ' mfp-align-top';
 		}
 
-	
+
 
 		if(mfp.fixedContentPos) {
 			mfp.wrap.css({
@@ -8951,7 +8951,7 @@ MagnificPopup.prototype = {
 				overflowY: mfp.st.overflowY
 			});
 		} else {
-			mfp.wrap.css({ 
+			mfp.wrap.css({
 				top: _window.scrollTop(),
 				position: 'absolute'
 			});
@@ -8963,7 +8963,7 @@ MagnificPopup.prototype = {
 			});
 		}
 
-		
+
 
 		if(mfp.st.enableEscapeKey) {
 			// Close on ESC key
@@ -8982,7 +8982,7 @@ MagnificPopup.prototype = {
 		if(!mfp.st.closeOnContentClick) {
 			_wrapClasses += ' mfp-auto-cursor';
 		}
-		
+
 		if(_wrapClasses)
 			mfp.wrap.addClass(_wrapClasses);
 
@@ -8990,7 +8990,7 @@ MagnificPopup.prototype = {
 		// this triggers recalculation of layout, so we get it once to not to trigger twice
 		var windowHeight = mfp.wH = _window.height();
 
-		
+
 		var windowStyles = {};
 
 		if( mfp.fixedContentPos ) {
@@ -9011,8 +9011,8 @@ MagnificPopup.prototype = {
 			}
 		}
 
-		
-		
+
+
 		var classesToadd = mfp.st.mainClass;
 		if(mfp.isIE7) {
 			classesToadd += ' mfp-ie7';
@@ -9028,16 +9028,16 @@ MagnificPopup.prototype = {
 
 		// remove scrollbar, add margin e.t.c
 		$('html').css(windowStyles);
-		
+
 		// add everything to DOM
 		mfp.bgOverlay.add(mfp.wrap).prependTo( mfp.st.prependTo || $(document.body) );
 
 		// Save last focused element
 		mfp._lastFocusedEl = document.activeElement;
-		
+
 		// Wait for next cycle to allow CSS transition
 		setTimeout(function() {
-			
+
 			if(mfp.content) {
 				mfp._addClassToMFP(READY_CLASS);
 				mfp._setFocus();
@@ -9045,7 +9045,7 @@ MagnificPopup.prototype = {
 				// if content is not defined (not loaded e.t.c) we add class only for BG
 				mfp.bgOverlay.addClass(READY_CLASS);
 			}
-			
+
 			// Trap the focus in popup
 			_document.on('focusin' + EVENT_NS, mfp._onFocusIn);
 
@@ -9104,7 +9104,7 @@ MagnificPopup.prototype = {
 			}
 			$('html').css(windowStyles);
 		}
-		
+
 		_document.off('keyup' + EVENT_NS + ' focusin' + EVENT_NS);
 		mfp.ev.off(EVENT_NS);
 
@@ -9124,14 +9124,14 @@ MagnificPopup.prototype = {
 		if(mfp.st.autoFocusLast && mfp._lastFocusedEl) {
 			$(mfp._lastFocusedEl).focus(); // put tab focus back
 		}
-		mfp.currItem = null;	
+		mfp.currItem = null;
 		mfp.content = null;
 		mfp.currTemplate = null;
 		mfp.prevHeight = 0;
 
 		_mfpTrigger(AFTER_CLOSE_EVENT);
 	},
-	
+
 	updateSize: function(winHeight) {
 
 		if(mfp.isIOS) {
@@ -10656,7 +10656,7 @@ $.magnificPopup.registerModule(RETINA_NS, {
 					$target.css('overflow', overflow);
 					$img.remove();
 				});
-				
+
 			}());
 
 			img.onload = function () {
@@ -10765,7 +10765,7 @@ $.magnificPopup.registerModule(RETINA_NS, {
 							}
 						});
 				}
-				
+
 				if ($.isFunction(settings.callback)) {
 					settings.callback.call(img);
 				}
@@ -14761,6 +14761,7 @@ if (isMouseWheelSupported && isChrome) {
         if (detached) {
           return;
         }
+        console.log('recalced!');
         last_scroll_height = doc.height();
         border_top = parseInt(parent.css("border-top-width"), 10);
         padding_top = parseInt(parent.css("padding-top"), 10);
@@ -14805,6 +14806,8 @@ if (isMouseWheelSupported && isChrome) {
       last_pos = void 0;
       offset = offset_top;
       recalc_counter = recalc_every;
+      console.log('recalc_every: ', recalc_every);
+      console.log('recalc_counter: ', recalc_counter);
       tick = function() {
         var css, delta, recalced, scroll, will_bottom, win_height;
         if (detached) {
@@ -15140,7 +15143,7 @@ if (typeof Object.create !== 'function') {
  * easy-pie-chart
  * Lightweight plugin to render simple, animated and retina optimized pie charts
  *
- * @license 
+ * @license
  * @author Robert Fleischmann <rendro87@gmail.com> (http://robert-fleischmann.de)
  * @version 2.1.7
  **/
