@@ -5,11 +5,18 @@
  * @author Tim  Shedor
  */
 
+/* Casual Styles By Darren */
+pre {
+	border-radius: 0 !important;
+	border:1px solid #efefef !important;
+}
+
 code[class*="language-"],
 pre[class*="language-"] {
 	color: black;
 	background: none;
-	font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+	font-family: 'Ubuntu Mono', monospace;
+	/*font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;*/
 	text-align: left;
 	white-space: pre;
 	word-spacing: normal;
@@ -31,14 +38,20 @@ pre[class*="language-"] {
 pre[class*="language-"] {
 	position: relative;
 	margin: .5em 0;
+	/*
+	WHAT DOES THIS ADD?! HUH?
 	box-shadow: -1px 0px 0px 0px #358ccb, 0px 0px 0px 1px #dfdfdf;
-	border-left: 10px solid #358ccb;
+
+	NAAAHHH
+	border-left: 3px solid #395ec1;*/
 	background-color: #fdfdfd;
-	background-image: linear-gradient(transparent 50%, rgba(69, 142, 209, 0.04) 50%);
+	/*
+	THESE ARE THEM ALTERNATING LINES
+	background-image: linear-gradient(transparent 50%, rgba(69, 142, 209, 0.04) 50%);*/
 	background-size: 3em 3em;
 	background-origin: content-box;
 	overflow: visible;
-	padding: 0;
+	/*padding: 0;*/
 }
 
 code[class*="language"] {
@@ -52,7 +65,8 @@ code[class*="language"] {
 /* Margin bottom to accomodate shadow */
 :not(pre) > code[class*="language-"],
 pre[class*="language-"] {
-	background-color: #fdfdfd;
+	/*background-color: #fdfdfd;*/
+	background-color: hsla(208, 100%, 50%, .03);
 	-webkit-box-sizing: border-box;
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
@@ -105,7 +119,8 @@ pre[class*="language-"]:after {
 .token.prolog,
 .token.doctype,
 .token.cdata {
-	color: #7D8B99;
+	/*color: #7D8B99;*/
+	color: #8da4bb;
 }
 
 .token.punctuation {
@@ -130,7 +145,8 @@ pre[class*="language-"]:after {
 .token.function,
 .token.builtin,
 .token.inserted {
-	color: #2f9c0a;
+	/*color: #2f9c0a;*/
+	color: #664fb7;
 }
 
 .token.operator,
@@ -200,7 +216,7 @@ pre[class*="language-"].line-numbers {
 }
 
 pre[class*="language-"].line-numbers code {
-	padding-left: 3.8em;
+	padding-left: 4.8em;
 }
 
 pre[class*="language-"].line-numbers .line-numbers-rows {
@@ -284,7 +300,7 @@ pre.line-numbers > code {
 	left: -3.8em;
 	width: 3em; /* works for line-numbers below 1000 lines */
 	letter-spacing: -1px;
-	border-right: 1px solid #999;
+	border-right: 2px solid #395ec1;
 
 	-webkit-user-select: none;
 	-moz-user-select: none;
@@ -301,7 +317,8 @@ pre.line-numbers > code {
 
 		.line-numbers-rows > span:before {
 			content: counter(linenumber);
-			color: #999;
+			/*color: #999;*/
+			color: #3a5ec1;
 			display: block;
 			padding-right: 0.8em;
 			text-align: right;

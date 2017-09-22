@@ -715,7 +715,7 @@ hr {
     margin: 15px 0;
 }
 
-.bottom-line {
+.bottom-line, .bottom-line2 {
     position: relative;
 }
 
@@ -726,6 +726,16 @@ hr {
     bottom: 0;
     width: 100%;
     border-bottom: 2px solid #eeeeee;
+}
+
+.bottom-line2:after {
+    content: "";
+    display: block;
+    width: 35px;
+    border-bottom: 2px solid #385dc1;
+    margin: 20px auto 25px 0;
+    z-index: 1;
+    position: relative;
 }
 
 .bottom-line:after {
@@ -5195,7 +5205,7 @@ body.off-canvas-cart-open:after {
 
 .post .post-title {
     font-size: 23px;
-    margin-bottom: 10px;
+    margin-bottom: 0px;
 }
 @media screen and (max-width:425px) {
     .post .post-title {
@@ -5223,6 +5233,42 @@ body.off-canvas-cart-open:after {
     .guide-list {
         display: none;
     }
+}
+
+.guide-section-title {
+    font-size: 20px;
+    color: #222222;
+    padding-left: 0;
+    border-bottom: none !important;
+}
+
+.os-install {
+    border: 1px solid #333;
+    padding: 20px 15px 0 15px;
+}
+
+.os-install:hover {
+    border-color: #385dc1;
+}
+
+.os-install i {
+    color: #555;
+}
+/*
+.os-install i:hover {
+    color: #385dc1;
+}*/
+
+.os-install h2 {
+    font-size: 12px;
+    color: #555;
+    padding-top: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+}
+
+.os-install h2:hover {
+    color: #385dc1;
 }
 
 /* --- [Post Meta] --- */
