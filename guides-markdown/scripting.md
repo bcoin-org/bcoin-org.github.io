@@ -44,7 +44,7 @@ Using a witness would be similar, but witnesses do not get executed, they
 simply _become_ the stack. The witness object itself is very similar to the
 Stack object (an array-like object containing Buffers).
 
-``` javascript
+```javascript
 var witness = new bcoin.witness();
 witness.push(new BN(2));
 witness.push(new BN(5));
