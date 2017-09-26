@@ -5242,6 +5242,16 @@ body.off-canvas-cart-open:after {
     border-bottom: none !important;
 }
 
+.guide-block:hover i {
+    border-color: #385dc1;
+    color: #385dc1;    
+}
+
+.guide-block:hover h2 {
+    border-color: #385dc1;
+    color: #385dc1;    
+}
+
 .os-install {
     border: 1px solid #333;
     padding: 20px 15px 0 15px;
