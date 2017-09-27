@@ -1,4 +1,4 @@
-# Scripting
+# Intro to Scripting
 
 ```post-author
 Christopher Jeffery
