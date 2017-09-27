@@ -15,31 +15,31 @@ This example creates a transaction with output containing a null data script
 with our data:
 
 ```javascript
-    const bcoin = require("bcoin");
+const bcoin = require("bcoin");
 
-    let id, passphrase, rate, script, output;
-    id="primary"
-    passphrase="pass"
-    rate=5000
-    script = bcoin.script.fromNulldata(Buffer.from("with ❤︎ from bcoin"))
-    output = bcoin.output.fromScript(script, 0)
+let id, passphrase, rate, script, output;
+id="primary"
+passphrase="pass"
+rate=5000
+script = bcoin.script.fromNulldata(Buffer.from("with ❤︎ from bcoin"))
+output = bcoin.output.fromScript(script, 0)
 
-    const httpWallet = bcoin.http.Wallet({
-        id: id,
-        network: 'testnet'
-    });
+const httpWallet = bcoin.http.Wallet({
+    id: id,
+    network: 'testnet'
+});
 
 
-    const options = {
-      rate: rate,
-      outputs: [output],
-      passphrase: passphrase
-    };
+const options = {
+  rate: rate,
+  outputs: [output],
+  passphrase: passphrase
+};
 
-    (async () => {
-      const tx = await httpWallet.send(options);
-      console.log(tx);
-    })();
+(async () => {
+  const tx = await httpWallet.send(options);
+  console.log(tx);
+})();
 ```
 
 As an example, here is a transaction created on testnet using the above script: 3bfced561161ce4378132fabe72dd2a1fb8654ceed3d4ceb554f2bb7420b86e7
