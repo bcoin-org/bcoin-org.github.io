@@ -5641,7 +5641,7 @@ bcoin cli wallet get --id<span class="o">=</span><span class="nv">$id</span>
 <span class="kr">const</span> <span class="nx">id</span> <span class="o">=</span> <span class="s1">'foo'</span><span class="p">;</span>
 
 <span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">wallet</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getWalletInfo</span><span class="p">();</span>
+  <span class="kr">const</span> <span class="nx">wallet</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getInfo</span><span class="p">();</span>
   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">wallet</span><span class="p">);</span>
 <span class="p">})();</span>
 </code></pre>
