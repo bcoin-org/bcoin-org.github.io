@@ -40,7 +40,13 @@ if ( args.indexOf('--help') > -1 || args.length === 0 ) {
     return;
 }
 
-generatePages(markdownDir, all, __dirname)
+const options = {
+  all: all,
+  file: file,
+  author: author
+};
+
+generatePages(__dirname, markdownDir, options)
 .then((files) => {
   console.log('Finished generating files: ', files);
   console.log('Writing guides archive...');
