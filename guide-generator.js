@@ -8,9 +8,9 @@ const guidesDir = path.resolve(__dirname, 'guides');
 const markdownDir = path.resolve(__dirname, 'guides-markdown');
 
 const args = process.argv.slice(2);
-let author, 
-    file, 
-    postMeta, 
+let author,
+    file,
+    postMeta,
     all=false;
 
 args.forEach(arg => {
@@ -26,9 +26,9 @@ args.forEach(arg => {
 if ( args.indexOf('--help') > -1 || args.length === 0 ) {
   console.log('Build guides from markdown files. Available options are:');
   console.log('\'--author\'    e.g. `--author="JOHN SNOW"`');
-  console.log('\'--file\'      e.g. `--file="my-markdown.md"`'); 
+  console.log('\'--file\'      e.g. `--file="my-markdown.md"`');
   console.log('\'--all\'       Clears all guides and builds from files in markdown directory')
-  
+
   console.log('\nNOTES:');
   console.log('- code block with lang set to "post-author" will get set in post-meta')
   console.log('- CLI argument takes precedence over "post-author" code block for setting author');
@@ -44,13 +44,13 @@ if ( args.indexOf('--help') > -1 || args.length === 0 ) {
 
 
 /******
-Prepare the marked renderer 
+Prepare the marked renderer
 ******/
 const renderer = new marked.Renderer();
 
 
 // Custom renderer for code snippet highlighting
-const getPostMeta = (author='bcoin-org') => '<ul class="post-meta">' 
+const getPostMeta = (author='bcoin-org') => '<ul class="post-meta">'
            + '<li class="author">By ' + author + '</li>'
            + '</ul>';
 
@@ -65,7 +65,7 @@ renderer.heading = (text, level) => {
       postMeta = getPostMeta(author)
       header += postMeta;
     }
-    
+
     return header;
   } else {
     return `<h${level}>${text}</h${level}>`;
@@ -78,9 +78,9 @@ renderer.code = function (code, language) {
     return postMeta ? '' : getPostMeta(code);
   }
 
-  return `<pre class="line-numbers language-${language}">` 
+  return `<pre class="line-numbers language-${language}">`
            + `<code class="line-numbers language-${language}">`
-           + Prism.highlight(code, PrismLanguages[language]) 
+           + Prism.highlight(code, PrismLanguages[language])
            + '</code></pre>';
 }
 
@@ -123,14 +123,14 @@ if (all) {
   fs.readdir(markdownDir, (err, files) => {
     if (err) throw err;
     for (let i=0; i < files.length; i++) {
-      const file = files[i]; 
+      const file = files[i];
       const ext = path.extname(file);
       if (ext === '.md') {
       console.log('Starting file conversion: ', file);
         markdownFile = path.resolve(markdownDir, file);
         htmlFile = path.resolve(guidesDir, file.replace(/\.[^/.]+$/, ".html"));
         createHTML(markdownFile);
-    }  
+    }
     }
     console.log('All files done!');
   });
@@ -140,3 +140,12 @@ if (all) {
   createHTML(markdownFile);
 }
 
+/** Notes for building out page template:
+  - page-wrapper (head scripts, html and body open and close)
+    - header (includes main nav)
+    - guides-wrapper (main content wrapper)
+      - guides-sidebar
+      - guides-wrapper
+      - footer
+    - footer-scripts
+**/
