@@ -20,7 +20,9 @@ If you're not comfortable with key management, coin selection, and how transacti
 
 ### Version 1 - Manual
 #### Step 1: Setup
-Let's first start by importing the right tools, setting up some constants, and creating our keychains. (make sure you've installed the latest version of bcoin into your project with `npm install bcoin`)
+Let's first start by importing the right tools, setting up some constants, and creating our keychains. (make sure you've installed the latest version of bcoin into your project with `npm install bcoin`).
+
+Note that we're setting the fundingTarget and amountToFund as constants for simplicity, but they could be set based on user input or some other variable circumstances.
 
 ```javascript
 'use strict';
@@ -36,6 +38,7 @@ const Coin = bcoin.coin;
 const policy = bcoin.protocol.policy
 
 const fundingTarget = 100000000; // 1 BTC
+const amountToFund = 50000000; // .5 BTC
 const txRate = 10000; // 10000 satoshis/kb
 ```
 
@@ -102,21 +105,21 @@ The coins object you've created above should look something like this:
 
 ```json
 {
-  '0':
+  "0":
       [
         {
-          "type": 'pubkeyhash',
+          "type": "pubkeyhash",
           "version": 1,
           "height": -1,
-          "value": '5.0',
+          "value": "5.0",
           "script": <Script: OP_DUP OP_HASH160 0x14 0x64cc4e55b2daec25431bd879ef39302a77c1c1ce OP_EQUALVERIFY OP_CHECKSIG>,
           "coinbase": true,
-          "hash": '151e5551cdcec5fff06818fb78ac3d584361276e862b5700110ec8321869d650',
+          "hash": "151e5551cdcec5fff06818fb78ac3d584361276e862b5700110ec8321869d650",
           "index": 0,
           "address": <Address: type=pubkeyhash version=-1 str=mphvcfcFneRZvyYsmzhy57cSDzFbGrWaRb>
         }
       ],
-  '1': [...]
+  "1": [...]
 }
 ```
 
@@ -172,3 +175,129 @@ const splitCoinbase = async function splitCoinbase(keyrings, coins, targetAmount
 };
 ```
 
+Because of the async methods being used, in order to take advantage of the async/await structure, the rest of the code will be enclosed in an async function.
+
+The first thing we'll do is split the coinbase coins we created earlier using the utility function we just built.
+
+```javascript
+const composeCrowdfund = async function composeCrowdfund() {
+  const funderCoins = await splitCoinbase(funders, coins, amountToFund, txRate);
+  // ... we'll keep filling out the rest of the code here
+};
+```
+
+`funderCoins` should return x number of coin arrays, where X is the number of coinbases we created earlier (should be 2) with each array having a coin equal to the amount we want to donate.
+
+For example...
+
+```json
+{
+  "0":
+     [
+      {
+        "type": "pubkeyhash",
+        "version": 1,
+        "height": -1,
+        "value": "0.5",
+        "script": <Script: OP_DUP OP_HASH160 0x14 0x62f725e83caf894aa6c3efd29ef28649fc448825 OP_EQUALVERIFY OP_CHECKSIG>,
+        "coinbase": false,
+        "hash": "774822d84bd5af02f1b3eacd6215e0a1bcf07cfb6675a000c8a01d2ea34f2a32",
+        "index": 0,
+        "address": <Address: type=pubkeyhash version=-1 str=mpYEb17KR7MVhuPZT1GsW3SywZx8ihYube>
+       },
+         ...
+      ],
+  "1": [...]
+}
+```
+#### Step 5: Calculating the Fee
+
+We have a tricky problem now. In a real world situation you're not going to know how many inputs (i.e. funders) you will have. But the more inputs you have, the bigger the transaction and thus the higher the fee you will need to broadcast it. The best we can do is to estimate the size based off of the max number of inputs we are willing to accept.
+
+In our example, we know there are two inputs. In a more complex application, you might put a cap of say 5, then estimate the fee based on that. If there turn out to be fewer then you just have a relatively high fee.
+
+So, let's next add a utility for estimating a max fee. The way this will work is by creating a mock transaction that uses one of our coins to add inputs up to our maximum, calculate the size of the transaction and the fee based on that amount. We'll also build a utility that we'll need again later for adding coins to a tx and signing the input created.
+
+```javascript
+const getMaxFee = function getMaxFee(maxInputs, coin, address, keyring, rate) {
+  const fundingTarget = 100000000; // 1 BTC (arbitrary for purposes of this function)
+  const testMTX = new MTX();
+
+  testMTX.addOutput({ value: fundingTarget, address })
+
+  while(testMTX.inputs.length < maxInputs) {
+    const index = testMTX.inputs.length;
+    addInput(coin, index, testMTX, keyring);
+  }
+
+  return testMTX.getMinFee(null, rate);
+}
+
+const addInput = function addInput(coin, inputIndex, mtx, keyring, hashType) {
+  const sampleCoin = coin instanceof Coin ? coin : Coin.fromJSON(coin);
+  if(!hashType) hashType = Script.hashType.ANYONECANPAY | Script.hashType.ALL;
+
+  mtx.addCoin(sampleCoin);
+  mtx.scriptInput(inputIndex, sampleCoin, keyring);
+  mtx.signInput(inputIndex, sampleCoin, keyring, hashType);
+  assert(mtx.isSigned(), 'Input was not signed properly');
+}
+
+```
+
+Now we can get the fee for our funder transaction. We'll assume a max of 2 inputs, but this can be variable.
+
+```javascript
+const composeCrowdfund = async function composeCrowdfund() {
+  //...
+  const maxInputs = 2;
+  const maxFee = getMaxFee(
+    maxInputs,
+    funderCoins['0'][0],
+    fundeeAddress,
+    funder1Keyring,
+    txRate
+  );
+
+  console.log(`Based on a rate of ${txRate} satoshis/kb and a tx with max ${maxInputs}`);
+  console.log(`the tx fee should be ${maxFee} satoshis`);
+};
+```
+This should log something like:
+> Based on a rate of 10000 satoshis/kb and a tx with max 2 the tx fee should be 3380 satoshis
+
+#### Step 6: Construct the Transaction
+Now that we've got our tools and coins ready, we can start to build the transaction! Note that we are going to use the maxFee we calculated earlier and subtract it from the output we add to the mtx.
+
+```javascript
+const composeCrowdfund = async function composeCrowdfund() {
+  //...
+
+  const fundMe = new MTX();
+
+  // add an output with the target funding amount minus the fee calculated earlier
+  fundMe.addOutput({ value: fundingTarget - maxFee, address: fundeeAddress });
+
+  // fund with first funder (using the utility we built earlier)
+  let fundingCoin = funderCoins['0'][0];
+  addInput(fundingCoin, 0, fundMe, funder1Keyring);
+
+  // fund with second funder
+  fundingCoin = funderCoins['1'][0];
+  addInput(fundingCoin, 1, fundMe, funder2Keyring);
+
+  // We want to confirm that total value of inputs covers the funding goal
+  // NOTE: the difference goes to the miner in the form of fees
+  assert(fundMe.getInputValue() >= fundMe.outputs[0].value, 'Total inputs not enough to fund');
+  assert(fundMe.verify(), 'The mtx is malformed');
+
+  const tx = fundMe.toTX();
+  assert(tx.verify(fundMe.view), 'there is a problem with your tx');
+
+  return tx;
+};
+
+composeCrowdfund().then(myCrowdfundTx => console.log(myCrowdfundTx));
+```
+
+`composeCrowdfund()` will now return a promise (thanks to async/await) that returns a fully templated transaction that can be transmitted to the network. It should have two inputs and one output equal to the funding target minus the fee. You should also notice the `SIGHASH` flag 0x81 at the end of the input scripts which confirms they are `ALL|ANYONECANPAY` scripts.
