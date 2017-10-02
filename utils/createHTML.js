@@ -4,6 +4,8 @@ const path = require('path');
 const Prism = require('prismjs');
 const PrismLanguages = require('prism-languages');
 
+const insertToTemplate = require('./insertToTemplate.js');
+
 const createHTML = async function createHTML(markdownFile, markdownDir, htmlFile, author, postMeta) {
   /******
   Prepare the marked renderer
@@ -72,8 +74,8 @@ const createHTML = async function createHTML(markdownFile, markdownDir, htmlFile
   // const guidesWrapper = fs.readFileSync(path.resolve(templatesDir), 'guide-wrapper.html').toString().split('\n');
   // const footer = fs.readFileSync(path.resolve(templatesDir), 'footer.html').toString().split('\n');
 
-  const template = fs.readFileSync(path.resolve(markdownDir, 'guides-template.txt'))
-                      .toString().split('\n');
+  let template = fs.readFileSync(path.resolve(markdownDir, 'guides-template.txt'))
+                      .toString();
   // const startHeaderText = 'HEADER-SECTION';
   // const startGuidesWrapper = 'GUIDES-WRAPPER';
   // const startGuidesSidebar = 'GUIDES-SIDEBAR';
@@ -81,19 +83,7 @@ const createHTML = async function createHTML(markdownFile, markdownDir, htmlFile
   // const startFooter = 'FOOTER-SECTION';
   // const startFooterScripts = 'FOOTER-SCRIPTS';
 
-  let startLine = 0;
-
-  // 1. insert post into guidesWrapper
-  // 2. insert
-
-  for (let i=0; i <= template.length; i++) {
-    if (template[i].indexOf(startGuideText) > -1) {
-      startLine = i + 1;
-      break;
-    }
-  }
-
-  template.splice(startLine, 0, blogText);
+  template = insertToTemplate(template, startGuideText, blogText);
   fs.writeFileSync(htmlFile, template.join('\n'));
   console.log(`Finished ${path.basename(htmlFile)}`);
 }
