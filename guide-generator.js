@@ -1,8 +1,8 @@
 const marked = require('marked');
 const fs = require('fs');
 const path = require('path');
-const Prism = require('prismjs');
-const PrismLanguages = require('prism-languages');
+
+const createHTML = require('./utils/createHTML.js');
 
 const guidesDir = path.resolve(__dirname, 'guides');
 const markdownDir = path.resolve(__dirname, 'guides-markdown');
@@ -23,6 +23,7 @@ args.forEach(arg => {
   }
 });
 
+// Information on how to use the command. Retrieved with `--help` arg
 if ( args.indexOf('--help') > -1 || args.length === 0 ) {
   console.log('Build guides from markdown files. Available options are:');
   console.log('\'--author\'    e.g. `--author="JOHN SNOW"`');
@@ -42,80 +43,6 @@ if ( args.indexOf('--help') > -1 || args.length === 0 ) {
     return;
 }
 
-
-/******
-Prepare the marked renderer
-******/
-const renderer = new marked.Renderer();
-
-
-// Custom renderer for code snippet highlighting
-const getPostMeta = (author='bcoin-org') => '<ul class="post-meta">'
-           + '<li class="author">By ' + author + '</li>'
-           + '</ul>';
-
-
-// Custom renderer for top two level headers
-renderer.heading = (text, level) => {
-  if (level == '2' || level == '1' ) {
-    let header = '<h2 class="post-title panel-title">'
-           + text + '</h2>';
-
-    if (author) {
-      postMeta = getPostMeta(author)
-      header += postMeta;
-    }
-
-    return header;
-  } else {
-    return `<h${level}>${text}</h${level}>`;
-  }
-}
-
-renderer.code = function (code, language) {
-  if (language === 'post-author') {
-    // only return code block if wasn't set by argument
-    return postMeta ? '' : getPostMeta(code);
-  }
-
-  return `<pre class="line-numbers language-${language}">`
-           + `<code class="line-numbers language-${language}">`
-           + Prism.highlight(code, PrismLanguages[language])
-           + '</code></pre>';
-}
-
-marked.setOptions({
-  renderer,
-  gfm: true,
-});
-
-
-const createHTML = markdownFile => {
-
-  const markdownString = fs.readFileSync(markdownFile, 'utf8');
-
-  // Assemble guide text container
-  let blogText = marked(markdownString);
-
-  // Get the guide html template and find start of guide section
-  const template = fs.readFileSync(path.resolve(markdownDir, 'guides-template.txt'))
-                      .toString().split('\n');
-  const startText = 'START OF GUIDE'; // NOTE: Make sure to change this if the comment text changes
-  let startLine = 0;
-
-  for (let i=0; i <= template.length; i++) {
-    if (template[i].indexOf(startText) > -1) {
-      startLine = i + 1;
-      break;
-    }
-  }
-
-  template.splice(startLine, 0, blogText);
-
-  fs.writeFileSync(htmlFile, template.join('\n'));
-  console.log(`Finished ${path.basename(htmlFile)}`);
-}
-
 let markdownFile;
 let htmlFile;
 if (all) {
@@ -129,7 +56,7 @@ if (all) {
       console.log('Starting file conversion: ', file);
         markdownFile = path.resolve(markdownDir, file);
         htmlFile = path.resolve(guidesDir, file.replace(/\.[^/.]+$/, ".html"));
-        createHTML(markdownFile);
+        createHTML(markdownFile, markdownDir, htmlFile);
     }
     }
     console.log('All files done!');
@@ -137,7 +64,7 @@ if (all) {
 } else {
   markdownFile = path.resolve(markdownDir, file);
   htmlFile = path.resolve(guidesDir, file.replace(/\.[^/.]+$/, ".html"));
-  createHTML(markdownFile);
+  createHTML(markdownFile, markdownDir, htmlFile, author, postMeta);
 }
 
 /** Notes for building out page template:
@@ -145,7 +72,7 @@ if (all) {
     - header (includes main nav)
     - guides-wrapper (main content wrapper)
       - guides-sidebar
-      - guides-wrapper
+      (insert guide content)
       - footer
     - footer-scripts
 **/
