@@ -2,8 +2,7 @@ const marked = require('marked');
 const fs = require('fs');
 const path = require('path');
 
-const getGuideTitles = function getGuideTitles() {
-  const markdownDir = path.resolve(__dirname, 'guides-markdown');
+const getTitles = function getTitles(pathToFiles) {
   const titles = [];
   const renderer = new marked.Renderer();
 
@@ -19,16 +18,15 @@ const getGuideTitles = function getGuideTitles() {
     gfm: true,
   });
 
-  // Promisify the readdir so we can retrieve the titles
-  // when it's done
+  // Promisify the readdir so we can retrieve the titles when it's done
   return new Promise((resolve, reject) => {
-    fs.readdir(markdownDir, (err, files) => {
+    fs.readdir(pathToFiles, (err, files) => {
       if (err) reject(err);
       for (let i=0; i < files.length; i++) {
         const file = files[i];
         const ext = path.extname(file);
         if (ext === '.md') {
-          markdownFile = path.resolve(markdownDir, file);
+          markdownFile = path.resolve(pathToFiles, file);
           const markdownString = fs.readFileSync(markdownFile, 'utf8');
           marked(markdownString);
         }
@@ -38,5 +36,5 @@ const getGuideTitles = function getGuideTitles() {
   });
 }
 
-getGuideTitles().then(titles => console.log(titles));
+module.exports = getTitles;
 
