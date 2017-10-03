@@ -3,6 +3,9 @@
 ```post-author
 Javed Khan
 ```
+```post-description
+This example creates a transaction with output containing a null data script with our data.
+```
 
 OP_RETURN is a script opcode which can be used to store an arbitrary 40-byte
 data as a part of the signature script (null data script), allowing one to

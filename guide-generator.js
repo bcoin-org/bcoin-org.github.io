@@ -3,10 +3,10 @@ const path = require('path');
 const marked = require('marked');
 
 const createHTML = require('./utils/createHTML.js');
+const generateArchive = require('./utils/generateArchive');
 
 const guidesDir = path.resolve(__dirname, 'guides');
 const markdownDir = path.resolve(__dirname, 'guides-markdown');
-
 const args = process.argv.slice(2);
 let author,
     file,
@@ -46,6 +46,7 @@ if ( args.indexOf('--help') > -1 || args.length === 0 ) {
 const generatePages = async (markdownDir) => {
   let markdownFile;
   let htmlFile;
+
   if (all) {
     // get all markdown files and createHTML for each
     // returning a promise so we can have better control over async logic flow
@@ -80,4 +81,12 @@ const generatePages = async (markdownDir) => {
 }
 
 generatePages(markdownDir)
+.then(() => {
+  console.log('Writing guides archive');
+  return generateArchive('guides');
+})
+.then((guidesArchive) => {
+  fs.writeFileSync('guides.html', guidesArchive);
+  console.log('Guides archive done!');
+})
 .then(() => console.log('All files done!'));

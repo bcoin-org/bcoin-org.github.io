@@ -45,7 +45,11 @@ const getPostInfo = function getPostInfo(pathToFiles, postMeta) {
         const file = files[i];
         const ext = path.extname(file);
         if (ext === '.md') {
-          posts.unshift({ fileName: file });
+          posts.unshift({
+            fileName: file,
+            description: '',
+            author: ''
+          });
           markdownFile = path.resolve(pathToFiles, file);
           const markdownString = fs.readFileSync(markdownFile, 'utf8');
           marked(markdownString);
