@@ -1,8 +1,27 @@
-const marked = require('marked');
 const fs = require('fs');
 const path = require('path');
+const assert = require('assert');
 
-const getPostMeta = require('./getPostMeta');
+const marked = require('marked');
+
+const insertToTemplate = (template, targetText, customText) => {
+  assert(typeof template === 'string', 'template must be a string');
+  assert(typeof customText === 'string', 'customText must be a string');
+
+  const templateByLine = template.split('\n');
+  const customTextByLine = customText.split('\n');
+
+  let startLine = 0;
+  for (let i=0; i < templateByLine.length; i++) {
+    if (templateByLine[i].indexOf(targetText) > -1) {
+      startLine = i + 1;
+      break;
+    }
+  }
+
+  templateByLine.splice(startLine, 0, ...customTextByLine);
+  return templateByLine.join('\n');
+}
 
 const getPostInfo = function getPostInfo(pathToFiles, postMeta) {
   const posts = [];
@@ -60,5 +79,14 @@ const getPostInfo = function getPostInfo(pathToFiles, postMeta) {
   });
 }
 
-// getPostInfo('../guides-markdown').then((fileInfo) => console.log(fileInfo))
-module.exports = getPostInfo;
+const getPostMeta = (author='bcoin-org') => '<ul class="post-meta">'
+           + '<li class="author">By ' + author + '</li>'
+           + '</ul>';
+
+
+
+module.exports = {
+  insertToTemplate,
+  getPostMeta,
+  getPostInfo
+};

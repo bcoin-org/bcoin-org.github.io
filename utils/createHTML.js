@@ -4,15 +4,16 @@ const path = require('path');
 const Prism = require('prismjs');
 const PrismLanguages = require('prism-languages');
 
-const insertToTemplate = require('./insertToTemplate.js');
 const generateSidebar = require('./generateSidebar.js');
-const getPostMeta = require('./getPostMeta');
+const helpers = require('./helpers');
 
+const insertToTemplate = helpers.insertToTemplate;
+const getPostMeta = helpers.getPostMeta;
 
-const createHTML = async function createHTML(markdownFile, htmlFile, author, postMeta) {
-  const guidesDir = path.resolve(__dirname, '../guides');
-  const markdownDir = path.resolve(__dirname, '../guides-markdown');
-  const templatesDir = path.resolve(__dirname, '../page-templates');
+const createHTML = async function createHTML(markdownFile, htmlFile, author, postMeta, rootDir) {
+  const guidesDir = path.resolve(rootDir, 'guides');
+  const markdownDir = path.resolve(rootDir, 'guides-markdown');
+  const templatesDir = path.resolve(rootDir, 'page-templates');
 
   /******
   Prepare the marked renderer
@@ -46,7 +47,7 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
 
     if (language === 'post-description') {
       guideDescription = code;
-      return;
+      return '';
     }
 
     return `<pre class="line-numbers language-${language}">`
@@ -74,7 +75,7 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
 
 
   // generate sidebar and insert into our page template
-  const sidebarText = await generateSidebar('guides', templatesDir, markdownDir);
+  const sidebarText = await generateSidebar('guides', rootDir);
   template = insertToTemplate(template, SIDEBAR_START, sidebarText);
 
   // insert the guide text into our template
