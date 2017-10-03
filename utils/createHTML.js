@@ -82,8 +82,13 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
   template = insertToTemplate(template, GUIDE_START, blogText);
 
   // create the html file for final output
-  fs.writeFileSync(htmlFile, template);
-  console.log(`Finished ${path.basename(htmlFile)}`);
+  return new Promise((resolve, reject) => {
+    fs.writeFile(htmlFile, template, {flags: 'w+'}, (err) => {
+      if (err) reject(err);
+      resolve(htmlFile)
+    });
+  })
+  .then((htmlFile) => console.log(`Finished ${path.basename(htmlFile)}!`));
 }
 
 module.exports = createHTML;

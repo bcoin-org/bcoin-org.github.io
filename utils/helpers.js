@@ -4,6 +4,10 @@ const assert = require('assert');
 
 const marked = require('marked');
 
+const getPostMeta = (author='bcoin-org') => '<ul class="post-meta">'
+           + '<li class="author">By ' + author + '</li>'
+           + '</ul>';
+
 const insertToTemplate = (template, targetText, customText) => {
   assert(typeof template === 'string', 'template must be a string');
   assert(typeof customText === 'string', 'customText must be a string');
@@ -78,12 +82,6 @@ const getPostInfo = function getPostInfo(pathToFiles, postMeta) {
     });
   });
 }
-
-const getPostMeta = (author='bcoin-org') => '<ul class="post-meta">'
-           + '<li class="author">By ' + author + '</li>'
-           + '</ul>';
-
-
 
 module.exports = {
   insertToTemplate,

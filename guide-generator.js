@@ -41,13 +41,14 @@ if ( args.indexOf('--help') > -1 || args.length === 0 ) {
 }
 
 generatePages(markdownDir, all, __dirname)
-  .then(() => {
-    console.log('Writing guides archive...');
-    return generateArchive('guides', __dirname);
-  })
-  .then((guidesArchive) => {
-    fs.writeFileSync('guides.html', guidesArchive);
-    console.log('Guides archive done');
-  })
-  .then(() => console.log('All files done!'))
-  .catch(e => console.log('There was a problem: ', e));
+.then((files) => {
+  console.log('Finished generating files: ', files);
+  console.log('Writing guides archive...');
+  return generateArchive('guides', __dirname);
+})
+.then((guidesArchive) => {
+  fs.writeFileSync('guides.html', guidesArchive);
+  console.log('Guides archive done');
+})
+.then(() => console.log('All files done!'))
+.catch(e => console.log('There was a problem: ', e));

@@ -16,7 +16,7 @@ const generatePages = async (markdownDir, all, rootDir) => {
     // since the `fs.readdir` is an async callback that we'd like to `await` on
     return new Promise ((resolve, reject) => {
       fs.readdir(markdownDir, async (err, files) => {
-        if (err) throw err;
+        if (err) reject(err);
         for (let i=0; i < files.length; i++) {
           const file = files[i];
           const ext = path.extname(file);
@@ -33,7 +33,7 @@ const generatePages = async (markdownDir, all, rootDir) => {
         }
         // once we've converted all markdown files in the folder
         // we can resolve our promise and continue in our promise/await chain
-        resolve();
+        resolve(files);
       });
     })
   } else {
