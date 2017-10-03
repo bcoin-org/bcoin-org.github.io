@@ -17,7 +17,7 @@ const generateArchive = async function(archiveName) {
   let archiveTemplate = fs.readFileSync(archiveTemplatePath).toString();
 
   // generate sidebar and insert into our page template
-  const sidebarText = await generateSidebar('guides', templatesDir, markdownDir);
+  const sidebarText = await generateSidebar('guides', templatesDir, markdownDir, true);
 
   archiveTemplate = insertToTemplate(archiveTemplate, SIDEBAR_START, sidebarText);
 

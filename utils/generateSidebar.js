@@ -7,7 +7,7 @@ const insertToTemplate = require('./insertToTemplate.js');
 const generateSidebarListItem =
   (filePath, title) => `<li><a href="${filePath}">${title}</a></li>`;
 
-const generateSidebar = async (pageName, templateDir, markdownDir) => {
+const generateSidebar = async (pageName, templateDir, markdownDir, relative=false) => {
   // get sidebar template text
   const templateFilePath = path.resolve(templateDir, `${pageName}-sidebar.html`);
   const template = fs.readFileSync(templateFilePath).toString().split('\n');
@@ -17,8 +17,9 @@ const generateSidebar = async (pageName, templateDir, markdownDir) => {
   // create sidebar list for installs
   const installsList = [];
   for (let i=0; i<installs.length; i++) {
-    const fileName = installs[i].fileName.replace(/\.[^/.]+$/, ".html");
+    let fileName = installs[i].fileName.replace(/\.[^/.]+$/, ".html");
     const title = installs[i].title;
+    if (relative) fileName = `${pageName}/${fileName}`;
     installsList.push(generateSidebarListItem(fileName, title));
   }
 
@@ -27,8 +28,9 @@ const generateSidebar = async (pageName, templateDir, markdownDir) => {
   // create sidebar list for guides
   const guidesList = [];
   for (let i=0; i<guides.length; i++) {
-    const fileName = guides[i].fileName.replace(/\.[^/.]+$/, ".html");
+    let fileName = guides[i].fileName.replace(/\.[^/.]+$/, ".html");
     const title = guides[i].title;
+    if (relative) fileName = `${pageName}/${fileName}`;
     guidesList.push(generateSidebarListItem(fileName, title));
   }
 
