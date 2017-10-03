@@ -7,11 +7,8 @@ const insertToTemplate = require('./insertToTemplate.js');
 const generateSidebarListItem =
   (filePath, title) => `<li><a href="${filePath}">${title}</a></li>`;
 
-const generateSidebar = async (pageName) => {
+const generateSidebar = async (pageName, templateDir, markdownDir) => {
   // get sidebar template text
-  const templateDir = path.resolve('../page-templates');
-  const markdownDir = path.resolve('../guides-markdown');
-
   const templateFilePath = path.resolve(templateDir, `${pageName}-sidebar.html`);
   const template = fs.readFileSync(templateFilePath).toString().split('\n');
 
@@ -20,7 +17,7 @@ const generateSidebar = async (pageName) => {
   // create sidebar list for installs
   const installsList = [];
   for (let i=0; i<installs.titles.length; i++) {
-    const fileName = installs.fileNames[i];
+    const fileName = installs.fileNames[i].replace(/\.[^/.]+$/, ".html");
     const title = installs.titles[i];
     installsList.push(generateSidebarListItem(fileName, title));
   }
@@ -30,12 +27,15 @@ const generateSidebar = async (pageName) => {
   // create sidebar list for guides
   const guidesList = [];
   for (let i=0; i<guides.titles.length; i++) {
-    const fileName = guides.fileNames[i];
+    const fileName = guides.fileNames[i].replace(/\.[^/.]+$/, ".html");
     const title = guides.titles[i];
     guidesList.push(generateSidebarListItem(fileName, title));
   }
 
   // compose widget for sidebar
+  // TO DO: we can make this smarter where it will make a new category for every
+  // sub-directory, and use the name to create the title of the widget, e.g. install, advanced-guides
+
   const categoriesWidget = ['<div class="widget guide-list">'];
   categoriesWidget.push('<h6 class="montserrat text-uppercase bottom-line">Install</h6>');
   categoriesWidget.push('<ul class="icons-list">','<!-- INSTALL-LIST -->');
@@ -48,13 +48,11 @@ const generateSidebar = async (pageName) => {
   categoriesWidget.push('</ul>','</div>');
 
   // insert lists into sidebar template at CATEGORIES WIDGET
-  const finalHTML = insertToTemplate(
+  return insertToTemplate(
                       template.join('\n'),
                       'CATEGORIES WIDGET',
                       categoriesWidget.join('\n')
                     );
-  // return text of finished sidebar
-  return finalHTML.join('\n');
 }
-generateSidebar('guides').then(html => console.log(html));
+// generateSidebar('guides').then(html => console.log(html));
 module.exports = generateSidebar;

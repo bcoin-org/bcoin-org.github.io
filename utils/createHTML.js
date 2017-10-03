@@ -5,18 +5,19 @@ const Prism = require('prismjs');
 const PrismLanguages = require('prism-languages');
 
 const insertToTemplate = require('./insertToTemplate.js');
+const generateSidebar = require('./generateSidebar.js');
 
-const createHTML = async function createHTML(markdownFile, markdownDir, htmlFile, author, postMeta) {
+const createHTML = async function createHTML(markdownFile, htmlFile, author, postMeta) {
+  const guidesDir = path.resolve(__dirname, '../guides');
+  const markdownDir = path.resolve(__dirname, '../guides-markdown');
+  const templatesDir = path.resolve(__dirname, '../page-templates');
+
   /******
   Prepare the marked renderer
   ******/
-
-  const guidesDir = path.resolve(__dirname, 'guides');
-  const templatesDir = path.resolve(__dirname, 'page-templates');
-
   const renderer = new marked.Renderer();
-  let guideTitle, guideDescription;
 
+  let guideTitle, guideDescription;
   // Custom renderer for code snippet highlighting
   const getPostMeta = (author='bcoin-org') => '<ul class="post-meta">'
              + '<li class="author">By ' + author + '</li>'
@@ -66,25 +67,24 @@ const createHTML = async function createHTML(markdownFile, markdownDir, htmlFile
 
   // Assemble guide text container
   let blogText = marked(markdownString);
-
-  // Get the guide html template and find start of guide section
-  // const pageWrapper = fs.readFileSync(path.resolve(templatesDir), 'page-wrapper.html').toString().split('\n');
-  // const header = fs.readFileSync(path.resolve(templatesDir), 'header.html').toString().split('\n');
-  // const guidesSidebar = fs.readFileSync(path.resolve(templatesDir), 'guides-sidebar.html').toString().split('\n');
-  // const guidesWrapper = fs.readFileSync(path.resolve(templatesDir), 'guide-wrapper.html').toString().split('\n');
-  // const footer = fs.readFileSync(path.resolve(templatesDir), 'footer.html').toString().split('\n');
-
-  let template = fs.readFileSync(path.resolve(markdownDir, 'guides-template.txt'))
+  let template = fs.readFileSync(path.resolve(templatesDir, 'guides-template.txt'))
                       .toString();
-  // const startHeaderText = 'HEADER-SECTION';
-  // const startGuidesWrapper = 'GUIDES-WRAPPER';
-  // const startGuidesSidebar = 'GUIDES-SIDEBAR';
-  const startGuideText = 'START OF GUIDE'; // NOTE: Make sure to change this if the comment text changes
-  // const startFooter = 'FOOTER-SECTION';
-  // const startFooterScripts = 'FOOTER-SCRIPTS';
 
-  template = insertToTemplate(template, startGuideText, blogText);
-  fs.writeFileSync(htmlFile, template.join('\n'));
+  // these constants are comment text that mark the start
+  // of their respective sections in the template files
+  const GUIDE_START = 'START OF GUIDE'; // NOTE: Make sure to change this if the comment text changes
+  const SIDEBAR_START = 'START SIDEBAR';
+
+
+  // generate sidebar and insert into our page template
+  const sidebarText = await generateSidebar('guides', templatesDir, markdownDir);
+  template = insertToTemplate(template, SIDEBAR_START, sidebarText);
+
+  // insert the guide text into our template
+  template = insertToTemplate(template, GUIDE_START, blogText);
+
+  // create the html file for final output
+  fs.writeFileSync(htmlFile, template);
   console.log(`Finished ${path.basename(htmlFile)}`);
 }
 

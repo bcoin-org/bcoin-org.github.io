@@ -16,7 +16,7 @@ const insertToTemplate = (template, targetText, customText) => {
   }
 
   templateByLine.splice(startLine, 0, ...customTextByLine);
-  return templateByLine;
+  return templateByLine.join('\n');
 }
 
 module.exports = insertToTemplate;

@@ -267,6 +267,7 @@
 <li><a href="generate-address.html">Generate an Address</a></li>
 <li><a href="op_return.html">Create an OP_RETURN output transaction</a></li>
 <li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="test.html">I am a test</a></li>
 <!-- /GUIDES-LIST -->
 </ul>
 </div>
@@ -304,41 +305,7 @@
 									<div class="col-sm-12 panel panel-default">
 										<div class="post-content" style="color:#000;">
 					<!-- START OF GUIDE -->
-<h2 class="post-title panel-title">Create an OP_RETURN output transaction</h2><ul class="post-meta"><li class="author">By Javed Khan</li></ul><p>OP_RETURN is a script opcode which can be used to store an arbitrary 40-byte
-data as a part of the signature script (null data script), allowing one to
-embed a small amount of data into the blockchain. For example, it can be used
-as a way to track digital assets or certify a document with proof-of-existence.
-Note that outputs associated with a null data script are lost forever, so make
-sure you use a zero value output!</p>
-<p>This example creates a transaction with output containing a null data script
-with our data:</p>
-<pre class="line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
-<span class="token keyword">let</span> id<span class="token punctuation">,</span> passphrase<span class="token punctuation">,</span> rate<span class="token punctuation">,</span> script<span class="token punctuation">,</span> output<span class="token punctuation">;</span>
-id<span class="token operator">=</span><span class="token string">"primary"</span>
-passphrase<span class="token operator">=</span><span class="token string">"pass"</span>
-rate<span class="token operator">=</span><span class="token number">5000</span>
-script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>script<span class="token punctuation">.</span><span class="token function">fromNulldata</span><span class="token punctuation">(</span>Buffer<span class="token punctuation">.</span><span class="token keyword">from</span><span class="token punctuation">(</span><span class="token string">"with ❤︎ from bcoin"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-output <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>output<span class="token punctuation">.</span><span class="token function">fromScript</span><span class="token punctuation">(</span>script<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
-
-<span class="token keyword">const</span> httpWallet <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>http<span class="token punctuation">.</span><span class="token function">Wallet</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
-    id<span class="token punctuation">:</span> id<span class="token punctuation">,</span>
-    network<span class="token punctuation">:</span> <span class="token string">'testnet'</span>
-<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
-
-<span class="token keyword">const</span> options <span class="token operator">=</span> <span class="token punctuation">{</span>
-  rate<span class="token punctuation">:</span> rate<span class="token punctuation">,</span>
-  outputs<span class="token punctuation">:</span> <span class="token punctuation">[</span>output<span class="token punctuation">]</span><span class="token punctuation">,</span>
-  passphrase<span class="token punctuation">:</span> passphrase
-<span class="token punctuation">}</span><span class="token punctuation">;</span>
-
-<span class="token punctuation">(</span><span class="token keyword">async</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
-  <span class="token keyword">const</span> tx <span class="token operator">=</span> <span class="token keyword">await</span> httpWallet<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span>options<span class="token punctuation">)</span><span class="token punctuation">;</span>
-  console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>tx<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre><p>As an example, here is a transaction created on testnet using the above script: 3bfced561161ce4378132fabe72dd2a1fb8654ceed3d4ceb554f2bb7420b86e7</p>
-<p>One can verify this by fetching the transaction and converting its output signature script to ascii string.</p>
-
+<h2 class="post-title panel-title">I am a test</h2>
 
 					<!-- END OF GUIDE -->
 									</div>

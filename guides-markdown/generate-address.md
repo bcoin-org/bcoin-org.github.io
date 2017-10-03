@@ -3,6 +3,11 @@
 ```post-author
 Javed Khan
 ```
+
+```post-description
+Follow along with the steps to build a transaction from scratch using built-in bcoin utilities. These steps are based on those outlined in the Bitcoin Wiki.
+```
+
 Follow along with the steps below to build a transaction from scratch using built-in bcoin utilities. These steps are based on those outlined in the [Bitcoin Wiki](https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses).
 
 Of course, if you're using the bcoin wallet module, it will do these steps for you automatically when you [generate an address](../api-docs/index.html#generate-receiving-address)!

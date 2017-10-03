@@ -1,6 +1,6 @@
-const marked = require('marked');
 const fs = require('fs');
 const path = require('path');
+const marked = require('marked');
 
 const createHTML = require('./utils/createHTML.js');
 
@@ -43,36 +43,41 @@ if ( args.indexOf('--help') > -1 || args.length === 0 ) {
     return;
 }
 
-let markdownFile;
-let htmlFile;
-if (all) {
-  // get all markdown files and createHTML for each
-  fs.readdir(markdownDir, (err, files) => {
-    if (err) throw err;
-    for (let i=0; i < files.length; i++) {
-      const file = files[i];
-      const ext = path.extname(file);
-      if (ext === '.md') {
-      console.log('Starting file conversion: ', file);
-        markdownFile = path.resolve(markdownDir, file);
-        htmlFile = path.resolve(guidesDir, file.replace(/\.[^/.]+$/, ".html"));
-        createHTML(markdownFile, markdownDir, htmlFile);
-    }
-    }
-    console.log('All files done!');
-  });
-} else {
-  markdownFile = path.resolve(markdownDir, file);
-  htmlFile = path.resolve(guidesDir, file.replace(/\.[^/.]+$/, ".html"));
-  createHTML(markdownFile, markdownDir, htmlFile, author, postMeta);
+const generatePages = async (markdownDir) => {
+  let markdownFile;
+  let htmlFile;
+  if (all) {
+    // get all markdown files and createHTML for each
+    // returning a promise so we can have better control over async logic flow
+    // since the `fs.readdir` is an async callback that we'd like to `await` on
+    return new Promise ((resolve, reject) => {
+      fs.readdir(markdownDir, async (err, files) => {
+        if (err) throw err;
+        for (let i=0; i < files.length; i++) {
+          const file = files[i];
+          const ext = path.extname(file);
+          if (ext === '.md') {
+            console.log('Starting file conversion: ', file);
+            markdownFile = path.resolve(markdownDir, file);
+            htmlFile = path.resolve(guidesDir, file.replace(/\.[^/.]+$/, ".html"));
+            await createHTML(markdownFile, htmlFile);
+          } else if (fs.statSync(path.resolve(markdownDir, file)).isDirectory()) {
+            // if we find a folder inside the directory
+            // we need to do a recursive call to convert the guides in that directory
+            await generatePages(path.resolve(markdownDir,file));
+          }
+        }
+        // once we've converted all markdown files in the folder
+        // we can resolve our promise and continue in our promise/await chain
+        resolve();
+      });
+    })
+  } else {
+    markdownFile = path.resolve(markdownDir, file);
+    htmlFile = path.resolve(guidesDir, file.replace(/\.[^/.]+$/, ".html"));
+    await createHTML(markdownFile, htmlFile, author, postMeta);
+  }
 }
 
-/** Notes for building out page template:
-  - page-wrapper (head scripts, html and body open and close)
-    - header (includes main nav)
-    - guides-wrapper (main content wrapper)
-      - guides-sidebar
-      (insert guide content)
-      - footer
-    - footer-scripts
-**/
+generatePages(markdownDir)
+.then(() => console.log('All files done!'));
