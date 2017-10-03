@@ -50,10 +50,13 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
       return '';
     }
 
-    return `<pre class="line-numbers language-${language}">`
+    return `<pre class="snippet line-numbers language-${language}">`
              + `<code class="line-numbers language-${language}">`
              + Prism.highlight(code, PrismLanguages[language])
-             + '</code></pre>';
+             + '</code>'
+             + '<button class="copy-button">'
+             + '<img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button>'
+             + '</pre>';
   }
 
   marked.setOptions({

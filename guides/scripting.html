@@ -41,6 +41,8 @@
 	<!-- Code Snippet CSS -->
 	<link href="../assets/css/prism.css" rel="stylesheet">
 
+	<link href="../assets/css/custom.css" rel="stylesheet">
+
 	<!-- Icon Fonts -->
 	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
 	<link href="../assets/css/simple-line-icons.css" rel="stylesheet">
@@ -305,7 +307,7 @@
 										<div class="post-content" style="color:#000;">
 					<!-- START OF GUIDE -->
 <h2 class="post-title panel-title">Intro to Scripting</h2><ul class="post-meta"><li class="author">By Christopher Jeffery</li></ul><p>Scripts are array-like objects with some helper functions.</p>
-<pre class="line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">var</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">var</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">var</span> assert <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'assert'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">var</span> BN <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>bn<span class="token punctuation">;</span>
 <span class="token keyword">var</span> opcodes <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>script<span class="token punctuation">.</span>opcodes<span class="token punctuation">;</span>
@@ -335,16 +337,16 @@ input<span class="token punctuation">.</span><span class="token function">execut
 output<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span>stack<span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token comment" spellcheck="true">// Verify the script was successful in its execution:</span>
 <span class="token function">assert</span><span class="token punctuation">(</span>stack<span class="token punctuation">.</span>length <span class="token operator">===</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token function">assert</span><span class="token punctuation">(</span>bcoin<span class="token punctuation">.</span>script<span class="token punctuation">.</span><span class="token function">bool</span><span class="token punctuation">(</span>stack<span class="token punctuation">.</span><span class="token function">pop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">===</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre><p>Using a witness would be similar, but witnesses do not get executed, they
+<span class="token function">assert</span><span class="token punctuation">(</span>bcoin<span class="token punctuation">.</span>script<span class="token punctuation">.</span><span class="token function">bool</span><span class="token punctuation">(</span>stack<span class="token punctuation">.</span><span class="token function">pop</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">===</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Using a witness would be similar, but witnesses do not get executed, they
 simply <em>become</em> the stack. The witness object itself is very similar to the
 Stack object (an array-like object containing Buffers).</p>
-<pre class="line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">var</span> witness <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">bcoin<span class="token punctuation">.</span>witness</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">var</span> witness <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">bcoin<span class="token punctuation">.</span>witness</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 witness<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">BN</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 witness<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">BN</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 witness<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span><span class="token string">'hello world'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 <span class="token keyword">var</span> stack <span class="token operator">=</span> witness<span class="token punctuation">.</span><span class="token function">toStack</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-output<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span>stack<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+output<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span>stack<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre>
 
 					<!-- END OF GUIDE -->
 									</div>
@@ -433,8 +435,24 @@ output<span class="token punctuation">.</span><span class="token function">execu
 	<script src="../assets/js/plugins.min.js"></script>
 	<script src="../assets/js/stickyfill.min.js"></script>
 	<script src="../assets/js/custom.min.js"></script>
-
+	<script src="../assets/js/clipboard.min.js"></script>
 	<script async defer src="../assets/js/prism.js"></script>
+	<script>
+		var copyCode = new Clipboard('.copy-button', {
+		    target: function(trigger) {
+		        return trigger.previousElementSibling;
+		    }
+		});
+
+		copyCode.on('success', function(event) {
+		    event.trigger.classList.add('success');
+		    event.clearSelection();
+		    // event.trigger.textContent = 'Copied!';
+		    window.setTimeout(function() {
+		        event.trigger.classList.remove('success');
+		    }, 2000);
+		});
+	</script>
 
   <!-- github button js -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>

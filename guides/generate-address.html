@@ -41,6 +41,8 @@
 	<!-- Code Snippet CSS -->
 	<link href="../assets/css/prism.css" rel="stylesheet">
 
+	<link href="../assets/css/custom.css" rel="stylesheet">
+
 	<!-- Icon Fonts -->
 	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
 	<link href="../assets/css/simple-line-icons.css" rel="stylesheet">
@@ -306,7 +308,7 @@
 					<!-- START OF GUIDE -->
 <h2 class="post-title panel-title">Generate an Address</h2><ul class="post-meta"><li class="author">By Javed Khan</li></ul><p>Follow along with the steps below to build a transaction from scratch using built-in bcoin utilities. These steps are based on those outlined in the <a href="https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses">Bitcoin Wiki</a>.</p>
 <p>Of course, if you&#39;re using the bcoin wallet module, it will do these steps for you automatically when you <a href="../api-docs/index.html#generate-receiving-address">generate an address</a>!</p>
-<pre class="line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses</span>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses</span>
 
 secp256k1 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/crypto/secp256k1"</span><span class="token punctuation">)</span>
 crypto <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/crypto"</span><span class="token punctuation">)</span>
@@ -340,7 +342,7 @@ step7 <span class="token operator">=</span> step6<span class="token punctuation"
 step8 <span class="token operator">=</span> buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span><span class="token punctuation">[</span>step4<span class="token punctuation">,</span> step7<span class="token punctuation">]</span><span class="token punctuation">)</span>
 
 <span class="token comment" spellcheck="true">// 9 - Convert the result from a byte string into a base58 string using Base58Check encoding. This is the most commonly used Bitcoin Address format</span>
-addr <span class="token operator">=</span> base58<span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span>step8<span class="token punctuation">)</span></code></pre>
+addr <span class="token operator">=</span> base58<span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span>step8<span class="token punctuation">)</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre>
 
 					<!-- END OF GUIDE -->
 									</div>
@@ -429,8 +431,24 @@ addr <span class="token operator">=</span> base58<span class="token punctuation"
 	<script src="../assets/js/plugins.min.js"></script>
 	<script src="../assets/js/stickyfill.min.js"></script>
 	<script src="../assets/js/custom.min.js"></script>
-
+	<script src="../assets/js/clipboard.min.js"></script>
 	<script async defer src="../assets/js/prism.js"></script>
+	<script>
+		var copyCode = new Clipboard('.copy-button', {
+		    target: function(trigger) {
+		        return trigger.previousElementSibling;
+		    }
+		});
+
+		copyCode.on('success', function(event) {
+		    event.trigger.classList.add('success');
+		    event.clearSelection();
+		    // event.trigger.textContent = 'Copied!';
+		    window.setTimeout(function() {
+		        event.trigger.classList.remove('success');
+		    }, 2000);
+		});
+	</script>
 
   <!-- github button js -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>

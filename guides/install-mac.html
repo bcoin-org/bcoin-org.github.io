@@ -41,6 +41,8 @@
 	<!-- Code Snippet CSS -->
 	<link href="../assets/css/prism.css" rel="stylesheet">
 
+	<link href="../assets/css/custom.css" rel="stylesheet">
+
 	<!-- Icon Fonts -->
 	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
 	<link href="../assets/css/simple-line-icons.css" rel="stylesheet">
@@ -309,10 +311,10 @@
   <iframe width="100%" height="315" src="https://www.youtube.com/embed/TWjucnmYSKY" frameborder="0" allowfullscreen></iframe>
 </div>
 
-<h6>Source Install (Requires: Node &gt;= 7.6)</h6><pre class="line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">git</span> clone https://github.com/bcoin-org/bcoin.git
+<h6>Source Install (Requires: Node &gt;= 7.6)</h6><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">git</span> clone https://github.com/bcoin-org/bcoin.git
 <span class="token function">cd</span> bcoin
 npm <span class="token function">install</span>
-bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code></pre>
+bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre>
 
 					<!-- END OF GUIDE -->
 									</div>
@@ -401,8 +403,24 @@ bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code></pre
 	<script src="../assets/js/plugins.min.js"></script>
 	<script src="../assets/js/stickyfill.min.js"></script>
 	<script src="../assets/js/custom.min.js"></script>
-
+	<script src="../assets/js/clipboard.min.js"></script>
 	<script async defer src="../assets/js/prism.js"></script>
+	<script>
+		var copyCode = new Clipboard('.copy-button', {
+		    target: function(trigger) {
+		        return trigger.previousElementSibling;
+		    }
+		});
+
+		copyCode.on('success', function(event) {
+		    event.trigger.classList.add('success');
+		    event.clearSelection();
+		    // event.trigger.textContent = 'Copied!';
+		    window.setTimeout(function() {
+		        event.trigger.classList.remove('success');
+		    }, 2000);
+		});
+	</script>
 
   <!-- github button js -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
