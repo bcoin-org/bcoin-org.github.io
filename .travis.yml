@@ -13,4 +13,4 @@ deploy:
   target_branch: gh-pages
   on:
     branch: master
-    repo: bcoin-org/bcoin-org.github.io
+    # repo: bcoin-org/bcoin-org.github.io
