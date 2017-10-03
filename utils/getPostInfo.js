@@ -2,9 +2,10 @@ const marked = require('marked');
 const fs = require('fs');
 const path = require('path');
 
-const getTitlesAndPaths = function getTitlesAndPaths(pathToFiles) {
-  const titles = [];
-  const fileNames = [];
+const getPostMeta = require('./getPostMeta');
+
+const getPostInfo = function getPostInfo(pathToFiles, postMeta) {
+  const posts = [];
   const renderer = new marked.Renderer();
 
   // Add text to list of titles if in a header level 1 or 2
@@ -14,7 +15,20 @@ const getTitlesAndPaths = function getTitlesAndPaths(pathToFiles) {
       if ( iconCloseTag > -1) {
         text = text.slice(iconCloseTag + 4);
       }
-      titles.push(text);
+      posts[0].title = text;
+    }
+  }
+
+  renderer.code = function (code, language) {
+    if (language === 'post-author') {
+      // only return code block if wasn't set by argument
+      posts[0].author = code;
+      return;
+    }
+
+    if (language === 'post-description') {
+      posts[0].description = code;
+      return;
     }
   }
 
@@ -31,18 +45,16 @@ const getTitlesAndPaths = function getTitlesAndPaths(pathToFiles) {
         const file = files[i];
         const ext = path.extname(file);
         if (ext === '.md') {
+          posts.unshift({ fileName: file });
           markdownFile = path.resolve(pathToFiles, file);
           const markdownString = fs.readFileSync(markdownFile, 'utf8');
           marked(markdownString);
-          fileNames.push(file);
         }
       }
-      resolve({ titles, fileNames });
+      resolve(posts);
     });
   });
 }
 
-// const dir = path.resolve(__dirname, '../guides-markdown')
-// getTitlesAndPaths(dir).then(titles => console.log('got titles? ', titles))
-module.exports = getTitlesAndPaths;
-
+// getPostInfo('../guides-markdown').then((fileInfo) => console.log(fileInfo))
+module.exports = getPostInfo;

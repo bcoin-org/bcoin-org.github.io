@@ -6,6 +6,8 @@ const PrismLanguages = require('prism-languages');
 
 const insertToTemplate = require('./insertToTemplate.js');
 const generateSidebar = require('./generateSidebar.js');
+const getPostMeta = require('./getPostMeta');
+
 
 const createHTML = async function createHTML(markdownFile, htmlFile, author, postMeta) {
   const guidesDir = path.resolve(__dirname, '../guides');
@@ -18,11 +20,6 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
   const renderer = new marked.Renderer();
 
   let guideTitle, guideDescription;
-  // Custom renderer for code snippet highlighting
-  const getPostMeta = (author='bcoin-org') => '<ul class="post-meta">'
-             + '<li class="author">By ' + author + '</li>'
-             + '</ul>';
-
 
   // Custom renderer for top two level headers
   renderer.heading = (text, level) => {

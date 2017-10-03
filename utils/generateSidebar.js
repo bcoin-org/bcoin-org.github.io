@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const getTitlesAndPaths = require('./getTitlesAndPaths.js');
+const getPostInfo = require('./getPostInfo.js');
 const insertToTemplate = require('./insertToTemplate.js');
 
 const generateSidebarListItem =
@@ -12,23 +12,23 @@ const generateSidebar = async (pageName, templateDir, markdownDir) => {
   const templateFilePath = path.resolve(templateDir, `${pageName}-sidebar.html`);
   const template = fs.readFileSync(templateFilePath).toString().split('\n');
 
-  // get titles and paths for installs
-  const installs = await getTitlesAndPaths(path.resolve(markdownDir, 'install'));
+  // get file info for installs. Returns an array of objects
+  const installs = await getPostInfo(path.resolve(markdownDir, 'install'));
   // create sidebar list for installs
   const installsList = [];
-  for (let i=0; i<installs.titles.length; i++) {
-    const fileName = installs.fileNames[i].replace(/\.[^/.]+$/, ".html");
-    const title = installs.titles[i];
+  for (let i=0; i<installs.length; i++) {
+    const fileName = installs[i].fileName.replace(/\.[^/.]+$/, ".html");
+    const title = installs[i].title;
     installsList.push(generateSidebarListItem(fileName, title));
   }
 
   // get titles and paths for guides
-  const guides = await getTitlesAndPaths(markdownDir);
+  const guides = await getPostInfo(markdownDir);
   // create sidebar list for guides
   const guidesList = [];
-  for (let i=0; i<guides.titles.length; i++) {
-    const fileName = guides.fileNames[i].replace(/\.[^/.]+$/, ".html");
-    const title = guides.titles[i];
+  for (let i=0; i<guides.length; i++) {
+    const fileName = guides[i].fileName.replace(/\.[^/.]+$/, ".html");
+    const title = guides[i].title;
     guidesList.push(generateSidebarListItem(fileName, title));
   }
 
@@ -54,5 +54,5 @@ const generateSidebar = async (pageName, templateDir, markdownDir) => {
                       categoriesWidget.join('\n')
                     );
 }
-// generateSidebar('guides').then(html => console.log(html));
+
 module.exports = generateSidebar;
