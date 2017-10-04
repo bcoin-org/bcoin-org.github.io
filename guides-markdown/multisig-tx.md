@@ -194,25 +194,27 @@ const spend1 = new MTX();
 // signing transaction
 ring1.script = redeem;
 
-spend1.addCoin(coin);
-
-// scriptInput will assemble script from
-// redeem script and script, which will
-// assemble redeem and create
-// space for signatures in the script.
-spend1.scriptInput(0, coin, ring1);
-
 // send
 spend1.addOutput({
   address: sendTo,
   value: Amount.fromBTC('50').toValue()
 });
 
+// Check the guide
 // send change to ourselves 
 spend1.addOutput({
   address: changeAddr,
-  value: Amount.fromBTC('48.99').toValue()
+  value: Amount.fromBTC('49.99').toValue()
 });
+
+// We can manually add this coin
+// and this will also add input
+// to our transaction
+spend1.addCoin(coin);
+
+// scriptInput will assemble redeem and create
+// space for signatures in the script.
+spend1.scriptInput(0, coin, ring1);
 
 // all info is here, all is left is to sign
 // First signs first one and sends signed tx
@@ -247,3 +249,37 @@ assert(spend2.verify(), 'Transaction isnt valid.');
 
 console.log(spend2.toRaw().toString('hex'));
 ```
+
+This will return raw transaction and also make sure
+transaction has all the signatures.
+
+```js
+// send change to ourselves 
+spend1.addOutput({
+  address: changeAddr,
+  value: Amount.fromBTC('49.99').toValue()
+});
+
+// We can manually add this coin
+// and this will also add input
+// to our transaction
+spend1.addCoin(coin);
+```
+
+Here we send change to ourselves and specify it manually.
+Instead we could use `MTX.prototype.fund` which will automatically
+allocate coins to outputs, based on amounts they need and
+also calculate change and append output for it.  
+Instead of code above, we could have simpler and more automated
+calculations:
+
+```js
+// this will automatically select coins and
+// send change back to our address
+await spend1.fund([coin], {
+  rate: 1000,
+
+  changeAddress: changeAddr
+});
+```
+
