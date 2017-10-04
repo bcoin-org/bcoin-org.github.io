@@ -3,6 +3,9 @@
 ```post-author
 Christopher Jeffery
 ```
+```post-description
+Scripts are array-like objects with some helper functions. Learn the basics here.
+```
 
 Scripts are array-like objects with some helper functions.
 

@@ -41,6 +41,8 @@
 	<!-- Code Snippet CSS -->
 	<link href="../assets/css/prism.css" rel="stylesheet">
 
+	<link href="../assets/css/custom.css" rel="stylesheet">
+
 	<!-- Icon Fonts -->
 	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
 	<link href="../assets/css/simple-line-icons.css" rel="stylesheet">
@@ -248,43 +250,45 @@
 
 				<div class="row">
 
-					<!-- SIDEBAR -->
-					<div class="col-sm-3 sidebar">
-						<!-- CATEGORIES WIDGET -->
-						<div class="widget guide-list">
-							<h6 class="montserrat text-uppercase bottom-line">Install</h6>
-							<ul class="icons-list">
-								<li><a href="install-linux.html">Install on Linux</a></li>
-								<li><a href="install-mac.html">Install on Mac OS</a></li>
-								<li><a href="install-windows.html">Install on Windows</a></li>
-								<!--<li><a data-toggle="" href="">Quick Sync (Torrent) </a></li>-->
-							</ul>
-							<br>
-							<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
-							<ul class="icons-list">
-								<li><a href="generate-address.html">Generate A Bitcoin Address</a></li>
-								<li><a href="scripting.html">Intro to Scripting</a></li>
-								<li><a href="op_return.html">Create an OP_RETURN</a></li>
-								<!--<li><a data-toggle="" href="">Quick Sync (Torrent) </a></li>-->
-							</ul>
-						</div>
-						<!-- END CATEGORIES WIDGET -->
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Install</h6>
+<ul class="icons-list">
+<!-- INSTALL-LIST -->
+<li><a href="install-windows.html">Install on Windows (Video)</a></li>
+<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
+<li><a href="install-linux.html">Install on Linux (Video)</a></li>
+<!-- /INSTALL-LIST -->
+</ul>
+<br>
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Create an OP_RETURN output transaction</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
 
-						<!-- TEXT WIDGET -->
-						<div class="widget">
-							<h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
-							<p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="http://bcoin.io/docs/index.html">Full Documentation</a></p>
-						</div>
-						<!-- END TEXT WIDGET -->
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="http://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
 
-						<!-- TEXT WIDGET -->
-						<div class="widget">
-							<h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
-							<p>If you think you've got what it takes to make your own bcoin guides and tutorials, reach out to us on <a href="../slack-signup.html"> Slack!</a></p>
-							<p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
-						</div>
-						<!-- END TEXT WIDGET -->
-					</div>
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, reach out to us on <a href="../slack-signup.html"> Slack!</a></p>
+    <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
 					<!-- END SIDEBAR -->
 					<!-- START OF ARTICLE CONTAINER -->
 					<div class="col-sm-9 blog-content post-thumbnail">
@@ -307,10 +311,10 @@
   <iframe width="100%" height="315" src="https://www.youtube.com/embed/H6T72CJ50M8" frameborder="0" allowfullscreen></iframe>
 </div>
 
-<h6>Source Install (Requires: Node &gt;= 7.6)</h6><pre class="line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">git</span> clone https://github.com/bcoin-org/bcoin.git
+<h6>Source Install (Requires: Node &gt;= 7.6)</h6><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">git</span> clone https://github.com/bcoin-org/bcoin.git
 <span class="token function">cd</span> bcoin
 npm <span class="token function">install</span>
-bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code></pre>
+bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre>
 
 					<!-- END OF GUIDE -->
 									</div>
@@ -399,8 +403,24 @@ bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code></pre
 	<script src="../assets/js/plugins.min.js"></script>
 	<script src="../assets/js/stickyfill.min.js"></script>
 	<script src="../assets/js/custom.min.js"></script>
-
+	<script src="../assets/js/clipboard.min.js"></script>
 	<script async defer src="../assets/js/prism.js"></script>
+	<script>
+		var copyCode = new Clipboard('.copy-button', {
+		    target: function(trigger) {
+		        return trigger.previousElementSibling;
+		    }
+		});
+
+		copyCode.on('success', function(event) {
+		    event.trigger.classList.add('success');
+		    event.clearSelection();
+		    // event.trigger.textContent = 'Copied!';
+		    window.setTimeout(function() {
+		        event.trigger.classList.remove('success');
+		    }, 2000);
+		});
+	</script>
 
   <!-- github button js -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
