@@ -12,7 +12,8 @@ keys on multiple devices. If you want to spend transactions received on multisig
 on both devices. Also in large companies, where several people are in charge of funds, they can create multisig addresses for
 company, where several people will have to sign the transaction in order to spend. This will improve security of the funds
 for outside threat as well as inside threat (No one will be able to spend tx on its own). You can check other multisig
-applications on [wiki][multisig-apps].  
+applications on [wiki][multisig-apps].
+
 
 #### Definition
 Multisig transactions have `m-of-n` form, where `m` stands for number of signatures required to spend funds and `n` stands
@@ -20,12 +21,14 @@ for maximum number of pubkeys that are permitted to sign (`m <= n`). You can che
 and specification in [BIP11][]. We'll also be using [Pay to Script Hash(P2SH)][BIP16] format for script
 and [Its address format][BIP13] for our addresses and for receiving the transactions.
 
+
 #### Address Creation
 When you want to create multisig address, first you need to aggree on numbers in `m-of-n`. If someone chooses
 different `m` or different `n`, they'll end up with different address. You also need to know pubkey for all cosigners.
 You can share these pubkeys however you want. Wallets support various ways for sharing pubkeys, using QR Code
 or sending base58check encoded strings.  After you have collected all pubkeys and agreed on `m` and `n`,
 you construct the multisig script and generate P2SH address from that.  
+
 
 #### Spending Received Transaction
 After you've received transaction on your multisig address, you can spend it if all signatures are provided
@@ -101,6 +104,8 @@ fs.writeFileSync(`${network}-address`, base58addr);
 console.log(`Address: ${base58addr}`);
 ```
 
+---
+
 ```js
 const ring1 = KeyRing.generate(compressed, network);
 ```
@@ -114,11 +119,9 @@ one compressed and uncompressed. You can check details on [Bitcoin Developer Gui
 ### Step 2: Generate Transaction
 
 In this part, we assume that we received transaction on the network with following information:
-```
-Transaction ID: 3b1dd17cc82e2ac43ba62bf8f1c6a0fe805df43911653d22c902571eb3a212ce
-Output index: 0
-Amount: 100 BTC
-```
+> Transaction ID: 3b1dd17cc82e2ac43ba62bf8f1c6a0fe805df43911653d22c902571eb3a212ce  
+> Output index: 0  
+> Amount: 100 BTC  
 
 We are going to send `50 BTC` to `RF1PJ1VkHG6H9dwoE2k19a5aigWcWr6Lsu` on the regtest network.
 
@@ -253,6 +256,8 @@ console.log(spend2.toRaw().toString('hex'));
 This will return raw transaction and also make sure
 transaction has all the signatures.
 
+
+---
 ```js
 // send change to ourselves 
 spend1.addOutput({
@@ -417,12 +422,13 @@ Depth of the account is the only thing you'll need to keep in mind.
 addSharedKey in wallet/account is used for adding cosigner xpubkeys keys.
 
 ### Step 2: Generate Transaction
+
 We have received transaction
-```
-Transaction ID: 3c12e1b260354fd2a2848030222c4a66339892f1d63b18752ff80ef4eb0197d2
-Output index: 0
-Amount: 100 BTC
-```
+
+> Transaction ID: 3c12e1b260354fd2a2848030222c4a66339892f1d63b18752ff80ef4eb0197d2  
+> Output index: 0  
+> Amount: 100 BTC  
+
 We are going to send `1 BTC` to `RBg1TLaNuRpH6UTFzogFXhjqubPYZaqWgs` on the regtest network.
 
 But we won't need this information, it will be automatically allocated from coins
