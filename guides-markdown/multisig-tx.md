@@ -298,10 +298,9 @@ await spend1.fund([coin], {
 
 ## Using Wallet API
 
-While it's possible to use `bcoin` for manually constructing transaction with just private keys, it's not
-convenient to handle all logic manually, we even skipped HD wallet parts. So if you have node running
-and you have access to it via HTTP, you can use `bcoin.http.Client` and `bcoin.http.Wallet`. These classes
-provide all API methods described on bcoin and will communicate to running nodes Wallets.
+While it's possible to use `bcoin` for manually constructing a transaction with just private keys, it's not
+convenient to handle all logic manually, and even more complex to deal with all HD wallet logic. So if you have a bcoin node running and you have access to it via HTTP, you can use `bcoin.http.Client` and `bcoin.http.Wallet`. These classes
+provide all API methods described on bcoin and will communicate with the node's Wallets.
 
 *NOTE: You can check [API Docs][API-DOCS]
 
@@ -384,9 +383,8 @@ const addSharedKey = async function addSharedKey(client, account, xpubkey, skipR
   const wallet1 = new Wallet({ id: 'cosigner1', network });
   const wallet2 = new Wallet({ id: 'cosigner2', network });
 
-  // It wasn't necessary, but you can either create new
+  // This isn't strictly necessary, but you can either create new
   // accounts under wallets and use them
-  // or skip accounts when they are 'default'
   const wallet1account = 'default';
   const wallet2account = 'default';
 
@@ -457,7 +455,9 @@ const sendTo = 'RBg1TLaNuRpH6UTFzogFXhjqubPYZaqWgs';
   const wallet2 = new Wallet({ id: 'cosigner2', network });
 
   // Because we can't sign and spend from account
-  // we can't use `spend` and publish directly to network.
+  // We can't use `spend` as we do with normal transactions
+  // since it immediately publishes to the network 
+  // and we need other signatures first.
   // So we first create the transaction
   const outputs = [{ address: sendTo, value: Amount.fromBTC(1).toValue() }];
   const options = {
@@ -490,7 +490,7 @@ raw transaction data for signing.
 
 `wallet1.createTX(options)` will automatically find the coins
 sent to the multisig wallet, allocate them for spending,
-send remaining - fee to change address and sign it.
+send remaining funds (minus fee) to change address and sign it.
 
 `wallet2.sign` will take raw transaction and sign it with according key.
 After that we can just broadcast the transaction to the network.
