@@ -257,9 +257,9 @@
 <h6 class="montserrat text-uppercase bottom-line">Install</h6>
 <ul class="icons-list">
 <!-- INSTALL-LIST -->
-<li><a href="install-windows.html">Install on Windows (Video)</a></li>
-<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
-<li><a href="install-linux.html">Install on Linux (Video)</a></li>
+<li><a href="install-windows.html">undefined</a></li>
+<li><a href="install-mac.html">undefined</a></li>
+<li><a href="install-linux.html">undefined</a></li>
 <!-- /INSTALL-LIST -->
 </ul>
 <br>
@@ -268,7 +268,7 @@
 <!-- GUIDES-LIST -->
 <li><a href="scripting.html">Intro to Scripting</a></li>
 <li><a href="op_return.html">Create an OP_RETURN output transaction</a></li>
-<li><a href="multisig-tx.html">Final Notes</a></li>
+<li><a href="multisig-tx.html">Creating Multi Signature Transactions</a></li>
 <li><a href="generate-address.html">Generate an Address</a></li>
 <!-- /GUIDES-LIST -->
 </ul>
@@ -307,7 +307,7 @@
 									<div class="col-sm-12 panel panel-default">
 										<div class="post-content" style="color:#000;">
 					<!-- START OF GUIDE -->
-<h2 class="post-title panel-title" id="creating-multi-signature-transactions">Creating Multi Signature Transactions</h2><ul class="post-meta"><li class="author">By Nodar Chkuaselidze</li></ul><h2 class="post-title panel-title" id="how-it-works">How It Works</h2><h4 id="general">General</h4><p>In bitcoin there are several transaction types and one of them is Multisig. Multisig addresses and transactions are created
+<h2 class="post-title panel-title" id="creating-multi-signature-transactions">Creating Multi Signature Transactions</h2><ul class="post-meta"><li class="author">By Nodar Chkuaselidze</li></ul><h2 id="how-it-works">How It Works</h2><h4 id="general">General</h4><p>In bitcoin there are several transaction types and one of them is Multisig. Multisig addresses and transactions are created
 from multiple private keys and can be used in multiple situations. For example, you can secure your funds using multiple
 keys on multiple devices. If you want to spend transactions received on multisig address, you&#39;ll need to sign transactions
 on both devices. As another example, in large companies where several people are in charge of funds,
@@ -336,7 +336,7 @@ to BIP11 and BIP16. </li>
 who&#39;ll be signing next. The next person will do the same, until you have <code>m</code> signatures in the sigscript.</li>
 </ol>
 <p>After this process is done, your transaction is fully signed and you can broadcast your transaction.</p>
-<h2 class="post-title panel-title" id="the-code">The Code</h2><h3 id="manual-construction">Manual construction</h3><p>In this setup, we won&#39;t be running a node or running any of the blockchain or wallet functionality of bcoin.
+<h2 id="the-code">The Code</h2><h3 id="manual-construction">Manual construction</h3><p>In this setup, we won&#39;t be running a node or running any of the blockchain or wallet functionality of bcoin.
 This is a slightly more abstract than constructing bare scripts ourselves.<br>We&#39;ll split code in multiple files and share keys using the current directory (So you can use fresh dir).</p>
 <h3 id="step-1:-address-creation">Step 1: Address Creation</h3><p>In the following code, we&#39;ll import all necessary libraries, generate private and public keys, and create
 a multisig address.</p>
@@ -537,7 +537,7 @@ also calculate change and append a new output for it.<br>Instead of the code abo
   rate<span class="token punctuation">:</span> <span class="token number">1000</span><span class="token punctuation">,</span>
 
   changeAddress<span class="token punctuation">:</span> changeAddr
-<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 class="post-title panel-title" id="using-wallet-api">Using Wallet API</h2><p>While it&#39;s possible to use <code>bcoin</code> for manually constructing a transaction with just private keys, it&#39;s not
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="using-wallet-api">Using Wallet API</h2><p>While it&#39;s possible to use <code>bcoin</code> for manually constructing a transaction with just private keys, it&#39;s not
 convenient to handle all logic manually, and even more complex to deal with all HD wallet logic. So if you have a bcoin node running and you have access to it via HTTP, you can use <code>bcoin.http.Client</code> and <code>bcoin.http.Wallet</code>. These classes
 provide all API methods described on bcoin and will communicate with the node&#39;s Wallets.</p>
 <p><em>NOTE: You can check <a href="http://bcoin.io/api-docs/index.html">API Docs</a></em></p>
@@ -712,7 +712,7 @@ sent to the multisig wallet, allocate them for spending,
 send remaining funds (minus fee) to change address and sign it.</p>
 <p><code>wallet2.sign</code> will take raw transaction and sign it with according key.
 After that we can just broadcast the transaction to the network.</p>
-<h2 class="post-title panel-title" id="final-notes">Final Notes</h2><p>I hope, this guide gives you opportunity to understand multisig transactions better and build apps on top of it.
+<h2 id="final-notes">Final Notes</h2><p>I hope, this guide gives you opportunity to understand multisig transactions better and build apps on top of it.
 You can play with this code and even build use it in production with small changes (e.g. rate estimation).</p>
 <p>Here are some other ideas for how to build out on top of the app we built in this guide:</p>
 <ul>
