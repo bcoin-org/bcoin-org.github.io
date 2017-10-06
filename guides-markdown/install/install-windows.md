@@ -1,4 +1,4 @@
-## <i class="fa fa-windows"></i>Install on Windows (Video)
+# <i class="fa fa-windows"></i>Install on Windows (Video)
 ```post-author
 HeKaz
 ```
