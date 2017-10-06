@@ -534,7 +534,7 @@ also calculate change and append a new output for it.<br>Instead of the code abo
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre><h2 class="post-title panel-title">Using Wallet API</h2><p>While it&#39;s possible to use <code>bcoin</code> for manually constructing a transaction with just private keys, it&#39;s not
 convenient to handle all logic manually, and even more complex to deal with all HD wallet logic. So if you have a bcoin node running and you have access to it via HTTP, you can use <code>bcoin.http.Client</code> and <code>bcoin.http.Wallet</code>. These classes
 provide all API methods described on bcoin and will communicate with the node&#39;s Wallets.</p>
-<p>*NOTE: You can check <a href="http://bcoin.io/api-docs/index.html">API Docs</a></p>
+<p><em>NOTE: You can check <a href="http://bcoin.io/api-docs/index.html">API Docs</a></em></p>
 <h3>Step 1: Address Creation</h3><p>In this step we&#39;ll create two new wallets for two cosigners. In this demo, they will exist on same node,
 but it shouldn&#39;t matter if these two wallets are on the same node or not.</p>
 <pre class="line-numbers language-js"><code class="line-numbers language-js"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
@@ -647,11 +647,9 @@ but it shouldn&#39;t matter if these two wallets are on the same node or not.</p
   process<span class="token punctuation">.</span><span class="token function">exit</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre><p>You will notice that we grab the <code>.account.accountKey</code>, first key is the xpubkey
 and both will be using xpubkey key derivation to come up with new addresses.
-You won&#39;t need to share any other public keys, they will derive them for you.</p>
-<pre class="line-numbers language-js"><code class="line-numbers language-js">  <span class="token keyword">const</span> wallet1xpubkey <span class="token operator">=</span> wallet1info<span class="token punctuation">.</span>account<span class="token punctuation">.</span>accountKey<span class="token punctuation">;</span>
-  <span class="token comment" spellcheck="true">// ...</span>
-  <span class="token comment" spellcheck="true">// this will add shared key to the wallet/account</span>
-  <span class="token comment" spellcheck="true">//  res = await client.addSharedKey(account, xpubkey);</span></code></pre><p>Depth of the account is the only thing you&#39;ll need to keep in mind.<br>addSharedKey in wallet/account is used for adding cosigner xpubkeys keys.</p>
+You won&#39;t need to share any other public keys, they will derive them for you.
+Depth of the account is the only thing you&#39;ll need to keep in mind.<br><a href="http://bcoin.io/api-docs/index.html#add-xpubkey-multisig">addSharedKey</a> in
+wallet/account is used for adding cosigner xpubkeys keys.</p>
 <h3>Step 2: Generate Transaction</h3><p>We have received transaction</p>
 <blockquote>
 <p>Transaction ID: 3c12e1b260354fd2a2848030222c4a66339892f1d63b18752ff80ef4eb0197d2<br>Output index: 0<br>Amount: 100 BTC  </p>
@@ -708,6 +706,14 @@ sent to the multisig wallet, allocate them for spending,
 send remaining funds (minus fee) to change address and sign it.</p>
 <p><code>wallet2.sign</code> will take raw transaction and sign it with according key.
 After that we can just broadcast the transaction to the network.</p>
+<h2 class="post-title panel-title">Final Notes</h2><p>I hope, this guide gives you opportunity to understand multisig transactions better and build apps on top of it.
+You can play with this code and even build use it in production with small changes (e.g. rate estimation).</p>
+<p>Here are some other ideas for how to build out on top of the app we built in this guide:</p>
+<ul>
+<li>Build UI for configuring and initializing <code>m</code> and <code>n</code>.</li>
+<li>Add communication layer to exchange unsigned transactions and public keys securely.</li>
+<li>Bridge bcoin multisig to different wallets.</li>
+</ul>
 
 
 					<!-- END OF GUIDE -->

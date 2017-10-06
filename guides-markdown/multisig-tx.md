@@ -302,7 +302,7 @@ While it's possible to use `bcoin` for manually constructing a transaction with 
 convenient to handle all logic manually, and even more complex to deal with all HD wallet logic. So if you have a bcoin node running and you have access to it via HTTP, you can use `bcoin.http.Client` and `bcoin.http.Wallet`. These classes
 provide all API methods described on bcoin and will communicate with the node's Wallets.
 
-*NOTE: You can check [API Docs][API-DOCS]
+*NOTE: You can check [API Docs][API-DOCS]*
 
 ### Step 1: Address Creation
 In this step we'll create two new wallets for two cosigners. In this demo, they will exist on same node,
@@ -423,14 +423,9 @@ const addSharedKey = async function addSharedKey(client, account, xpubkey, skipR
 You will notice that we grab the `.account.accountKey`, first key is the xpubkey
 and both will be using xpubkey key derivation to come up with new addresses.
 You won't need to share any other public keys, they will derive them for you.
-```js
-  const wallet1xpubkey = wallet1info.account.accountKey;
-  // ...
-  // this will add shared key to the wallet/account
-  //  res = await client.addSharedKey(account, xpubkey);
-```
 Depth of the account is the only thing you'll need to keep in mind.  
-addSharedKey in wallet/account is used for adding cosigner xpubkeys keys.
+[addSharedKey](http://bcoin.io/api-docs/index.html#add-xpubkey-multisig) in
+wallet/account is used for adding cosigner xpubkeys keys.
 
 ### Step 2: Generate Transaction
 
@@ -502,3 +497,14 @@ send remaining funds (minus fee) to change address and sign it.
 After that we can just broadcast the transaction to the network.
 
 [API-DOCS]: http://bcoin.io/api-docs/index.html
+
+
+## Final Notes
+
+I hope, this guide gives you opportunity to understand multisig transactions better and build apps on top of it.
+You can play with this code and even build use it in production with small changes (e.g. rate estimation).
+
+Here are some other ideas for how to build out on top of the app we built in this guide:
+- Build UI for configuring and initializing `m` and `n`.
+- Add communication layer to exchange unsigned transactions and public keys securely.
+- Bridge bcoin multisig to different wallets.
