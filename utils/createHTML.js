@@ -24,9 +24,16 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
 
   // Custom renderer for top two level headers
   renderer.heading = (text, level) => {
-    if (level == '2' || level == '1' ) {
-      let header = '<h2 class="post-title panel-title">'
-             + text + '</h2>';
+    let textURL = text.replace(/\(.+\)/, '').trim(); // for url remove any parentheses and their contents
+    textURL = textURL.replace(/ /g, '-').toLowerCase(); // and replace spaces with dashes
+
+    if (level == '1' ) {
+      // remove icon tag for the url
+      const iconCloseTagIndex = textURL.indexOf('</i>');
+      if (iconCloseTagIndex > -1) {
+        textURL = textURL.slice(iconCloseTagIndex + 4, textURL.length);
+      }
+      let header = `<h2 class="post-title panel-title" id="${textURL}">${text}</h2>`;
 
       if (author) {
         postMeta = getPostMeta(author)
@@ -35,7 +42,7 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
       guideTitle = text;
       return header;
     } else {
-      return `<h${level}>${text}</h${level}>`;
+      return `<h${level} id="${textURL}">${text}</h${level}>`;
     }
   }
 
