@@ -12,5 +12,5 @@ deploy:
   github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
   target_branch: master
   on:
-    branch: master
+    branch: staging
     repo: bcoin-org/bcoin-org.github.io
