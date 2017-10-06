@@ -1,4 +1,4 @@
-# Create an OP_RETURN output transaction
+# Store Data on the Blockchain
 
 ```post-author
 Javed Khan
@@ -7,6 +7,7 @@ Javed Khan
 This example creates a transaction with output containing a null data script with our data.
 ```
 
+## OP_RETURN Script Opcode
 OP_RETURN is a script opcode which can be used to store an arbitrary 40-byte
 data as a part of the signature script (null data script), allowing one to
 embed a small amount of data into the blockchain. For example, it can be used
