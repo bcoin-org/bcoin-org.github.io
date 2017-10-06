@@ -18,7 +18,7 @@ Here's how it's explained in *Mastering Bitcoin*:
 This construction can be used to make a "crowdfunding”-style transaction. Someone attempting to raise funds can construct a transaction with a single output. The single output pays the "goal" amount to the fundraiser. Such a transaction is obviously not valid, as it has no inputs. However, others can now amend it by adding an input of their own, as a donation. They sign their own input with ALL|ANYONECANPAY. Unless enough inputs are gathered to reach the value of the output, the transaction is invalid. Each donation is a "pledge," which cannot be collected by the fundraiser until the entire goal amount is raised.
 
 ## The Code
-We'll walk through the steps of creating the transaction first without any wallet database or node running. Then we'll do the same thing using bcoin's walletdb to manage the keys to see how it would work in a more realistic application. At the end, we'll put out some ideas of how these can be built upon for a more robust, production ready application. (If this is something you'd be interested in building, [get in touch](http://bcoin.io/slack-signup.html)!). If you want to see the code, checkout the [repo on github](https://github.com/Bucko13/bitcoin-fundraise).
+We'll walk through the steps of creating the transaction first without any wallet database or node running. Then we'll do the same thing using bcoin's walletdb to manage the keys to see how it would work in a more realistic application (skip to [Version 2](#version-2-using-the-bcoin-wallet-system)) further in the guide to check it out). At the end, we'll put out some ideas of how these can be built upon for a more robust, production ready application. (If this is something you'd be interested in building, [get in touch](http://bcoin.io/slack-signup.html)!). If you want to see the code, checkout the [repo on github](https://github.com/Bucko13/bitcoin-fundraise).
 
 If you're not comfortable with key management, coin selection, and how transactions are constructed, checkout the tutorial on [working with transactions](https://github.com/bcoin-org/bcoin/blob/master/docs/Working-with-transactions.md) first.
 
@@ -308,7 +308,7 @@ Since trying to manage your own keys is pretty tedious, not to mention impractic
 Note that this is a little more tedious to test since you need to have funded wallets in order to actually fund your campaign. You can find a bitcoin testnet faucet to get some funds to play with or, as we will do in this example, create your own simnet or regtest network where you mine your own blocks to fund yourself.
 
 #### Step 1: Setup Our Wallets
-We'll skip the setup of constants since and import modules since we can use the same from the previous example. Since there are a lot of asynchronous operations here now that we're using the client, we'll also put this in an async function and will continue to build out the contents of the function throughout this guide.
+We'll skip the setup of constants import modules since we can use the same from the previous example. Since there are a lot of asynchronous operations here now that we're using the client, we'll also put this in an async function and will continue to build out the contents of the function throughout this guide. We'll also be using some of the same [utility functions that we created in the last example](#utility-functions).
 
 ```javascript
 const network = 'regtest';

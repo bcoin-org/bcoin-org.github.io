@@ -270,6 +270,7 @@
 <li><a href="op_return.html">Create an OP_RETURN output transaction</a></li>
 <li><a href="multisig-tx.html">Creating Multi Signature Transactions</a></li>
 <li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="crowdfund-tx.html">Creating a Crowdfunding Transaction</a></li>
 <!-- /GUIDES-LIST -->
 </ul>
 </div>
@@ -338,7 +339,7 @@ who&#39;ll be signing next. The next person will do the same, until you have <co
 <p>After this process is done, your transaction is fully signed and you can broadcast your transaction.</p>
 <h2 id="the-code">The Code</h2><h3 id="manual-construction">Manual construction</h3><p>In this setup, we won&#39;t be running a node or running any of the blockchain or wallet functionality of bcoin.
 This is a slightly more abstract than constructing bare scripts ourselves.<br>We&#39;ll split code in multiple files and share keys using the current directory (So you can use fresh dir).</p>
-<h3 id="step-1:-address-creation">Step 1: Address Creation</h3><p>In the following code, we&#39;ll import all necessary libraries, generate private and public keys, and create
+<h3 id="step-1-address-creation">Step 1: Address Creation</h3><p>In the following code, we&#39;ll import all necessary libraries, generate private and public keys, and create
 a multisig address.</p>
 <pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
 
@@ -384,7 +385,7 @@ console<span class="token punctuation">.</span><span class="token function">log<
 <pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> ring1 <span class="token operator">=</span> KeyRing<span class="token punctuation">.</span><span class="token function">generate</span><span class="token punctuation">(</span>compressed<span class="token punctuation">,</span> network<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Here we generate a private key and public key pair. We need to provide
 information about the network and public key format. There are two <a href="https://bitcoin.org/en/developer-guide#public-key-formats">Public key formats</a>
 one compressed and one uncompressed.  More details can be found at the <a href="https://bitcoin.org/en/developer-guide#public-key-formats">Bitcoin Developer Guide</a></p>
-<h3 id="step-2:-generate-transaction">Step 2: Generate Transaction</h3><p>In this part, we assume that we received a transaction on the network with the following information:</p>
+<h3 id="step-2-generate-transaction">Step 2: Generate Transaction</h3><p>In this part, we assume that we received a transaction on the network with the following information:</p>
 <blockquote>
 <p>Transaction ID: 3b1dd17cc82e2ac43ba62bf8f1c6a0fe805df43911653d22c902571eb3a212ce<br>Output index: 0<br>Amount: 100 BTC  </p>
 </blockquote>
@@ -541,7 +542,7 @@ also calculate change and append a new output for it.<br>Instead of the code abo
 convenient to handle all logic manually, and even more complex to deal with all HD wallet logic. So if you have a bcoin node running and you have access to it via HTTP, you can use <code>bcoin.http.Client</code> and <code>bcoin.http.Wallet</code>. These classes
 provide all API methods described on bcoin and will communicate with the node&#39;s Wallets.</p>
 <p><em>NOTE: You can check <a href="http://bcoin.io/api-docs/index.html">API Docs</a></em></p>
-<h3 id="step-1:-address-creation">Step 1: Address Creation</h3><p>In this step we&#39;ll create two new wallets for two cosigners. In this demo, they will exist on same node,
+<h3 id="step-1-address-creation">Step 1: Address Creation</h3><p>In this step we&#39;ll create two new wallets for two cosigners. In this demo, they will exist on same node,
 but it shouldn&#39;t matter if these two wallets are on the same node or not.</p>
 <pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
 
@@ -656,7 +657,7 @@ and both will be using xpubkey key derivation to come up with new addresses.
 You won&#39;t need to share any other public keys, they will derive them for you.
 Depth of the account is the only thing you&#39;ll need to keep in mind.<br><a href="http://bcoin.io/api-docs/index.html#add-xpubkey-multisig">addSharedKey</a> in
 wallet/account is used for adding cosigner xpubkeys keys.</p>
-<h3 id="step-2:-generate-transaction">Step 2: Generate Transaction</h3><p>We have received transaction</p>
+<h3 id="step-2-generate-transaction">Step 2: Generate Transaction</h3><p>We have received transaction</p>
 <blockquote>
 <p>Transaction ID: 3c12e1b260354fd2a2848030222c4a66339892f1d63b18752ff80ef4eb0197d2<br>Output index: 0<br>Amount: 100 BTC  </p>
 </blockquote>
