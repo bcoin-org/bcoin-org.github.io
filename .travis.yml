@@ -10,8 +10,7 @@ deploy:
   file: ./*
   local_dir: .
   github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
-  target_branch: gh-pages
+  target_branch: master
   on:
-    all_branches: true # when on actual bcoin-org repo, delete this line and uncomment lines below
-    # branch: master
-    # repo: bcoin-org/bcoin-org.github.io
+    branch: staging
+    repo: bcoin-org/bcoin-org.github.io
