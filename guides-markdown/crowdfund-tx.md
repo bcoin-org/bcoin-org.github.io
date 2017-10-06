@@ -480,7 +480,8 @@ These examples are obviously pretty basic, but they should give you an idea of h
 - UX to let people interact with the transaction via a browser
 - More advanced interface for fee estimation and include platform for large number of funders (for example, since you may be limited to number of funders per tx, you could include interface for multiple transactions for a single campaign. You would also want to include a check to make sure your tx is not bigger than 100kb otherwise it'll get rejected by the network)
 - Add a fund matching scheme where someone can say they will match future contributions
-- Currently the examples split transactions to make a coin available that equals the target contribution amount. This expensive since you ahve broadcast multiple transactions. An interface to choose to donate from available available coins might help to make this more efficient.
+- Currently the examples split transactions to make a coin available that equals the target contribution amount. This is expensive since you have to broadcast multiple transactions. An interface to choose to donate from available available coins might help to make this more efficient.
+- This approach also isn't ideal if funders have non-p2pkh outputs. Something like a multisig will be much bigger and will cause the estimated fee to be too low. One possible approach would be to shift the burden of fees on the funders, have the application calculate the size of their contribution and add the resulting fee to their funding amount. Finally, use the amount calculated (including the fee) when [splitting the coins](#step-4-prepare-your-coins). This has the added advantage of not needing to limit the number of inputs
 
 Make sure to get in touch with us on Twitter or Slack if you build out any of these ideas!
 

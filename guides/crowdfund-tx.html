@@ -687,7 +687,8 @@ This construction can be used to make a &quot;crowdfunding”-style transaction.
 <li>UX to let people interact with the transaction via a browser</li>
 <li>More advanced interface for fee estimation and include platform for large number of funders (for example, since you may be limited to number of funders per tx, you could include interface for multiple transactions for a single campaign. You would also want to include a check to make sure your tx is not bigger than 100kb otherwise it&#39;ll get rejected by the network)</li>
 <li>Add a fund matching scheme where someone can say they will match future contributions</li>
-<li>Currently the examples split transactions to make a coin available that equals the target contribution amount. This expensive since you ahve broadcast multiple transactions. An interface to choose to donate from available available coins might help to make this more efficient.</li>
+<li>Currently the examples split transactions to make a coin available that equals the target contribution amount. This is expensive since you have to broadcast multiple transactions. An interface to choose to donate from available available coins might help to make this more efficient.</li>
+<li>This approach also isn&#39;t ideal if funders have non-p2pkh outputs. Something like a multisig will be much bigger and will cause the estimated fee to be too low. One possible approach would be to shift the burden of fees on the funders, have the application calculate the size of their contribution and add the resulting fee to their funding amount. Finally, use this amount when <a href="#step-4-prepare-your-coins">splitting the coins</a>.</li>
 </ul>
 <p>Make sure to get in touch with us on Twitter or Slack if you build out any of these ideas!</p>
 <p>Again, for a working example of the code (without all the text and explanations), check out <a href="https://github.com/Bucko13/bitcoin-fundraise">the repo on github</a>.</p>
