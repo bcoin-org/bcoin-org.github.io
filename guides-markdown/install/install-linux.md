@@ -1,4 +1,4 @@
-## <i class="fa fa-linux"></i>Install on Linux (Video)
+# <i class="fa fa-linux"></i>Install on Linux (Video)
 ```post-author
 HeKaz
 ```

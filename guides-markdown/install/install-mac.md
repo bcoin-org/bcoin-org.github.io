@@ -1,4 +1,4 @@
-## <i class="fa fa-apple"></i>Install on Mac OS (Video)
+# <i class="fa fa-apple"></i>Install on Mac OS (Video)
 ```post-author
 HeKaz
 ```
