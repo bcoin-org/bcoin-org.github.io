@@ -24,7 +24,7 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
 
   // Custom renderer for top two level headers
   renderer.heading = (text, level) => {
-    if (level == '2' || level == '1' ) {
+    if (level == '1' ) {
       let header = '<h2 class="post-title panel-title">'
              + text + '</h2>';
 

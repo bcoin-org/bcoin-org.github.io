@@ -33,7 +33,7 @@ const getPostInfo = function getPostInfo(pathToFiles, postMeta) {
 
   // Add text to list of titles if in a header level 1 or 2
   renderer.heading = (text, level) => {
-    if (level == '2' || level == '1' ) {
+    if (level == '1' ) {
       let iconCloseTag = text.indexOf('</i>')
       if ( iconCloseTag > -1) {
         text = text.slice(iconCloseTag + 4);
