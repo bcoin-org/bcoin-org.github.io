@@ -1,4 +1,4 @@
-# Creating a Crowdfunding Transaction
+# Create a Crowdfunding Transaction
 ```post-author
 Buck Perley
 ```
