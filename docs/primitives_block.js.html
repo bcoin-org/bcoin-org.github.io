@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: primitives/block.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: primitives/block.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * block.js - block object for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+var assert = require('assert');
+var util = require('../utils/util');
+var encoding = require('../utils/encoding');
+var crypto = require('../crypto/crypto');
+var consensus = require('../protocol/consensus');
+var AbstractBlock = require('./abstractblock');
+var VerifyResult = require('../protocol/errors').VerifyResult;
+var BufferReader = require('../utils/reader');
+var StaticWriter = require('../utils/staticwriter');
+var TX = require('./tx');
+var MerkleBlock = require('./merkleblock');
+var Headers = require('./headers');
+var Network = require('../protocol/network');
+
+/**
+ * Represents a full block.
+ * @alias module:primitives.Block
+ * @constructor
+ * @extends AbstractBlock
+ * @param {NakedBlock} options
+ */
+
+function Block(options) {
+  if (!(this instanceof Block))
+    return new Block(options);
+
+  AbstractBlock.call(this);
+
+  this.txs = [];
+
+  this._cbHeight = null;
+  this._commitmentHash = null;
+
+  this._raw = null;
+  this._size = -1;
+  this._witness = -1;
+
+  if (options)
+    this.fromOptions(options);
+}
+
+util.inherits(Block, AbstractBlock);
+
+/**
+ * Inject properties from options object.
+ * @private
+ * @param {Object} options
+ */
+
+Block.prototype.fromOptions = function fromOptions(options) {
+  var i;
+
+  this.parseOptions(options);
+
+  if (options.txs) {
+    assert(Array.isArray(options.txs));
+    for (i = 0; i &lt; options.txs.length; i++)
+      this.addTX(options.txs[i]);
+  }
+};
+
+/**
+ * Instantiate block from options.
+ * @param {Object} options
+ * @returns {Block}
+ */
+
+Block.fromOptions = function fromOptions(options) {
+  return new Block().fromOptions(options);
+};
+
+/**
+ * Clear any cached values.
+ * @param {Boolean?} all - Clear transactions.
+ */
+
+Block.prototype.refresh = function refresh(all) {
+  this._raw = null;
+  this._refresh(all);
+};
+
+/**
+ * Serialize the block. Include witnesses if present.
+ * @returns {Buffer}
+ */
+
+Block.prototype.toRaw = function toRaw() {
+  return this.frame().data;
+};
+
+/**
+ * Serialize the block, do not include witnesses.
+ * @returns {Buffer}
+ */
+
+Block.prototype.toNormal = function toNormal() {
+  if (this.hasWitness())
+    return this.frameNormal().data;
+  return this.toRaw();
+};
+
+/**
+ * Serialize the block. Include witnesses if present.
+ * @param {BufferWriter} bw
+ */
+
+Block.prototype.toWriter = function toWriter(bw) {
+  var raw;
+
+  if (this.mutable)
+    return this.writeWitness(bw);
+
+  raw = this.frame();
+  bw.writeBytes(raw.data);
+
+  return bw;
+};
+
+/**
+ * Serialize the block, do not include witnesses.
+ * @param {BufferWriter} bw
+ */
+
+Block.prototype.toNormalWriter = function toNormalWriter(bw) {
+  if (this.hasWitness()) {
+    this.writeNormal(bw);
+    return bw;
+  }
+  return this.toWriter(bw);
+};
+
+/**
+ * Get the raw block serialization.
+ * Include witnesses if present.
+ * @private
+ * @returns {RawBlock}
+ */
+
+Block.prototype.frame = function frame() {
+  var raw;
+
+  if (this.mutable) {
+    assert(!this._raw);
+    return this.frameWitness();
+  }
+
+  if (this._raw) {
+    assert(this._size > 0);
+    assert(this._witness >= 0);
+    raw = new RawBlock(this._size, this._witness);
+    raw.data = this._raw;
+    return raw;
+  }
+
+  raw = this.frameWitness();
+
+  this._raw = raw.data;
+  this._size = raw.total;
+  this._witness = raw.witness;
+
+  return raw;
+};
+
+/**
+ * Calculate real size and size of the witness bytes.
+ * @returns {Object} Contains `total` and `witness`.
+ */
+
+Block.prototype.getSizes = function getSizes() {
+  if (this.mutable)
+    return this.getWitnessSizes();
+  return this.frame();
+};
+
+/**
+ * Calculate virtual block size.
+ * @returns {Number} Virtual size.
+ */
+
+Block.prototype.getVirtualSize = function getVirtualSize() {
+  var scale = consensus.WITNESS_SCALE_FACTOR;
+  return (this.getWeight() + scale - 1) / scale | 0;
+};
+
+/**
+ * Calculate block weight.
+ * @returns {Number} weight
+ */
+
+Block.prototype.getWeight = function getWeight() {
+  var sizes = this.getSizes();
+  var base = sizes.total - sizes.witness;
+  return base * (consensus.WITNESS_SCALE_FACTOR - 1) + sizes.total;
+};
+
+/**
+ * Get real block size.
+ * @returns {Number} size
+ */
+
+Block.prototype.getSize = function getSize() {
+  return this.getSizes().total;
+};
+
+/**
+ * Get base block size (without witness).
+ * @returns {Number} size
+ */
+
+Block.prototype.getBaseSize = function getBaseSize() {
+  var sizes = this.getSizes();
+  return sizes.total - sizes.witness;
+};
+
+/**
+ * Test whether the block contains a
+ * transaction with a non-empty witness.
+ * @returns {Boolean}
+ */
+
+Block.prototype.hasWitness = function hasWitness() {
+  var i, tx;
+
+  if (this._witness !== -1)
+    return this._witness !== 0;
+
+  for (i = 0; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+    if (tx.hasWitness())
+      return true;
+  }
+
+  return false;
+};
+
+/**
+ * Add a transaction to the block's tx vector.
+ * @param {TX} tx
+ * @returns {Number}
+ */
+
+Block.prototype.addTX = function addTX(tx) {
+  return this.txs.push(tx) - 1;
+};
+
+/**
+ * Test the block's transaction vector against a hash.
+ * @param {Hash|TX} hash
+ * @returns {Boolean}
+ */
+
+Block.prototype.hasTX = function hasTX(hash) {
+  return this.indexOf(hash) !== -1;
+};
+
+/**
+ * Find the index of a transaction in the block.
+ * @param {Hash|TX} hash
+ * @returns {Number} index (-1 if not present).
+ */
+
+Block.prototype.indexOf = function indexOf(hash) {
+  var i, tx;
+
+  if (hash instanceof TX)
+    hash = hash.hash('hex');
+
+  for (i = 0; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+    if (tx.hash('hex') === hash)
+      return i;
+  }
+
+  return -1;
+};
+
+/**
+ * Calculate merkle root. Returns null
+ * if merkle tree has been malleated.
+ * @param {String?} enc - Encoding, can be `'hex'` or null.
+ * @returns {Hash|null}
+ */
+
+Block.prototype.createMerkleRoot = function createMerkleRoot(enc) {
+  var leaves = [];
+  var i, tx, root;
+
+  for (i = 0; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+    leaves.push(tx.hash());
+  }
+
+  root = crypto.createMerkleRoot(leaves);
+
+  if (root.malleated)
+    return null;
+
+  return enc === 'hex'
+    ? root.hash.toString('hex')
+    : root.hash;
+};
+
+/**
+ * Create a witness nonce (for mining).
+ * @returns {Buffer}
+ */
+
+Block.prototype.createWitnessNonce = function createWitnessNonce() {
+  return util.copy(encoding.ZERO_HASH);
+};
+
+/**
+ * Calculate commitment hash (the root of the
+ * witness merkle tree hashed with the witnessNonce).
+ * @param {String?} enc - Encoding, can be `'hex'` or null.
+ * @returns {Hash}
+ */
+
+Block.prototype.createCommitmentHash = function createCommitmentHash(enc) {
+  var nonce = this.getWitnessNonce();
+  var leaves = [];
+  var i, tx, root, data, hash;
+
+  assert(nonce, 'No witness nonce present.');
+
+  leaves.push(encoding.ZERO_HASH);
+
+  for (i = 1; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+    leaves.push(tx.witnessHash());
+  }
+
+  root = crypto.createMerkleRoot(leaves);
+
+  // Note: malleation check ignored here.
+  // assert(!root.malleated);
+
+  data = util.concat(root.hash, nonce);
+
+  hash = crypto.hash256(data);
+
+  return enc === 'hex'
+    ? hash.toString('hex')
+    : hash;
+};
+
+/**
+ * Retrieve the merkle root from the block header.
+ * @param {String?} enc
+ * @returns {Hash}
+ */
+
+Block.prototype.getMerkleRoot = function getMerkleRoot(enc) {
+  if (enc === 'hex')
+    return this.merkleRoot;
+  return new Buffer(this.merkleRoot, 'hex');
+};
+
+/**
+ * Retrieve the witness nonce from the
+ * coinbase's witness vector (if present).
+ * @returns {Buffer|null}
+ */
+
+Block.prototype.getWitnessNonce = function getWitnessNonce() {
+  var coinbase = this.txs[0];
+  var input;
+
+  if (!coinbase)
+    return null;
+
+  if (coinbase.inputs.length !== 1)
+    return null;
+
+  input = coinbase.inputs[0];
+
+  if (input.witness.items.length !== 1)
+    return null;
+
+  if (input.witness.items[0].length !== 32)
+    return null;
+
+  return input.witness.items[0];
+};
+
+/**
+ * Retrieve the commitment hash
+ * from the coinbase's outputs.
+ * @param {String?} enc
+ * @returns {Hash|null}
+ */
+
+Block.prototype.getCommitmentHash = function getCommitmentHash(enc) {
+  var hash = this._commitmentHash;
+  var i, coinbase, output;
+
+  if (!hash) {
+    coinbase = this.txs[0];
+
+    if (!coinbase)
+      return null;
+
+    for (i = coinbase.outputs.length - 1; i >= 0; i--) {
+      output = coinbase.outputs[i];
+
+      if (output.script.isCommitment()) {
+        hash = output.script.getCommitmentHash();
+
+        if (!this.mutable)
+          this._commitmentHash = hash;
+
+        break;
+      }
+    }
+
+    if (!hash)
+      return null;
+  }
+
+  return enc === 'hex'
+    ? hash.toString('hex')
+    : hash;
+};
+
+/**
+ * Do non-contextual verification on the block. Including checking the block
+ * size, the coinbase and the merkle root. This is consensus-critical.
+ * @alias Block#verify
+ * @param {Object?} ret - Return object, may be
+ * set with properties `reason` and `score`.
+ * @returns {Boolean}
+ */
+
+Block.prototype._verify = function _verify(ret) {
+  var sigops = 0;
+  var scale = consensus.WITNESS_SCALE_FACTOR;
+  var i, tx, merkle;
+
+  if (!ret)
+    ret = new VerifyResult();
+
+  if (!this.verifyHeaders(ret))
+    return false;
+
+  // Check merkle root.
+  merkle = this.createMerkleRoot('hex');
+
+  // If the merkle is mutated,
+  // we have duplicate txs.
+  if (!merkle) {
+    ret.reason = 'bad-txns-duplicate';
+    ret.score = 100;
+    return false;
+  }
+
+  if (this.merkleRoot !== merkle) {
+    ret.reason = 'bad-txnmrklroot';
+    ret.score = 100;
+    return false;
+  }
+
+  // Check base size.
+  if (this.txs.length === 0
+      || this.txs.length > consensus.MAX_BLOCK_SIZE
+      || this.getBaseSize() > consensus.MAX_BLOCK_SIZE) {
+    ret.reason = 'bad-blk-length';
+    ret.score = 100;
+    return false;
+  }
+
+  // First TX must be a coinbase.
+  if (this.txs.length === 0 || !this.txs[0].isCoinbase()) {
+    ret.reason = 'bad-cb-missing';
+    ret.score = 100;
+    return false;
+  }
+
+  // Test all transactions.
+  for (i = 0; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+
+    // The rest of the txs must not be coinbases.
+    if (i > 0 &amp;&amp; tx.isCoinbase()) {
+      ret.reason = 'bad-cb-multiple';
+      ret.score = 100;
+      return false;
+    }
+
+    // Sanity checks.
+    if (!tx.isSane(ret))
+      return false;
+
+    // Count legacy sigops (do not count scripthash or witness).
+    sigops += tx.getLegacySigops();
+    if (sigops * scale > consensus.MAX_BLOCK_SIGOPS_COST) {
+      ret.reason = 'bad-blk-sigops';
+      ret.score = 100;
+      return false;
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Retrieve the coinbase height from the coinbase input script.
+ * @returns {Number} height (-1 if not present).
+ */
+
+Block.prototype.getCoinbaseHeight = function getCoinbaseHeight() {
+  var coinbase, height;
+
+  if (this.version &lt; 2)
+    return -1;
+
+  if (this._cbHeight != null)
+    return this._cbHeight;
+
+  coinbase = this.txs[0];
+
+  if (!coinbase || coinbase.inputs.length === 0)
+    return -1;
+
+  height = coinbase.inputs[0].script.getCoinbaseHeight();
+
+  if (!this.mutable)
+    this._cbHeight = height;
+
+  return height;
+};
+
+/**
+ * Calculate the block reward.
+ * @returns {Amount} reward
+ */
+
+Block.prototype.getReward = function getReward(view, height, network) {
+  var i, tx, reward, fee;
+
+  assert(typeof height === 'number');
+
+  network = Network.get(network);
+  reward = consensus.getReward(height, network.halvingInterval);
+
+  for (i = 1; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+
+    fee = tx.getFee(view);
+
+    if (fee &lt; 0 || fee > consensus.MAX_MONEY)
+      return -1;
+
+    reward += fee;
+
+    // We don't want to go above 53 bits.
+    // This is to make the getClaimed check
+    // fail if the miner mined an evil block.
+    // Note that this check ONLY works because
+    // MAX_MONEY is 51 bits. The result of
+    // (51 bits + 51 bits) is _never_ greater
+    // than 52 bits.
+    if (reward &lt; 0 || reward > consensus.MAX_MONEY)
+      return -1;
+  }
+
+  return reward;
+};
+
+/**
+ * Get the "claimed" reward by the coinbase.
+ * @returns {Amount} claimed
+ */
+
+Block.prototype.getClaimed = function getClaimed() {
+  assert(this.txs[0]);
+  assert(this.txs[0].isCoinbase());
+  return this.txs[0].getOutputValue();
+};
+
+/**
+ * Get all unique outpoint hashes in the
+ * block. Coinbases are ignored.
+ * @returns {Hash[]} Outpoint hashes.
+ */
+
+Block.prototype.getPrevout = function getPrevout() {
+  var prevout = {};
+  var i, j, tx, input;
+
+  for (i = 1; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+
+    for (j = 0; j &lt; tx.inputs.length; j++) {
+      input = tx.inputs[j];
+      prevout[input.prevout.hash] = true;
+    }
+  }
+
+  return Object.keys(prevout);
+};
+
+/**
+ * Inspect the block and return a more
+ * user-friendly representation of the data.
+ * @returns {Object}
+ */
+
+Block.prototype.inspect = function inspect() {
+  return this.format();
+};
+
+/**
+ * Inspect the block and return a more
+ * user-friendly representation of the data.
+ * @param {CoinView} view
+ * @param {Number} height
+ * @returns {Object}
+ */
+
+Block.prototype.format = function format(view, height) {
+  var commitmentHash = this.getCommitmentHash('hex');
+  return {
+    hash: this.rhash(),
+    height: height != null ? height : -1,
+    size: this.getSize(),
+    virtualSize: this.getVirtualSize(),
+    date: util.date(this.ts),
+    version: util.hex32(this.version),
+    prevBlock: util.revHex(this.prevBlock),
+    merkleRoot: util.revHex(this.merkleRoot),
+    commitmentHash: commitmentHash
+      ? util.revHex(commitmentHash)
+      : null,
+    ts: this.ts,
+    bits: this.bits,
+    nonce: this.nonce,
+    txs: this.txs.map(function(tx, i) {
+      return tx.format(view, null, i);
+    }, this)
+  };
+};
+
+/**
+ * Convert the block to an object suitable
+ * for JSON serialization.
+ * @returns {Object}
+ */
+
+Block.prototype.toJSON = function toJSON() {
+  return this.getJSON();
+};
+
+/**
+ * Convert the block to an object suitable
+ * for JSON serialization. Note that the hashes
+ * will be reversed to abide by bitcoind's legacy
+ * of little-endian uint256s.
+ * @param {Network} network
+ * @param {CoinView} view
+ * @param {Number} height
+ * @returns {Object}
+ */
+
+Block.prototype.getJSON = function getJSON(network, view, height) {
+  network = Network.get(network);
+  return {
+    hash: this.rhash(),
+    height: height,
+    version: this.version,
+    prevBlock: util.revHex(this.prevBlock),
+    merkleRoot: util.revHex(this.merkleRoot),
+    ts: this.ts,
+    bits: this.bits,
+    nonce: this.nonce,
+    totalTX: this.totalTX,
+    txs: this.txs.map(function(tx, i) {
+      return tx.getJSON(network, view, null, i);
+    }, this)
+  };
+};
+
+/**
+ * Inject properties from json object.
+ * @private
+ * @param {Object} json
+ */
+
+Block.prototype.fromJSON = function fromJSON(json) {
+  var i;
+
+  assert(json, 'Block data is required.');
+  assert(Array.isArray(json.txs));
+
+  this.parseJSON(json);
+
+  for (i = 0; i &lt; json.txs.length; i++)
+    this.txs.push(TX.fromJSON(json.txs[i]));
+
+  return this;
+};
+
+/**
+ * Instantiate a block from a jsonified block object.
+ * @param {Object} json - The jsonified block object.
+ * @returns {Block}
+ */
+
+Block.fromJSON = function fromJSON(json) {
+  return new Block().fromJSON(json);
+};
+
+/**
+ * Inject properties from serialized data.
+ * @private
+ * @param {Buffer} data
+ */
+
+Block.prototype.fromReader = function fromReader(br) {
+  var witness = 0;
+  var i, tx;
+
+  br.start();
+
+  this.parseAbbr(br);
+
+  this.totalTX = br.readVarint();
+
+  for (i = 0; i &lt; this.totalTX; i++) {
+    tx = TX.fromReader(br);
+    witness += tx._witness;
+    this.addTX(tx);
+  }
+
+  if (!this.mutable) {
+    this._raw = br.endData();
+    this._size = this._raw.length;
+    this._witness = witness;
+  }
+
+  return this;
+};
+
+/**
+ * Inject properties from serialized data.
+ * @private
+ * @param {Buffer} data
+ */
+
+Block.prototype.fromRaw = function fromRaw(data) {
+  return this.fromReader(new BufferReader(data));
+};
+
+/**
+ * Instantiate a block from a serialized Buffer.
+ * @param {Buffer} data
+ * @param {String?} enc - Encoding, can be `'hex'` or null.
+ * @returns {Block}
+ */
+
+Block.fromReader = function fromReader(data) {
+  return new Block().fromReader(data);
+};
+
+/**
+ * Instantiate a block from a serialized Buffer.
+ * @param {Buffer} data
+ * @param {String?} enc - Encoding, can be `'hex'` or null.
+ * @returns {Block}
+ */
+
+Block.fromRaw = function fromRaw(data, enc) {
+  if (typeof data === 'string')
+    data = new Buffer(data, enc);
+  return new Block().fromRaw(data);
+};
+
+/**
+ * Convert the Block to a MerkleBlock.
+ * @param {Bloom} filter - Bloom filter for transactions
+ * to match. The merkle block will contain only the
+ * matched transactions.
+ * @returns {MerkleBlock}
+ */
+
+Block.prototype.toMerkle = function toMerkle(filter) {
+  return MerkleBlock.fromBlock(this, filter);
+};
+
+/**
+ * Serialze block with or without witness data.
+ * @private
+ * @param {Boolean} witness
+ * @param {BufferWriter?} writer
+ * @returns {Buffer}
+ */
+
+Block.prototype.writeNormal = function writeNormal(bw) {
+  var i, tx;
+
+  this.writeAbbr(bw);
+
+  bw.writeVarint(this.txs.length);
+
+  for (i = 0; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+    tx.toNormalWriter(bw);
+  }
+
+  return bw;
+};
+
+/**
+ * Serialze block with or without witness data.
+ * @private
+ * @param {Boolean} witness
+ * @param {BufferWriter?} writer
+ * @returns {Buffer}
+ */
+
+Block.prototype.writeWitness = function writeWitness(bw) {
+  var i, tx;
+
+  this.writeAbbr(bw);
+
+  bw.writeVarint(this.txs.length);
+
+  for (i = 0; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+    tx.toWriter(bw);
+  }
+
+  return bw;
+};
+
+/**
+ * Serialze block with or without witness data.
+ * @private
+ * @param {Boolean} witness
+ * @param {BufferWriter?} writer
+ * @returns {Buffer}
+ */
+
+Block.prototype.frameNormal = function frameNormal() {
+  var sizes = this.getNormalSizes();
+  var bw = new StaticWriter(sizes.total);
+  this.writeNormal(bw);
+  sizes.data = bw.render();
+  return sizes;
+};
+
+/**
+ * Serialze block without witness data.
+ * @private
+ * @param {BufferWriter?} writer
+ * @returns {Buffer}
+ */
+
+Block.prototype.frameWitness = function frameWitness() {
+  var sizes = this.getWitnessSizes();
+  var bw = new StaticWriter(sizes.total);
+  this.writeWitness(bw);
+  sizes.data = bw.render();
+  return sizes;
+};
+
+/**
+ * Convert the block to a headers object.
+ * @returns {Headers}
+ */
+
+Block.prototype.toHeaders = function toHeaders() {
+  return Headers.fromBlock(this);
+};
+
+/**
+ * Get real block size without witness.
+ * @returns {RawBlock}
+ */
+
+Block.prototype.getNormalSizes = function getNormalSizes() {
+  var size = 0;
+  var i, tx;
+
+  size += 80;
+  size += encoding.sizeVarint(this.txs.length);
+
+  for (i = 0; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+    size += tx.getBaseSize();
+  }
+
+  return new RawBlock(size, 0);
+};
+
+/**
+ * Get real block size with witness.
+ * @returns {RawBlock}
+ */
+
+Block.prototype.getWitnessSizes = function getWitnessSizes() {
+  var size = 0;
+  var witness = 0;
+  var i, sizes, tx;
+
+  size += 80;
+  size += encoding.sizeVarint(this.txs.length);
+
+  for (i = 0; i &lt; this.txs.length; i++) {
+    tx = this.txs[i];
+    sizes = tx.getSizes();
+    size += sizes.total;
+    witness += sizes.witness;
+  }
+
+  return new RawBlock(size, witness);
+};
+
+/**
+ * Test whether an object is a Block.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+Block.isBlock = function isBlock(obj) {
+  return obj
+    &amp;&amp; typeof obj.merkleRoot === 'string'
+    &amp;&amp; typeof obj.getClaimed === 'function';
+};
+
+/*
+ * Helpers
+ */
+
+function RawBlock(total, witness) {
+  this.data = null;
+  this.total = total;
+  this.witness = witness;
+}
+
+/*
+ * Expose
+ */
+
+module.exports = Block;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: node/fullnode.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: node/fullnode.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * fullnode.js - full node for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+var util = require('../utils/util');
+var co = require('../utils/co');
+var Node = require('./node');
+var Chain = require('../blockchain/chain');
+var Fees = require('../mempool/fees');
+var Mempool = require('../mempool/mempool');
+var Pool = require('../net/pool');
+var Miner = require('../mining/miner');
+var WalletDB = require('../wallet/walletdb');
+var HTTPServer = require('../http/server');
+var policy = require('../protocol/policy');
+
+/**
+ * Respresents a fullnode complete with a
+ * chain, mempool, miner, wallet, etc.
+ * @alias module:node.FullNode
+ * @extends Node
+ * @constructor
+ * @param {Object?} options
+ * @property {Chain} chain
+ * @property {PolicyEstimator} fees
+ * @property {Mempool} mempool
+ * @property {Pool} pool
+ * @property {Miner} miner
+ * @property {WalletDB} walletdb
+ * @property {HTTPServer} http
+ * @emits FullNode#block
+ * @emits FullNode#tx
+ * @emits FullNode#connect
+ * @emits FullNode#disconnect
+ * @emits FullNode#reset
+ * @emits FullNode#error
+ */
+
+function FullNode(options) {
+  if (!(this instanceof FullNode))
+    return new FullNode(options);
+
+  Node.call(this, options);
+
+  // Instantiate blockchain.
+  this.chain = new Chain({
+    network: this.network,
+    logger: this.logger,
+    db: this.options.db,
+    location: this.location('chain'),
+    maxFiles: this.options.maxFiles,
+    cacheSize: this.options.cacheSize,
+    forceWitness: this.options.forceWitness,
+    prune: this.options.prune,
+    checkpoints: this.options.checkpoints,
+    coinCache: this.options.coinCache,
+    indexTX: this.options.indexTX,
+    indexAddress: this.options.indexAddress
+  });
+
+  // Fee estimation.
+  this.fees = new Fees(
+    policy.MIN_RELAY,
+    this.network,
+    this.logger);
+
+  // Mempool needs access to the chain.
+  this.mempool = new Mempool({
+    network: this.network,
+    logger: this.logger,
+    chain: this.chain,
+    fees: this.fees,
+    maxSize: this.options.mempoolSize,
+    limitFree: this.options.limitFree,
+    limitFreeRelay: this.options.limitFreeRelay,
+    requireStandard: this.options.requireStandard,
+    rejectInsaneFees: this.options.rejectInsaneFees,
+    replaceByFee: this.options.replaceByFee,
+    indexAddress: this.options.indexAddress
+  });
+
+  // Pool needs access to the chain and mempool.
+  this.pool = new Pool({
+    network: this.network,
+    logger: this.logger,
+    chain: this.chain,
+    mempool: this.mempool,
+    selfish: this.options.selfish,
+    compact: this.options.compact,
+    bip37: this.options.bip37,
+    bip151: this.options.bip151,
+    bip150: this.options.bip150,
+    authPeers: this.options.authPeers,
+    knownPeers: this.options.knownPeers,
+    identityKey: this.options.identityKey,
+    maxOutbound: this.options.maxOutbound,
+    maxInbound: this.options.maxInbound,
+    proxy: this.options.proxy,
+    onion: this.options.onion,
+    seeds: this.options.seeds,
+    nodes: this.options.nodes,
+    publicHost: this.options.publicHost,
+    publicPort: this.options.publicPort,
+    host: this.options.host,
+    port: this.options.port,
+    listen: this.options.listen
+  });
+
+  // Miner needs access to the chain and mempool.
+  this.miner = new Miner({
+    network: this.network,
+    logger: this.logger,
+    chain: this.chain,
+    mempool: this.mempool,
+    fees: this.fees,
+    address: this.options.payoutAddress,
+    coinbaseFlags: this.options.coinbaseFlags
+  });
+
+  // Wallet database needs access to fees.
+  this.walletdb = new WalletDB({
+    network: this.network,
+    logger: this.logger,
+    client: this.client,
+    db: this.options.db,
+    location: this.location('walletdb'),
+    maxFiles: this.options.walletMaxFiles,
+    cacheSize: this.options.walletCacheSize,
+    witness: false,
+    checkpoints: this.options.checkpoints,
+    startHeight: this.options.startHeight,
+    wipeNoReally: this.options.wipeNoReally,
+    verify: false
+  });
+
+  // HTTP needs access to the node.
+  if (!HTTPServer.unsupported) {
+    this.http = new HTTPServer({
+      network: this.network,
+      logger: this.logger,
+      node: this,
+      key: this.options.sslKey,
+      cert: this.options.sslCert,
+      port: this.options.httpPort,
+      host: this.options.httpHost,
+      apiKey: this.options.apiKey,
+      serviceKey: this.options.serviceKey,
+      walletAuth: this.options.walletAuth,
+      noAuth: this.options.noAuth
+    });
+  }
+
+  this._init();
+}
+
+util.inherits(FullNode, Node);
+
+/**
+ * Initialize the node.
+ * @private
+ */
+
+FullNode.prototype._init = function _init() {
+  var self = this;
+  var onError = this.error.bind(this);
+
+  // Bind to errors
+  this.chain.on('error', onError);
+  this.mempool.on('error', onError);
+  this.pool.on('error', onError);
+  this.miner.on('error', onError);
+  this.walletdb.on('error', onError);
+
+  if (this.http)
+    this.http.on('error', onError);
+
+  this.mempool.on('tx', function(tx) {
+    self.miner.notifyEntry();
+    self.emit('tx', tx);
+  });
+
+  this.chain.on('connect', co(function* (entry, block) {
+    if (self.chain.synced) {
+      try {
+        yield self.mempool.addBlock(entry, block.txs);
+      } catch (e) {
+        self.error(e);
+      }
+    }
+    self.emit('block', block);
+    self.emit('connect', entry, block);
+  }));
+
+  this.chain.on('disconnect', co(function* (entry, block) {
+    if (self.chain.synced) {
+      try {
+        yield self.mempool.removeBlock(entry, block.txs);
+      } catch (e) {
+        self.error(e);
+      }
+    }
+    self.emit('disconnect', entry, block);
+  }));
+
+  this.chain.on('reset', co(function* (tip) {
+    try {
+      yield self.mempool.reset();
+    } catch (e) {
+      self.error(e);
+    }
+    self.emit('reset', tip);
+  }));
+};
+
+/**
+ * Open the node and all its child objects,
+ * wait for the database to load.
+ * @alias FullNode#open
+ * @returns {Promise}
+ */
+
+FullNode.prototype._open = co(function* open() {
+  yield this.chain.open();
+  yield this.mempool.open();
+  yield this.miner.open();
+  yield this.pool.open();
+
+  if (this.http)
+    yield this.http.open();
+
+  yield this.walletdb.open();
+
+  // Ensure primary wallet.
+  yield this.openWallet();
+
+  this.logger.info('Node is loaded.');
+});
+
+/**
+ * Close the node, wait for the database to close.
+ * @alias FullNode#close
+ * @returns {Promise}
+ */
+
+FullNode.prototype._close = co(function* close() {
+  if (this.http)
+    yield this.http.close();
+
+  yield this.wallet.destroy();
+
+  this.wallet = null;
+
+  yield this.walletdb.close();
+  yield this.pool.close();
+  yield this.miner.close();
+  yield this.mempool.close();
+  yield this.chain.close();
+
+  this.logger.info('Node is closed.');
+});
+
+/**
+ * Rescan for any missed transactions.
+ * @param {Number|Hash} start - Start block.
+ * @param {Bloom} filter
+ * @param {Function} iter - Iterator.
+ * @returns {Promise}
+ */
+
+FullNode.prototype.scan = function scan(start, filter, iter) {
+  return this.chain.scan(start, filter, iter);
+};
+
+/**
+ * Broadcast a transaction (note that this will _not_ be verified
+ * by the mempool - use with care, lest you get banned from
+ * bitcoind nodes).
+ * @param {TX|Block} item
+ * @returns {Promise}
+ */
+
+FullNode.prototype.broadcast = co(function* broadcast(item) {
+  try {
+    yield this.pool.broadcast(item);
+  } catch (e) {
+    this.emit('error', e);
+  }
+});
+
+/**
+ * Add transaction to mempool, broadcast.
+ * @param {TX} tx
+ */
+
+FullNode.prototype.sendTX = co(function* sendTX(tx) {
+  var missing;
+
+  try {
+    missing = yield this.mempool.addTX(tx);
+  } catch (err) {
+    if (err.type === 'VerifyError' &amp;&amp; err.score === 0) {
+      this.error(err);
+      this.logger.warning('Verification failed for tx: %s.', tx.txid());
+      this.logger.warning('Attempting to broadcast anyway...');
+      this.broadcast(tx);
+      return;
+    }
+    throw err;
+  }
+
+  if (missing) {
+    this.logger.warning('TX was orphaned in mempool: %s.', tx.txid());
+    this.logger.warning('Attempting to broadcast anyway...');
+    this.broadcast(tx);
+    return;
+  }
+
+  // We need to announce by hand if
+  // we're running in selfish mode.
+  if (this.pool.options.selfish)
+    this.pool.broadcast(tx);
+});
+
+/**
+ * Add transaction to mempool, broadcast. Silence errors.
+ * @param {TX} tx
+ * @returns {Promise}
+ */
+
+FullNode.prototype.relay = co(function* relay(tx) {
+  try {
+    yield this.sendTX(tx);
+  } catch (e) {
+    this.error(e);
+  }
+});
+
+/**
+ * Connect to the network.
+ * @returns {Promise}
+ */
+
+FullNode.prototype.connect = function connect() {
+  return this.pool.connect();
+};
+
+/**
+ * Disconnect from the network.
+ * @returns {Promise}
+ */
+
+FullNode.prototype.disconnect = function disconnect() {
+  return this.pool.disconnect();
+};
+
+/**
+ * Start the blockchain sync.
+ */
+
+FullNode.prototype.startSync = function startSync() {
+  return this.pool.startSync();
+};
+
+/**
+ * Stop syncing the blockchain.
+ */
+
+FullNode.prototype.stopSync = function stopSync() {
+  return this.pool.stopSync();
+};
+
+/**
+ * Retrieve a block from the chain database.
+ * @param {Hash} hash
+ * @returns {Promise} - Returns {@link Block}.
+ */
+
+FullNode.prototype.getBlock = function getBlock(hash) {
+  return this.chain.db.getBlock(hash);
+};
+
+/**
+ * Retrieve a coin from the mempool or chain database.
+ * Takes into account spent coins in the mempool.
+ * @param {Hash} hash
+ * @param {Number} index
+ * @returns {Promise} - Returns {@link Coin}.
+ */
+
+FullNode.prototype.getCoin = function getCoin(hash, index) {
+  var coin = this.mempool.getCoin(hash, index);
+
+  if (coin)
+    return Promise.resolve(coin);
+
+  if (this.mempool.isSpent(hash, index))
+    return Promise.resolve();
+
+  return this.chain.db.getCoin(hash, index);
+};
+
+/**
+ * Get coins that pertain to an address from the mempool or chain database.
+ * Takes into account spent coins in the mempool.
+ * @param {Address} addresses
+ * @returns {Promise} - Returns {@link Coin}[].
+ */
+
+FullNode.prototype.getCoinsByAddress = co(function* getCoinsByAddress(addresses) {
+  var mempool = this.mempool.getCoinsByAddress(addresses);
+  var chain = yield this.chain.db.getCoinsByAddress(addresses);
+  var out = [];
+  var i, coin, spent;
+
+  for (i = 0; i &lt; chain.length; i++) {
+    coin = chain[i];
+    spent = this.mempool.isSpent(coin.hash, coin.index);
+
+    if (spent)
+      continue;
+
+    out.push(coin);
+  }
+
+  for (i = 0; i &lt; mempool.length; i++) {
+    coin = mempool[i];
+    out.push(coin);
+  }
+
+  return out;
+});
+
+/**
+ * Retrieve transactions pertaining to an
+ * address from the mempool or chain database.
+ * @param {Address} addresses
+ * @returns {Promise} - Returns {@link TXMeta}[].
+ */
+
+FullNode.prototype.getMetaByAddress = co(function* getTXByAddress(addresses) {
+  var mempool = this.mempool.getMetaByAddress(addresses);
+  var chain = yield this.chain.db.getMetaByAddress(addresses);
+  return chain.concat(mempool);
+});
+
+/**
+ * Retrieve a transaction from the mempool or chain database.
+ * @param {Hash} hash
+ * @returns {Promise} - Returns {@link TXMeta}.
+ */
+
+FullNode.prototype.getMeta = co(function* getMeta(hash) {
+  var meta = this.mempool.getMeta(hash);
+
+  if (meta)
+    return meta;
+
+  return yield this.chain.db.getMeta(hash);
+});
+
+/**
+ * Retrieve transactions pertaining to an
+ * address from the mempool or chain database.
+ * @param {Address} addresses
+ * @returns {Promise} - Returns {@link TX}[].
+ */
+
+FullNode.prototype.getTXByAddress = co(function* getTXByAddress(addresses) {
+  var mtxs = yield this.getMetaByAddress(addresses);
+  var out = [];
+  var i, mtx;
+
+  for (i = 0; i &lt; mtxs.length; i++) {
+    mtx = mtxs[i];
+    out.push(mtx.tx);
+  }
+
+  return out;
+});
+
+/**
+ * Retrieve a transaction from the mempool or chain database.
+ * @param {Hash} hash
+ * @returns {Promise} - Returns {@link TX}.
+ */
+
+FullNode.prototype.getTX = co(function* getTX(hash) {
+  var mtx = yield this.getMeta(hash);
+  if (!mtx)
+    return;
+  return mtx.tx;
+});
+
+/**
+ * Test whether the mempool or chain contains a transaction.
+ * @param {Hash} hash
+ * @returns {Promise} - Returns Boolean.
+ */
+
+FullNode.prototype.hasTX = function hasTX(hash) {
+  if (this.mempool.hasTX(hash))
+    return Promise.resolve(true);
+
+  return this.chain.db.hasTX(hash);
+};
+
+/*
+ * Expose
+ */
+
+module.exports = FullNode;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: crypto/scrypt.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: crypto/scrypt.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * scrypt.js - scrypt for bcoin
+ * Copyright (c) 2016-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ *
+ * Ported from:
+ * https://github.com/Tarsnap/scrypt/blob/master/lib/crypto/crypto_scrypt-ref.c
+ *
+ * Copyright 2009 Colin Percival
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+'use strict';
+
+/**
+ * @module crypto/scrypt
+ * @ignore
+ */
+
+var co = require('../utils/co');
+var backend = require('./backend');
+var native = require('../utils/native').binding;
+var U32Array = typeof Uint32Array === 'function' ? Uint32Array : Array;
+var scryptAsync, smixAsync;
+
+/**
+ * Javascript scrypt implementation. Scrypt is
+ * used in bip38. Bcoin doesn't support bip38
+ * yet, but here it is, just in case.
+ * @alias module:crypto/scrypt.scrypt
+ * @param {Buffer} passwd
+ * @param {Buffer} salt
+ * @param {Number} N
+ * @param {Number} r
+ * @param {Number} p
+ * @param {Number} len
+ * @returns {Buffer}
+ */
+
+function scrypt(passwd, salt, N, r, p, len) {
+  var i, B, V, XY;
+
+  if (r * p >= (1 &lt;&lt; 30))
+    throw new Error('EFBIG');
+
+  if ((N &amp; (N - 1)) !== 0 || N === 0)
+    throw new Error('EINVAL');
+
+  if (N > 0xffffffff)
+    throw new Error('EINVAL');
+
+  XY = new Buffer(256 * r);
+  V = new Buffer(128 * r * N);
+
+  B = backend.pbkdf2(passwd, salt, 1, p * 128 * r, 'sha256');
+
+  for (i = 0; i &lt; p; i++)
+    smix(B, i * 128 * r, r, N, V, XY);
+
+  return backend.pbkdf2(passwd, B, 1, len, 'sha256');
+}
+
+if (native)
+  scrypt = native.scrypt;
+
+function salsa20_8(B) {
+  var B32 = new U32Array(16);
+  var x = new U32Array(16);
+  var i;
+
+  for (i = 0; i &lt; 16; i++)
+    B32[i] = B.readUInt32LE(i * 4, true);
+
+  for (i = 0; i &lt; 16; i++)
+    x[i] = B32[i];
+
+  for (i = 0; i &lt; 8; i += 2) {
+    x[4] ^= R(x[0] + x[12], 7);
+    x[8] ^= R(x[4] + x[0], 9);
+    x[12] ^= R(x[8] + x[4], 13);
+    x[0] ^= R(x[12] + x[8], 18);
+
+    x[9] ^= R(x[5] + x[1], 7);
+    x[13] ^= R(x[9] + x[5], 9);
+    x[1] ^= R(x[13] + x[9], 13);
+    x[5] ^= R(x[1] + x[13], 18);
+
+    x[14] ^= R(x[10] + x[6], 7);
+    x[2] ^= R(x[14] + x[10], 9);
+    x[6] ^= R(x[2] + x[14], 13);
+    x[10] ^= R(x[6] + x[2], 18);
+
+    x[3] ^= R(x[15] + x[11], 7);
+    x[7] ^= R(x[3] + x[15], 9);
+    x[11] ^= R(x[7] + x[3], 13);
+    x[15] ^= R(x[11] + x[7], 18);
+
+    x[1] ^= R(x[0] + x[3], 7);
+    x[2] ^= R(x[1] + x[0], 9);
+    x[3] ^= R(x[2] + x[1], 13);
+    x[0] ^= R(x[3] + x[2], 18);
+
+    x[6] ^= R(x[5] + x[4], 7);
+    x[7] ^= R(x[6] + x[5], 9);
+    x[4] ^= R(x[7] + x[6], 13);
+    x[5] ^= R(x[4] + x[7], 18);
+
+    x[11] ^= R(x[10] + x[9], 7);
+    x[8] ^= R(x[11] + x[10], 9);
+    x[9] ^= R(x[8] + x[11], 13);
+    x[10] ^= R(x[9] + x[8], 18);
+
+    x[12] ^= R(x[15] + x[14], 7);
+    x[13] ^= R(x[12] + x[15], 9);
+    x[14] ^= R(x[13] + x[12], 13);
+    x[15] ^= R(x[14] + x[13], 18);
+  }
+
+  for (i = 0; i &lt; 16; i++)
+    B32[i] += x[i];
+
+  for (i = 0; i &lt; 16; i++)
+    B.writeUInt32LE(B32[i], 4 * i, true);
+}
+
+function R(a, b) {
+  return (a &lt;&lt; b) | (a >>> (32 - b));
+}
+
+function blockmix_salsa8(B, Y, Yo, r) {
+  var X = new Buffer(64);
+  var i;
+
+  blkcpy(X, B, 0, (2 * r - 1) * 64, 64);
+
+  for (i = 0; i &lt; 2 * r; i++) {
+    blkxor(X, B, 0, i * 64, 64);
+    salsa20_8(X);
+    blkcpy(Y, X, Yo + i * 64, 0, 64);
+  }
+
+  for (i = 0; i &lt; r; i++)
+    blkcpy(B, Y, i * 64, Yo + (i * 2) * 64, 64);
+
+  for (i = 0; i &lt; r; i++)
+    blkcpy(B, Y, (i + r) * 64, Yo + (i * 2 + 1) * 64, 64);
+}
+
+function integerify(B, r) {
+  return B.readUInt32LE((2 * r - 1) * 64, true);
+}
+
+function smix(B, Bo, r, N, V, XY) {
+  var X = XY;
+  var Y = XY;
+  var i;
+  var j;
+
+  blkcpy(X, B, 0, Bo, 128 * r);
+
+  for (i = 0; i &lt; N; i++) {
+    blkcpy(V, X, i * (128 * r), 0, 128 * r);
+    blockmix_salsa8(X, Y, 128 * r, r);
+  }
+
+  for (i = 0; i &lt; N; i++) {
+    j = integerify(X, r) &amp; (N - 1);
+    blkxor(X, V, 0, j * (128 * r), 128 * r);
+    blockmix_salsa8(X, Y, 128 * r, r);
+  }
+
+  blkcpy(B, X, Bo, 0, 128 * r);
+}
+
+function blkcpy(dest, src, s1, s2, len) {
+  src.copy(dest, s1, s2, s2 + len);
+}
+
+function blkxor(dest, src, s1, s2, len) {
+  for (var i = 0; i &lt; len; i++)
+    dest[s1 + i] ^= src[s2 + i];
+}
+
+/**
+ * Asynchronous scrypt implementation.
+ * @alias module:crypto/scrypt.scryptAsync
+ * @function
+ * @param {Buffer} passwd
+ * @param {Buffer} salt
+ * @param {Number} N
+ * @param {Number} r
+ * @param {Number} p
+ * @param {Number} len
+ * @returns {Promise}
+ */
+
+scryptAsync = co(function* scryptAsync(passwd, salt, N, r, p, len) {
+  var i, B, V, XY;
+
+  if (r * p >= (1 &lt;&lt; 30))
+    throw new Error('EFBIG');
+
+  if ((N &amp; (N - 1)) !== 0 || N === 0)
+    throw new Error('EINVAL');
+
+  if (N > 0xffffffff)
+    throw new Error('EINVAL');
+
+  XY = new Buffer(256 * r);
+  V = new Buffer(128 * r * N);
+
+  B = yield backend.pbkdf2Async(passwd, salt, 1, p * 128 * r, 'sha256');
+
+  for (i = 0; i &lt; p; i++)
+    yield smixAsync(B, i * 128 * r, r, N, V, XY);
+
+  return yield backend.pbkdf2Async(passwd, B, 1, len, 'sha256');
+});
+
+if (native)
+  scryptAsync = native.scryptAsync;
+
+smixAsync = co(function* smixAsync(B, Bo, r, N, V, XY) {
+  var X = XY;
+  var Y = XY;
+  var i;
+  var j;
+
+  blkcpy(X, B, 0, Bo, 128 * r);
+
+  for (i = 0; i &lt; N; i++) {
+    blkcpy(V, X, i * (128 * r), 0, 128 * r);
+    blockmix_salsa8(X, Y, 128 * r, r);
+    yield co.wait();
+  }
+
+  for (i = 0; i &lt; N; i++) {
+    j = integerify(X, r) &amp; (N - 1);
+    blkxor(X, V, 0, j * (128 * r), 128 * r);
+    blockmix_salsa8(X, Y, 128 * r, r);
+    yield co.wait();
+  }
+
+  blkcpy(B, X, Bo, 0, 128 * r);
+});
+
+/*
+ * Expose
+ */
+
+exports = scrypt;
+exports.scrypt = scrypt;
+exports.scryptAsync = scryptAsync;
+
+module.exports = exports;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

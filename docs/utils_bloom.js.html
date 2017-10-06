@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: utils/bloom.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: utils/bloom.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * bloom.js - bloom filter for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+var assert = require('assert');
+var murmur3 = require('./murmur3');
+var BufferReader = require('./reader');
+var StaticWriter = require('./staticwriter');
+var encoding = require('./encoding');
+var sum32 = murmur3.sum32;
+var mul32 = murmur3.mul32;
+var DUMMY = new Buffer(0);
+
+/*
+ * Constants
+ */
+
+var LN2SQUARED = 0.4804530139182014246671025263266649717305529515945455;
+var LN2 = 0.6931471805599453094172321214581765680755001343602552;
+
+/**
+ * Bloom Filter
+ * @alias module:utils.Bloom
+ * @constructor
+ * @param {Number} size - Filter size in bits.
+ * @param {Number} n - Number of hash functions.
+ * @param {Number} tweak - Seed value.
+ * @param {Number|String} - Update type.
+ * @property {Buffer} filter
+ * @property {Number} size
+ * @property {Number} n
+ * @property {Number} tweak
+ * @property {Number} update - Update flag (see {@link Bloom.flags}).
+ */
+
+function Bloom(size, n, tweak, update) {
+  if (!(this instanceof Bloom))
+    return new Bloom(size, n, tweak, update);
+
+  this.filter = DUMMY;
+  this.size = 0;
+  this.n = 0;
+  this.tweak = 0;
+  this.update = Bloom.flags.NONE;
+
+  if (size != null)
+    this.fromOptions(size, n, tweak, update);
+}
+
+/**
+ * Max bloom filter size.
+ * @const {Number}
+ * @default
+ */
+
+Bloom.MAX_BLOOM_FILTER_SIZE = 36000;
+
+/**
+ * Max number of hash functions.
+ * @const {Number}
+ * @default
+ */
+
+Bloom.MAX_HASH_FUNCS = 50;
+
+/**
+ * Bloom filter update flags.
+ * @enum {Number}
+ * @default
+ */
+
+Bloom.flags = {
+  /**
+   * Never update the filter with outpoints.
+   */
+
+  NONE: 0,
+
+  /**
+   * Always update the filter with outpoints.
+   */
+
+  ALL: 1,
+
+  /**
+   * Only update the filter with outpoints if it is
+   * "asymmetric" in terms of addresses (pubkey/multisig).
+   */
+
+  PUBKEY_ONLY: 2
+};
+
+/**
+ * Bloom filter update flags by value.
+ * @const {RevMap}
+ */
+
+Bloom.flagsByVal = {
+  0: 'NONE',
+  1: 'ALL',
+  2: 'PUBKEY_ONLY'
+};
+
+/**
+ * Inject properties from options.
+ * @private
+ * @param {Number} size - Filter size in bits.
+ * @param {Number} n - Number of hash functions.
+ * @param {Number} tweak - Seed value.
+ * @param {Number|String} - Update type.
+ * @returns {Bloom}
+ */
+
+Bloom.prototype.fromOptions = function fromOptions(size, n, tweak, update) {
+  var filter;
+
+  assert(typeof size === 'number', '`size` must be a number.');
+  assert(size > 0, '`size` must be greater than zero.');
+  assert(size % 1 === 0, '`size` must be an integer.');
+
+  size -= size % 8;
+
+  filter = new Buffer(size / 8);
+  filter.fill(0);
+
+  if (tweak == null || tweak === -1)
+    tweak = (Math.random() * 0x100000000) >>> 0;
+
+  if (update == null || update === -1)
+    update = Bloom.flags.NONE;
+
+  if (typeof update === 'string') {
+    update = Bloom.flags[update.toUpperCase()];
+    assert(update != null, 'Unknown update flag.');
+  }
+
+  assert(size > 0, '`size` must be greater than zero.');
+  assert(n > 0, '`n` must be greater than zero.');
+  assert(n % 1 === 0, '`n` must be an integer.');
+  assert(typeof tweak === 'number', '`tweak` must be a number.');
+  assert(tweak % 1 === 0, '`tweak` must be an integer.');
+  assert(Bloom.flagsByVal[update], 'Unknown update flag.');
+
+  this.filter = filter;
+  this.size = size;
+  this.n = n;
+  this.tweak = tweak;
+  this.update = update;
+
+  return this;
+};
+
+/**
+ * Instantiate bloom filter from options.
+ * @param {Number} size - Filter size in bits.
+ * @param {Number} n - Number of hash functions.
+ * @param {Number} tweak - Seed value.
+ * @param {Number|String} - Update type.
+ * @returns {Bloom}
+ */
+
+Bloom.fromOptions = function fromOptions(size, n, tweak, update) {
+  return new Bloom().fromOptions(size, n, tweak, update);
+};
+
+/**
+ * Perform the mumur3 hash on data.
+ * @param {Buffer} val
+ * @param {Number} n
+ * @returns {Number}
+ */
+
+Bloom.prototype.hash = function hash(val, n) {
+  return murmur3(val, sum32(mul32(n, 0xfba4c795), this.tweak)) % this.size;
+};
+
+/**
+ * Reset the filter.
+ */
+
+Bloom.prototype.reset = function reset() {
+  this.filter.fill(0);
+};
+
+/**
+ * Add data to the filter.
+ * @param {Buffer|String}
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ */
+
+Bloom.prototype.add = function add(val, enc) {
+  var i, index;
+
+  if (typeof val === 'string')
+    val = new Buffer(val, enc);
+
+  for (i = 0; i &lt; this.n; i++) {
+    index = this.hash(val, i);
+    this.filter[index >>> 3] |= 1 &lt;&lt; (7 &amp; index);
+  }
+};
+
+/**
+ * Test whether data is present in the filter.
+ * @param {Buffer|String} val
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ * @returns {Boolean}
+ */
+
+Bloom.prototype.test = function test(val, enc) {
+  var i, index;
+
+  if (typeof val === 'string')
+    val = new Buffer(val, enc);
+
+  for (i = 0; i &lt; this.n; i++) {
+    index = this.hash(val, i);
+    if ((this.filter[index >>> 3] &amp; (1 &lt;&lt; (7 &amp; index))) === 0)
+      return false;
+  }
+
+  return true;
+};
+
+/**
+ * Test whether data is present in the
+ * filter and potentially add data.
+ * @param {Buffer|String} val
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ * @returns {Boolean} Whether data was added.
+ */
+
+Bloom.prototype.added = function added(val, enc) {
+  var ret = false;
+  var i, index;
+
+  if (typeof val === 'string')
+    val = new Buffer(val, enc);
+
+  for (i = 0; i &lt; this.n; i++) {
+    index = this.hash(val, i);
+    if (!ret &amp;&amp; (this.filter[index >>> 3] &amp; (1 &lt;&lt; (7 &amp; index))) === 0)
+      ret = true;
+    this.filter[index >>> 3] |= 1 &lt;&lt; (7 &amp; index);
+  }
+
+  return ret;
+};
+
+/**
+ * Create a filter from a false positive rate.
+ * @param {Number} items - Expected number of items.
+ * @param {Number} rate - False positive rate (0.0-1.0).
+ * @param {Number|String} update
+ * @example
+ * Bloom.fromRate(800000, 0.0001, 'none');
+ * @returns {Boolean}
+ */
+
+Bloom.fromRate = function fromRate(items, rate, update) {
+  var size, n;
+
+  assert(typeof items === 'number', '`items` must be a number.');
+  assert(items > 0, '`items` must be greater than zero.');
+  assert(items % 1 === 0, '`items` must be an integer.');
+  assert(typeof rate === 'number', '`rate` must be a number.');
+  assert(rate >= 0 &amp;&amp; rate &lt;= 1, '`rate` must be between 0.0 and 1.0.');
+
+  size = (-1 / LN2SQUARED * items * Math.log(rate)) | 0;
+  size = Math.max(8, size);
+
+  if (update !== -1) {
+    assert(size &lt;= Bloom.MAX_BLOOM_FILTER_SIZE * 8,
+      'Bloom filter size violates policy limits!');
+  }
+
+  n = Math.max(1, (size / items * LN2) | 0);
+
+  if (update !== -1) {
+    assert(n &lt;= Bloom.MAX_HASH_FUNCS,
+      'Bloom filter size violates policy limits!');
+  }
+
+  return new Bloom(size, n, -1, update);
+};
+
+/**
+ * Ensure the filter is within the size limits.
+ * @returns {Boolean}
+ */
+
+Bloom.prototype.isWithinConstraints = function isWithinConstraints() {
+  if (this.size > Bloom.MAX_BLOOM_FILTER_SIZE * 8)
+    return false;
+
+  if (this.n > Bloom.MAX_HASH_FUNCS)
+    return false;
+
+  return true;
+};
+
+/**
+ * Get serialization size.
+ * @returns {Number}
+ */
+
+Bloom.prototype.getSize = function getSize() {
+  return encoding.sizeVarBytes(this.filter) + 9;
+};
+
+/**
+ * Write filter to buffer writer.
+ * @param {BufferWriter} bw
+ */
+
+Bloom.prototype.toWriter = function toWriter(bw) {
+  bw.writeVarBytes(this.filter);
+  bw.writeU32(this.n);
+  bw.writeU32(this.tweak);
+  bw.writeU8(this.update);
+  return bw;
+};
+
+/**
+ * Serialize bloom filter.
+ * @returns {Buffer}
+ */
+
+Bloom.prototype.toRaw = function toRaw() {
+  var size = this.getSize();
+  return this.toWriter(new StaticWriter(size)).render();
+};
+
+/**
+ * Inject properties from buffer reader.
+ * @private
+ * @param {BufferReader} br
+ */
+
+Bloom.prototype.fromReader = function fromReader(br) {
+  this.filter = br.readVarBytes();
+  this.n = br.readU32();
+  this.tweak = br.readU32();
+  this.update = br.readU8();
+  assert(Bloom.flagsByVal[this.update] != null, 'Unknown update flag.');
+  return this;
+};
+
+/**
+ * Inject properties from serialized data.
+ * @private
+ * @param {Buffer} data
+ */
+
+Bloom.prototype.fromRaw = function fromRaw(data) {
+  return this.fromReader(new BufferReader(data));
+};
+
+/**
+ * Instantiate bloom filter from buffer reader.
+ * @param {BufferReader} br
+ * @returns {Bloom}
+ */
+
+Bloom.fromReader = function fromReader(br) {
+  return new Bloom().fromReader(br);
+};
+
+/**
+ * Instantiate bloom filter from serialized data.
+ * @param {Buffer} data
+ * @param {String?} enc
+ * @returns {Bloom}
+ */
+
+Bloom.fromRaw = function fromRaw(data, enc) {
+  if (typeof data === 'string')
+    data = new Buffer(data, enc);
+  return new Bloom().fromRaw(data);
+};
+
+/**
+ * A rolling bloom filter used internally
+ * (do not relay this on the p2p network).
+ * @alias module:utils.RollingFilter
+ * @constructor
+ * @param {Number} items - Expected number of items.
+ * @param {Number} rate - False positive rate (0.0-1.0).
+ */
+
+function RollingFilter(items, rate) {
+  if (!(this instanceof RollingFilter))
+    return new RollingFilter(items, rate);
+
+  this.entries = 0;
+  this.generation = 1;
+  this.n = 0;
+  this.limit = 0;
+  this.size = 0;
+  this.items = 0;
+  this.tweak = 0;
+  this.filter = DUMMY;
+
+  if (items != null)
+    this.fromRate(items, rate);
+}
+
+/**
+ * Inject properties from items and FPR.
+ * @private
+ * @param {Number} items - Expected number of items.
+ * @param {Number} rate - False positive rate (0.0-1.0).
+ * @returns {RollingFilter}
+ */
+
+RollingFilter.prototype.fromRate = function fromRate(items, rate) {
+  var logRate, max, n, limit, size, tweak, filter;
+
+  assert(typeof items === 'number', '`items` must be a number.');
+  assert(items > 0, '`items` must be greater than zero.');
+  assert(items % 1 === 0, '`items` must be an integer.');
+  assert(typeof rate === 'number', '`rate` must be a number.');
+  assert(rate >= 0 &amp;&amp; rate &lt;= 1, '`rate` must be between 0.0 and 1.0.');
+
+  logRate = Math.log(rate);
+
+  n = Math.max(1, Math.min(Math.round(logRate / Math.log(0.5)), 50));
+  limit = (items + 1) / 2 | 0;
+
+  max = limit * 3;
+  size = -1 * n * max / Math.log(1.0 - Math.exp(logRate / n));
+  size = Math.ceil(size);
+
+  items = ((size + 63) / 64 | 0) &lt;&lt; 1;
+  items >>>= 0;
+  items = Math.max(1, items);
+
+  tweak = (Math.random() * 0x100000000) >>> 0;
+
+  filter = new Buffer(items * 8);
+  filter.fill(0);
+
+  this.n = n;
+  this.limit = limit;
+  this.size = size;
+  this.items = items;
+  this.tweak = tweak;
+  this.filter = filter;
+
+  return this;
+};
+
+/**
+ * Instantiate rolling filter from items and FPR.
+ * @param {Number} items - Expected number of items.
+ * @param {Number} rate - False positive rate (0.0-1.0).
+ * @returns {RollingFilter}
+ */
+
+RollingFilter.fromRate = function fromRate(items, rate) {
+  return new RollingFilter().fromRate(items, rate);
+};
+
+/**
+ * Perform the mumur3 hash on data.
+ * @param {Buffer} val
+ * @param {Number} seed
+ * @returns {Number}
+ */
+
+RollingFilter.prototype.hash = function hash(val, n) {
+  return murmur3(val, sum32(mul32(n, 0xfba4c795), this.tweak));
+};
+
+/**
+ * Reset the filter.
+ */
+
+RollingFilter.prototype.reset = function reset() {
+  if (this.entries === 0)
+    return;
+
+  this.entries = 0;
+  this.generation = 1;
+  this.filter.fill(0);
+};
+
+/**
+ * Add data to the filter.
+ * @param {Buffer|String}
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ */
+
+RollingFilter.prototype.add = function add(val, enc) {
+  var i, hash, bits, pos, pos1, pos2, bit, oct;
+  var m1, m2, v1, v2, mhi, mlo;
+
+  if (typeof val === 'string')
+    val = new Buffer(val, enc);
+
+  if (this.entries === this.limit) {
+    this.entries = 0;
+    this.generation += 1;
+
+    if (this.generation === 4)
+      this.generation = 1;
+
+    m1 = (this.generation &amp; 1) * 0xffffffff;
+    m2 = (this.generation >>> 1) * 0xffffffff;
+
+    for (i = 0; i &lt; this.items; i += 2) {
+      pos1 = i * 8;
+      pos2 = (i + 1) * 8;
+      v1 = read(this.filter, pos1);
+      v2 = read(this.filter, pos2);
+      mhi = (v1.hi ^ m1) | (v2.hi ^ m2);
+      mlo = (v1.lo ^ m1) | (v2.lo ^ m2);
+      v1.hi &amp;= mhi;
+      v1.lo &amp;= mlo;
+      v2.hi &amp;= mhi;
+      v2.lo &amp;= mlo;
+      write(this.filter, v1, pos1);
+      write(this.filter, v2, pos2);
+    }
+  }
+
+  this.entries += 1;
+
+  for (i = 0; i &lt; this.n; i++) {
+    hash = this.hash(val, i);
+    bits = hash &amp; 0x3f;
+    pos = (hash >>> 6) % this.items;
+    pos1 = (pos &amp; ~1) * 8;
+    pos2 = (pos | 1) * 8;
+
+    bit = bits % 8;
+    oct = (bits - bit) / 8;
+    pos1 += oct;
+    pos2 += oct;
+
+    this.filter[pos1] &amp;= ~(1 &lt;&lt; bit);
+    this.filter[pos1] |= (this.generation &amp; 1) &lt;&lt; bit;
+
+    this.filter[pos2] &amp;= ~(1 &lt;&lt; bit);
+    this.filter[pos2] |= (this.generation >>> 1) &lt;&lt; bit;
+  }
+};
+
+/**
+ * Test whether data is present in the filter.
+ * @param {Buffer|String} val
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ * @returns {Boolean}
+ */
+
+RollingFilter.prototype.test = function test(val, enc) {
+  var i, hash, bits, pos, pos1, pos2, bit, oct;
+
+  if (this.entries === 0)
+    return false;
+
+  if (typeof val === 'string')
+    val = new Buffer(val, enc);
+
+  for (i = 0; i &lt; this.n; i++) {
+    hash = this.hash(val, i);
+    bits = hash &amp; 0x3f;
+    pos = (hash >>> 6) % this.items;
+    pos1 = (pos &amp; ~1) * 8;
+    pos2 = (pos | 1) * 8;
+
+    bit = bits % 8;
+    oct = (bits - bit) / 8;
+    pos1 += oct;
+    pos2 += oct;
+
+    bits = (this.filter[pos1] >>> bit) &amp; 1;
+    bits |= (this.filter[pos2] >>> bit) &amp; 1;
+
+    if (bits === 0)
+      return false;
+  }
+
+  return true;
+};
+
+/**
+ * Test whether data is present in the
+ * filter and potentially add data.
+ * @param {Buffer|String} val
+ * @param {String?} enc - Can be any of the Buffer object's encodings.
+ * @returns {Boolean} Whether data was added.
+ */
+
+RollingFilter.prototype.added = function added(val, enc) {
+  if (typeof val === 'string')
+    val = new Buffer(val, enc);
+
+  if (!this.test(val)) {
+    this.add(val);
+    return true;
+  }
+
+  return false;
+};
+
+/*
+ * Helpers
+ */
+
+function U64(hi, lo) {
+  this.hi = hi;
+  this.lo = lo;
+}
+
+function read(data, off) {
+  var hi = data.readUInt32LE(off + 4, true);
+  var lo = data.readUInt32LE(off, true);
+  return new U64(hi, lo);
+}
+
+function write(data, value, off) {
+  data.writeUInt32LE(value.hi, off + 4, true);
+  data.writeUInt32LE(value.lo, off, true);
+}
+
+/*
+ * Expose
+ */
+
+exports = Bloom;
+exports.murmur3 = murmur3;
+exports.Rolling = RollingFilter;
+
+module.exports = exports;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

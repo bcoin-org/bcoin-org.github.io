@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: crypto/sha256.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: crypto/sha256.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * sha256.js - SHA256 implementation for bcoin
+ * Copyright (c) 2016-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ * Parts of this software based on hash.js.
+ */
+
+'use strict';
+
+/**
+ * @module crypto/sha256
+ * @ignore
+ */
+
+/*
+ * Constants
+ */
+
+var DESC = new Buffer(8);
+var BUFFER64 = new Buffer(64);
+var K, PADDING;
+var ctx, mctx;
+
+PADDING = new Buffer(64);
+PADDING.fill(0);
+PADDING[0] = 0x80;
+
+K = [
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+  0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+  0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+  0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+  0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+  0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+  0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+  0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+  0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+];
+
+/**
+ * SHA256
+ * @alias module:crypto/sha256.SHA256
+ * @constructor
+ * @property {Number[]} s
+ * @property {Number[]} w
+ * @property {Buffer} block
+ * @property {Number} bytes
+ */
+
+function SHA256() {
+  if (!(this instanceof SHA256))
+    return new SHA256();
+
+  this.s = new Array(8);
+  this.w = new Array(64);
+  this.block = new Buffer(64);
+  this.bytes = 0;
+}
+
+/**
+ * Initialize SHA256 context.
+ */
+
+SHA256.prototype.init = function init() {
+  this.s[0] = 0x6a09e667;
+  this.s[1] = 0xbb67ae85;
+  this.s[2] = 0x3c6ef372;
+  this.s[3] = 0xa54ff53a;
+  this.s[4] = 0x510e527f;
+  this.s[5] = 0x9b05688c;
+  this.s[6] = 0x1f83d9ab;
+  this.s[7] = 0x5be0cd19;
+  this.bytes = 0;
+};
+
+/**
+ * Update SHA256 context.
+ * @param {Buffer} data
+ */
+
+SHA256.prototype.update = function update(data) {
+  return this._update(data, data.length);
+};
+
+/**
+ * Finalize SHA256 context.
+ * @returns {Buffer}
+ */
+
+SHA256.prototype.finish = function finish() {
+  return this._finish(new Buffer(32));
+};
+
+/**
+ * Update SHA256 context.
+ * @private
+ * @param {Buffer} data
+ * @param {Number} len
+ */
+
+SHA256.prototype._update = function update(data, len) {
+  var size = this.bytes &amp; 0x3f;
+  var pos = 0;
+  var i, want;
+
+  this.bytes += len;
+
+  if (size > 0) {
+    want = 64 - size;
+
+    if (want > len)
+      want = len;
+
+    for (i = 0; i &lt; want; i++)
+      this.block[size + i] = data[i];
+
+    size += want;
+    len -= want;
+    pos += want;
+
+    if (size &lt; 64)
+      return;
+
+    this.transform(this.block, 0);
+  }
+
+  while (len >= 64) {
+    this.transform(data, pos);
+    pos += 64;
+    len -= 64;
+  }
+
+  for (i = 0; i &lt; len; i++)
+    this.block[i] = data[pos + i];
+};
+
+/**
+ * Finalize SHA256 context.
+ * @private
+ * @param {Buffer} out
+ * @returns {Buffer}
+ */
+
+SHA256.prototype._finish = function _finish(out) {
+  var i;
+
+  writeU32(DESC, this.bytes >>> 29, 0);
+  writeU32(DESC, this.bytes &lt;&lt; 3, 4);
+
+  this._update(PADDING, 1 + ((119 - (this.bytes % 64)) % 64));
+  this._update(DESC, 8);
+
+  for (i = 0; i &lt; 8; i++) {
+    writeU32(out, this.s[i], i * 4);
+    this.s[i] = 0;
+  }
+
+  return out;
+};
+
+/**
+ * Transform SHA256 block.
+ * @param {Buffer} chunk
+ * @param {Number} pos
+ */
+
+SHA256.prototype.transform = function transform(chunk, pos) {
+  var a = this.s[0];
+  var b = this.s[1];
+  var c = this.s[2];
+  var d = this.s[3];
+  var e = this.s[4];
+  var f = this.s[5];
+  var g = this.s[6];
+  var h = this.s[7];
+  var w = this.w;
+  var i, t1, t2;
+
+  for (i = 0; i &lt; 16; i++)
+    w[i] = readU32(chunk, pos + i * 4);
+
+  for (; i &lt; 64; i++)
+    w[i] = sigma1(w[i - 2]) + w[i - 7] + sigma0(w[i - 15]) + w[i - 16];
+
+  for (i = 0; i &lt; 64; i++) {
+    t1 = h + Sigma1(e);
+    t1 += Ch(e, f, g);
+    t1 += K[i] + w[i];
+
+    t2 = Sigma0(a);
+    t2 += Maj(a, b, c);
+
+    h = g;
+    g = f;
+    f = e;
+
+    e = d + t1;
+
+    d = c;
+    c = b;
+    b = a;
+
+    a = t1 + t2;
+  }
+
+  this.s[0] += a;
+  this.s[1] += b;
+  this.s[2] += c;
+  this.s[3] += d;
+  this.s[4] += e;
+  this.s[5] += f;
+  this.s[6] += g;
+  this.s[7] += h;
+
+  this.s[0] >>>= 0;
+  this.s[1] >>>= 0;
+  this.s[2] >>>= 0;
+  this.s[3] >>>= 0;
+  this.s[4] >>>= 0;
+  this.s[5] >>>= 0;
+  this.s[6] >>>= 0;
+  this.s[7] >>>= 0;
+};
+
+/**
+ * SHA256Hmac
+ * @alias module:crypto/sha256.SHA256Hmac
+ * @constructor
+ * @property {SHA256} inner
+ * @property {SHA256} outer
+ */
+
+function SHA256Hmac() {
+  if (!(this instanceof SHA256Hmac))
+    return new SHA256Hmac();
+
+  this.inner = new SHA256();
+  this.outer = new SHA256();
+}
+
+/**
+ * Initialize HMAC context.
+ * @param {Buffer} data
+ */
+
+SHA256Hmac.prototype.init = function init(data) {
+  var key = BUFFER64;
+  var i;
+
+  if (data.length > 64) {
+    this.inner.init();
+    this.inner.update(data);
+    this.inner._finish(key);
+    key.fill(0, 32, 64);
+  } else {
+    data.copy(key, 0);
+    key.fill(0, data.length, 64);
+  }
+
+  for (i = 0; i &lt; key.length; i++)
+    key[i] ^= 0x36;
+
+  this.inner.init();
+  this.inner.update(key);
+
+  for (i = 0; i &lt; key.length; i++)
+    key[i] ^= 0x6a;
+
+  this.outer.init();
+  this.outer.update(key);
+};
+
+/**
+ * Update HMAC context.
+ * @param {Buffer} data
+ */
+
+SHA256Hmac.prototype.update = function update(data) {
+  this.inner.update(data);
+};
+
+/**
+ * Finalize HMAC context.
+ * @returns {Buffer}
+ */
+
+SHA256Hmac.prototype.finish = function finish() {
+  this.outer.update(this.inner.finish());
+  return this.outer.finish();
+};
+
+/*
+ * Helpers
+ * @see https://github.com/bitcoin-core/secp256k1/blob/master/src/hash_impl.h
+ */
+
+function Sigma0(x) {
+  return (x >>> 2 | x &lt;&lt; 30) ^ (x >>> 13 | x &lt;&lt; 19) ^ (x >>> 22 | x &lt;&lt; 10);
+}
+
+function Sigma1(x) {
+  return (x >>> 6 | x &lt;&lt; 26) ^ (x >>> 11 | x &lt;&lt; 21) ^ (x >>> 25 | x &lt;&lt; 7);
+}
+
+function sigma0(x) {
+  return (x >>> 7 | x &lt;&lt; 25) ^ (x >>> 18 | x &lt;&lt; 14) ^ (x >>> 3);
+}
+
+function sigma1(x) {
+  return (x >>> 17 | x &lt;&lt; 15) ^ (x >>> 19 | x &lt;&lt; 13) ^ (x >>> 10);
+}
+
+function Ch(x, y, z) {
+  return z ^ (x &amp; (y ^ z));
+}
+
+function Maj(x, y, z) {
+  return (x &amp; y) | (z &amp; (x | y));
+}
+
+function writeU32(buf, value, offset) {
+  buf[offset] = value >>> 24;
+  buf[offset + 1] = (value >> 16) &amp; 0xff;
+  buf[offset + 2] = (value >> 8) &amp; 0xff;
+  buf[offset + 3] = value &amp; 0xff;
+}
+
+function readU32(buf, offset) {
+  return ((buf[offset] &amp; 0xff) * 0x1000000)
+    + ((buf[offset + 1] &amp; 0xff) &lt;&lt; 16)
+    | ((buf[offset + 2] &amp; 0xff) &lt;&lt; 8)
+    | (buf[offset + 3] &amp; 0xff);
+}
+
+/*
+ * Context Helpers
+ */
+
+ctx = new SHA256();
+mctx = new SHA256Hmac();
+
+/**
+ * Hash buffer with sha256.
+ * @alias module:crypto/sha256.sha256
+ * @param {Buffer} data
+ * @returns {Buffer}
+ */
+
+function sha256(data) {
+  ctx.init();
+  ctx.update(data);
+  return ctx.finish();
+}
+
+/**
+ * Hash buffer with double sha256.
+ * @alias module:crypto/sha256.hash256
+ * @param {Buffer} data
+ * @returns {Buffer}
+ */
+
+function hash256(data) {
+  var out = new Buffer(32);
+  ctx.init();
+  ctx.update(data);
+  ctx._finish(out);
+  ctx.init();
+  ctx.update(out);
+  ctx._finish(out);
+  return out;
+}
+
+/**
+ * Create a sha256 HMAC from buffer and key.
+ * @alias module:crypto/sha256.hmac
+ * @param {Buffer} data
+ * @param {Buffer} key
+ * @returns {Buffer}
+ */
+
+function hmac(data, key) {
+  mctx.init(key);
+  mctx.update(data);
+  return mctx.finish();
+}
+
+/*
+ * Expose
+ */
+
+exports = SHA256;
+exports.SHA256 = SHA256;
+exports.SHA256Hmac = SHA256Hmac;
+exports.digest = sha256;
+exports.hmac = hmac;
+exports.hash256 = hash256;
+
+module.exports = exports;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

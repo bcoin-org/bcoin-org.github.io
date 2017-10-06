@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: blockchain/chainentry.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: blockchain/chainentry.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * chainentry.js - chainentry object for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+var assert = require('assert');
+var BN = require('bn.js');
+var consensus = require('../protocol/consensus');
+var util = require('../utils/util');
+var crypto = require('../crypto/crypto');
+var encoding = require('../utils/encoding');
+var BufferReader = require('../utils/reader');
+var StaticWriter = require('../utils/staticwriter');
+var Headers = require('../primitives/headers');
+var InvItem = require('../primitives/invitem');
+var co = require('../utils/co');
+
+/**
+ * Represents an entry in the chain. Unlike
+ * other bitcoin fullnodes, we store the
+ * chainwork _with_ the entry in order to
+ * avoid reading the entire chain index on
+ * boot and recalculating the chainworks.
+ * @alias module:blockchain.ChainEntry
+ * @constructor
+ * @param {Chain} chain
+ * @param {Object} options
+ * @param {ChainEntry} prev
+ * @property {Hash} hash
+ * @property {Number} version - Transaction version. Note that Bcoin reads
+ * versions as unsigned even though they are signed at the protocol level.
+ * This value will never be negative.
+ * @property {Hash} prevBlock
+ * @property {Hash} merkleRoot
+ * @property {Number} ts
+ * @property {Number} bits
+ * @property {Number} nonce
+ * @property {Number} height
+ * @property {BN} chainwork
+ * @property {ReversedHash} rhash - Reversed block hash (uint256le).
+ */
+
+function ChainEntry(chain, options, prev) {
+  if (!(this instanceof ChainEntry))
+    return new ChainEntry(chain, options, prev);
+
+  this.chain = chain;
+  this.hash = encoding.NULL_HASH;
+  this.version = 1;
+  this.prevBlock = encoding.NULL_HASH;
+  this.merkleRoot = encoding.NULL_HASH;
+  this.ts = 0;
+  this.bits = 0;
+  this.nonce = 0;
+  this.height = -1;
+  this.chainwork = null;
+
+  if (options)
+    this.fromOptions(options, prev);
+}
+
+/**
+ * The max chainwork (1 &lt;&lt; 256).
+ * @const {BN}
+ */
+
+ChainEntry.MAX_CHAINWORK = new BN(1).ushln(256);
+
+/**
+ * Size of set to pick median time from.
+ * @const {Number}
+ * @default
+ */
+
+ChainEntry.MEDIAN_TIMESPAN = 11;
+
+/**
+ * Inject properties from options.
+ * @private
+ * @param {Object} options
+ * @param {ChainEntry} prev - Previous entry.
+ */
+
+ChainEntry.prototype.fromOptions = function fromOptions(options, prev) {
+  assert(options, 'Block data is required.');
+  assert(typeof options.hash === 'string');
+  assert(util.isNumber(options.version));
+  assert(typeof options.prevBlock === 'string');
+  assert(typeof options.merkleRoot === 'string');
+  assert(util.isNumber(options.ts));
+  assert(util.isNumber(options.bits));
+  assert(util.isNumber(options.nonce));
+  assert(!options.chainwork || BN.isBN(options.chainwork));
+
+  this.hash = options.hash;
+  this.version = options.version;
+  this.prevBlock = options.prevBlock;
+  this.merkleRoot = options.merkleRoot;
+  this.ts = options.ts;
+  this.bits = options.bits;
+  this.nonce = options.nonce;
+  this.height = options.height;
+  this.chainwork = options.chainwork;
+
+  if (!this.chainwork)
+    this.chainwork = this.getChainwork(prev);
+
+  return this;
+};
+
+/**
+ * Instantiate chainentry from options.
+ * @param {Chain} chain
+ * @param {Object} options
+ * @param {ChainEntry} prev - Previous entry.
+ * @returns {ChainEntry}
+ */
+
+ChainEntry.fromOptions = function fromOptions(chain, options, prev) {
+  return new ChainEntry(chain).fromOptions(options, prev);
+};
+
+/**
+ * Calculate the proof: (1 &lt;&lt; 256) / (target + 1)
+ * @returns {BN} proof
+ */
+
+ChainEntry.prototype.getProof = function getProof() {
+  var target = consensus.fromCompact(this.bits);
+  if (target.isNeg() || target.cmpn(0) === 0)
+    return new BN(0);
+  return ChainEntry.MAX_CHAINWORK.div(target.iaddn(1));
+};
+
+/**
+ * Calculate the chainwork by
+ * adding proof to previous chainwork.
+ * @returns {BN} chainwork
+ */
+
+ChainEntry.prototype.getChainwork = function getChainwork(prev) {
+  var proof = this.getProof();
+
+  if (!prev)
+    return proof;
+
+  return proof.iadd(prev.chainwork);
+};
+
+/**
+ * Test against the genesis block.
+ * @returns {Boolean}
+ */
+
+ChainEntry.prototype.isGenesis = function isGenesis() {
+  return this.hash === this.chain.network.genesis.hash;
+};
+
+/**
+ * Allocate ancestors based on retarget interval and
+ * majority window. These ancestors will be stored
+ * in the `ancestors` array and enable use of synchronous
+ * ChainEntry methods.
+ * @returns {Promise}
+ */
+
+ChainEntry.prototype.getRetargetAncestors = function getRetargetAncestors() {
+  var timespan = ChainEntry.MEDIAN_TIMESPAN;
+  var interval = this.chain.network.pow.retargetInterval;
+  var reset = this.chain.network.pow.targetReset;
+  var max = timespan;
+
+  if ((this.height + 1) % interval === 0 || reset)
+    max = Math.max(max, interval);
+
+  return this.getAncestors(max);
+};
+
+/**
+ * Collect ancestors.
+ * @method
+ * @param {Number} max - Number of ancestors.
+ * @returns {Promise} - Returns ChainEntry[].
+ */
+
+ChainEntry.prototype.getAncestors = co(function* getAncestors(max) {
+  var entry = this;
+  var ancestors = [];
+  var cached;
+
+  if (max === 0)
+    return ancestors;
+
+  assert(util.isNumber(max));
+
+  for (;;) {
+    ancestors.push(entry);
+
+    if (ancestors.length >= max)
+      return ancestors;
+
+    cached = this.chain.db.getCache(entry.prevBlock);
+
+    if (!cached) {
+      ancestors.pop();
+      break;
+    }
+
+    entry = cached;
+  }
+
+  while (entry) {
+    ancestors.push(entry);
+    if (ancestors.length >= max)
+      break;
+    entry = yield entry.getPrevious();
+  }
+
+  return ancestors;
+});
+
+/**
+ * Test whether the entry is in the main chain.
+ * @method
+ * @returns {Promise} - Return Boolean.
+ */
+
+ChainEntry.prototype.isMainChain = co(function* isMainChain() {
+  var entry;
+
+  if (this.hash === this.chain.tip.hash
+      || this.hash === this.chain.network.genesis.hash) {
+    return true;
+  }
+
+  entry = this.chain.db.getCache(this.height);
+
+  if (entry) {
+    if (entry.hash === this.hash)
+      return true;
+    return false;
+  }
+
+  if (yield this.chain.db.getNextHash(this.hash))
+    return true;
+
+  return false;
+});
+
+/**
+ * Get ancestor by `height`.
+ * @method
+ * @param {Number} height
+ * @returns {Promise} - Returns ChainEntry[].
+ */
+
+ChainEntry.prototype.getAncestor = co(function* getAncestor(height) {
+  var entry = this;
+
+  if (height &lt; 0)
+    return;
+
+  assert(height >= 0);
+  assert(height &lt;= this.height);
+
+  if (yield this.isMainChain())
+    return yield this.chain.db.getEntry(height);
+
+  while (entry.height !== height) {
+    entry = yield entry.getPrevious();
+    assert(entry);
+  }
+
+  return entry;
+});
+
+/**
+ * Get previous entry.
+ * @returns {Promise} - Returns ChainEntry.
+ */
+
+ChainEntry.prototype.getPrevious = function getPrevious() {
+  return this.chain.db.getEntry(this.prevBlock);
+};
+
+/**
+ * Get next entry.
+ * @method
+ * @returns {Promise} - Returns ChainEntry.
+ */
+
+ChainEntry.prototype.getNext = co(function* getNext() {
+  var hash = yield this.chain.db.getNextHash(this.hash);
+  if (!hash)
+    return;
+  return yield this.chain.db.getEntry(hash);
+});
+
+/**
+ * Get next entry.
+ * @method
+ * @returns {Promise} - Returns ChainEntry.
+ */
+
+ChainEntry.prototype.getNextEntry = co(function* getNextEntry() {
+  var entry = yield this.chain.db.getEntry(this.height + 1);
+
+  if (!entry)
+    return;
+
+  // Not on main chain.
+  if (entry.prevBlock !== this.hash)
+    return;
+
+  return entry;
+});
+
+/**
+ * Get median time past.
+ * @see GetMedianTimePast().
+ * @param {ChainEntry[]} ancestors - Note that index 0 is the same entry.
+ * @returns {Number} Median time past.
+ */
+
+ChainEntry.prototype.getMedianTime = function getMedianTime(ancestors) {
+  var timespan = ChainEntry.MEDIAN_TIMESPAN;
+  var entry = this;
+  var median = [];
+  var i;
+
+  for (i = 0; i &lt; timespan &amp;&amp; entry; i++, entry = ancestors[i])
+    median.push(entry.ts);
+
+  median = median.sort();
+
+  return median[median.length / 2 | 0];
+};
+
+/**
+ * Get median time past asynchronously (see {@link ChainEntry#getMedianTime}).
+ * @method
+ * @returns {Promise} - Returns Number.
+ */
+
+ChainEntry.prototype.getMedianTimeAsync = co(function* getMedianTimeAsync() {
+  var timespan = ChainEntry.MEDIAN_TIMESPAN;
+  var ancestors = yield this.getAncestors(timespan);
+  return this.getMedianTime(ancestors);
+});
+
+/**
+ * Test whether the entry is potentially
+ * an ancestor of a checkpoint.
+ * @returns {Boolean}
+ */
+
+ChainEntry.prototype.isHistorical = function isHistorical() {
+  if (this.chain.checkpoints) {
+    if (this.height + 1 &lt;= this.chain.network.lastCheckpoint)
+      return true;
+  }
+  return false;
+};
+
+/**
+ * Test whether the entry contains an unknown version bit.
+ * @returns {Boolean}
+ */
+
+ChainEntry.prototype.hasUnknown = function hasUnknown() {
+  var bits = this.version &amp; consensus.VERSION_TOP_MASK;
+  var topBits = consensus.VERSION_TOP_BITS;
+
+  if ((bits >>> 0) !== topBits)
+    return false;
+
+  return (this.version &amp; this.chain.network.unknownBits) !== 0;
+};
+
+/**
+ * Test whether the entry contains a version bit.
+ * @param {Object} deployment
+ * @returns {Boolean}
+ */
+
+ChainEntry.prototype.hasBit = function hasBit(bit) {
+  var bits = this.version &amp; consensus.VERSION_TOP_MASK;
+  var topBits = consensus.VERSION_TOP_BITS;
+  var mask = 1 &lt;&lt; bit;
+  return (bits >>> 0) === topBits &amp;&amp; (this.version &amp; mask) !== 0;
+};
+
+/**
+ * Get little-endian block hash.
+ * @returns {Hash}
+ */
+
+ChainEntry.prototype.rhash = function() {
+  return util.revHex(this.hash);
+};
+
+/**
+ * Inject properties from block.
+ * @private
+ * @param {Block|MerkleBlock} block
+ * @param {ChainEntry} prev - Previous entry.
+ */
+
+ChainEntry.prototype.fromBlock = function fromBlock(block, prev) {
+  this.hash = block.hash('hex');
+  this.version = block.version;
+  this.prevBlock = block.prevBlock;
+  this.merkleRoot = block.merkleRoot;
+  this.ts = block.ts;
+  this.bits = block.bits;
+  this.nonce = block.nonce;
+  this.height = prev ? prev.height + 1: 0;
+  this.chainwork = this.getChainwork(prev);
+  return this;
+};
+
+/**
+ * Instantiate chainentry from block.
+ * @param {Chain} chain
+ * @param {Block|MerkleBlock} block
+ * @param {ChainEntry} prev - Previous entry.
+ * @returns {ChainEntry}
+ */
+
+ChainEntry.fromBlock = function fromBlock(chain, block, prev) {
+  return new ChainEntry(chain).fromBlock(block, prev);
+};
+
+/**
+ * Serialize the entry to internal database format.
+ * @returns {Buffer}
+ */
+
+ChainEntry.prototype.toRaw = function toRaw() {
+  var bw = new StaticWriter(116);
+
+  bw.writeU32(this.version);
+  bw.writeHash(this.prevBlock);
+  bw.writeHash(this.merkleRoot);
+  bw.writeU32(this.ts);
+  bw.writeU32(this.bits);
+  bw.writeU32(this.nonce);
+  bw.writeU32(this.height);
+  bw.writeBytes(this.chainwork.toArrayLike(Buffer, 'le', 32));
+
+  return bw.render();
+};
+
+/**
+ * Inject properties from serialized data.
+ * @private
+ * @param {Buffer} data
+ */
+
+ChainEntry.prototype.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var hash = crypto.hash256(br.readBytes(80));
+
+  br.seek(-80);
+
+  this.hash = hash.toString('hex');
+  this.version = br.readU32();
+  this.prevBlock = br.readHash('hex');
+  this.merkleRoot = br.readHash('hex');
+  this.ts = br.readU32();
+  this.bits = br.readU32();
+  this.nonce = br.readU32();
+  this.height = br.readU32();
+  this.chainwork = new BN(br.readBytes(32), 'le');
+
+  return this;
+};
+
+/**
+ * Deserialize the entry.
+ * @param {Chain} chain
+ * @param {Buffer} data
+ * @returns {ChainEntry}
+ */
+
+ChainEntry.fromRaw = function fromRaw(chain, data) {
+  return new ChainEntry(chain).fromRaw(data);
+};
+
+/**
+ * Serialize the entry to an object more
+ * suitable for JSON serialization.
+ * @returns {Object}
+ */
+
+ChainEntry.prototype.toJSON = function toJSON() {
+  return {
+    hash: util.revHex(this.hash),
+    version: this.version,
+    prevBlock: util.revHex(this.prevBlock),
+    merkleRoot: util.revHex(this.merkleRoot),
+    ts: this.ts,
+    bits: this.bits,
+    nonce: this.nonce,
+    height: this.height,
+    chainwork: this.chainwork.toString('hex', 64)
+  };
+};
+
+/**
+ * Inject properties from json object.
+ * @private
+ * @param {Object} json
+ */
+
+ChainEntry.prototype.fromJSON = function fromJSON(json) {
+  assert(json, 'Block data is required.');
+  assert(typeof json.hash === 'string');
+  assert(util.isUInt32(json.version));
+  assert(typeof json.prevBlock === 'string');
+  assert(typeof json.merkleRoot === 'string');
+  assert(util.isUInt32(json.ts));
+  assert(util.isUInt32(json.bits));
+  assert(util.isUInt32(json.nonce));
+  assert(typeof json.chainwork === 'string');
+
+  this.hash = util.revHex(json.hash);
+  this.version = json.version;
+  this.prevBlock = util.revHex(json.prevBlock);
+  this.merkleRoot = util.revHex(json.merkleRoot);
+  this.ts = json.ts;
+  this.bits = json.bits;
+  this.nonce = json.nonce;
+  this.height = json.height;
+  this.chainwork = new BN(json.chainwork, 'hex');
+
+  return this;
+};
+
+/**
+ * Instantiate block from jsonified object.
+ * @param {Chain} chain
+ * @param {Object} json
+ * @returns {ChainEntry}
+ */
+
+ChainEntry.fromJSON = function fromJSON(chain, json) {
+  return new ChainEntry(chain).fromJSON(json);
+};
+
+/**
+ * Convert the entry to a headers object.
+ * @returns {Headers}
+ */
+
+ChainEntry.prototype.toHeaders = function toHeaders() {
+  return Headers.fromEntry(this);
+};
+
+/**
+ * Convert the entry to an inv item.
+ * @returns {InvItem}
+ */
+
+ChainEntry.prototype.toInv = function toInv() {
+  return new InvItem(InvItem.types.BLOCK, this.hash);
+};
+
+/**
+ * Return a more user-friendly object.
+ * @returns {Object}
+ */
+
+ChainEntry.prototype.inspect = function inspect() {
+  var json = this.toJSON();
+  json.version = util.hex32(json.version);
+  return json;
+};
+
+/**
+ * Test whether an object is a {@link ChainEntry}.
+ * @param {Object} obj
+ * @returns {Boolean}
+ */
+
+ChainEntry.isChainEntry = function isChainEntry(obj) {
+  return obj
+    &amp;&amp; BN.isBN(obj.chainwork)
+    &amp;&amp; typeof obj.getMedianTime === 'function';
+};
+
+/*
+ * Expose
+ */
+
+module.exports = ChainEntry;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

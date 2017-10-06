@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: net/hostlist.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: net/hostlist.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * hostlist.js - address management for bcoin
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+var assert = require('assert');
+var util = require('../utils/util');
+var IP = require('../utils/ip');
+var co = require('../utils/co');
+var Network = require('../protocol/network');
+var NetAddress = require('../primitives/netaddress');
+var List = require('../utils/list');
+var murmur3 = require('../utils/murmur3');
+var Map = require('../utils/map');
+var common = require('./common');
+var dns = require('./dns');
+
+/**
+ * Host List
+ * @alias module:net.HostList
+ * @constructor
+ * @param {Object} options
+ */
+
+function HostList(options) {
+  if (!(this instanceof HostList))
+    return new HostList(options);
+
+  this.network = Network.primary;
+  this.logger = null;
+  this.address = new NetAddress();
+  this.resolve = dns.resolve;
+  this.banTime = common.BAN_TIME;
+
+  this.rawSeeds = this.network.seeds;
+  this.dnsSeeds = [];
+  this.rawNodes = [];
+  this.dnsNodes = [];
+  this.nodes = [];
+
+  this.banned = {};
+
+  this.map = {};
+  this.fresh = [];
+  this.used = [];
+
+  this.totalFresh = 0;
+  this.totalUsed = 0;
+
+  this.maxBuckets = 20;
+  this.maxEntries = 50;
+  this.maxAddresses = this.maxBuckets * this.maxEntries;
+
+  this.horizonDays = 30;
+  this.retries = 3;
+  this.minFailDays = 7;
+  this.maxFailures = 10;
+  this.maxRefs = 8;
+
+  this._initOptions(options);
+  this._init();
+}
+
+/**
+ * Initialize options.
+ * @private
+ */
+
+HostList.prototype._initOptions = function initOptions(options) {
+  if (!options)
+    return;
+
+  if (options.network != null) {
+    this.network = Network.get(options.network);
+    this.rawSeeds = this.network.seeds;
+  }
+
+  if (options.logger != null) {
+    assert(typeof options.logger === 'object');
+    this.logger = options.logger;
+  }
+
+  if (options.address != null) {
+    assert(options.address instanceof NetAddress);
+    this.address = options.address;
+  }
+
+  if (options.resolve != null) {
+    assert(typeof options.resolve === 'function');
+    this.resolve = options.resolve;
+  }
+
+  if (options.banTime != null) {
+    assert(options.banTime >= 0);
+    this.banTime = options.banTime;
+  }
+
+  if (options.seeds) {
+    assert(Array.isArray(options.seeds));
+    this.rawSeeds = options.seeds;
+  }
+
+  if (options.nodes) {
+    assert(Array.isArray(options.nodes));
+    this.rawNodes = options.nodes;
+  }
+};
+
+/**
+ * Initialize list.
+ * @private
+ */
+
+HostList.prototype._init = function init() {
+  var i;
+
+  for (i = 0; i &lt; this.maxBuckets; i++)
+    this.fresh.push(new Map());
+
+  for (i = 0; i &lt; this.maxBuckets; i++)
+    this.used.push(new List());
+
+  this.setSeeds(this.rawSeeds);
+  this.setNodes(this.rawNodes);
+};
+
+/**
+ * Get list size.
+ * @returns {Number}
+ */
+
+HostList.prototype.size = function size() {
+  return this.totalFresh + this.totalUsed;
+};
+
+/**
+ * Test whether the host list is full.
+ * @returns {Boolean}
+ */
+
+HostList.prototype.isFull = function isFull() {
+  return this.size() >= this.maxAddresses;
+};
+
+/**
+ * Reset host list.
+ */
+
+HostList.prototype.reset = function reset() {
+  var i, bucket;
+
+  this.map = {};
+
+  for (i = 0; i &lt; this.fresh.length; i++) {
+    bucket = this.fresh[i];
+    bucket.reset();
+  }
+
+  for (i = 0; i &lt; this.used.length; i++) {
+    bucket = this.used[i];
+    bucket.reset();
+  }
+
+  this.totalFresh = 0;
+  this.totalUsed = 0;
+};
+
+/**
+ * Mark a peer as banned.
+ * @param {String} host
+ */
+
+HostList.prototype.ban = function ban(host) {
+  this.banned[host] = util.now();
+};
+
+/**
+ * Unban host.
+ * @param {String} host
+ */
+
+HostList.prototype.unban = function unban(host) {
+  delete this.banned[host];
+};
+
+/**
+ * Clear banned hosts.
+ */
+
+HostList.prototype.clearBanned = function clearBanned() {
+  this.banned = {};
+};
+
+/**
+ * Test whether the host is banned.
+ * @param {String} host
+ * @returns {Boolean}
+ */
+
+HostList.prototype.isBanned = function isBanned(host) {
+  var time = this.banned[host];
+
+  if (time == null)
+    return false;
+
+  if (util.now() > time + this.banTime) {
+    delete this.banned[host];
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Allocate a new host.
+ * @returns {HostEntry}
+ */
+
+HostList.prototype.getHost = function getHost() {
+  var now = this.network.now();
+  var buckets = null;
+  var factor = 1;
+  var index, key, bucket, entry, num;
+
+  if (this.totalFresh > 0)
+    buckets = this.fresh;
+
+  if (this.totalUsed > 0) {
+    if (this.totalFresh === 0 || util.random(0, 2) === 0)
+      buckets = this.used;
+  }
+
+  if (!buckets)
+    return;
+
+  for (;;) {
+    index = util.random(0, buckets.length);
+    bucket = buckets[index];
+
+    if (bucket.size === 0)
+      continue;
+
+    index = util.random(0, bucket.size);
+
+    if (buckets === this.used) {
+      entry = bucket.head;
+      while (index--)
+        entry = entry.next;
+    } else {
+      key = bucket.keys()[index];
+      entry = bucket.get(key);
+    }
+
+    num = util.random(0, 1 &lt;&lt; 30);
+
+    if (num &lt; factor * entry.chance(now) * (1 &lt;&lt; 30))
+      return entry;
+
+    factor *= 1.2;
+  }
+};
+
+/**
+ * Get fresh bucket for host.
+ * @private
+ * @param {HostEntry} entry
+ * @returns {Map}
+ */
+
+HostList.prototype.freshBucket = function freshBucket(entry) {
+  var addr = entry.addr;
+  var src = entry.src;
+  var data, hash, index;
+
+  data = util.concat(addr.raw, src.raw);
+  hash = murmur3(data, 0xfba4c795);
+  index = hash % this.fresh.length;
+
+  return this.fresh[index];
+};
+
+/**
+ * Get used bucket for host.
+ * @private
+ * @param {HostEntry} entry
+ * @returns {List}
+ */
+
+HostList.prototype.usedBucket = function usedBucket(entry) {
+  var addr = entry.addr;
+  var hash = murmur3(addr.raw, 0xfba4c795);
+  var index = hash % this.used.length;
+  return this.used[index];
+};
+
+/**
+ * Add host to host list.
+ * @param {NetAddress} addr
+ * @param {NetAddress?} src
+ * @returns {Boolean}
+ */
+
+HostList.prototype.add = function add(addr, src) {
+  var now = this.network.now();
+  var penalty = 2 * 60 * 60;
+  var interval = 24 * 60 * 60;
+  var factor = 1;
+  var i, entry, bucket;
+
+  entry = this.map[addr.hostname];
+
+  if (entry) {
+    // No source means we're inserting
+    // this ourselves. No penalty.
+    if (!src)
+      penalty = 0;
+
+    // Update services.
+    entry.addr.services |= addr.services;
+    entry.addr.services >>>= 0;
+
+    // Online?
+    if (now - addr.ts &lt; 24 * 60 * 60)
+      interval = 60 * 60;
+
+    // Periodically update time.
+    if (entry.addr.ts &lt; addr.ts - interval - penalty)
+      entry.addr.ts = addr.ts;
+
+    // Do not update if no new
+    // information is present.
+    if (entry.addr.ts &amp;&amp; addr.ts &lt;= entry.addr.ts)
+      return false;
+
+    // Do not update if the entry was
+    // already in the "used" table.
+    if (entry.used)
+      return false;
+
+    assert(entry.refCount > 0);
+
+    // Do not update if the max
+    // reference count is reached.
+    if (entry.refCount === this.maxRefs)
+      return false;
+
+    assert(entry.refCount &lt; this.maxRefs);
+
+    // Stochastic test: previous refCount
+    // N: 2^N times harder to increase it.
+    for (i = 0; i &lt; entry.refCount; i++)
+      factor *= 2;
+
+    if (util.random(0, factor) !== 0)
+      return false;
+  } else {
+    if (this.isFull())
+      return false;
+
+    if (!src)
+      src = this.address;
+
+    entry = new HostEntry(addr, src);
+
+    this.totalFresh++;
+  }
+
+  bucket = this.freshBucket(entry);
+
+  if (bucket.has(entry.key()))
+    return false;
+
+  if (bucket.size >= this.maxEntries)
+    this.evictFresh(bucket);
+
+  bucket.set(entry.key(), entry);
+  entry.refCount++;
+
+  this.map[entry.key()] = entry;
+
+  return true;
+};
+
+/**
+ * Evict a host from fresh bucket.
+ * @param {Map} bucket
+ */
+
+HostList.prototype.evictFresh = function evictFresh(bucket) {
+  var keys = bucket.keys();
+  var i, key, entry, old;
+
+  for (i = 0; i &lt; keys.length; i++) {
+    key = keys[i];
+    entry = bucket.get(key);
+
+    if (this.isStale(entry)) {
+      bucket.remove(entry.key());
+
+      if (--entry.refCount === 0) {
+        delete this.map[entry.key()];
+        this.totalFresh--;
+      }
+
+      continue;
+    }
+
+    if (!old) {
+      old = entry;
+      continue;
+    }
+
+    if (entry.addr.ts &lt; old.addr.ts)
+      old = entry;
+  }
+
+  if (!old)
+    return;
+
+  bucket.remove(old.key());
+
+  if (--old.refCount === 0) {
+    delete this.map[old.key()];
+    this.totalFresh--;
+  }
+};
+
+/**
+ * Test whether a host is evictable.
+ * @param {HostEntry} entry
+ * @returns {Boolean}
+ */
+
+HostList.prototype.isStale = function isStale(entry) {
+  var now = this.network.now();
+
+  if (entry.lastAttempt &amp;&amp; entry.lastAttempt >= now - 60)
+    return false;
+
+  if (entry.addr.ts > now + 10 * 60)
+    return true;
+
+  if (entry.addr.ts === 0)
+    return true;
+
+  if (now - entry.addr.ts > this.horizonDays * 24 * 60 * 60)
+    return true;
+
+  if (entry.lastSuccess === 0 &amp;&amp; entry.attempts >= this.retries)
+    return true;
+
+  if (now - entry.lastSuccess > this.minFailDays * 24 * 60 * 60) {
+    if (entry.attempts >= this.maxFailures)
+      return true;
+  }
+
+  return false;
+};
+
+/**
+ * Remove host from host list.
+ * @param {String} hostname
+ * @returns {NetAddress}
+ */
+
+HostList.prototype.remove = function remove(hostname) {
+  var entry = this.map[hostname];
+  var i, head, bucket;
+
+  if (!entry)
+    return;
+
+  if (entry.used) {
+    assert(entry.refCount === 0);
+
+    head = entry;
+    while (head.prev)
+      head = head.prev;
+
+    for (i = 0; i &lt; this.used.length; i++) {
+      bucket = this.used[i];
+      if (bucket.head === head) {
+        bucket.remove(entry);
+        this.totalUsed--;
+        break;
+      }
+    }
+
+    assert(i &lt; this.used.length);
+  } else {
+    for (i = 0; i &lt; this.fresh.length; i++) {
+      bucket = this.fresh[i];
+      if (bucket.remove(entry.key()))
+        entry.refCount--;
+    }
+
+    this.totalFresh--;
+    assert(entry.refCount === 0);
+  }
+
+  delete this.map[entry.key()];
+
+  return entry.addr;
+};
+
+/**
+ * Mark host as failed.
+ * @param {String} hostname
+ */
+
+HostList.prototype.markAttempt = function markAttempt(hostname) {
+  var entry = this.map[hostname];
+  var now = this.network.now();
+
+  if (!entry)
+    return;
+
+  entry.attempts++;
+  entry.lastAttempt = now;
+};
+
+/**
+ * Mark host as successfully connected.
+ * @param {String} hostname
+ */
+
+HostList.prototype.markSuccess = function markSuccess(hostname) {
+  var entry = this.map[hostname];
+  var now = this.network.now();
+
+  if (!entry)
+    return;
+
+  if (now - entry.addr.ts > 20 * 60)
+    entry.addr.ts = now;
+};
+
+/**
+ * Mark host as successfully ack'd.
+ * @param {String} hostname
+ * @param {Number} services
+ */
+
+HostList.prototype.markAck = function markAck(hostname, services) {
+  var entry = this.map[hostname];
+  var now = this.network.now();
+  var i, bucket, evicted, old, fresh;
+
+  if (!entry)
+    return;
+
+  entry.addr.services |= services;
+  entry.addr.services >>>= 0;
+
+  entry.lastSuccess = now;
+  entry.lastAttempt = now;
+  entry.attempts = 0;
+
+  if (entry.used)
+    return;
+
+  assert(entry.refCount > 0);
+
+  // Remove from fresh.
+  for (i = 0; i &lt; this.fresh.length; i++) {
+    bucket = this.fresh[i];
+    if (bucket.remove(entry.key())) {
+      entry.refCount--;
+      old = bucket;
+    }
+  }
+
+  assert(old);
+  assert(entry.refCount === 0);
+  this.totalFresh--;
+
+  // Find room in used bucket.
+  bucket = this.usedBucket(entry);
+
+  if (bucket.size &lt; this.maxEntries) {
+    entry.used = true;
+    bucket.push(entry);
+    this.totalUsed++;
+    return;
+  }
+
+  // No room. Evict.
+  evicted = this.evictUsed(bucket);
+  fresh = this.freshBucket(evicted);
+
+  // Move to entry's old bucket if no room.
+  if (fresh.size >= this.maxEntries)
+    fresh = old;
+
+  // Swap to evicted's used bucket.
+  entry.used = true;
+  bucket.replace(evicted, entry);
+
+  // Move evicted to fresh bucket.
+  evicted.used = false;
+  fresh.set(evicted.key(), evicted);
+  assert(evicted.refCount === 0);
+  evicted.refCount++;
+  this.totalFresh++;
+};
+
+/**
+ * Pick used for eviction.
+ * @param {List} bucket
+ */
+
+HostList.prototype.evictUsed = function evictUsed(bucket) {
+  var old = bucket.head;
+  var entry;
+
+  for (entry = bucket.head; entry; entry = entry.next) {
+    if (entry.addr.ts &lt; old.addr.ts)
+      old = entry;
+  }
+
+  return old;
+};
+
+/**
+ * Convert address list to array.
+ * @returns {NetAddress[]}
+ */
+
+HostList.prototype.toArray = function toArray() {
+  var keys = Object.keys(this.map);
+  var out = [];
+  var i, key, entry;
+
+  for (i = 0; i &lt; keys.length; i++) {
+    key = keys[i];
+    entry = this.map[key];
+    out.push(entry.addr);
+  }
+
+  assert.equal(out.length, this.size());
+
+  return out;
+};
+
+/**
+ * Add a preferred seed.
+ * @param {String} host
+ */
+
+HostList.prototype.addSeed = function addSeed(host) {
+  var addr = IP.fromHostname(host, this.network.port);
+
+  if (addr.type === IP.types.DNS) {
+    // Defer for resolution.
+    this.dnsSeeds.push(addr);
+    return;
+  }
+
+  addr = NetAddress.fromHost(addr.host, addr.port, this.network);
+
+  this.add(addr);
+
+  return addr;
+};
+
+/**
+ * Add a priority node.
+ * @param {String} host
+ */
+
+HostList.prototype.addNode = function addNode(host) {
+  var addr = IP.fromHostname(host, this.network.port);
+
+  if (addr.type === IP.types.DNS) {
+    // Defer for resolution.
+    this.dnsNodes.push(addr);
+    return;
+  }
+
+  addr = NetAddress.fromHost(addr.host, addr.port, this.network);
+
+  this.nodes.push(addr);
+  this.add(addr);
+
+  return addr;
+};
+
+/**
+ * Set initial seeds.
+ * @param {String[]} seeds
+ */
+
+HostList.prototype.setSeeds = function setSeeds(seeds) {
+  var i, host;
+
+  this.dnsSeeds.length = 0;
+
+  for (i = 0; i &lt; seeds.length; i++) {
+    host = seeds[i];
+    this.addSeed(host);
+  }
+};
+
+/**
+ * Set priority nodes.
+ * @param {String[]} nodes
+ */
+
+HostList.prototype.setNodes = function setNodes(nodes) {
+  var i, host;
+
+  this.dnsNodes.length = 0;
+  this.nodes.length = 0;
+
+  for (i = 0; i &lt; nodes.length; i++) {
+    host = nodes[i];
+    this.addNode(host);
+  }
+};
+
+/**
+ * Discover hosts from seeds and nodes.
+ * @method
+ * @returns {Promise}
+ */
+
+HostList.prototype.discover = co(function* discover() {
+  var jobs = [];
+  var i, node, seed;
+
+  for (i = 0; i &lt; this.dnsSeeds.length; i++) {
+    seed = this.dnsSeeds[i];
+    jobs.push(this.populateSeed(seed));
+  }
+
+  for (i = 0; i &lt; this.dnsNodes.length; i++) {
+    node = this.dnsNodes[i];
+    jobs.push(this.populateNode(node));
+  }
+
+  this.dnsNodes.length = 0;
+
+  yield Promise.all(jobs);
+});
+
+/**
+ * Lookup node's domain.
+ * @method
+ * @param {Object} addr
+ * @returns {Promise}
+ */
+
+HostList.prototype.populateNode = co(function* populateNode(addr) {
+  var addrs = yield this.populate(addr);
+
+  if (addrs.length === 0)
+    return;
+
+  this.nodes.push(addrs[0]);
+  this.add(addrs[0]);
+});
+
+/**
+ * Populate from seed.
+ * @method
+ * @param {Object} seed
+ * @returns {Promise}
+ */
+
+HostList.prototype.populateSeed = co(function* populateSeed(seed) {
+  var addrs = yield this.populate(seed);
+  var i, addr;
+
+  for (i = 0; i &lt; addrs.length; i++) {
+    addr = addrs[i];
+    this.add(addr);
+  }
+});
+
+/**
+ * Lookup hosts from dns host.
+ * @method
+ * @param {Object} target
+ * @returns {Promise}
+ */
+
+HostList.prototype.populate = co(function* populate(target) {
+  var addrs = [];
+  var i, addr, hosts, host;
+
+  assert(target.type === IP.types.DNS, 'Resolved host passed.');
+
+  if (this.logger)
+    this.logger.info('Resolving host: %s.', target.host);
+
+  try {
+    hosts = yield this.resolve(target.host);
+  } catch (e) {
+    if (this.logger)
+      this.logger.error(e);
+    return addrs;
+  }
+
+  for (i = 0; i &lt; hosts.length; i++) {
+    host = hosts[i];
+    addr = NetAddress.fromHost(host, target.port, this.network);
+    addrs.push(addr);
+  }
+
+  return addrs;
+});
+
+/**
+ * Convert host list to json-friendly object.
+ * @returns {Object}
+ */
+
+HostList.prototype.toJSON = function toJSON() {
+  var addrs = [];
+  var fresh = [];
+  var used = [];
+  var i, keys, key, bucket, entry;
+
+  keys = Object.keys(this.map);
+
+  for (i = 0; i &lt; keys.length; i++) {
+    key = keys[i];
+    entry = this.map[key];
+    addrs.push(entry.toJSON());
+  }
+
+  for (i = 0; i &lt; this.fresh.length; i++) {
+    bucket = this.fresh[i];
+    keys = bucket.keys();
+    fresh.push(keys);
+  }
+
+  for (i = 0; i &lt; this.used.length; i++) {
+    bucket = this.used[i];
+    keys = [];
+    for (entry = bucket.head; entry; entry = entry.next)
+      keys.push(entry.key());
+    used.push(keys);
+  }
+
+  return {
+    version: 1,
+    addrs: addrs,
+    fresh: fresh,
+    used: used
+  };
+};
+
+/**
+ * Inject properties from json object.
+ * @private
+ * @param {Object} json
+ * @returns {HostList}
+ */
+
+HostList.prototype.fromJSON = function fromJSON(json) {
+  var sources = {};
+  var i, j, bucket, keys, key, addr, entry, src;
+
+  assert(json &amp;&amp; typeof json === 'object');
+  assert(json.version === 1, 'Bad address serialization version.');
+
+  assert(Array.isArray(json.addrs));
+
+  for (i = 0; i &lt; json.addrs.length; i++) {
+    addr = json.addrs[i];
+    entry = HostEntry.fromJSON(addr, this.network);
+    src = sources[entry.src.hostname];
+
+    // Save some memory.
+    if (!src) {
+      src = entry.src;
+      sources[src.hostname] = src;
+    }
+
+    entry.src = src;
+
+    this.map[entry.key()] = entry;
+  }
+
+  assert(Array.isArray(json.fresh));
+
+  for (i = 0; i &lt; json.fresh.length; i++) {
+    keys = json.fresh[i];
+    bucket = this.fresh[i];
+    assert(bucket, 'No bucket available.');
+    for (j = 0; j &lt; keys.length; j++) {
+      key = keys[j];
+      entry = this.map[key];
+      assert(entry);
+      if (entry.refCount === 0)
+        this.totalFresh++;
+      entry.refCount++;
+      bucket.set(key, entry);
+    }
+  }
+
+  assert(Array.isArray(json.used));
+
+  for (i = 0; i &lt; json.used.length; i++) {
+    keys = json.used[i];
+    bucket = this.used[i];
+    assert(bucket, 'No bucket available.');
+    for (j = 0; j &lt; keys.length; j++) {
+      key = keys[j];
+      entry = this.map[key];
+      assert(entry);
+      assert(entry.refCount === 0);
+      assert(!entry.used);
+      entry.used = true;
+      this.totalUsed++;
+      bucket.push(entry);
+    }
+  }
+
+  keys = Object.keys(this.map);
+
+  for (i = 0; i &lt; keys.length; i++) {
+    key = keys[i];
+    entry = this.map[key];
+    assert(entry.used || entry.refCount > 0);
+  }
+
+  return this;
+};
+
+/**
+ * Instantiate host list from json object.
+ * @param {Object} options
+ * @param {Object} json
+ * @returns {HostList}
+ */
+
+HostList.fromJSON = function fromJSON(options, json) {
+  return new HostEntry(options).fromJSON(json);
+};
+
+/**
+ * HostEntry
+ * @alias module:net.HostEntry
+ * @constructor
+ * @param {NetAddress} addr
+ * @param {NetAddress} src
+ */
+
+function HostEntry(addr, src) {
+  if (!(this instanceof HostEntry))
+    return new HostEntry(addr, src);
+
+  this.addr = addr || new NetAddress();
+  this.src = src || new NetAddress();
+  this.prev = null;
+  this.next = null;
+  this.used = false;
+  this.refCount = 0;
+  this.attempts = 0;
+  this.lastSuccess = 0;
+  this.lastAttempt = 0;
+
+  if (addr)
+    this.fromOptions(addr, src);
+}
+
+/**
+ * Inject properties from options.
+ * @private
+ * @param {NetAddress} addr
+ * @param {NetAddress} src
+ * @returns {HostEntry}
+ */
+
+HostEntry.prototype.fromOptions = function fromOptions(addr, src) {
+  assert(addr instanceof NetAddress);
+  assert(src instanceof NetAddress);
+  this.addr = addr;
+  this.src = src;
+  return this;
+};
+
+/**
+ * Instantiate host entry from options.
+ * @param {NetAddress} addr
+ * @param {NetAddress} src
+ * @returns {HostEntry}
+ */
+
+HostEntry.fromOptions = function fromOptions(addr, src) {
+  return new HostEntry().fromOptions(addr, src);
+};
+
+/**
+ * Get key suitable for a hash table (hostname).
+ * @returns {String}
+ */
+
+HostEntry.prototype.key = function key() {
+  return this.addr.hostname;
+};
+
+/**
+ * Get host priority.
+ * @param {Number} now
+ * @returns {Number}
+ */
+
+HostEntry.prototype.chance = function _chance(now) {
+  var attempts = this.attempts;
+  var chance = 1;
+
+  if (now - this.lastAttempt &lt; 60 * 10)
+    chance *= 0.01;
+
+  chance *= Math.pow(0.66, Math.min(attempts, 8));
+
+  return chance;
+};
+
+/**
+ * Inspect host address.
+ * @returns {Object}
+ */
+
+HostEntry.prototype.inspect = function inspect() {
+  return {
+    addr: this.addr,
+    src: this.src,
+    used: this.used,
+    refCount: this.refCount,
+    attempts: this.attempts,
+    lastSuccess: util.date(this.lastSuccess),
+    lastAttempt: util.date(this.lastAttempt)
+  };
+};
+
+/**
+ * Convert host entry to json-friendly object.
+ * @returns {Object}
+ */
+
+HostEntry.prototype.toJSON = function toJSON() {
+  return {
+    addr: this.addr.hostname,
+    src: this.src.hostname,
+    services: this.addr.services.toString(2),
+    ts: this.addr.ts,
+    attempts: this.attempts,
+    lastSuccess: this.lastSuccess,
+    lastAttempt: this.lastAttempt
+  };
+};
+
+/**
+ * Inject properties from json object.
+ * @private
+ * @param {Object} json
+ * @param {Network} network
+ * @returns {HostEntry}
+ */
+
+HostEntry.prototype.fromJSON = function fromJSON(json, network) {
+  assert(json &amp;&amp; typeof json === 'object');
+  assert(typeof json.addr === 'string');
+  assert(typeof json.src === 'string');
+
+  this.addr.fromHostname(json.addr, network);
+
+  if (json.services != null) {
+    assert(typeof json.services === 'string');
+    assert(json.services.length > 0);
+    assert(json.services.length &lt;= 32);
+    this.addr.services = parseInt(json.services, 2);
+    assert(util.isUInt32(this.addr.services));
+  }
+
+  if (json.ts != null) {
+    assert(util.isNumber(json.ts));
+    assert(json.ts >= 0);
+    this.addr.ts = json.ts;
+  }
+
+  if (json.src != null) {
+    assert(typeof json.src === 'string');
+    this.src.fromHostname(json.src, network);
+  }
+
+  if (json.attempts != null) {
+    assert(util.isNumber(json.attempts));
+    assert(json.attempts >= 0);
+    this.attempts = json.attempts;
+  }
+
+  if (json.lastSuccess != null) {
+    assert(util.isNumber(json.lastSuccess));
+    assert(json.lastSuccess >= 0);
+    this.lastSuccess = json.lastSuccess;
+  }
+
+  if (json.lastAttempt != null) {
+    assert(util.isNumber(json.lastAttempt));
+    assert(json.lastAttempt >= 0);
+    this.lastAttempt = json.lastAttempt;
+  }
+
+  return this;
+};
+
+/**
+ * Instantiate host entry from json object.
+ * @param {Object} json
+ * @param {Network} network
+ * @returns {HostEntry}
+ */
+
+HostEntry.fromJSON = function fromJSON(json, network) {
+  return new HostEntry().fromJSON(json, network);
+};
+
+/*
+ * Expose
+ */
+
+module.exports = HostList;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: http/client.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: http/client.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * client.js - http client for wallets
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+var Network = require('../protocol/network');
+var AsyncObject = require('../utils/asyncobject');
+var RPCClient = require('./rpcclient');
+var Amount = require('../btc/amount');
+var util = require('../utils/util');
+var co = require('../utils/co');
+var request = require('./request');
+
+/**
+ * Bcoin HTTP client.
+ * @alias module:http.Client
+ * @constructor
+ * @param {String} uri
+ * @param {Object?} options
+ */
+
+function HTTPClient(options) {
+  if (!(this instanceof HTTPClient))
+    return new HTTPClient(options);
+
+  if (!options)
+    options = {};
+
+  if (typeof options === 'string')
+    options = { uri: options };
+
+  AsyncObject.call(this);
+
+  this.options = options;
+  this.network = Network.get(options.network);
+
+  this.uri = options.uri || 'http://localhost:' + this.network.rpcPort;
+  this.socket = null;
+  this.apiKey = options.apiKey;
+  this.auth = options.auth;
+  this.rpc = new RPCClient(options);
+}
+
+util.inherits(HTTPClient, AsyncObject);
+
+/**
+ * Open the client, wait for socket to connect.
+ * @alias HTTPClient#open
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype._open = co(function* _open() {
+  var self = this;
+  var IOClient;
+
+  try {
+    IOClient = require('socket.io-client');
+  } catch (e) {
+    ;
+  }
+
+  if (!IOClient)
+    return;
+
+  this.socket = new IOClient(this.uri, {
+    transports: ['websocket'],
+    forceNew: true
+  });
+
+  this.socket.on('error', function(err) {
+    self.emit('error', err);
+  });
+
+  this.socket.on('version', function(info) {
+    if (info.network !== self.network.type)
+      self.emit('error', new Error('Wrong network.'));
+  });
+
+  this.socket.on('wallet tx', function(details) {
+    self.emit('tx', details);
+  });
+
+  this.socket.on('wallet confirmed', function(details) {
+    self.emit('confirmed', details);
+  });
+
+  this.socket.on('wallet unconfirmed', function(details) {
+    self.emit('unconfirmed', details);
+  });
+
+  this.socket.on('wallet conflict', function(details) {
+    self.emit('conflict', details);
+  });
+
+  this.socket.on('wallet updated', function(details) {
+    self.emit('updated', details);
+  });
+
+  this.socket.on('wallet address', function(receive) {
+    self.emit('address', receive);
+  });
+
+  this.socket.on('wallet balance', function(balance) {
+    self.emit('balance', balance);
+  });
+
+  yield this._onConnect();
+  yield this._sendAuth();
+});
+
+/**
+ * Close the client, wait for the socket to close.
+ * @alias HTTPClient#close
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype._close = function close() {
+  if (!this.socket)
+    return Promise.resolve();
+
+  this.socket.disconnect();
+  this.socket = null;
+
+  return Promise.resolve();
+};
+
+/**
+ * Wait for websocket connection.
+ * @private
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype._onConnect = function _onConnect() {
+  var self = this;
+  return new Promise(function(resolve, reject) {
+    self.socket.once('connect', resolve);
+  });
+};
+
+/**
+ * Wait for websocket auth.
+ * @private
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype._sendAuth = function _sendAuth() {
+  var self = this;
+  return new Promise(function(resolve, reject) {
+    self.socket.emit('auth', self.apiKey, function(err) {
+      if (err)
+        return reject(new Error(err.error));
+      resolve();
+    });
+  });
+};
+
+/**
+ * Wait for websocket disconnection.
+ * @private
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.onDisconnect = function onDisconnect() {
+  var self = this;
+  return new Promise(function(resolve, reject) {
+    self.socket.once('disconnect', resolve);
+  });
+};
+
+/**
+ * Make an http request to endpoint.
+ * @private
+ * @param {String} method
+ * @param {String} endpoint - Path.
+ * @param {Object} json - Body or query depending on method.
+ * @returns {Promise} - Returns Object?.
+ */
+
+HTTPClient.prototype._request = co(function* _request(method, endpoint, json) {
+  var query, network, res;
+
+  if (this.token) {
+    if (!json)
+      json = {};
+    json.token = this.token;
+  }
+
+  if (json &amp;&amp; method === 'get') {
+    query = json;
+    json = null;
+  }
+
+  res = yield request({
+    method: method,
+    uri: this.uri + endpoint,
+    pool: true,
+    query: query,
+    json: json,
+    auth: {
+      username: 'bitcoinrpc',
+      password: this.apiKey || ''
+    },
+    expect: 'json'
+  });
+
+  network = res.headers['x-bcoin-network'];
+
+  if (network &amp;&amp; network !== this.network.type)
+    throw new Error('Wrong network.');
+
+  if (res.statusCode === 404)
+    return;
+
+  if (!res.body)
+    throw new Error('No body.');
+
+  if (res.statusCode !== 200) {
+    if (res.body.error)
+      throw new Error(res.body.error);
+    throw new Error('Status code: ' + res.statusCode);
+  }
+
+  return res.body;
+});
+
+/**
+ * Make a GET http request to endpoint.
+ * @private
+ * @param {String} endpoint - Path.
+ * @param {Object} json - Querystring.
+ * @returns {Promise} - Returns Object?.
+ */
+
+HTTPClient.prototype._get = function _get(endpoint, json) {
+  return this._request('get', endpoint, json);
+};
+
+/**
+ * Make a POST http request to endpoint.
+ * @private
+ * @param {String} endpoint - Path.
+ * @param {Object} json - Body.
+ * @returns {Promise} - Returns Object?.
+ */
+
+HTTPClient.prototype._post = function _post(endpoint, json) {
+  return this._request('post', endpoint, json);
+};
+
+/**
+ * Make a PUT http request to endpoint.
+ * @private
+ * @param {String} endpoint - Path.
+ * @param {Object} json - Body.
+ * @returns {Promise} - Returns Object?.
+ */
+
+HTTPClient.prototype._put = function _put(endpoint, json) {
+  return this._request('put', endpoint, json);
+};
+
+/**
+ * Make a DELETE http request to endpoint.
+ * @private
+ * @param {String} endpoint - Path.
+ * @param {Object} json - Body.
+ * @returns {Promise} - Returns Object?.
+ */
+
+HTTPClient.prototype._del = function _del(endpoint, json) {
+  return this._request('delete', endpoint, json);
+};
+
+/**
+ * Get a mempool snapshot.
+ * @returns {Promise} - Returns {@link TX}[].
+ */
+
+HTTPClient.prototype.getMempool = function getMempool() {
+  return this._get('/mempool');
+};
+
+/**
+ * Get some info about the server (network and version).
+ * @returns {Promise} - Returns Object.
+ */
+
+HTTPClient.prototype.getInfo = function getInfo() {
+  return this._get('/');
+};
+
+/**
+ * Get coins that pertain to an address from the mempool or chain database.
+ * Takes into account spent coins in the mempool.
+ * @param {Base58Address|Base58Address[]} addresses
+ * @returns {Promise} - Returns {@link Coin}[].
+ */
+
+HTTPClient.prototype.getCoinsByAddress = function getCoinsByAddress(address) {
+  var body = { address: address };
+  return this._post('/coin/address', body);
+};
+
+/**
+ * Retrieve a coin from the mempool or chain database.
+ * Takes into account spent coins in the mempool.
+ * @param {Hash} hash
+ * @param {Number} index
+ * @returns {Promise} - Returns {@link Coin}.
+ */
+
+HTTPClient.prototype.getCoin = function getCoin(hash, index) {
+  return this._get('/coin/' + hash + '/' + index);
+};
+
+/**
+ * Retrieve transactions pertaining to an
+ * address from the mempool or chain database.
+ * @param {Base58Address|Base58Address[]} addresses
+ * @returns {Promise} - Returns {@link TX}[].
+ */
+
+HTTPClient.prototype.getTXByAddress = function getTXByAddress(address) {
+  var body = { address: address };
+  return this._post('/tx/address', body);
+};
+
+/**
+ * Retrieve a transaction from the mempool or chain database.
+ * @param {Hash} hash
+ * @returns {Promise} - Returns {@link TX}.
+ */
+
+HTTPClient.prototype.getTX = function getTX(hash) {
+  return this._get('/tx/' + hash);
+};
+
+/**
+ * Retrieve a block from the chain database.
+ * @param {Hash|Number} block
+ * @returns {Promise} - Returns {@link Block}.
+ */
+
+HTTPClient.prototype.getBlock = function getBlock(block) {
+  return this._get('/block/' + block);
+};
+
+/**
+ * Add a transaction to the mempool and broadcast it.
+ * @param {TX} tx
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.broadcast = function broadcast(tx) {
+  var body = { tx: toHex(tx) };
+
+  return this._post('/broadcast', body);
+};
+
+/**
+ * Rescan the chain.
+ * @param {Number} height
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.rescan = function rescan(height) {
+  var options = { height: height };
+  return this._post('/rescan', options);
+};
+
+/**
+ * Reset the chain.
+ * @param {Hash|Number} block
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.reset = function reset(block) {
+  var options = { block: block };
+  return this._post('/reset', options);
+};
+
+/**
+ * Resend pending transactions.
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.resend = function resend() {
+  return this._post('/resend', {});
+};
+
+/**
+ * Backup the walletdb.
+ * @param {String} path
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.backup = function backup(path) {
+  var options = { path: path };
+  return this._post('/backup', options);
+};
+
+/**
+ * Listen for events on wallet id.
+ * @param {WalletID} id
+ */
+
+HTTPClient.prototype.join = function join(id, token) {
+  var self = this;
+
+  if (!this.socket)
+    return Promise.resolve();
+
+  return new Promise(function(resolve, reject) {
+    self.socket.emit('wallet join', id, token, function(err) {
+      if (err)
+        return reject(new Error(err.error));
+      resolve();
+    });
+  });
+};
+
+/**
+ * Unlisten for events on wallet id.
+ * @param {WalletID} id
+ */
+
+HTTPClient.prototype.leave = function leave(id) {
+  var self = this;
+
+  if (!this.socket)
+    return Promise.resolve();
+
+  return new Promise(function(resolve, reject) {
+    self.socket.emit('wallet leave', id, function(err) {
+      if (err)
+        return reject(new Error(err.error));
+      resolve();
+    });
+  });
+};
+
+/**
+ * Listen for events on all wallets.
+ */
+
+HTTPClient.prototype.all = function all(token) {
+  return this.join('!all', token);
+};
+
+/**
+ * Unlisten for events on all wallets.
+ */
+
+HTTPClient.prototype.none = function none() {
+  return this.leave('!all');
+};
+
+/**
+ * Get list of all wallet IDs.
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getWallets = function getWallets() {
+  return this._get('/wallets');
+};
+
+/**
+ * Create a wallet.
+ * @param {Object} options - See {@link Wallet}.
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.createWallet = function createWallet(options) {
+  return this._post('/wallet', options);
+};
+
+/**
+ * Get the raw wallet JSON.
+ * @param {WalletID} id
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getWallet = function getWallet(id) {
+  return this._get('/wallet/' + id);
+};
+
+/**
+ * Get wallet transaction history.
+ * @param {WalletID} id
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getHistory = function getHistory(id, account) {
+  var options = { account: account };
+  return this._get('/wallet/' + id + '/tx/history', options);
+};
+
+/**
+ * Get wallet coins.
+ * @param {WalletID} id
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getCoins = function getCoins(id, account) {
+  var options = { account: account };
+  return this._get('/wallet/' + id + '/coin', options);
+};
+
+/**
+ * Get all unconfirmed transactions.
+ * @param {WalletID} id
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getPending = function getPending(id, account) {
+  var options = { account: account };
+  return this._get('/wallet/' + id + '/tx/unconfirmed', options);
+};
+
+/**
+ * Calculate wallet balance.
+ * @param {WalletID} id
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getBalance = function getBalance(id, account) {
+  var options = { account: account };
+  return this._get('/wallet/' + id + '/balance', options);
+};
+
+/**
+ * Get last N wallet transactions.
+ * @param {WalletID} id
+ * @param {Number} limit - Max number of transactions.
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getLast = function getLast(id, account, limit) {
+  var options = { account: account, limit: limit };
+  return this._get('/wallet/' + id + '/tx/last', options);
+};
+
+/**
+ * Get wallet transactions by timestamp range.
+ * @param {WalletID} id
+ * @param {Object} options
+ * @param {Number} options.start - Start time.
+ * @param {Number} options.end - End time.
+ * @param {Number?} options.limit - Max number of records.
+ * @param {Boolean?} options.reverse - Reverse order.
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getRange = function getRange(id, account, options) {
+  options = {
+    account: account,
+    start: options.start,
+    end: options.end ,
+    limit: options.limit,
+    reverse: options.reverse
+  };
+  return this._get('/wallet/' + id + '/tx/range', options);
+};
+
+/**
+ * Get transaction (only possible if the transaction
+ * is available in the wallet history).
+ * @param {WalletID} id
+ * @param {Hash} hash
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getWalletTX = function getWalletTX(id, hash) {
+  return this._get('/wallet/' + id + '/tx/' + hash);
+};
+
+/**
+ * Get wallet blocks.
+ * @param {WalletID} id
+ * @param {Number} height
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getWalletBlocks = function getWalletBlocks(id) {
+  return this._get('/wallet/' + id + '/block');
+};
+
+/**
+ * Get wallet block.
+ * @param {WalletID} id
+ * @param {Number} height
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getWalletBlock = function getWalletBlock(id, height) {
+  return this._get('/wallet/' + id + '/block/' + height);
+};
+
+/**
+ * Get unspent coin (only possible if the transaction
+ * is available in the wallet history).
+ * @param {WalletID} id
+ * @param {Hash} hash
+ * @param {Number} index
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getWalletCoin = function getWalletCoin(id, account, hash, index) {
+  var path = '/wallet/' + id + '/coin/' + hash + '/' + index;
+  var options = { account: account };
+  return this._get(path, options);
+};
+
+/**
+ * Create a transaction, fill, sign, and broadcast.
+ * @param {WalletID} id
+ * @param {Object} options
+ * @param {Base58Address} options.address
+ * @param {Amount} options.value
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.send = function send(id, options) {
+  options = util.merge({}, options);
+  options.outputs = options.outputs || [];
+
+  if (options.rate)
+    options.rate = Amount.btc(options.rate);
+
+  options.outputs = options.outputs.map(function(output) {
+    return {
+      value: Amount.btc(output.value),
+      address: output.address,
+      script: toHex(output.script)
+    };
+  });
+
+  return this._post('/wallet/' + id + '/send', options);
+};
+
+/**
+ * Generate a new token.
+ * @param {(String|Buffer)?} passphrase
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.retoken = co(function* retoken(id, passphrase) {
+  var options = { passphrase: passphrase };
+  var body = yield this._post('/wallet/' + id + '/retoken', options);
+  return body.token;
+});
+
+/**
+ * Change or set master key's passphrase.
+ * @param {(String|Buffer)?} old
+ * @param {String|Buffer} new_
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.setPassphrase = function setPassphrase(id, old, new_) {
+  var options = { old: old, passphrase: new_ };
+  return this._post('/wallet/' + id + '/passphrase', options);
+};
+
+/**
+ * Create a transaction, fill.
+ * @param {WalletID} id
+ * @param {Object} options
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.createTX = function createTX(id, options) {
+  options = util.merge({}, options);
+
+  if (options.rate)
+    options.rate = Amount.btc(options.rate);
+
+  options.outputs = options.outputs.map(function(output) {
+    return {
+      value: Amount.btc(output.value),
+      address: output.address,
+      script: toHex(output.script)
+    };
+  });
+
+  return this._post('/wallet/' + id + '/create', options);
+};
+
+/**
+ * Sign a transaction.
+ * @param {WalletID} id
+ * @param {TX} tx
+ * @param {Object} options
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.sign = function sign(id, tx, options) {
+  var body;
+
+  if (!options)
+    options = {};
+
+  body = util.merge({}, options);
+  body.tx = toHex(tx);
+
+  return this._post('/wallet/' + id + '/sign', body);
+};
+
+/**
+ * @param {WalletID} id
+ * @param {Number} now - Current time.
+ * @param {Number} age - Age delta (delete transactions older than `now - age`).
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.zapWallet = function zapWallet(id, account, age) {
+  var body = {
+    account: account,
+    age: age
+  };
+  return this._post('/wallet/' + id + '/zap', body);
+};
+
+/**
+ * Get wallet key.
+ * @param {WalletID} id
+ * @param {Base58Address} address
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getKey = function getKey(id, address) {
+  return this._get('/wallet/' + id + '/key/' + address);
+};
+
+/**
+ * Get wallet key WIF dump.
+ * @param {WalletID} id
+ * @param {Base58Address} address
+ * @param {String?} passphrase
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getWIF = function getWIF(id, address, passphrase) {
+  var options = { passphrase: passphrase };
+  return this._get('/wallet/' + id + '/wif/' + address, options);
+};
+
+/**
+ * Add a public account/purpose key to the wallet for multisig.
+ * @param {WalletID} id
+ * @param {(String|Number)?} account
+ * @param {Base58String} key - Account (bip44) or
+ * Purpose (bip45) key (can be in base58 form).
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.addSharedKey = function addSharedKey(id, account, key) {
+  var options = { account: account, accountKey: key };
+  return this._put('/wallet/' + id + '/shared-key', options);
+};
+
+/**
+ * Remove a public account/purpose key to the wallet for multisig.
+ * @param {WalletID} id
+ * @param {(String|Number)?} account
+ * @param {Base58String} key - Account (bip44) or Purpose
+ * (bip45) key (can be in base58 form).
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.removeSharedKey = function removeSharedKey(id, account, key) {
+  var options = { account: account, accountKey: key };
+  return this._del('/wallet/' + id + '/shared-key', options);
+};
+
+/**
+ * Import private key.
+ * @param {String} id
+ * @param {Number|String} account
+ * @param {String} key
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.importPrivate = function importPrivate(id, account, key) {
+  var options = { account: account, privateKey: key };
+  return this._post('/wallet/' + id + '/import', options);
+};
+
+/**
+ * Import public key.
+ * @param {String} id
+ * @param {Number|String} account
+ * @param {String} key
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.importPublic = function importPublic(id, account, key) {
+  var options = { account: account, publicKey: key };
+  return this._post('/wallet/' + id + '/import', options);
+};
+
+/**
+ * Import address.
+ * @param {String} id
+ * @param {Number|String} account
+ * @param {String} address
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.importAddress = function importAddress(id, account, address) {
+  var options = { account: account, address: address };
+  return this._post('/wallet/' + id + '/import', options);
+};
+
+/**
+ * Lock a coin.
+ * @param {String} id
+ * @param {String} hash
+ * @param {Number} index
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.lockCoin = function lockCoin(id, hash, index) {
+  var options = { hash: hash, index: index };
+  return this._put('/wallet/' + id + '/coin/locked', options);
+};
+
+/**
+ * Unlock a coin.
+ * @param {String} id
+ * @param {String} hash
+ * @param {Number} index
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.unlockCoin = function unlockCoin(id, hash, index) {
+  var options = { hash: hash, index: index };
+  return this._del('/wallet/' + id + '/coin/locked', options);
+};
+
+/**
+ * Get locked coins.
+ * @param {String} id
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getLocked = function getLocked(id) {
+  return this._get('/wallet/' + id + '/coin/locked');
+};
+
+/**
+ * Lock wallet.
+ * @param {String} id
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.lock = function lock(id) {
+  return this._post('/wallet/' + id + '/lock', {});
+};
+
+/**
+ * Unlock wallet.
+ * @param {String} id
+ * @param {String} passphrase
+ * @param {Number} timeout
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.unlock = function unlock(id, passphrase, timeout) {
+  var options = { passphrase: passphrase, timeout: timeout };
+  return this._post('/wallet/' + id + '/unlock', options);
+};
+
+/**
+ * Resend pending wallet transactions.
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.resendWallet = function resendWallet(id) {
+  return this._post('/wallet/' + id + '/resend', {});
+};
+
+/**
+ * Get wallet accounts.
+ * @param {WalletID} id
+ * @returns {Promise} - Returns Array.
+ */
+
+HTTPClient.prototype.getAccounts = function getAccounts(id) {
+  var path = '/wallet/' + id + '/account';
+  return this._get(path);
+};
+
+/**
+ * Get wallet master key.
+ * @param {WalletID} id
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.getMaster = function getMaster(id) {
+  var path = '/wallet/' + id + '/master';
+  return this._get(path);
+};
+
+/**
+ * Get wallet account.
+ * @param {WalletID} id
+ * @param {String} account
+ * @returns {Promise} - Returns Array.
+ */
+
+HTTPClient.prototype.getAccount = function getAccount(id, account) {
+  var path = '/wallet/' + id + '/account/' + account;
+  return this._get(path);
+};
+
+/**
+ * Create account.
+ * @param {WalletID} id
+ * @param {Object} options
+ * @returns {Promise} - Returns Array.
+ */
+
+HTTPClient.prototype.createAccount = function createAccount(id, options) {
+  var path;
+
+  if (!options)
+    options = {};
+
+  if (typeof options === 'string')
+    options = { account: options };
+
+  path = '/wallet/' + id + '/account';
+
+  return this._post(path, options);
+};
+
+/**
+ * Create address.
+ * @param {WalletID} id
+ * @param {Object} options
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.createAddress = function createAddress(id, options) {
+  var path;
+
+  if (!options)
+    options = {};
+
+  if (typeof options === 'string')
+    options = { account: options };
+
+  path = '/wallet/' + id + '/address';
+
+  return this._post(path, options);
+};
+
+/**
+ * Create change address.
+ * @param {WalletID} id
+ * @param {Object} options
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.createChange = function createChange(id, options) {
+  var path;
+
+  if (!options)
+    options = {};
+
+  if (typeof options === 'string')
+    options = { account: options };
+
+  path = '/wallet/' + id + '/change';
+
+  return this._post(path, options);
+};
+
+/**
+ * Create nested address.
+ * @param {WalletID} id
+ * @param {Object} options
+ * @returns {Promise}
+ */
+
+HTTPClient.prototype.createNested = function createNested(id, options) {
+  var path;
+
+  if (!options)
+    options = {};
+
+  if (typeof options === 'string')
+    options = { account: options };
+
+  path = '/wallet/' + id + '/nested';
+
+  return this._post(path, options);
+};
+
+/*
+ * Helpers
+ */
+
+function toHex(obj) {
+  if (!obj)
+    return;
+
+  if (obj.toRaw)
+    obj = obj.toRaw();
+
+  if (Buffer.isBuffer(obj))
+    obj = obj.toString('hex');
+
+  return obj;
+}
+
+/*
+ * Expose
+ */
+
+module.exports = HTTPClient;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: workers/packets.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: workers/packets.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * packets.js - worker packets for bcoin
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+/**
+ * @module workers/packets
+ */
+
+var assert = require('assert');
+var util = require('../utils/util');
+var BufferReader = require('../utils/reader');
+var encoding = require('../utils/encoding');
+var Script = require('../script/script');
+var Witness = require('../script/witness');
+var Output = require('../primitives/output');
+
+/*
+ * Constants
+ */
+
+var packetTypes = {
+  EVENT: 0,
+  LOG: 1,
+  ERROR: 2,
+  ERRORRESULT: 3,
+  VERIFY: 4,
+  VERIFYRESULT: 5,
+  SIGN: 6,
+  SIGNRESULT: 7,
+  VERIFYINPUT: 8,
+  VERIFYINPUTRESULT: 9,
+  SIGNINPUT: 10,
+  SIGNINPUTRESULT: 11,
+  ECVERIFY: 12,
+  ECVERIFYRESULT: 13,
+  ECSIGN: 14,
+  ECSIGNRESULT: 15,
+  MINE: 16,
+  MINERESULT: 17,
+  SCRYPT: 18,
+  SCRYPTRESULT: 19
+};
+
+/**
+ * Packet
+ * @constructor
+ */
+
+function Packet() {
+  this.id = ++Packet.id >>> 0;
+}
+
+Packet.id = 0;
+
+Packet.prototype.cmd = -1;
+
+Packet.prototype.toWriter = function toWriter() {
+  throw new Error('Abstract method.');
+};
+
+/**
+ * EventPacket
+ * @constructor
+ */
+
+function EventPacket(items) {
+  Packet.call(this);
+  this.items = items || [];
+  this.json = JSON.stringify(this.items);
+}
+
+util.inherits(EventPacket, Packet);
+
+EventPacket.prototype.cmd = packetTypes.EVENT;
+
+EventPacket.prototype.getSize = function getSize() {
+  return encoding.sizeVarString(this.json, 'utf8');
+};
+
+EventPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeVarString(this.json, 'utf8');
+};
+
+EventPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new EventPacket();
+  packet.items = JSON.parse(br.readVarString('utf8'));
+  return packet;
+};
+
+/**
+ * LogPacket
+ * @constructor
+ */
+
+function LogPacket(text) {
+  Packet.call(this);
+  this.text = text || '';
+}
+
+util.inherits(LogPacket, Packet);
+
+LogPacket.prototype.cmd = packetTypes.LOG;
+
+LogPacket.prototype.getSize = function getSize() {
+  return encoding.sizeVarString(this.text, 'utf8');
+};
+
+LogPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeVarString(this.text, 'utf8');
+};
+
+LogPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new LogPacket();
+  packet.text = br.readVarString('utf8');
+  return packet;
+};
+
+/**
+ * ErrorPacket
+ * @constructor
+ */
+
+function ErrorPacket(error) {
+  Packet.call(this);
+  this.error = error || new Error();
+}
+
+util.inherits(ErrorPacket, Packet);
+
+ErrorPacket.prototype.cmd = packetTypes.ERROR;
+
+ErrorPacket.prototype.getSize = function getSize() {
+  var size = 0;
+  size += encoding.sizeVarString(this.error.message + '', 'utf8');
+  size += encoding.sizeVarString(this.error.stack + '', 'utf8');
+  size += encoding.sizeVarString((this.error.type || ''), 'utf8');
+  return size;
+};
+
+ErrorPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeVarString(this.error.message + '', 'utf8');
+  bw.writeVarString(this.error.stack + '', 'utf8');
+  bw.writeVarString((this.error.type || ''), 'utf8');
+};
+
+ErrorPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new ErrorPacket();
+  packet.error.message = br.readVarString('utf8');
+  packet.error.stack = br.readVarString('utf8');
+  packet.error.type = br.readVarString('utf8');
+  return packet;
+};
+
+/**
+ * ErrorResultPacket
+ * @constructor
+ */
+
+function ErrorResultPacket(error) {
+  Packet.call(this);
+  this.error = error || new Error();
+}
+
+util.inherits(ErrorResultPacket, Packet);
+
+ErrorResultPacket.prototype.cmd = packetTypes.ERRORRESULT;
+
+ErrorResultPacket.prototype.getSize = function getSize() {
+  var size = 0;
+  size += encoding.sizeVarString(this.error.message + '', 'utf8');
+  size += encoding.sizeVarString(this.error.stack + '', 'utf8');
+  size += encoding.sizeVarString((this.error.type || ''), 'utf8');
+  return size;
+};
+
+ErrorResultPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeVarString(this.error.message + '', 'utf8');
+  bw.writeVarString(this.error.stack + '', 'utf8');
+  bw.writeVarString((this.error.type || ''), 'utf8');
+};
+
+ErrorResultPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new ErrorResultPacket();
+  packet.error.message = br.readVarString('utf8');
+  packet.error.stack = br.readVarString('utf8');
+  packet.error.type = br.readVarString('utf8');
+  return packet;
+};
+
+/**
+ * VerifyPacket
+ * @constructor
+ */
+
+function VerifyPacket(tx, view, flags) {
+  Packet.call(this);
+  this.tx = tx || null;
+  this.view = view || null;
+  this.flags = flags != null ? flags : null;
+}
+
+util.inherits(VerifyPacket, Packet);
+
+VerifyPacket.prototype.cmd = packetTypes.VERIFY;
+
+VerifyPacket.prototype.getSize = function() {
+  return this.tx.getSize() + this.view.getFastSize(this.tx) + 4;
+};
+
+VerifyPacket.prototype.toWriter = function(bw) {
+  this.tx.toWriter(bw);
+  this.view.toFast(bw, this.tx);
+  bw.write32(this.flags != null ? this.flags : -1);
+};
+
+VerifyPacket.fromRaw = function fromRaw(TX, CoinView, data) {
+  var br = new BufferReader(data, true);
+  var packet = new VerifyPacket();
+
+  packet.tx = TX.fromReader(br);
+  packet.view = CoinView.fromFast(br, packet.tx);
+
+  packet.flags = br.read32();
+
+  if (packet.flags === -1)
+    packet.flags = null;
+
+  return packet;
+};
+
+/**
+ * VerifyResultPacket
+ * @constructor
+ */
+
+function VerifyResultPacket(value) {
+  Packet.call(this);
+  this.value = value;
+}
+
+util.inherits(VerifyResultPacket, Packet);
+
+VerifyResultPacket.prototype.cmd = packetTypes.VERIFYRESULT;
+
+VerifyResultPacket.prototype.getSize = function getSize() {
+  return 1;
+};
+
+VerifyResultPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeU8(this.value ? 1 : 0);
+};
+
+VerifyResultPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new VerifyResultPacket();
+  packet.value = br.readU8() === 1;
+  return packet;
+};
+
+/**
+ * SignPacket
+ * @constructor
+ */
+
+function SignPacket(tx, rings, type) {
+  Packet.call(this);
+  this.tx = tx || null;
+  this.rings = rings || [];
+  this.type = type != null ? type : 1;
+}
+
+util.inherits(SignPacket, Packet);
+
+SignPacket.prototype.cmd = packetTypes.SIGN;
+
+SignPacket.prototype.getSize = function getSize() {
+  var size = 0;
+  var i, ring;
+
+  size += this.tx.getSize();
+  size += this.tx.view.getFastSize(this.tx);
+  size += encoding.sizeVarint(this.rings.length);
+
+  for (i = 0; i &lt; this.rings.length; i++) {
+    ring = this.rings[i];
+    size += ring.getSize();
+  }
+
+  size += 1;
+
+  return size;
+};
+
+SignPacket.prototype.toWriter = function toWriter(bw) {
+  var i, ring;
+
+  this.tx.toWriter(bw);
+  this.tx.view.toFast(bw, this.tx);
+
+  bw.writeVarint(this.rings.length);
+
+  for (i = 0; i &lt; this.rings.length; i++) {
+    ring = this.rings[i];
+    ring.toWriter(bw);
+  }
+
+  bw.writeU8(this.type);
+};
+
+SignPacket.fromRaw = function fromRaw(MTX, KeyRing, data) {
+  var br = new BufferReader(data, true);
+  var packet = new SignPacket();
+  var i, count, ring;
+
+  packet.tx = MTX.fromReader(br);
+  packet.tx.view.fromFast(br, packet.tx);
+
+  count = br.readVarint();
+
+  for (i = 0; i &lt; count; i++) {
+    ring = KeyRing.fromReader(br);
+    packet.rings.push(ring);
+  }
+
+  packet.type = br.readU8();
+
+  return packet;
+};
+
+/**
+ * SignResultPacket
+ * @constructor
+ */
+
+function SignResultPacket(total, witness, script) {
+  Packet.call(this);
+  this.total = total || 0;
+  this.script = script || [];
+  this.witness = witness || [];
+}
+
+util.inherits(SignResultPacket, Packet);
+
+SignResultPacket.prototype.cmd = packetTypes.SIGNRESULT;
+
+SignResultPacket.fromTX = function fromTX(tx, total) {
+  var packet = new SignResultPacket(total);
+  var i, input;
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+    packet.script.push(input.script);
+    packet.witness.push(input.witness);
+  }
+
+  return packet;
+};
+
+SignResultPacket.prototype.getSize = function getSize() {
+  var size = 0;
+  var i, script, witness;
+
+  size += encoding.sizeVarint(this.total);
+  size += encoding.sizeVarint(this.script.length);
+
+  for (i = 0; i &lt; this.script.length; i++) {
+    script = this.script[i];
+    witness = this.witness[i];
+    size += script.getVarSize();
+    size += witness.getVarSize();
+  }
+
+  return size;
+};
+
+SignResultPacket.prototype.toWriter = function toWriter(bw) {
+  var i;
+
+  assert(this.script.length === this.witness.length);
+
+  bw.writeVarint(this.total);
+  bw.writeVarint(this.script.length);
+
+  for (i = 0; i &lt; this.script.length; i++) {
+    this.script[i].toWriter(bw);
+    this.witness[i].toWriter(bw);
+  }
+};
+
+SignResultPacket.prototype.inject = function inject(tx) {
+  var i, input;
+
+  assert(this.script.length === tx.inputs.length);
+  assert(this.witness.length === tx.inputs.length);
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+    input.script = this.script[i];
+    input.witness = this.witness[i];
+  }
+};
+
+SignResultPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new SignResultPacket();
+  var i, count;
+
+  packet.total = br.readVarint();
+
+  count = br.readVarint();
+
+  for (i = 0; i &lt; count; i++) {
+    packet.script.push(Script.fromReader(br));
+    packet.witness.push(Witness.fromReader(br));
+  }
+
+  return packet;
+};
+
+/**
+ * VerifyInputPacket
+ * @constructor
+ */
+
+function VerifyInputPacket(tx, index, coin, flags) {
+  Packet.call(this);
+  this.tx = tx || null;
+  this.index = index;
+  this.coin = coin || null;
+  this.flags = flags != null ? flags : null;
+}
+
+util.inherits(VerifyInputPacket, Packet);
+
+VerifyInputPacket.prototype.cmd = packetTypes.VERIFYINPUT;
+
+VerifyInputPacket.prototype.getSize = function getSize() {
+  var size = 0;
+  size += this.tx.getSize();
+  size += encoding.sizeVarint(this.index);
+  size += encoding.sizeVarint(this.coin.value);
+  size += this.coin.script.getVarSize();
+  size += 4;
+  return size;
+};
+
+VerifyInputPacket.prototype.toWriter = function toWriter(bw) {
+  this.tx.toWriter(bw);
+  bw.writeVarint(this.index);
+  bw.writeVarint(this.coin.value);
+  this.coin.script.toWriter(bw);
+  bw.write32(this.flags != null ? this.flags : -1);
+};
+
+VerifyInputPacket.fromRaw = function fromRaw(TX, data) {
+  var br = new BufferReader(data, true);
+  var packet = new VerifyInputPacket();
+
+  packet.tx = TX.fromReader(br);
+  packet.index = br.readVarint();
+
+  packet.coin = new Output();
+  packet.coin.value = br.readVarint();
+  packet.coin.script.fromReader(br);
+
+  packet.flags = br.read32();
+
+  if (packet.flags === -1)
+    packet.flags = null;
+
+  return packet;
+};
+
+/**
+ * VerifyInputResultPacket
+ * @constructor
+ */
+
+function VerifyInputResultPacket(value) {
+  Packet.call(this);
+  this.value = value;
+}
+
+util.inherits(VerifyInputResultPacket, Packet);
+
+VerifyInputResultPacket.prototype.cmd = packetTypes.VERIFYINPUTRESULT;
+
+VerifyInputResultPacket.prototype.getSize = function getSize() {
+  return 1;
+};
+
+VerifyInputResultPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeU8(this.value ? 1 : 0);
+};
+
+VerifyInputResultPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new VerifyInputResultPacket();
+  packet.value = br.readU8() === 1;
+  return packet;
+};
+
+/**
+ * SignInputPacket
+ * @constructor
+ */
+
+function SignInputPacket(tx, index, coin, ring, type) {
+  Packet.call(this);
+  this.tx = tx || null;
+  this.index = index;
+  this.coin = coin || null;
+  this.ring = ring || null;
+  this.type = type != null ? type : 1;
+}
+
+util.inherits(SignInputPacket, Packet);
+
+SignInputPacket.prototype.cmd = packetTypes.SIGNINPUT;
+
+SignInputPacket.prototype.getSize = function getSize() {
+  var size = 0;
+  size += this.tx.getSize();
+  size += encoding.sizeVarint(this.index);
+  size += encoding.sizeVarint(this.coin.value);
+  size += this.coin.script.getVarSize();
+  size += this.ring.getSize();
+  size += 1;
+  return size;
+};
+
+SignInputPacket.prototype.toWriter = function toWriter(bw) {
+  this.tx.toWriter(bw);
+  bw.writeVarint(this.index);
+  bw.writeVarint(this.coin.value);
+  this.coin.script.toWriter(bw);
+  this.ring.toWriter(bw);
+  bw.writeU8(this.type);
+};
+
+SignInputPacket.fromRaw = function fromRaw(MTX, KeyRing, data) {
+  var br = new BufferReader(data, true);
+  var packet = new SignInputPacket();
+
+  packet.tx = MTX.fromReader(br);
+  packet.index = br.readVarint();
+
+  packet.coin = new Output();
+  packet.coin.value = br.readVarint();
+  packet.coin.script.fromReader(br);
+
+  packet.ring = KeyRing.fromReader(br);
+  packet.type = br.readU8();
+
+  return packet;
+};
+
+/**
+ * SignInputResultPacket
+ * @constructor
+ */
+
+function SignInputResultPacket(value, witness, script) {
+  Packet.call(this);
+  this.value = value || false;
+  this.script = script || null;
+  this.witness = witness || null;
+}
+
+util.inherits(SignInputResultPacket, Packet);
+
+SignInputResultPacket.prototype.cmd = packetTypes.SIGNINPUTRESULT;
+
+SignInputResultPacket.fromTX = function fromTX(tx, i, value) {
+  var packet = new SignInputResultPacket(value);
+  var input = tx.inputs[i];
+
+  assert(input);
+
+  packet.script = input.script;
+  packet.witness = input.witness;
+
+  return packet;
+};
+
+SignInputResultPacket.prototype.getSize = function getSize() {
+  return 1 + this.script.getVarSize() + this.witness.getVarSize();
+};
+
+SignInputResultPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeU8(this.value ? 1 : 0);
+  this.script.toWriter(bw);
+  this.witness.toWriter(bw);
+};
+
+SignInputResultPacket.prototype.inject = function inject(tx, i) {
+  var input = tx.inputs[i];
+  assert(input);
+  input.script = this.script;
+  input.witness = this.witness;
+};
+
+SignInputResultPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new SignInputResultPacket();
+  packet.value = br.readU8() === 1;
+  packet.script = Script.fromReader(br);
+  packet.witness = Witness.fromReader(br);
+  return packet;
+};
+
+
+/**
+ * ECVerifyPacket
+ * @constructor
+ */
+
+function ECVerifyPacket(msg, sig, key) {
+  Packet.call(this);
+  this.msg = msg || null;
+  this.sig = sig || null;
+  this.key = key || null;
+}
+
+util.inherits(ECVerifyPacket, Packet);
+
+ECVerifyPacket.prototype.cmd = packetTypes.ECVERIFY;
+
+ECVerifyPacket.prototype.getSize = function getSize() {
+  var size = 0;
+  size += encoding.sizeVarBytes(this.msg);
+  size += encoding.sizeVarBytes(this.sig);
+  size += encoding.sizeVarBytes(this.key);
+  return size;
+};
+
+ECVerifyPacket.prototype.toWriter = function(bw) {
+  bw.writeVarBytes(this.msg);
+  bw.writeVarBytes(this.sig);
+  bw.writeVarBytes(this.key);
+};
+
+ECVerifyPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new ECVerifyPacket();
+  packet.msg = br.readVarBytes();
+  packet.sig = br.readVarBytes();
+  packet.key = br.readVarBytes();
+  return packet;
+};
+
+/**
+ * ECVerifyResultPacket
+ * @constructor
+ */
+
+function ECVerifyResultPacket(value) {
+  Packet.call(this);
+  this.value = value;
+}
+
+util.inherits(ECVerifyResultPacket, Packet);
+
+ECVerifyResultPacket.prototype.cmd = packetTypes.ECVERIFYRESULT;
+
+ECVerifyResultPacket.prototype.getSize = function getSize() {
+  return 1;
+};
+
+ECVerifyResultPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeU8(this.value ? 1 : 0);
+};
+
+ECVerifyResultPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new ECVerifyResultPacket();
+  packet.value = br.readU8() === 1;
+  return packet;
+};
+
+/**
+ * ECSignPacket
+ * @constructor
+ */
+
+function ECSignPacket(msg, key) {
+  Packet.call(this);
+  this.msg = msg || null;
+  this.key = key || null;
+}
+
+util.inherits(ECSignPacket, Packet);
+
+ECSignPacket.prototype.cmd = packetTypes.ECSIGN;
+
+ECSignPacket.prototype.getSize = function getSize() {
+  var size = 0;
+  size += encoding.sizeVarBytes(this.msg);
+  size += encoding.sizeVarBytes(this.key);
+  return size;
+};
+
+ECSignPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeVarBytes(this.msg);
+  bw.writeVarBytes(this.key);
+};
+
+ECSignPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new ECSignPacket();
+  packet.msg = br.readVarBytes();
+  packet.key = br.readVarBytes();
+  return packet;
+};
+
+/**
+ * ECSignResultPacket
+ * @constructor
+ */
+
+function ECSignResultPacket(sig) {
+  Packet.call(this);
+  this.sig = sig;
+}
+
+util.inherits(ECSignResultPacket, Packet);
+
+ECSignResultPacket.prototype.cmd = packetTypes.ECSIGNRESULT;
+
+ECSignResultPacket.prototype.getSize = function getSize() {
+  return encoding.sizeVarBytes(this.sig);
+};
+
+ECSignResultPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeVarBytes(this.sig);
+};
+
+ECSignResultPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new ECSignResultPacket();
+  packet.sig = br.readVarBytes();
+  return packet;
+};
+
+/**
+ * MinePacket
+ * @constructor
+ */
+
+function MinePacket(data, target, min, max) {
+  Packet.call(this);
+  this.data = data || null;
+  this.target = target || null;
+  this.min = min != null ? min : -1;
+  this.max = max != null ? max : -1;
+}
+
+util.inherits(MinePacket, Packet);
+
+MinePacket.prototype.cmd = packetTypes.MINE;
+
+MinePacket.prototype.getSize = function getSize() {
+  return 120;
+};
+
+MinePacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeBytes(this.data);
+  bw.writeBytes(this.target);
+  bw.writeU32(this.min);
+  bw.writeU32(this.max);
+};
+
+MinePacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new MinePacket();
+  packet.data = br.readBytes(80);
+  packet.target = br.readBytes(32);
+  packet.min = br.readU32();
+  packet.max = br.readU32();
+  return packet;
+};
+
+/**
+ * MineResultPacket
+ * @constructor
+ */
+
+function MineResultPacket(nonce) {
+  Packet.call(this);
+  this.nonce = nonce != null ? nonce : -1;
+}
+
+util.inherits(MineResultPacket, Packet);
+
+MineResultPacket.prototype.cmd = packetTypes.MINERESULT;
+
+MineResultPacket.prototype.getSize = function getSize() {
+  return 4;
+};
+
+MineResultPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeU32(this.nonce);
+};
+
+MineResultPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new MineResultPacket();
+  packet.nonce = br.readU32();
+  if ((packet.nonce >> 0) === -1)
+    packet.nonce = -1;
+  return packet;
+};
+
+/**
+ * ScryptPacket
+ * @constructor
+ */
+
+function ScryptPacket(passwd, salt, N, r, p, len) {
+  Packet.call(this);
+  this.passwd = passwd || null;
+  this.salt = salt || null;
+  this.N = N != null ? N : -1;
+  this.r = r != null ? r : -1;
+  this.p = p != null ? p : -1;
+  this.len = len != null ? len : -1;
+}
+
+util.inherits(ScryptPacket, Packet);
+
+ScryptPacket.prototype.cmd = packetTypes.SCRYPT;
+
+ScryptPacket.prototype.getSize = function getSize() {
+  var size = 0;
+  size += encoding.sizeVarBytes(this.passwd);
+  size += encoding.sizeVarBytes(this.salt);
+  size += 16;
+  return size;
+};
+
+ScryptPacket.prototype.toWriter = function(bw) {
+  bw.writeVarBytes(this.passwd);
+  bw.writeVarBytes(this.salt);
+  bw.writeU32(this.N);
+  bw.writeU32(this.r);
+  bw.writeU32(this.p);
+  bw.writeU32(this.len);
+};
+
+ScryptPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new ScryptPacket();
+  packet.passwd = br.readVarBytes();
+  packet.salt = br.readVarBytes();
+  packet.N = br.readU32();
+  packet.r = br.readU32();
+  packet.p = br.readU32();
+  packet.len = br.readU32();
+  return packet;
+};
+
+/**
+ * ScryptResultPacket
+ * @constructor
+ */
+
+function ScryptResultPacket(key) {
+  Packet.call(this);
+  this.key = key || null;
+}
+
+util.inherits(ScryptResultPacket, Packet);
+
+ScryptResultPacket.prototype.cmd = packetTypes.SCRYPTRESULT;
+
+ScryptResultPacket.prototype.getSize = function getSize() {
+  return encoding.sizeVarBytes(this.key);
+};
+
+ScryptResultPacket.prototype.toWriter = function toWriter(bw) {
+  bw.writeVarBytes(this.key);
+};
+
+ScryptResultPacket.fromRaw = function fromRaw(data) {
+  var br = new BufferReader(data, true);
+  var packet = new ScryptResultPacket();
+  packet.key = br.readVarBytes();
+  return packet;
+};
+
+/*
+ * Expose
+ */
+
+exports.types = packetTypes;
+exports.EventPacket = EventPacket;
+exports.LogPacket = LogPacket;
+exports.ErrorPacket = ErrorPacket;
+exports.ErrorResultPacket = ErrorResultPacket;
+exports.VerifyPacket = VerifyPacket;
+exports.VerifyResultPacket = VerifyResultPacket;
+exports.SignPacket = SignPacket;
+exports.SignResultPacket = SignResultPacket;
+exports.VerifyInputPacket = VerifyInputPacket;
+exports.VerifyInputResultPacket = VerifyInputResultPacket;
+exports.SignInputPacket = SignInputPacket;
+exports.SignInputResultPacket = SignInputResultPacket;
+exports.ECVerifyPacket = ECVerifyPacket;
+exports.ECVerifyResultPacket = ECVerifyResultPacket;
+exports.ECSignPacket = ECSignPacket;
+exports.ECSignResultPacket = ECSignResultPacket;
+exports.MinePacket = MinePacket;
+exports.MineResultPacket = MineResultPacket;
+exports.ScryptPacket = ScryptPacket;
+exports.ScryptResultPacket = ScryptResultPacket;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

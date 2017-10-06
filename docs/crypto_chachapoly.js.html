@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: crypto/chachapoly.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: crypto/chachapoly.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * chachapoly.js - chacha20/poly1305 for bcoin
+ * Copyright (c) 2016-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+var assert = require('assert');
+var native = require('../utils/native').binding;
+
+var BIG_ENDIAN = new Int8Array(new Int16Array([1]).buffer)[0] === 0;
+
+/**
+ * @module crypto/chachapoly
+ */
+
+/**
+ * ChaCha20 (used for bip151)
+ * @see https://tools.ietf.org/html/rfc7539#section-2
+ * @alias module:crypto/chachapoly.ChaCha20
+ * @constructor
+ */
+
+function ChaCha20() {
+  if (!(this instanceof ChaCha20))
+    return new ChaCha20();
+
+  this.state = new Uint32Array(16);
+  this.stream = new Uint32Array(16);
+  this.bytes = new Uint8Array(this.stream.buffer);
+
+  if (BIG_ENDIAN)
+    this.bytes = new Buffer(64);
+
+  this.pos = 0;
+  this.ivSize = 0;
+}
+
+/**
+ * Initialize chacha20 with a key, iv, and counter.
+ * @param {Buffer} key
+ * @param {Buffer} iv
+ * @param {Number} counter
+ */
+
+ChaCha20.prototype.init = function init(key, iv, counter) {
+  if (key)
+    this.initKey(key);
+
+  if (iv)
+    this.initIV(iv, counter);
+};
+
+/**
+ * Set key.
+ * @param {Buffer} key
+ */
+
+ChaCha20.prototype.initKey = function initKey(key) {
+  this.state[0] = 0x61707865;
+  this.state[1] = 0x3320646e;
+  this.state[2] = 0x79622d32;
+  this.state[3] = 0x6b206574;
+
+  this.state[4] = key.readUInt32LE(0, true);
+  this.state[5] = key.readUInt32LE(4, true);
+  this.state[6] = key.readUInt32LE(8, true);
+  this.state[7] = key.readUInt32LE(12, true);
+  this.state[8] = key.readUInt32LE(16, true);
+  this.state[9] = key.readUInt32LE(20, true);
+  this.state[10] = key.readUInt32LE(24, true);
+  this.state[11] = key.readUInt32LE(28, true);
+
+  this.state[12] = 0;
+
+  this.pos = 0xffffffff;
+};
+
+/**
+ * Set IV and counter.
+ * @param {Buffer} iv
+ * @param {Number} counter
+ */
+
+ChaCha20.prototype.initIV = function initIV(iv, counter) {
+  if (iv.length === 8) {
+    this.state[13] = 0;
+    this.state[14] = iv.readUInt32LE(0, true);
+    this.state[15] = iv.readUInt32LE(4, true);
+  } else if (iv.length === 12) {
+    this.state[13] = iv.readUInt32LE(0, true);
+    this.state[14] = iv.readUInt32LE(4, true);
+    this.state[15] = iv.readUInt32LE(8, true);
+  } else {
+    assert(false, 'Bad iv size.');
+  }
+
+  this.ivSize = iv.length * 8;
+
+  this.setCounter(counter);
+};
+
+/**
+ * Encrypt/decrypt data.
+ * @param {Buffer} data - Will be mutated.
+ */
+
+ChaCha20.prototype.encrypt = function encrypt(data) {
+  var i, j;
+
+  for (i = 0; i &lt; data.length; i++) {
+    if (this.pos >= 64) {
+      for (j = 0; j &lt; 16; j++)
+        this.stream[j] = this.state[j];
+
+      for (j = 0; j &lt; 10; j++) {
+        qround(this.stream, 0, 4, 8, 12);
+        qround(this.stream, 1, 5, 9, 13);
+        qround(this.stream, 2, 6, 10, 14);
+        qround(this.stream, 3, 7, 11, 15);
+        qround(this.stream, 0, 5, 10, 15);
+        qround(this.stream, 1, 6, 11, 12);
+        qround(this.stream, 2, 7, 8, 13);
+        qround(this.stream, 3, 4, 9, 14);
+      }
+
+      for (j = 0; j &lt; 16; j++) {
+        this.stream[j] += this.state[j];
+        if (BIG_ENDIAN)
+          this.bytes.writeUInt32LE(this.stream[j], j * 4, true);
+      }
+
+      this.state[12]++;
+
+      if (this.state[12] === 0) {
+        assert(this.ivSize === 64, 'Counter overflow.');
+        this.state[13]++;
+        assert(this.state[13] !== 0, 'Counter overflow.');
+      }
+
+      this.pos = 0;
+    }
+
+    data[i] ^= this.bytes[this.pos++];
+  }
+
+  return data;
+};
+
+/**
+ * Artificially set the counter.
+ * @param {Number} counter
+ */
+
+ChaCha20.prototype.setCounter = function setCounter(counter) {
+  var lo, hi;
+
+  if (!counter)
+    counter = 0;
+
+  lo = counter % 0x100000000;
+  hi = (counter - lo) / 0x100000000;
+
+  this.state[12] = lo;
+
+  if (this.ivSize === 64)
+    this.state[13] = hi;
+};
+
+/**
+ * Get the counter as a uint64.
+ * @returns {Number}
+ */
+
+ChaCha20.prototype.getCounter = function getCounter() {
+  var lo = this.state[12];
+  var hi = this.state[13];
+  if (this.ivSize === 64)
+    return hi * 0x100000000 + lo;
+  return lo;
+};
+
+if (native)
+  ChaCha20 = native.ChaCha20;
+
+/*
+ * Helpers
+ */
+
+function qround(x, a, b, c, d) {
+  x[a] += x[b];
+  x[d] = rotl32(x[d] ^ x[a], 16);
+
+  x[c] += x[d];
+  x[b] = rotl32(x[b] ^ x[c], 12);
+
+  x[a] += x[b];
+  x[d] = rotl32(x[d] ^ x[a], 8);
+
+  x[c] += x[d];
+  x[b] = rotl32(x[b] ^ x[c], 7);
+}
+
+function rotl32(w, b) {
+  return (w &lt;&lt; b) | (w >>> (32 - b));
+}
+
+/**
+ * Poly1305 (used for bip151)
+ * @see https://github.com/floodyberry/poly1305-donna
+ * @see https://tools.ietf.org/html/rfc7539#section-2.5
+ * @alias module:crypto/chachapoly.Poly1305
+ * @constructor
+ */
+
+function Poly1305() {
+  if (!(this instanceof Poly1305))
+    return new Poly1305();
+
+  this.r = new Uint16Array(10);
+  this.h = new Uint16Array(10);
+  this.pad = new Uint16Array(8);
+  this.fin = 0;
+  this.leftover = 0;
+  this.buffer = new Buffer(16);
+}
+
+/**
+ * Initialize poly1305 with a key.
+ * @param {Buffer} key
+ */
+
+Poly1305.prototype.init = function init(key) {
+  var t0, t1, t2, t3, t4, t5, t6, t7, i;
+
+  // r &amp;= 0xffffffc0ffffffc0ffffffc0fffffff
+  t0 = key.readUInt16LE(0, true);
+  t1 = key.readUInt16LE(2, true);
+  t2 = key.readUInt16LE(4, true);
+  t3 = key.readUInt16LE(6, true);
+  t4 = key.readUInt16LE(8, true);
+  t5 = key.readUInt16LE(10, true);
+  t6 = key.readUInt16LE(12, true);
+  t7 = key.readUInt16LE(14, true);
+
+  this.r[0] = t0 &amp; 0x1fff;
+  this.r[1] = ((t0 >>> 13) | (t1 &lt;&lt; 3)) &amp; 0x1fff;
+  this.r[2] = ((t1 >>> 10) | (t2 &lt;&lt; 6)) &amp; 0x1f03;
+  this.r[3] = ((t2 >>> 7) | (t3 &lt;&lt; 9)) &amp; 0x1fff;
+  this.r[4] = ((t3 >>> 4) | (t4 &lt;&lt; 12)) &amp; 0x00ff;
+  this.r[5] = (t4 >>> 1) &amp; 0x1ffe;
+  this.r[6] = ((t4 >>> 14) | (t5 &lt;&lt; 2)) &amp; 0x1fff;
+  this.r[7] = ((t5 >>> 11) | (t6 &lt;&lt; 5)) &amp; 0x1f81;
+  this.r[8] = ((t6 >>> 8) | (t7 &lt;&lt; 8)) &amp; 0x1fff;
+  this.r[9] = (t7 >>> 5) &amp; 0x007f;
+
+  // h = 0
+  for (i = 0; i &lt; 10; i++)
+    this.h[i] = 0;
+
+  // save pad for later
+  for (i = 0; i &lt; 8; i++)
+    this.pad[i] = key.readUInt16LE(16 + (2 * i), true);
+
+  this.leftover = 0;
+  this.fin = 0;
+};
+
+/**
+ * Process 16 byte blocks.
+ * @param {Buffer} data - Blocks.
+ * @param {Number} bytes - Size.
+ * @param {Number} m - Offset pointer.
+ */
+
+Poly1305.prototype.blocks = function blocks(data, bytes, m) {
+  var hibit = this.fin ? 0 : (1 &lt;&lt; 11); // 1 &lt;&lt; 128
+  var d = new Uint32Array(10);
+  var i, j, t0, t1, t2, t3, t4, t5, t6, t7, c;
+
+  while (bytes >= 16) {
+    // h += m[i]
+    t0 = data.readUInt16LE(m + 0, true);
+    t1 = data.readUInt16LE(m + 2, true);
+    t2 = data.readUInt16LE(m + 4, true);
+    t3 = data.readUInt16LE(m + 6, true);
+    t4 = data.readUInt16LE(m + 8, true);
+    t5 = data.readUInt16LE(m + 10, true);
+    t6 = data.readUInt16LE(m + 12, true);
+    t7 = data.readUInt16LE(m + 14, true);
+
+    this.h[0] += t0 &amp; 0x1fff;
+    this.h[1] += ((t0 >>> 13) | (t1 &lt;&lt; 3)) &amp; 0x1fff;
+    this.h[2] += ((t1 >>> 10) | (t2 &lt;&lt; 6)) &amp; 0x1fff;
+    this.h[3] += ((t2 >>> 7) | (t3 &lt;&lt; 9)) &amp; 0x1fff;
+    this.h[4] += ((t3 >>> 4) | (t4 &lt;&lt; 12)) &amp; 0x1fff;
+    this.h[5] += ((t4 >>> 1)) &amp; 0x1fff;
+    this.h[6] += ((t4 >>> 14) | (t5 &lt;&lt; 2)) &amp; 0x1fff;
+    this.h[7] += ((t5 >>> 11) | (t6 &lt;&lt; 5)) &amp; 0x1fff;
+    this.h[8] += ((t6 >>> 8) | (t7 &lt;&lt; 8)) &amp; 0x1fff;
+    this.h[9] += ((t7 >>> 5)) | hibit;
+
+    // h *= r, (partial) h %= p
+    for (i = 0, c = 0; i &lt; 10; i++) {
+      d[i] = c;
+      for (j = 0; j &lt; 10; j++) {
+        d[i] += this.h[j] * (j &lt;= i
+          ? this.r[i - j]
+          : 5 * this.r[i + 10 - j]);
+        // Sum(h[i] * r[i] * 5) will overflow slightly
+        // above 6 products with an unclamped r, so
+        // carry at 5
+        if (j === 4) {
+          c = d[i] >>> 13;
+          d[i] &amp;= 0x1fff;
+        }
+      }
+      c += d[i] >>> 13;
+      d[i] &amp;= 0x1fff;
+    }
+    c = (c &lt;&lt; 2) + c; // c *= 5
+    c += d[0];
+    d[0] = (c &amp; 0x1fff);
+    c = c >>> 13;
+    d[1] += c;
+
+    for (i = 0; i &lt; 10; i++)
+      this.h[i] = d[i];
+
+    m += 16;
+    bytes -= 16;
+  }
+};
+
+/**
+ * Update the MAC with data (will be
+ * processed as 16 byte blocks).
+ * @param {Buffer} data
+ */
+
+Poly1305.prototype.update = function update(data) {
+  var bytes = data.length;
+  var m = 0;
+  var i, want;
+
+  // handle leftover
+  if (this.leftover) {
+    want = 16 - this.leftover;
+    if (want > bytes)
+      want = bytes;
+    for (i = 0; i &lt; want; i++)
+      this.buffer[this.leftover + i] = data[m + i];
+    bytes -= want;
+    m += want;
+    this.leftover += want;
+    if (this.leftover &lt; 16)
+      return;
+    this.blocks(this.buffer, 16, 0);
+    this.leftover = 0;
+  }
+
+  // process full blocks
+  if (bytes >= 16) {
+    want = bytes &amp; ~(16 - 1);
+    this.blocks(data, want, m);
+    m += want;
+    bytes -= want;
+  }
+
+  // store leftover
+  if (bytes) {
+    for (i = 0; i &lt; bytes; i++)
+      this.buffer[this.leftover + i] = data[m + i];
+    this.leftover += bytes;
+  }
+};
+
+/**
+ * Finalize and return a 16-byte MAC.
+ * @returns {Buffer}
+ */
+
+Poly1305.prototype.finish = function finish() {
+  var mac = new Buffer(16);
+  var g = new Uint16Array(10);
+  var c, mask, f, i;
+
+  // process the remaining block
+  if (this.leftover) {
+    i = this.leftover;
+    this.buffer[i++] = 1;
+    for (; i &lt; 16; i++)
+      this.buffer[i] = 0;
+    this.fin = 1;
+    this.blocks(this.buffer, 16, 0);
+  }
+
+  // fully carry h
+  c = this.h[1] >>> 13;
+  this.h[1] &amp;= 0x1fff;
+  for (i = 2; i &lt; 10; i++) {
+    this.h[i] += c;
+    c = this.h[i] >>> 13;
+    this.h[i] &amp;= 0x1fff;
+  }
+  this.h[0] += c * 5;
+  c = this.h[0] >>> 13;
+  this.h[0] &amp;= 0x1fff;
+  this.h[1] += c;
+  c = this.h[1] >>> 13;
+  this.h[1] &amp;= 0x1fff;
+  this.h[2] += c;
+
+  // compute h + -p
+  g[0] = this.h[0] + 5;
+  c = g[0] >>> 13;
+  g[0] &amp;= 0x1fff;
+  for (i = 1; i &lt; 10; i++) {
+    g[i] = this.h[i] + c;
+    c = g[i] >>> 13;
+    g[i] &amp;= 0x1fff;
+  }
+
+  // select h if h &lt; p, or h + -p if h >= p
+  mask = (c ^ 1) - 1;
+  for (i = 0; i &lt; 10; i++)
+    g[i] &amp;= mask;
+  mask = ~mask;
+  for (i = 0; i &lt; 10; i++)
+    this.h[i] = (this.h[i] &amp; mask) | g[i];
+
+  // h = h % (2^128)
+  this.h[0] = ((this.h[0]) | (this.h[1] &lt;&lt; 13)) &amp; 0xffff;
+  this.h[1] = ((this.h[1] >>> 3) | (this.h[2] &lt;&lt; 10)) &amp; 0xffff;
+  this.h[2] = ((this.h[2] >>> 6) | (this.h[3] &lt;&lt; 7)) &amp; 0xffff;
+  this.h[3] = ((this.h[3] >>> 9) | (this.h[4] &lt;&lt; 4)) &amp; 0xffff;
+  this.h[4] = ((this.h[4] >>> 12)
+    | (this.h[5] &lt;&lt; 1) | (this.h[6] &lt;&lt; 14)) &amp; 0xffff;
+  this.h[5] = ((this.h[6] >>> 2) | (this.h[7] &lt;&lt; 11)) &amp; 0xffff;
+  this.h[6] = ((this.h[7] >>> 5) | (this.h[8] &lt;&lt; 8)) &amp; 0xffff;
+  this.h[7] = ((this.h[8] >>> 8) | (this.h[9] &lt;&lt; 5)) &amp; 0xffff;
+
+  // mac = (h + pad) % (2^128)
+  f = this.h[0] + this.pad[0];
+  this.h[0] = f;
+  for (i = 1; i &lt; 8; i++) {
+    f = this.h[i] + this.pad[i] + (f >>> 16);
+    this.h[i] = f;
+  }
+
+  for (i = 0; i &lt; 8; i++)
+    mac.writeUInt16LE(this.h[i], i * 2, true);
+
+  // zero out the state
+  for (i = 0; i &lt; 10; i++)
+    this.h[i] = 0;
+  for (i = 0; i &lt; 10; i++)
+    this.r[i] = 0;
+  for (i = 0; i &lt; 8; i++)
+    this.pad[i] = 0;
+
+  return mac;
+};
+
+/**
+ * Return a MAC for a message and key.
+ * @param {Buffer} msg
+ * @param {Buffer} key
+ * @returns {Buffer} MAC
+ */
+
+Poly1305.auth = function auth(msg, key) {
+  var poly = new Poly1305();
+  poly.init(key);
+  poly.update(msg);
+  return poly.finish();
+};
+
+/**
+ * Compare two MACs in constant time.
+ * @param {Buffer} mac1
+ * @param {Buffer} mac2
+ * @returns {Boolean}
+ */
+
+Poly1305.verify = function verify(mac1, mac2) {
+  var dif = 0;
+  var i;
+
+  // Compare in constant time.
+  for (i = 0; i &lt; 16; i++)
+    dif |= mac1[i] ^ mac2[i];
+
+  dif = (dif - 1) >>> 31;
+
+  return (dif &amp; 1) !== 0;
+};
+
+if (native)
+  Poly1305 = native.Poly1305;
+
+/**
+ * AEAD (used for bip151)
+ * @exports AEAD
+ * @see https://github.com/openssh/openssh-portable
+ * @see https://tools.ietf.org/html/rfc7539#section-2.8
+ * @alias module:crypto/chachapoly.AEAD
+ * @constructor
+ */
+
+function AEAD() {
+  if (!(this instanceof AEAD))
+    return new AEAD();
+
+  this.chacha20 = new ChaCha20();
+  this.poly1305 = new Poly1305();
+  this.aadLen = 0;
+  this.cipherLen = 0;
+  this.polyKey = null;
+}
+
+/**
+ * Initialize the AEAD with a key and iv.
+ * @param {Buffer} key
+ * @param {Buffer} iv - IV / packet sequence number.
+ */
+
+AEAD.prototype.init = function init(key, iv) {
+  var polyKey = new Buffer(32);
+  polyKey.fill(0);
+
+  this.chacha20.init(key, iv);
+  this.chacha20.encrypt(polyKey);
+  this.poly1305.init(polyKey);
+
+  // We need to encrypt a full block
+  // to get the cipher in the correct state.
+  this.chacha20.encrypt(new Buffer(32));
+
+  // Counter should be one.
+  assert(this.chacha20.getCounter() === 1);
+
+  // Expose for debugging.
+  this.polyKey = polyKey;
+
+  this.aadLen = 0;
+  this.cipherLen = 0;
+};
+
+/**
+ * Update the aad (will be finalized
+ * on an encrypt/decrypt call).
+ * @param {Buffer} aad
+ */
+
+AEAD.prototype.aad = function _aad(aad) {
+  assert(this.cipherLen === 0, 'Cannot update aad.');
+  this.poly1305.update(aad);
+  this.aadLen += aad.length;
+};
+
+/**
+ * Encrypt a piece of data.
+ * @param {Buffer} data
+ */
+
+AEAD.prototype.encrypt = function encrypt(data) {
+  if (this.cipherLen === 0)
+    this.pad16(this.aadLen);
+
+  this.chacha20.encrypt(data);
+  this.poly1305.update(data);
+  this.cipherLen += data.length;
+
+  return data;
+};
+
+/**
+ * Decrypt a piece of data.
+ * @param {Buffer} data
+ */
+
+AEAD.prototype.decrypt = function decrypt(data) {
+  if (this.cipherLen === 0)
+    this.pad16(this.aadLen);
+
+  this.cipherLen += data.length;
+  this.poly1305.update(data);
+  this.chacha20.encrypt(data);
+
+  return data;
+};
+
+/**
+ * Authenticate data without decrypting.
+ * @param {Buffer} data
+ */
+
+AEAD.prototype.auth = function auth(data) {
+  if (this.cipherLen === 0)
+    this.pad16(this.aadLen);
+
+  this.cipherLen += data.length;
+  this.poly1305.update(data);
+
+  return data;
+};
+
+/**
+ * Finalize the aead and generate a MAC.
+ * @returns {Buffer} MAC
+ */
+
+AEAD.prototype.finish = function finish() {
+  var len = new Buffer(16);
+  var lo, hi;
+
+  // The RFC says these are supposed to be
+  // uint32le, but their own fucking test
+  // cases fail unless they are uint64le's.
+  lo = this.aadLen % 0x100000000;
+  hi = (this.aadLen - lo) / 0x100000000;
+  len.writeUInt32LE(lo, 0, true);
+  len.writeUInt32LE(hi, 4, true);
+
+  lo = this.cipherLen % 0x100000000;
+  hi = (this.cipherLen - lo) / 0x100000000;
+  len.writeUInt32LE(lo, 8, true);
+  len.writeUInt32LE(hi, 12, true);
+
+  if (this.cipherLen === 0)
+    this.pad16(this.aadLen);
+
+  this.pad16(this.cipherLen);
+  this.poly1305.update(len);
+
+  return this.poly1305.finish();
+};
+
+/**
+ * Pad a chunk before updating mac.
+ * @private
+ * @param {Number} size
+ */
+
+AEAD.prototype.pad16 = function pad16(size) {
+  var pad;
+
+  size %= 16;
+
+  if (size === 0)
+    return;
+
+  pad = new Buffer(16 - size);
+  pad.fill(0);
+
+  this.poly1305.update(pad);
+};
+
+/*
+ * Expose
+ */
+
+exports.ChaCha20 = ChaCha20;
+exports.Poly1305 = Poly1305;
+exports.AEAD = AEAD;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: utils/encoding.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: utils/encoding.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * encoding.js - encoding utils for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+/**
+ * @module utils/encoding
+ */
+
+var assert = require('assert');
+var BN = require('bn.js');
+var encoding = exports;
+
+/**
+ * UINT32_MAX
+ * @const {BN}
+ */
+
+encoding.U32_MAX = new BN(0xffffffff);
+
+/**
+ * UINT64_MAX
+ * @const {BN}
+ */
+
+encoding.U64_MAX = new BN('ffffffffffffffff', 'hex');
+
+/**
+ * Max safe integer (53 bits).
+ * @const {Number}
+ * @default
+ */
+
+encoding.MAX_SAFE_INTEGER = 0x1fffffffffffff;
+
+/**
+ * Max 52 bit integer (safe for additions).
+ * `(MAX_SAFE_INTEGER - 1) / 2`
+ * @const {Number}
+ * @default
+ */
+
+encoding.MAX_SAFE_ADDITION = 0xfffffffffffff;
+
+/**
+ * An empty buffer.
+ * @const {Buffer}
+ * @default
+ */
+
+encoding.DUMMY = new Buffer([0]);
+
+/**
+ * A hash of all zeroes with a `1` at the
+ * end (used for the SIGHASH_SINGLE bug).
+ * @const {Buffer}
+ * @default
+ */
+
+encoding.ONE_HASH = new Buffer(
+  '0100000000000000000000000000000000000000000000000000000000000000',
+  'hex'
+);
+
+/**
+ * A hash of all zeroes.
+ * @const {Buffer}
+ * @default
+ */
+
+encoding.ZERO_HASH = new Buffer(
+  '0000000000000000000000000000000000000000000000000000000000000000',
+  'hex'
+);
+
+/**
+ * A hash of all 0xff.
+ * @const {Buffer}
+ * @default
+ */
+
+encoding.MAX_HASH = new Buffer(
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+  'hex'
+);
+
+/**
+ * A hash of all zeroes.
+ * @const {String}
+ * @default
+ */
+
+encoding.NULL_HASH =
+  '0000000000000000000000000000000000000000000000000000000000000000';
+
+/**
+ * A hash of all 0xff.
+ * @const {String}
+ * @default
+ */
+
+encoding.HIGH_HASH =
+  'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
+/**
+ * A hash of all zeroes.
+ * @const {Buffer}
+ * @default
+ */
+
+encoding.ZERO_HASH160 = new Buffer(
+  '0000000000000000000000000000000000000000',
+  'hex'
+);
+
+/**
+ * A hash of all 0xff.
+ * @const {String}
+ * @default
+ */
+
+encoding.MAX_HASH160 = new Buffer(
+  'ffffffffffffffffffffffffffffffffffffffff',
+  'hex'
+);
+
+/**
+ * A hash of all zeroes.
+ * @const {String}
+ * @default
+ */
+
+encoding.NULL_HASH160 = '0000000000000000000000000000000000000000';
+
+/**
+ * A hash of all 0xff.
+ * @const {String}
+ * @default
+ */
+
+encoding.HIGH_HASH160 = 'ffffffffffffffffffffffffffffffffffffffff';
+
+/**
+ * A compressed pubkey of all zeroes.
+ * @const {Buffer}
+ * @default
+ */
+
+encoding.ZERO_KEY = new Buffer(
+  '000000000000000000000000000000000000000000000000000000000000000000',
+  'hex'
+);
+
+/**
+ * A 73 byte signature of all zeroes.
+ * @const {Buffer}
+ * @default
+ */
+
+encoding.ZERO_SIG = new Buffer(''
+  + '0000000000000000000000000000000000000000000000000000000000000000'
+  + '0000000000000000000000000000000000000000000000000000000000000000'
+  + '000000000000000000',
+  'hex'
+);
+
+/**
+ * A 64 byte signature of all zeroes.
+ * @const {Buffer}
+ * @default
+ */
+
+encoding.ZERO_SIG64 = new Buffer(''
+  + '0000000000000000000000000000000000000000000000000000000000000000'
+  + '0000000000000000000000000000000000000000000000000000000000000000',
+  'hex'
+);
+
+/**
+ * 4 zero bytes.
+ * @const {Buffer}
+ * @default
+ */
+
+encoding.ZERO_U32 = new Buffer('00000000', 'hex');
+
+/**
+ * 8 zero bytes.
+ * @const {Buffer}
+ * @default
+ */
+
+encoding.ZERO_U64 = new Buffer('0000000000000000', 'hex');
+
+/**
+ * Read uint64 as a js number.
+ * @private
+ * @param {Buffer} data
+ * @param {Number} off
+ * @param {Boolean} force53 - Read only 53 bits, but maintain the sign.
+ * @param {Boolean} be
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding._readU64 = function _readU64(data, off, force53, be) {
+  var hi, lo;
+
+  if (be) {
+    hi = data.readUInt32BE(off, true);
+    lo = data.readUInt32BE(off + 4, true);
+  } else {
+    hi = data.readUInt32LE(off + 4, true);
+    lo = data.readUInt32LE(off, true);
+  }
+
+  if (force53)
+    hi &amp;= 0x1fffff;
+
+  assert((hi &amp; 0xffe00000) === 0, 'Number exceeds 2^53-1');
+
+  return (hi * 0x100000000) + lo;
+};
+
+/**
+ * Read uint64le as a js number.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.readU64 = function readU64(data, off) {
+  return encoding._readU64(data, off, false, false);
+};
+
+/**
+ * Read uint64be as a js number.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.readU64BE = function readU64BE(data, off) {
+  return encoding._readU64(data, off, false, true);
+};
+
+/**
+ * Read uint64le as a js number (limit at 53 bits).
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.readU53 = function readU53(data, off) {
+  return encoding._readU64(data, off, true, false);
+};
+
+/**
+ * Read uint64be as a js number (limit at 53 bits).
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.readU53BE = function readU53BE(data, off) {
+  return encoding._readU64(data, off, true, true);
+};
+
+/**
+ * Read int64 as a js number.
+ * @private
+ * @param {Buffer} data
+ * @param {Number} off
+ * @param {Boolean} force53 - Read only 53 bits, but maintain the sign.
+ * @param {Boolean} be
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding._read64 = function _read64(data, off, force53, be) {
+  var hi, lo;
+
+  if (be) {
+    hi = data.readUInt32BE(off, true);
+    lo = data.readUInt32BE(off + 4, true);
+  } else {
+    hi = data.readUInt32LE(off + 4, true);
+    lo = data.readUInt32LE(off, true);
+  }
+
+  if (hi &amp; 0x80000000) {
+    hi = ~hi >>> 0;
+    lo = ~lo >>> 0;
+
+    if (force53)
+      hi &amp;= 0x1fffff;
+
+    assert((hi &amp; 0xffe00000) === 0, 'Number exceeds 2^53-1');
+
+    return -(hi * 0x100000000 + lo + 1);
+  }
+
+  if (force53)
+    hi &amp;= 0x1fffff;
+
+  assert((hi &amp; 0xffe00000) === 0, 'Number exceeds 2^53-1');
+
+  return hi * 0x100000000 + lo;
+};
+
+/**
+ * Read int64be as a js number.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.read64 = function read64(data, off) {
+  return encoding._read64(data, off, false, false);
+};
+
+/**
+ * Read int64be as a js number.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.read64BE = function read64BE(data, off) {
+  return encoding._read64(data, off, false, true);
+};
+
+/**
+ * Read int64be as a js number (limit at 53 bits).
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.read53 = function read53(data, off) {
+  return encoding._read64(data, off, true, false);
+};
+
+/**
+ * Read int64be as a js number (limit at 53 bits).
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Number}
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.read53BE = function read53BE(data, off) {
+  return encoding._read64(data, off, true, true);
+};
+
+/**
+ * Write a javascript number as an int64.
+ * @private
+ * @param {Buffer} dst
+ * @param {Number} num
+ * @param {Number} off
+ * @param {Boolean} be
+ * @returns {Number} Buffer offset.
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding._write64 = function _write64(dst, num, off, be) {
+  var negative = num &lt; 0;
+  var hi, lo;
+
+  if (negative) {
+    num = -num;
+    num -= 1;
+  }
+
+  assert(num &lt;= encoding.MAX_SAFE_INTEGER, 'Number exceeds 2^53-1');
+
+  lo = num % 0x100000000;
+  hi = (num - lo) / 0x100000000;
+
+  if (negative) {
+    hi = ~hi >>> 0;
+    lo = ~lo >>> 0;
+  }
+
+  if (be) {
+    dst[off++] = hi >>> 24;
+    dst[off++] = (hi >> 16) &amp; 0xff;
+    dst[off++] = (hi >> 8) &amp; 0xff;
+    dst[off++] = hi &amp; 0xff;
+
+    dst[off++] = lo >>> 24;
+    dst[off++] = (lo >> 16) &amp; 0xff;
+    dst[off++] = (lo >> 8) &amp; 0xff;
+    dst[off++] = lo &amp; 0xff;
+  } else {
+    dst[off++] = lo &amp; 0xff;
+    dst[off++] = (lo >> 8) &amp; 0xff;
+    dst[off++] = (lo >> 16) &amp; 0xff;
+    dst[off++] = lo >>> 24;
+
+    dst[off++] = hi &amp; 0xff;
+    dst[off++] = (hi >> 8) &amp; 0xff;
+    dst[off++] = (hi >> 16) &amp; 0xff;
+    dst[off++] = hi >>> 24;
+  }
+
+  return off;
+};
+
+/**
+ * Write a javascript number as a uint64le.
+ * @param {Buffer} dst
+ * @param {Number} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.writeU64 = function writeU64(dst, num, off) {
+  return encoding._write64(dst, num, off, false);
+};
+
+/**
+ * Write a javascript number as a uint64be.
+ * @param {Buffer} dst
+ * @param {Number} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.writeU64BE = function writeU64BE(dst, num, off) {
+  return encoding._write64(dst, num, off, true);
+};
+
+/**
+ * Write a javascript number as an int64le.
+ * @param {Buffer} dst
+ * @param {Number} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.write64 = function write64(dst, num, off) {
+  return encoding._write64(dst, num, off, false);
+};
+
+/**
+ * Write a javascript number as an int64be.
+ * @param {Buffer} dst
+ * @param {Number} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ * @throws on num > MAX_SAFE_INTEGER
+ */
+
+encoding.write64BE = function write64BE(dst, num, off) {
+  return encoding._write64(dst, num, off, true);
+};
+
+/**
+ * Read uint64le.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {BN}
+ */
+
+encoding.readU64BN = function readU64BN(data, off) {
+  var num = data.slice(off, off + 8);
+  return new BN(num, 'le');
+};
+
+/**
+ * Read uint64be.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {BN}
+ */
+
+encoding.readU64BEBN = function readU64BEBN(data, off) {
+  var num = data.slice(off, off + 8);
+  return new BN(num, 'be');
+};
+
+/**
+ * Read int64le.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {BN}
+ */
+
+encoding.read64BN = function read64BN(data, off) {
+  var num = data.slice(off, off + 8);
+
+  if (num[num.length - 1] &amp; 0x80)
+    return new BN(num, 'le').notn(64).addn(1).neg();
+
+  return new BN(num, 'le');
+};
+/**
+ * Read int64be.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {BN}
+ */
+
+encoding.read64BEBN = function read64BEBN(data, off) {
+  var num = data.slice(off, off + 8);
+
+  if (num[0] &amp; 0x80)
+    return new BN(num, 'be').notn(64).addn(1).neg();
+
+  return new BN(num, 'be');
+};
+
+/**
+ * Write int64le.
+ * @private
+ * @param {Buffer} dst
+ * @param {BN} num
+ * @param {Number} off
+ * @param {Boolean} be
+ * @returns {Number} Buffer offset.
+ */
+
+encoding._write64BN = function _write64BN(dst, num, off, be) {
+  var i;
+
+  if (num.bitLength() &lt;= 53)
+    return encoding._write64(dst, num.toNumber(), off, be);
+
+  if (num.bitLength() > 64)
+    num = num.uand(encoding.U64_MAX);
+
+  if (num.isNeg())
+    num = num.neg().inotn(64).iaddn(1);
+
+  num = num.toArray(be ? 'be' : 'le', 8);
+
+  for (i = 0; i &lt; num.length; i++)
+    dst[off++] = num[i];
+
+  return off;
+};
+
+/**
+ * Write uint64le.
+ * @param {Buffer} dst
+ * @param {BN} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ */
+
+encoding.writeU64BN = function writeU64BN(dst, num, off) {
+  return encoding._write64BN(dst, num, off, false);
+};
+
+/**
+ * Write uint64be.
+ * @param {Buffer} dst
+ * @param {BN} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ */
+
+encoding.writeU64BEBN = function writeU64BEBN(dst, num, off) {
+  return encoding._write64BN(dst, num, off, true);
+};
+
+/**
+ * Write int64le.
+ * @param {Buffer} dst
+ * @param {BN} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ */
+
+encoding.write64BN = function write64BN(dst, num, off) {
+  return encoding._write64BN(dst, num, off, false);
+};
+
+/**
+ * Write int64be.
+ * @param {Buffer} dst
+ * @param {BN} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ */
+
+encoding.write64BEBN = function write64BEBN(dst, num, off) {
+  return encoding._write64BN(dst, num, off, true);
+};
+
+/**
+ * Read a varint.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Object}
+ */
+
+encoding.readVarint = function readVarint(data, off) {
+  var value, size;
+
+  assert(off &lt; data.length);
+
+  switch (data[off]) {
+    case 0xff:
+      size = 9;
+      assert(off + size &lt;= data.length);
+      value = encoding.readU64(data, off + 1);
+      assert(value > 0xffffffff);
+      break;
+    case 0xfe:
+      size = 5;
+      assert(off + size &lt;= data.length);
+      value = data.readUInt32LE(off + 1, true);
+      assert(value > 0xffff);
+      break;
+    case 0xfd:
+      size = 3;
+      assert(off + size &lt;= data.length);
+      value = data[off + 1] | (data[off + 2] &lt;&lt; 8);
+      assert(value >= 0xfd);
+      break;
+    default:
+      size = 1;
+      value = data[off];
+      break;
+  }
+
+  return new Varint(size, value);
+};
+
+/**
+ * Write a varint.
+ * @param {Buffer} dst
+ * @param {Number} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ */
+
+encoding.writeVarint = function writeVarint(dst, num, off) {
+  if (num &lt; 0xfd) {
+    dst[off++] = num &amp; 0xff;
+    return off;
+  }
+
+  if (num &lt;= 0xffff) {
+    dst[off++] = 0xfd;
+    dst[off++] = num &amp; 0xff;
+    dst[off++] = (num >> 8) &amp; 0xff;
+    return off;
+  }
+
+  if (num &lt;= 0xffffffff) {
+    dst[off++] = 0xfe;
+    dst[off++] = num &amp; 0xff;
+    dst[off++] = (num >> 8) &amp; 0xff;
+    dst[off++] = (num >> 16) &amp; 0xff;
+    dst[off++] = num >>> 24;
+    return off;
+  }
+
+  dst[off++] = 0xff;
+  off = encoding.writeU64(dst, num, off);
+  return off;
+};
+
+/**
+ * Read a varint size.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Number}
+ */
+
+encoding.skipVarint = function skipVarint(data, off) {
+  assert(off &lt; data.length);
+
+  switch (data[off]) {
+    case 0xff:
+      return 9;
+    case 0xfe:
+      return 5;
+    case 0xfd:
+      return 3;
+    default:
+      return 1;
+  }
+};
+
+/**
+ * Calculate size of varint.
+ * @param {Number} num
+ * @returns {Number} size
+ */
+
+encoding.sizeVarint = function sizeVarint(num) {
+  if (num &lt; 0xfd)
+    return 1;
+
+  if (num &lt;= 0xffff)
+    return 3;
+
+  if (num &lt;= 0xffffffff)
+    return 5;
+
+  return 9;
+};
+
+/**
+ * Read a varint.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Object}
+ */
+
+encoding.readVarintBN = function readVarintBN(data, off) {
+  var result, value, size;
+
+  assert(off &lt; data.length);
+
+  switch (data[off]) {
+    case 0xff:
+      size = 9;
+      assert(off + size &lt;= data.length);
+      value = encoding.readU64BN(data, off + 1);
+      assert(value.bitLength() > 32);
+      return new Varint(size, value);
+    default:
+      result = encoding.readVarint(data, off);
+      result.value = new BN(result.value);
+      return result;
+  }
+};
+
+/**
+ * Write a varint.
+ * @param {Buffer} dst
+ * @param {BN} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ */
+
+encoding.writeVarintBN = function writeVarintBN(dst, num, off) {
+  if (num.bitLength() > 32) {
+    dst[off++] = 0xff;
+    off = encoding.writeU64BN(dst, num, off);
+    return off;
+  }
+
+  return encoding.writeVarint(dst, num.toNumber(), off);
+};
+
+/**
+ * Calculate size of varint.
+ * @param {BN} num
+ * @returns {Number} size
+ */
+
+encoding.sizeVarintBN = function sizeVarintBN(num) {
+  if (num.bitLength() > 32)
+    return 9;
+
+  return encoding.sizeVarint(num.toNumber());
+};
+
+/**
+ * Read a varint (type 2).
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Object}
+ */
+
+encoding.readVarint2 = function readVarint2(data, off) {
+  var num = 0;
+  var size = 0;
+  var ch;
+
+  for (;;) {
+    assert(off &lt; data.length);
+
+    ch = data[off++];
+    size++;
+
+    assert(num &lt; 0x3fffffffffff, 'Number exceeds 2^53-1.');
+
+    num = (num * 0x80) + (ch &amp; 0x7f);
+
+    if ((ch &amp; 0x80) === 0)
+      break;
+
+    num++;
+  }
+
+  return new Varint(size, num);
+};
+
+/**
+ * Write a varint (type 2).
+ * @param {Buffer} dst
+ * @param {Number} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ */
+
+encoding.writeVarint2 = function writeVarint2(dst, num, off) {
+  var tmp = [];
+  var len = 0;
+
+  for (;;) {
+    tmp[len] = (num &amp; 0x7f) | (len ? 0x80 : 0x00);
+    if (num &lt;= 0x7f)
+      break;
+    num = ((num - (num % 0x80)) / 0x80) - 1;
+    len++;
+  }
+
+  assert(off + len &lt;= dst.length);
+
+  do {
+    dst[off++] = tmp[len];
+  } while (len--);
+
+  return off;
+};
+
+/**
+ * Read a varint size.
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Number}
+ */
+
+encoding.skipVarint2 = function skipVarint2(data, off) {
+  var size = 0;
+  var ch;
+
+  for (;;) {
+    assert(off &lt; data.length);
+    ch = data[off++];
+    size++;
+    if ((ch &amp; 0x80) === 0)
+      break;
+  }
+
+  return size;
+};
+
+/**
+ * Calculate size of varint (type 2).
+ * @param {Number} num
+ * @returns {Number} size
+ */
+
+encoding.sizeVarint2 = function sizeVarint2(num) {
+  var size = 0;
+
+  for (;;) {
+    size++;
+    if (num &lt;= 0x7f)
+      break;
+    num = ((num - (num % 0x80)) / 0x80) - 1;
+  }
+
+  return size;
+};
+
+/**
+ * Read a varint (type 2).
+ * @param {Buffer} data
+ * @param {Number} off
+ * @returns {Object}
+ */
+
+encoding.readVarint2BN = function readVarint2BN(data, off) {
+  var num = 0;
+  var size = 0;
+  var ch;
+
+  while (num &lt; 0x3fffffffffff) {
+    assert(off &lt; data.length);
+
+    ch = data[off++];
+    size++;
+
+    num = (num * 0x80) + (ch &amp; 0x7f);
+
+    if ((ch &amp; 0x80) === 0)
+      return new Varint(size, new BN(num));
+
+    num++;
+  }
+
+  num = new BN(num);
+
+  for (;;) {
+    assert(off &lt; data.length);
+
+    ch = data[off++];
+    size++;
+
+    assert(num.bitLength() &lt;= 64, 'Number exceeds 64 bits.');
+
+    num.iushln(7).iaddn(ch &amp; 0x7f);
+
+    if ((ch &amp; 0x80) === 0)
+      break;
+
+    num.iaddn(1);
+  }
+
+  return new Varint(size, num);
+};
+
+/**
+ * Write a varint (type 2).
+ * @param {Buffer} dst
+ * @param {BN} num
+ * @param {Number} off
+ * @returns {Number} Buffer offset.
+ */
+
+encoding.writeVarint2BN = function writeVarint2BN(dst, num, off) {
+  var tmp = [];
+  var len = 0;
+
+  if (num.bitLength() &lt;= 53)
+    return encoding.writeVarint2(dst, num.toNumber());
+
+  for (;;) {
+    tmp[len] = (num.words[0] &amp; 0x7f) | (len ? 0x80 : 0x00);
+    if (num.cmpn(0x7f) &lt;= 0)
+      break;
+    num.iushrn(7).isubn(1);
+    len++;
+  }
+
+  assert(off + len &lt;= dst.length);
+
+  do {
+    dst[off++] = tmp[len];
+  } while (len--);
+
+  return off;
+};
+
+/**
+ * Calculate size of varint (type 2).
+ * @param {BN} num
+ * @returns {Number} size
+ */
+
+encoding.sizeVarint2BN = function sizeVarint2BN(num) {
+  var size = 0;
+
+  if (num.bitLength() &lt;= 53)
+    return encoding.sizeVarint(num.toNumber());
+
+  num = num.clone();
+
+  for (;;) {
+    size++;
+    if (num.cmpn(0x7f) &lt;= 0)
+      break;
+    num.iushrn(7).isubn(1);
+  }
+
+  return size;
+};
+
+/**
+ * Serialize number as a u8.
+ * @param {Number} num
+ * @returns {Buffer}
+ */
+
+encoding.U8 = function U8(num) {
+  var data = new Buffer(1);
+  data[0] = num >>> 0;
+  return data;
+};
+
+/**
+ * Serialize number as a u32le.
+ * @param {Number} num
+ * @returns {Buffer}
+ */
+
+encoding.U32 = function U32(num) {
+  var data = new Buffer(4);
+  data.writeUInt32LE(num, 0, true);
+  return data;
+};
+
+/**
+ * Serialize number as a u32be.
+ * @param {Number} num
+ * @returns {Buffer}
+ */
+
+encoding.U32BE = function U32BE(num) {
+  var data = new Buffer(4);
+  data.writeUInt32BE(num, 0, true);
+  return data;
+};
+
+/**
+ * Get size of varint-prefixed bytes.
+ * @param {Buffer} data
+ * @returns {Number}
+ */
+
+encoding.sizeVarBytes = function sizeVarBytes(data) {
+  return encoding.sizeVarint(data.length) + data.length;
+};
+
+/**
+ * Get size of varint-prefixed length.
+ * @param {Number} len
+ * @returns {Number}
+ */
+
+encoding.sizeVarlen = function sizeVarlen(len) {
+  return encoding.sizeVarint(len) + len;
+};
+
+/**
+ * Get size of varint-prefixed string.
+ * @param {String} str
+ * @returns {Number}
+ */
+
+encoding.sizeVarString = function sizeVarString(str, enc) {
+  var len;
+
+  if (typeof str !== 'string')
+    return encoding.sizeVarBytes(str);
+
+  len = Buffer.byteLength(str, enc);
+
+  return encoding.sizeVarint(len) + len;
+};
+
+/*
+ * Helpers
+ */
+
+function Varint(size, value) {
+  this.size = size;
+  this.value = value;
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

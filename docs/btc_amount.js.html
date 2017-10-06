@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: btc/amount.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: btc/amount.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * amount.js - amount object for bcoin
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+var assert = require('assert');
+var util = require('../utils/util');
+
+/**
+ * Represents a bitcoin amount (satoshis internally).
+ * @alias module:btc.Amount
+ * @constructor
+ * @param {(String|Number)?} value
+ * @param {String?} unit
+ * @param {Boolean?} num
+ * @property {Amount} value
+ */
+
+function Amount(value, unit, num) {
+  if (!(this instanceof Amount))
+    return new Amount(value, unit, num);
+
+  this.value = 0;
+
+  if (value != null)
+    this.fromOptions(value, unit, num);
+}
+
+/**
+ * Inject properties from options.
+ * @private
+ * @param {(String|Number)?} value
+ * @param {String?} unit
+ * @param {Boolean?} num
+ * @returns {Amount}
+ */
+
+Amount.prototype.fromOptions = function fromOptions(value, unit, num) {
+  if (typeof unit === 'string')
+    return this.from(unit, value, num);
+
+  if (typeof value === 'number')
+    return this.fromValue(value);
+
+  return this.fromBTC(value);
+};
+
+/**
+ * Get satoshi value.
+ * @returns {Amount}
+ */
+
+Amount.prototype.toValue = function toValue() {
+  return this.value;
+};
+
+/**
+ * Get satoshi string or value.
+ * @param {Boolean?} num
+ * @returns {String|Amount}
+ */
+
+Amount.prototype.toSatoshis = function toSatoshis(num) {
+  if (num)
+    return this.value;
+
+  return this.value.toString(10);
+};
+
+/**
+ * Get bits string or value.
+ * @param {Boolean?} num
+ * @returns {String|Amount}
+ */
+
+Amount.prototype.toBits = function toBits(num) {
+  return Amount.serialize(this.value, 2, num);
+};
+
+/**
+ * Get mbtc string or value.
+ * @param {Boolean?} num
+ * @returns {String|Amount}
+ */
+
+Amount.prototype.toMBTC = function toMBTC(num) {
+  return Amount.serialize(this.value, 5, num);
+};
+
+/**
+ * Get btc string or value.
+ * @param {Boolean?} num
+ * @returns {String|Amount}
+ */
+
+Amount.prototype.toBTC = function toBTC(num) {
+  return Amount.serialize(this.value, 8, num);
+};
+
+/**
+ * Get unit string or value.
+ * @param {String} unit - Can be `sat`,
+ * `ubtc`, `bits`, `mbtc`, or `btc`.
+ * @param {Boolean?} num
+ * @returns {String|Amount}
+ */
+
+Amount.prototype.to = function to(unit, num) {
+  switch (unit) {
+    case 'sat':
+      return this.toSatoshis(num);
+    case 'ubtc':
+    case 'bits':
+      return this.toBits(num);
+    case 'mbtc':
+      return this.toMBTC(num);
+    case 'btc':
+      return this.toBTC(num);
+  }
+  throw new Error('Unknown unit "' + unit + '".');
+};
+
+/**
+ * Convert amount to bitcoin string.
+ * @returns {String}
+ */
+
+Amount.prototype.toString = function toString() {
+  return this.toBTC();
+};
+
+/**
+ * Inject properties from value.
+ * @private
+ * @param {Amount} value
+ * @returns {Amount}
+ */
+
+Amount.prototype.fromValue = function fromValue(value) {
+  assert(util.isInt53(value), 'Value must be an int64.');
+  this.value = value;
+  return this;
+};
+
+/**
+ * Inject properties from satoshis.
+ * @private
+ * @param {Number|String} value
+ * @param {Bolean?} num
+ * @returns {Amount}
+ */
+
+Amount.prototype.fromSatoshis = function fromSatoshis(value, num) {
+  this.value = Amount.parse(value, 0, num);
+  return this;
+};
+
+/**
+ * Inject properties from bits.
+ * @private
+ * @param {Number|String} value
+ * @param {Bolean?} num
+ * @returns {Amount}
+ */
+
+Amount.prototype.fromBits = function fromBits(value, num) {
+  this.value = Amount.parse(value, 2, num);
+  return this;
+};
+
+/**
+ * Inject properties from mbtc.
+ * @private
+ * @param {Number|String} value
+ * @param {Bolean?} num
+ * @returns {Amount}
+ */
+
+Amount.prototype.fromMBTC = function fromMBTC(value, num) {
+  this.value = Amount.parse(value, 5, num);
+  return this;
+};
+
+/**
+ * Inject properties from btc.
+ * @private
+ * @param {Number|String} value
+ * @param {Bolean?} num
+ * @returns {Amount}
+ */
+
+Amount.prototype.fromBTC = function fromBTC(value, num) {
+  this.value = Amount.parse(value, 8, num);
+  return this;
+};
+
+/**
+ * Inject properties from unit.
+ * @private
+ * @param {String} unit
+ * @param {Number|String} value
+ * @param {Bolean?} num
+ * @returns {Amount}
+ */
+
+Amount.prototype.from = function from(unit, value, num) {
+  switch (unit) {
+    case 'sat':
+      return this.fromSatoshis(value, num);
+    case 'ubtc':
+    case 'bits':
+      return this.fromBits(value, num);
+    case 'mbtc':
+      return this.fromMBTC(value, num);
+    case 'btc':
+      return this.fromBTC(value, num);
+  }
+  throw new Error('Unknown unit "' + unit + '".');
+};
+
+/**
+ * Instantiate amount from options.
+ * @param {(String|Number)?} value
+ * @param {String?} unit
+ * @param {Boolean?} num
+ * @returns {Amount}
+ */
+
+Amount.fromOptions = function fromOptions(value, unit, num) {
+  return new Amount().fromOptions(value);
+};
+
+/**
+ * Instantiate amount from value.
+ * @private
+ * @param {Amount} value
+ * @returns {Amount}
+ */
+
+Amount.fromValue = function fromValue(value) {
+  return new Amount().fromValue(value);
+};
+
+/**
+ * Instantiate amount from satoshis.
+ * @param {Number|String} value
+ * @param {Bolean?} num
+ * @returns {Amount}
+ */
+
+Amount.fromSatoshis = function fromSatoshis(value, num) {
+  return new Amount().fromSatoshis(value, num);
+};
+
+/**
+ * Instantiate amount from bits.
+ * @param {Number|String} value
+ * @param {Bolean?} num
+ * @returns {Amount}
+ */
+
+Amount.fromBits = function fromBits(value, num) {
+  return new Amount().fromBits(value, num);
+};
+
+/**
+ * Instantiate amount from mbtc.
+ * @param {Number|String} value
+ * @param {Bolean?} num
+ * @returns {Amount}
+ */
+
+Amount.fromMBTC = function fromMBTC(value, num) {
+  return new Amount().fromMBTC(value, num);
+};
+
+/**
+ * Instantiate amount from btc.
+ * @param {Number|String} value
+ * @param {Bolean?} num
+ * @returns {Amount}
+ */
+
+Amount.fromBTC = function fromBTC(value, num) {
+  return new Amount().fromBTC(value, num);
+};
+
+/**
+ * Instantiate amount from unit.
+ * @param {String} unit
+ * @param {Number|String} value
+ * @param {Bolean?} num
+ * @returns {Amount}
+ */
+
+Amount.from = function from(unit, value, num) {
+  return new Amount().from(unit, value, num);
+};
+
+/**
+ * Inspect amount.
+ * @returns {String}
+ */
+
+Amount.prototype.inspect = function inspect() {
+  return '&lt;Amount: ' + this.toString() + '>';
+};
+
+/**
+ * Safely convert satoshis to a BTC string.
+ * This function explicitly avoids any
+ * floating point arithmetic.
+ * @param {Amount} value - Satoshis.
+ * @returns {String} BTC string.
+ */
+
+Amount.btc = function btc(value, num) {
+  if (util.isFloat(value))
+    return value;
+
+  return Amount.serialize(value, 8, num);
+};
+
+/**
+ * Safely convert satoshis to a BTC string.
+ * This function explicitly avoids any
+ * floating point arithmetic.
+ * @param {Amount} value
+ * @param {Number} exp - Exponent.
+ * @param {Boolean} num - Return a number.
+ * @returns {String}
+ */
+
+Amount.serialize = function serialize(value, exp, num) {
+  var negative = false;
+  var hi, lo, result;
+
+  assert(util.isInt(value), 'Non-satoshi value for conversion.');
+
+  if (value &lt; 0) {
+    value = -value;
+    negative = true;
+  }
+
+  value = value.toString(10);
+
+  assert(value.length &lt;= 16, 'Number exceeds 2^53-1.');
+
+  while (value.length &lt; exp + 1)
+    value = '0' + value;
+
+  hi = value.slice(0, -exp);
+  lo = value.slice(-exp);
+
+  lo = lo.replace(/0+$/, '');
+
+  if (lo.length === 0)
+    lo += '0';
+
+  result = hi + '.' + lo;
+
+  if (negative)
+    result = '-' + result;
+
+  if (num)
+    return +result;
+
+  return result;
+};
+
+/**
+ * Unsafely convert satoshis to a BTC string.
+ * @param {Amount} value
+ * @param {Number} exp - Exponent.
+ * @param {Boolean} num - Return a number.
+ * @returns {String}
+ */
+
+Amount.serializeUnsafe = function serializeUnsafe(value, exp, num) {
+  assert(util.isInt(value), 'Non-satoshi value for conversion.');
+
+  value /= pow10(exp);
+  value = value.toFixed(exp);
+
+  if (num)
+    return +value;
+
+  if (exp !== 0) {
+    value = value.replace(/0+$/, '');
+    if (value[value.length - 1] === '.')
+      value += '0';
+  }
+
+  return value;
+};
+
+/**
+ * Safely convert a BTC string to satoshis.
+ * @param {String} value - BTC
+ * @returns {Amount} Satoshis.
+ * @throws on parse error
+ */
+
+Amount.value = function value(value, num) {
+  if (util.isInt(value))
+    return value;
+
+  return Amount.parse(value, 8, num);
+};
+
+/**
+ * Safely convert a BTC string to satoshis.
+ * This function explicitly avoids any
+ * floating point arithmetic. It also does
+ * extra validation to ensure the resulting
+ * Number will be 53 bits or less.
+ * @param {String} value - BTC
+ * @param {Number} exp - Exponent.
+ * @param {Boolean} num - Allow numbers.
+ * @returns {Amount} Satoshis.
+ * @throws on parse error
+ */
+
+Amount.parse = function parse(value, exp, num) {
+  var negative = false;
+  var mult = pow10(exp);
+  var maxLo = modSafe(mult);
+  var maxHi = divSafe(mult);
+  var parts, hi, lo, result;
+
+  if (num &amp;&amp; typeof value === 'number') {
+    assert(util.isNumber(value), 'Non-BTC value for conversion.');
+    value = value.toString(10);
+  }
+
+  assert(util.isFloat(value), 'Non-BTC value for conversion.');
+
+  if (value[0] === '-') {
+    negative = true;
+    value = value.substring(1);
+  }
+
+  parts = value.split('.');
+
+  assert(parts.length &lt;= 2, 'Bad decimal point.');
+
+  hi = parts[0] || '0';
+  lo = parts[1] || '0';
+
+  hi = hi.replace(/^0+/, '');
+  lo = lo.replace(/0+$/, '');
+
+  assert(hi.length &lt;= 16 - exp, 'Number exceeds 2^53-1.');
+  assert(lo.length &lt;= exp, 'Too many decimal places.');
+
+  if (hi.length === 0)
+    hi = '0';
+
+  while (lo.length &lt; exp)
+    lo += '0';
+
+  hi = parseInt(hi, 10);
+  lo = parseInt(lo, 10);
+
+  assert(hi &lt; maxHi || (hi === maxHi &amp;&amp; lo &lt;= maxLo),
+    'Number exceeds 2^53-1.');
+
+  result = hi * mult + lo;
+
+  if (negative)
+    result = -result;
+
+  return result;
+};
+
+/**
+ * Unsafely convert a BTC string to satoshis.
+ * @param {String} value - BTC
+ * @param {Number} exp - Exponent.
+ * @param {Boolean} num - Allow numbers.
+ * @returns {Amount} Satoshis.
+ * @throws on parse error
+ */
+
+Amount.parseUnsafe = function parseUnsafe(value, exp, num) {
+  if (typeof value === 'string') {
+    assert(util.isFloat(value), 'Non-BTC value for conversion.');
+    value = parseFloat(value, 10);
+  } else {
+    assert(util.isNumber(value), 'Non-BTC value for conversion.');
+    assert(num, 'Cannot parse number.');
+  }
+
+  value *= pow10(exp);
+
+  assert(value % 1 === 0, 'Too many decimal places.');
+
+  return value;
+};
+
+/*
+ * Helpers
+ */
+
+function pow10(exp) {
+  switch (exp) {
+    case 0:
+      return 1;
+    case 1:
+      return 10;
+    case 2:
+      return 100;
+    case 3:
+      return 1000;
+    case 4:
+      return 10000;
+    case 5:
+      return 100000;
+    case 6:
+      return 1000000;
+    case 7:
+      return 10000000;
+    case 8:
+      return 100000000;
+    default:
+      assert(false, 'Exponent is too large.');
+      break;
+  }
+}
+
+function modSafe(mod) {
+  switch (mod) {
+    case 1:
+      return 0;
+    case 10:
+      return 1;
+    case 100:
+      return 91;
+    case 1000:
+      return 991;
+    case 10000:
+      return 991;
+    case 100000:
+      return 40991;
+    case 1000000:
+      return 740991;
+    case 10000000:
+      return 4740991;
+    case 100000000:
+      return 54740991;
+    default:
+      assert(false, 'Exponent is too large.');
+      break;
+  }
+}
+
+function divSafe(div) {
+  switch (div) {
+    case 1:
+      return 9007199254740991;
+    case 10:
+      return 900719925474099;
+    case 100:
+      return 90071992547409;
+    case 1000:
+      return 9007199254740;
+    case 10000:
+      return 900719925474;
+    case 100000:
+      return 90071992547;
+    case 1000000:
+      return 9007199254;
+    case 10000000:
+      return 900719925;
+    case 100000000:
+      return 90071992;
+    default:
+      assert(false, 'Exponent is too large.');
+      break;
+  }
+}
+
+/*
+ * Expose
+ */
+
+module.exports = Amount;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

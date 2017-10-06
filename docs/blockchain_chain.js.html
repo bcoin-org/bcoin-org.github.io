@@ -1,0 +1,2572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: blockchain/chain.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: blockchain/chain.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * chain.js - blockchain management for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+var assert = require('assert');
+var AsyncObject = require('../utils/asyncobject');
+var Network = require('../protocol/network');
+var Logger = require('../node/logger');
+var ChainDB = require('./chaindb');
+var common = require('./common');
+var consensus = require('../protocol/consensus');
+var util = require('../utils/util');
+var Lock = require('../utils/lock');
+var LRU = require('../utils/lru');
+var ChainEntry = require('./chainentry');
+var CoinView = require('../coins/coinview');
+var Script = require('../script/script');
+var errors = require('../protocol/errors');
+var co = require('../utils/co');
+var VerifyError = errors.VerifyError;
+var VerifyResult = errors.VerifyResult;
+
+/**
+ * Represents a blockchain.
+ * @alias module:blockchain.Chain
+ * @constructor
+ * @param {Object} options
+ * @param {String?} options.name - Database name.
+ * @param {String?} options.location - Database file location.
+ * @param {String?} options.db - Database backend (`"leveldb"` by default).
+ * @param {Number?} options.orphanLimit
+ * @param {Boolean?} options.spv
+ * @property {Boolean} loaded
+ * @property {ChainDB} db - Note that Chain `options` will be passed
+ * to the instantiated ChainDB.
+ * @property {Number} total
+ * @property {Lock} locker
+ * @property {Object} invalid
+ * @property {ChainEntry?} tip
+ * @property {Number} height
+ * @property {DeploymentState} state
+ * @property {Object} orphan - Orphan map.
+ * @emits Chain#open
+ * @emits Chain#error
+ * @emits Chain#block
+ * @emits Chain#competitor
+ * @emits Chain#resolved
+ * @emits Chain#checkpoint
+ * @emits Chain#fork
+ * @emits Chain#reorganize
+ * @emits Chain#invalid
+ * @emits Chain#exists
+ * @emits Chain#purge
+ * @emits Chain#connect
+ * @emits Chain#reconnect
+ * @emits Chain#disconnect
+ */
+
+function Chain(options) {
+  if (!(this instanceof Chain))
+    return new Chain(options);
+
+  AsyncObject.call(this);
+
+  this.options = new ChainOptions(options);
+
+  this.network = this.options.network;
+  this.logger = this.options.logger;
+  this.checkpoints = this.options.checkpoints;
+
+  this.locker = new Lock(true);
+  this.invalid = new LRU(100);
+  this.state = new DeploymentState();
+
+  this.tip = null;
+  this.height = -1;
+  this.synced = false;
+  this.total = 0;
+  this.startTime = util.hrtime();
+
+  this.orphanMap = {};
+  this.orphanPrev = {};
+  this.orphanCount = 0;
+  this.orphanSize = 0;
+
+  this.db = new ChainDB(this);
+
+  this._init();
+}
+
+util.inherits(Chain, AsyncObject);
+
+/**
+ * Initialize the chain.
+ * @private
+ */
+
+Chain.prototype._init = function _init() {
+  var self = this;
+
+  this.on('competitor', function(block, entry) {
+    self.logger.warning('Heads up: Competing chain at height %d:'
+      + ' tip-height=%d competitor-height=%d'
+      + ' tip-hash=%s competitor-hash=%s'
+      + ' tip-chainwork=%s competitor-chainwork=%s'
+      + ' chainwork-diff=%s',
+      entry.height,
+      self.tip.height,
+      entry.height,
+      self.tip.rhash(),
+      entry.rhash(),
+      self.tip.chainwork.toString(),
+      entry.chainwork.toString(),
+      self.tip.chainwork.sub(entry.chainwork).toString());
+  });
+
+  this.on('resolved', function(block, entry) {
+    self.logger.debug('Orphan %s (%d) was resolved.',
+      block.rhash(), entry.height);
+  });
+
+  this.on('checkpoint', function(hash, height) {
+    self.logger.debug('Hit checkpoint block %s (%d).',
+      util.revHex(hash), height);
+  });
+
+  this.on('fork', function(hash, height, expected) {
+    self.logger.warning(
+      'Fork at height %d: expected=%s received=%s',
+      height,
+      util.revHex(expected),
+      util.revHex(hash)
+    );
+  });
+
+  this.on('reorganize', function(block, height, expected) {
+    self.logger.warning(
+      'Reorg at height %d: old=%s new=%s',
+      height,
+      util.revHex(expected),
+      block.rhash()
+    );
+  });
+
+  this.on('invalid', function(block, height) {
+    self.logger.warning('Invalid block at height %d: hash=%s',
+      height, block.rhash());
+  });
+
+  this.on('exists', function(block, height) {
+    self.logger.debug('Already have block %s (%d).', block.rhash(), height);
+  });
+
+  this.on('orphan', function(block, height) {
+    self.logger.debug('Handled orphan %s (%d).', block.rhash(), height);
+  });
+
+  this.on('purge', function(count, size) {
+    self.logger.debug('Warning: %d (%dmb) orphans cleared!',
+      count, util.mb(size));
+  });
+};
+
+/**
+ * Open the chain, wait for the database to load.
+ * @method
+ * @alias Chain#open
+ * @returns {Promise}
+ */
+
+Chain.prototype._open = co(function* open() {
+  var tip, state;
+
+  this.logger.info('Chain is loading.');
+
+  if (this.options.checkpoints)
+    this.logger.info('Checkpoints are enabled.');
+
+  if (this.options.coinCache)
+    this.logger.info('Coin cache is enabled.');
+
+  yield this.db.open();
+
+  tip = yield this.db.getTip();
+
+  assert(tip);
+
+  this.tip = tip;
+  this.height = tip.height;
+
+  this.logger.info('Chain Height: %d', tip.height);
+
+  this.logger.memory();
+
+  state = yield this.getDeploymentState();
+
+  this.setDeploymentState(state);
+
+  this.logger.memory();
+
+  this.emit('tip', tip);
+
+  this.maybeSync();
+});
+
+/**
+ * Close the chain, wait for the database to close.
+ * @alias Chain#close
+ * @returns {Promise}
+ */
+
+Chain.prototype._close = function close() {
+  return this.db.close();
+};
+
+/**
+ * Perform all necessary contextual verification on a block.
+ * @method
+ * @private
+ * @param {Block} block
+ * @param {ChainEntry} prev
+ * @returns {Promise} - Returns {@link ContextResult}.
+ */
+
+Chain.prototype.verifyContext = co(function* verifyContext(block, prev) {
+  var state, view;
+
+  // Initial non-contextual verification.
+  state = yield this.verify(block, prev);
+
+  // BIP30 - Verify there are no duplicate txids.
+  yield this.verifyDuplicates(block, prev, state);
+
+  // Verify scripts, spend and add coins.
+  view = yield this.verifyInputs(block, prev, state);
+
+  return new ContextResult(view, state);
+});
+
+/**
+ * Test whether a block is the genesis block.
+ * @param {Block} block
+ * @returns {Boolean}
+ */
+
+Chain.prototype.isGenesis = function isGenesis(block) {
+  return block.hash('hex') === this.network.genesis.hash;
+};
+
+/**
+ * Contextual verification for a block, including
+ * version deployments (IsSuperMajority), versionbits,
+ * coinbase height, finality checks.
+ * @method
+ * @private
+ * @param {Block} block
+ * @param {ChainEntry} prev
+ * @returns {Promise} - Returns {@link DeploymentState}.
+ */
+
+Chain.prototype.verify = co(function* verify(block, prev) {
+  var ret = new VerifyResult();
+  var now = this.network.now();
+  var i, err, height, ts, tx, medianTime;
+  var commit, ancestors, state;
+
+  // Non-contextual checks.
+  if (!block.verify(ret)) {
+    err = new VerifyError(block,
+      'invalid',
+      ret.reason,
+      ret.score);
+
+    // High hash is the only thing an
+    // adversary couldn't mutate in
+    // otherwise valid non-contextual
+    // checks.
+    if (ret.reason !== 'high-hash')
+      err.malleated = true;
+
+    throw err;
+  }
+
+  // Skip all blocks in spv mode.
+  if (this.options.spv)
+    return this.state;
+
+  ancestors = yield prev.getRetargetAncestors();
+
+  // Ensure the POW is what we expect.
+  if (block.bits !== this.getTarget(block, prev, ancestors)) {
+    throw new VerifyError(block,
+      'invalid',
+      'bad-diffbits',
+      100);
+  }
+
+  // Ensure the timestamp is correct.
+  medianTime = prev.getMedianTime(ancestors);
+
+  if (block.ts &lt;= medianTime) {
+    throw new VerifyError(block,
+      'invalid',
+      'time-too-old',
+      0);
+  }
+
+  // Check timestamp against adj-time+2hours.
+  // If this fails we may be able to accept
+  // the block later.
+  if (block.ts > now + 2 * 60 * 60) {
+    err = new VerifyError(block,
+      'invalid',
+      'time-too-new',
+      0);
+    err.malleated = true;
+    throw err;
+  }
+
+  // Get the new deployment state.
+  state = yield this.getDeployments(block, prev);
+
+  // Get timestamp for tx.isFinal().
+  ts = state.hasMTP() ? medianTime : block.ts;
+  height = prev.height + 1;
+
+  // Transactions must be finalized with
+  // regards to nSequence and nLockTime.
+  for (i = 0; i &lt; block.txs.length; i++) {
+    tx = block.txs[i];
+
+    if (!tx.isFinal(height, ts)) {
+      throw new VerifyError(block,
+        'invalid',
+        'bad-txns-nonfinal',
+        10);
+    }
+  }
+
+  // Make sure the height contained
+  // in the coinbase is correct.
+  if (state.hasBIP34()) {
+    if (block.getCoinbaseHeight() !== height) {
+      throw new VerifyError(block,
+        'invalid',
+        'bad-cb-height',
+        100);
+    }
+  }
+
+  // Check the commitment hash for segwit.
+  if (state.hasWitness()) {
+    commit = block.getCommitmentHash();
+    if (commit) {
+      // These are totally malleable. Someone
+      // may have even accidentally sent us
+      // the non-witness version of the block.
+      // We don't want to consider this block
+      // "invalid" if either of these checks
+      // fail.
+      if (!block.getWitnessNonce()) {
+        err = new VerifyError(block,
+          'invalid',
+          'bad-witness-merkle-size',
+          100);
+        err.malleated = true;
+        throw err;
+      }
+
+      if (!util.equal(commit, block.createCommitmentHash())) {
+        err = new VerifyError(block,
+          'invalid',
+          'bad-witness-merkle-match',
+          100);
+        err.malleated = true;
+        throw err;
+      }
+    }
+  }
+
+  // Blocks that do not commit to
+  // witness data cannot contain it.
+  if (!commit) {
+    if (block.hasWitness()) {
+      err = new VerifyError(block,
+        'invalid',
+        'unexpected-witness',
+        100);
+      err.malleated = true;
+      throw err;
+    }
+  }
+
+  // Check block weight (different from block size
+  // check in non-contextual verification).
+  if (block.getWeight() > consensus.MAX_BLOCK_WEIGHT) {
+    throw new VerifyError(block,
+      'invalid',
+      'bad-blk-weight',
+      100);
+  }
+
+  return state;
+});
+
+/**
+ * Check all deployments on a chain, ranging from p2sh to segwit.
+ * @method
+ * @param {Block} block
+ * @param {ChainEntry} prev
+ * @returns {Promise} - Returns [{@link VerifyError}, {@link DeploymentState}].
+ */
+
+Chain.prototype.getDeployments = co(function* getDeployments(block, prev) {
+  var deployments = this.network.deployments;
+  var height = prev.height + 1;
+  var state = new DeploymentState();
+  var active;
+
+  // Only allow version 2 blocks (coinbase height)
+  // once the majority of blocks are using it.
+  if (block.version &lt; 2 &amp;&amp; height >= this.network.block.bip34height)
+    throw new VerifyError(block, 'obsolete', 'bad-version', 0);
+
+  // Only allow version 3 blocks (sig validation)
+  // once the majority of blocks are using it.
+  if (block.version &lt; 3 &amp;&amp; height >= this.network.block.bip66height)
+    throw new VerifyError(block, 'obsolete', 'bad-version', 0);
+
+  // Only allow version 4 blocks (checklocktimeverify)
+  // once the majority of blocks are using it.
+  if (block.version &lt; 4 &amp;&amp; height >= this.network.block.bip65height)
+    throw new VerifyError(block, 'obsolete', 'bad-version', 0);
+
+  // For some reason bitcoind has p2sh in the
+  // mandatory flags by default, when in reality
+  // it wasn't activated until march 30th 2012.
+  // The first p2sh output and redeem script
+  // appeared on march 7th 2012, only it did
+  // not have a signature. See:
+  // 6a26d2ecb67f27d1fa5524763b49029d7106e91e3cc05743073461a719776192
+  // 9c08a4d78931342b37fd5f72900fb9983087e6f46c4a097d8a1f52c74e28eaf6
+  if (block.ts >= consensus.BIP16_TIME)
+    state.flags |= Script.flags.VERIFY_P2SH;
+
+  // Coinbase heights are now enforced (bip34).
+  if (height >= this.network.block.bip34height)
+    state.bip34 = true;
+
+  // Signature validation is now enforced (bip66).
+  if (height >= this.network.block.bip66height)
+    state.flags |= Script.flags.VERIFY_DERSIG;
+
+  // CHECKLOCKTIMEVERIFY is now usable (bip65)
+  if (height >= this.network.block.bip65height)
+    state.flags |= Script.flags.VERIFY_CHECKLOCKTIMEVERIFY;
+
+  // CHECKSEQUENCEVERIFY and median time
+  // past locktimes are now usable (bip9 &amp; bip113).
+  active = yield this.isActive(prev, deployments.csv);
+  if (active) {
+    state.flags |= Script.flags.VERIFY_CHECKSEQUENCEVERIFY;
+    state.lockFlags |= common.lockFlags.VERIFY_SEQUENCE;
+    state.lockFlags |= common.lockFlags.MEDIAN_TIME_PAST;
+  }
+
+  // Segregrated witness is now usable (bip141 - segnet4)
+  active = yield this.isActive(prev, deployments.segwit);
+  if (active) {
+    state.flags |= Script.flags.VERIFY_WITNESS;
+    // BIP147
+    state.flags |= Script.flags.VERIFY_NULLDUMMY;
+  }
+
+  return state;
+});
+
+/**
+ * Set a new deployment state.
+ * @param {DeploymentState} state
+ */
+
+Chain.prototype.setDeploymentState = function setDeploymentState(state) {
+  if (!this.state.hasP2SH() &amp;&amp; state.hasP2SH())
+    this.logger.warning('P2SH has been activated.');
+
+  if (!this.state.hasBIP34() &amp;&amp; state.hasBIP34())
+    this.logger.warning('BIP34 has been activated.');
+
+  if (!this.state.hasBIP66() &amp;&amp; state.hasBIP66())
+    this.logger.warning('BIP66 has been activated.');
+
+  if (!this.state.hasCLTV() &amp;&amp; state.hasCLTV())
+    this.logger.warning('BIP65 has been activated.');
+
+  if (!this.state.hasCSV() &amp;&amp; state.hasCSV())
+    this.logger.warning('CSV has been activated.');
+
+  if (!this.state.hasWitness() &amp;&amp; state.hasWitness())
+    this.logger.warning('Segwit has been activated.');
+
+  this.state = state;
+};
+
+/**
+ * Determine whether to check block for duplicate txids in blockchain
+ * history (BIP30). If we're on a chain that has bip34 activated, we
+ * can skip this.
+ * @method
+ * @private
+ * @see https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki
+ * @param {Block} block
+ * @param {ChainEntry} prev
+ * @returns {Promise}
+ */
+
+Chain.prototype.verifyDuplicates = co(function* verifyDuplicates(block, prev, state) {
+  var height = prev.height + 1;
+  var i, tx, result;
+
+  if (this.options.spv)
+    return;
+
+  if (prev.isHistorical())
+    return;
+
+  // BIP34 made it impossible to
+  // create duplicate txids.
+  if (state.hasBIP34())
+    return;
+
+  // Check all transactions.
+  for (i = 0; i &lt; block.txs.length; i++) {
+    tx = block.txs[i];
+    result = yield this.db.hasCoins(tx.hash());
+
+    if (result) {
+      // Blocks 91842 and 91880 created duplicate
+      // txids by using the same exact output script
+      // and extraNonce.
+      if (this.network.bip30[height]) {
+        if (block.hash('hex') === this.network.bip30[height])
+          continue;
+      }
+      throw new VerifyError(block, 'invalid', 'bad-txns-BIP30', 100);
+    }
+  }
+});
+
+/**
+ * Check block transactions for all things pertaining
+ * to inputs. This function is important because it is
+ * what actually fills the coins into the block. This
+ * function will check the block reward, the sigops,
+ * the tx values, and execute and verify the scripts (it
+ * will attempt to do this on the worker pool). If
+ * `checkpoints` is enabled, it will skip verification
+ * for historical data.
+ * @method
+ * @private
+ * @see TX#checkInputs
+ * @param {Block} block
+ * @param {ChainEntry} prev
+ * @param {DeploymentState} state
+ * @returns {Promise} - Returns {@link CoinView}.
+ */
+
+Chain.prototype.verifyInputs = co(function* verifyInputs(block, prev, state) {
+  var ret = new VerifyResult();
+  var view = new CoinView();
+  var height = prev.height + 1;
+  var historical = prev.isHistorical();
+  var sigops = 0;
+  var jobs = [];
+  var i, tx, valid;
+
+  if (this.options.spv)
+    return view;
+
+  // Check all transactions
+  for (i = 0; i &lt; block.txs.length; i++) {
+    tx = block.txs[i];
+
+    // Ensure tx is not double spending an output.
+    if (i > 0) {
+      if (!(yield view.spendInputs(this.db, tx))) {
+        assert(!historical, 'BUG: Spent inputs in historical data!');
+        throw new VerifyError(block,
+          'invalid',
+          'bad-txns-inputs-missingorspent',
+          100);
+      }
+    }
+
+    // Skip everything if we're
+    // using checkpoints.
+    if (historical) {
+      view.addTX(tx, height);
+      continue;
+    }
+
+    // Verify sequence locks.
+    valid = yield this.verifyLocks(prev, tx, view, state.lockFlags);
+
+    if (!valid) {
+      throw new VerifyError(block,
+        'invalid',
+        'bad-txns-nonfinal',
+        100);
+    }
+
+    // Count sigops (legacy + scripthash? + witness?)
+    sigops += tx.getSigopsCost(view, state.flags);
+
+    if (sigops > consensus.MAX_BLOCK_SIGOPS_COST) {
+      throw new VerifyError(block,
+        'invalid',
+        'bad-blk-sigops',
+        100);
+    }
+
+    // Contextual sanity checks.
+    if (i > 0) {
+      if (!tx.checkInputs(view, height, ret)) {
+        throw new VerifyError(block,
+          'invalid',
+          ret.reason,
+          ret.score);
+      }
+
+      // Push onto verification queue.
+      jobs.push(tx.verifyAsync(view, state.flags));
+    }
+
+    // Add new coins.
+    view.addTX(tx, height);
+  }
+
+  if (historical)
+    return view;
+
+  // Verify all txs in parallel.
+  valid = yield co.every(jobs);
+
+  if (!valid) {
+    throw new VerifyError(block,
+      'invalid',
+      'mandatory-script-verify-flag-failed',
+      100);
+  }
+
+  // Make sure the miner isn't trying to conjure more coins.
+  if (block.getClaimed() > block.getReward(view, height, this.network)) {
+    throw new VerifyError(block,
+      'invalid',
+      'bad-cb-amount',
+      100);
+  }
+
+  return view;
+});
+
+/**
+ * Get the cached height for a hash if present.
+ * @private
+ * @param {Hash} hash
+ * @returns {Number}
+ */
+
+Chain.prototype.checkHeight = function checkHeight(hash) {
+  var entry = this.db.getCache(hash);
+
+  if (!entry)
+    return -1;
+
+  return entry.height;
+};
+
+/**
+ * Find the block at which a fork ocurred.
+ * @private
+ * @method
+ * @param {ChainEntry} fork - The current chain.
+ * @param {ChainEntry} longer - The competing chain.
+ * @returns {Promise}
+ */
+
+Chain.prototype.findFork = co(function* findFork(fork, longer) {
+  while (fork.hash !== longer.hash) {
+    while (longer.height > fork.height) {
+      longer = yield longer.getPrevious();
+      if (!longer)
+        throw new Error('No previous entry for new tip.');
+    }
+
+    if (fork.hash === longer.hash)
+      return fork;
+
+    fork = yield fork.getPrevious();
+
+    if (!fork)
+      throw new Error('No previous entry for old tip.');
+  }
+
+  return fork;
+});
+
+/**
+ * Reorganize the blockchain (connect and disconnect inputs).
+ * Called when a competing chain with a higher chainwork
+ * is received.
+ * @method
+ * @private
+ * @param {ChainEntry} competitor - The competing chain's tip.
+ * @param {Block} block - The being being added.
+ * @returns {Promise}
+ */
+
+Chain.prototype.reorganize = co(function* reorganize(competitor, block) {
+  var tip = this.tip;
+  var fork = yield this.findFork(tip, competitor);
+  var disconnect = [];
+  var connect = [];
+  var i, entry;
+
+  assert(fork, 'No free space or data corruption.');
+
+  // Blocks to disconnect.
+  entry = tip;
+  while (entry.hash !== fork.hash) {
+    disconnect.push(entry);
+    entry = yield entry.getPrevious();
+    assert(entry);
+  }
+
+  // Blocks to connect.
+  entry = competitor;
+  while (entry.hash !== fork.hash) {
+    connect.push(entry);
+    entry = yield entry.getPrevious();
+    assert(entry);
+  }
+
+  // Disconnect blocks/txs.
+  for (i = 0; i &lt; disconnect.length; i++) {
+    entry = disconnect[i];
+    yield this.disconnect(entry);
+  }
+
+  // Connect blocks/txs.
+  // We don't want to connect the new tip here.
+  // That will be done outside in setBestChain.
+  for (i = connect.length - 1; i >= 1; i--) {
+    entry = connect[i];
+    yield this.reconnect(entry);
+  }
+
+  this.emit('reorganize', block, tip.height, tip.hash);
+});
+
+/**
+ * Reorganize the blockchain for SPV. This
+ * will reset the chain to the fork block.
+ * @method
+ * @private
+ * @param {ChainEntry} competitor - The competing chain's tip.
+ * @param {Block} block - The being being added.
+ * @returns {Promise}
+ */
+
+Chain.prototype.reorganizeSPV = co(function* reorganizeSPV(competitor, block) {
+  var tip = this.tip;
+  var fork = yield this.findFork(tip, competitor);
+  var disconnect = [];
+  var entry = tip;
+  var i, headers, view;
+
+  assert(fork, 'No free space or data corruption.');
+
+  // Buffer disconnected blocks.
+  while (entry.hash !== fork.hash) {
+    disconnect.push(entry);
+    entry = yield entry.getPrevious();
+    assert(entry);
+  }
+
+  // Reset the main chain back
+  // to the fork block, causing
+  // us to redownload the blocks
+  // on the new main chain.
+  yield this._reset(fork.hash, true);
+
+  // Emit disconnection events now that
+  // the chain has successfully reset.
+  for (i = 0; i &lt; disconnect.length; i++) {
+    entry = disconnect[i];
+    headers = entry.toHeaders();
+    view = new CoinView();
+    this.emit('disconnect', entry, headers, view);
+  }
+
+  this.emit('reorganize', block, tip.height, tip.hash);
+});
+
+/**
+ * Disconnect an entry from the chain (updates the tip).
+ * @method
+ * @param {ChainEntry} entry
+ * @returns {Promise}
+ */
+
+Chain.prototype.disconnect = co(function* disconnect(entry) {
+  var block = yield this.db.getBlock(entry.hash);
+  var prev, view;
+
+  if (!block) {
+    if (!this.options.spv)
+      throw new Error('Block not found.');
+    block = entry.toHeader();
+  }
+
+  prev = yield entry.getPrevious();
+  view = yield this.db.disconnect(entry, block);
+
+  assert(prev);
+
+  this.tip = prev;
+  this.height = prev.height;
+
+  this.emit('tip', prev);
+  this.emit('disconnect', entry, block, view);
+});
+
+/**
+ * Reconnect an entry to the chain (updates the tip).
+ * This will do contextual-verification on the block
+ * (necessary because we cannot validate the inputs
+ * in alternate chains when they come in).
+ * @method
+ * @param {ChainEntry} entry
+ * @returns {Promise}
+ */
+
+Chain.prototype.reconnect = co(function* reconnect(entry) {
+  var block = yield this.db.getBlock(entry.hash);
+  var prev, result;
+
+  if (!block) {
+    if (!this.options.spv)
+      throw new Error('Block not found.');
+    block = entry.toHeader();
+  }
+
+  prev = yield entry.getPrevious();
+  assert(prev);
+
+  try {
+    result = yield this.verifyContext(block, prev);
+  } catch (e) {
+    if (e.type === 'VerifyError') {
+      if (!e.malleated)
+        this.setInvalid(entry.hash);
+      this.emit('invalid', block, entry.height);
+    }
+    throw e;
+  }
+
+  yield this.db.reconnect(entry, block, result.view);
+
+  this.tip = entry;
+  this.height = entry.height;
+  this.setDeploymentState(result.state);
+
+  this.emit('tip', entry);
+  this.emit('reconnect', entry, block);
+  this.emit('connect', entry, block, result.view);
+});
+
+/**
+ * Set the best chain. This is called on every valid block
+ * that comes in. It may add and connect the block (main chain),
+ * save the block without connection (alternate chain), or
+ * reorganize the chain (a higher fork).
+ * @method
+ * @private
+ * @param {ChainEntry} entry
+ * @param {Block} block
+ * @param {ChainEntry} prev
+ * @returns {Promise}
+ */
+
+Chain.prototype.setBestChain = co(function* setBestChain(entry, block, prev) {
+  var result;
+
+  // A higher fork has arrived.
+  // Time to reorganize the chain.
+  if (entry.prevBlock !== this.tip.hash) {
+    this.logger.warning('WARNING: Reorganizing chain.');
+
+    // In spv-mode, we reset the
+    // chain and redownload the blocks.
+    if (this.options.spv)
+      return yield this.reorganizeSPV(entry, block);
+
+    yield this.reorganize(entry, block);
+  }
+
+  // Warn of unknown versionbits.
+  if (entry.hasUnknown()) {
+    this.logger.warning(
+      'Unknown version bits in block %d: %d.',
+      entry.height, entry.version);
+  }
+
+  // Otherwise, everything is in order.
+  // Do "contextual" verification on our block
+  // now that we're certain its previous
+  // block is in the chain.
+  try {
+    result = yield this.verifyContext(block, prev);
+  } catch (e) {
+    if (e.type === 'VerifyError') {
+      if (!e.malleated)
+        this.setInvalid(entry.hash);
+      this.emit('invalid', block, entry.height);
+    }
+    throw e;
+  }
+
+  // Save block and connect inputs.
+  yield this.db.save(entry, block, result.view);
+
+  // Expose the new state.
+  this.tip = entry;
+  this.height = entry.height;
+  this.setDeploymentState(result.state);
+
+  this.emit('tip', entry);
+  this.emit('block', block, entry);
+  this.emit('connect', entry, block, result.view);
+});
+
+/**
+ * Save block on an alternate chain.
+ * @method
+ * @private
+ * @param {ChainEntry} entry
+ * @param {Block} block
+ * @param {ChainEntry} prev
+ * @returns {Promise}
+ */
+
+Chain.prototype.saveAlternate = co(function* saveAlternate(entry, block, prev) {
+  try {
+    // Do as much verification
+    // as we can before saving.
+    yield this.verify(block, prev);
+  } catch (e) {
+    if (e.type === 'VerifyError') {
+      if (!e.malleated)
+        this.setInvalid(entry.hash);
+      this.emit('invalid', block, entry.height);
+    }
+    throw e;
+  }
+
+  // Warn of unknown versionbits.
+  if (entry.hasUnknown()) {
+    this.logger.warning(
+      'Unknown version bits in block %d: %d.',
+      entry.height, entry.version);
+  }
+
+  yield this.db.save(entry, block);
+
+  // Emit as a "competitor" block.
+  this.emit('competitor', block, entry);
+});
+
+/**
+ * Reset the chain to the desired block. This
+ * is useful for replaying the blockchain download
+ * for SPV.
+ * @method
+ * @param {Hash|Number} block
+ * @returns {Promise}
+ */
+
+Chain.prototype.reset = co(function* reset(block) {
+  var unlock = yield this.locker.lock();
+  try {
+    return yield this._reset(block, false);
+  } finally {
+    unlock();
+  }
+});
+
+/**
+ * Reset the chain to the desired block without a lock.
+ * @method
+ * @private
+ * @param {Hash|Number} block
+ * @returns {Promise}
+ */
+
+Chain.prototype._reset = co(function* reset(block, silent) {
+  var tip = yield this.db.reset(block);
+  var state;
+
+  // Reset state.
+  this.tip = tip;
+  this.height = tip.height;
+  this.synced = false;
+
+  state = yield this.getDeploymentState();
+
+  this.setDeploymentState(state);
+
+  this.emit('tip', tip);
+
+  if (!silent)
+    this.emit('reset', tip);
+
+  // Reset the orphan map completely. There may
+  // have been some orphans on a forked chain we
+  // no longer need.
+  this.purgeOrphans();
+
+  this.maybeSync();
+});
+
+/**
+ * Reset the chain to a height or hash. Useful for replaying
+ * the blockchain download for SPV.
+ * @method
+ * @param {Hash|Number} block - hash/height
+ * @returns {Promise}
+ */
+
+Chain.prototype.replay = co(function* replay(block) {
+  var unlock = yield this.locker.lock();
+  try {
+    return yield this._replay(block);
+  } finally {
+    unlock();
+  }
+});
+
+/**
+ * Reset the chain without a lock.
+ * @method
+ * @private
+ * @param {Hash|Number} block - hash/height
+ * @returns {Promise}
+ */
+
+Chain.prototype._replay = co(function* replay(block) {
+  var entry = yield this.db.getEntry(block);
+
+  if (!entry)
+    throw new Error('Block not found.');
+
+  if (!(yield entry.isMainChain()))
+    throw new Error('Cannot reset on alternate chain.');
+
+  if (entry.isGenesis())
+    return yield this._reset(entry.hash, true);
+
+  yield this._reset(entry.prevBlock, true);
+});
+
+/**
+ * Scan the blockchain for transactions containing specified address hashes.
+ * @method
+ * @param {Hash} start - Block hash to start at.
+ * @param {Bloom} filter - Bloom filter containing tx and address hashes.
+ * @param {Function} iter - Iterator.
+ * @returns {Promise}
+ */
+
+Chain.prototype.scan = co(function* scan(start, filter, iter) {
+  var unlock = yield this.locker.lock();
+  try {
+    return yield this.db.scan(start, filter, iter);
+  } finally {
+    unlock();
+  }
+});
+
+/**
+ * Reset the chain to the desired timestamp (within 2
+ * hours). This is useful for replaying the blockchain
+ * download for SPV.
+ * @method
+ * @param {Number} ts - Timestamp.
+ * @returns {Promise}
+ */
+
+Chain.prototype.resetTime = co(function* resetTime(ts) {
+  var unlock = yield this.locker.lock();
+  try {
+    return yield this._resetTime(ts);
+  } finally {
+    unlock();
+  }
+});
+
+/**
+ * Reset the chain to the desired timestamp without a lock.
+ * @private
+ * @method
+ * @param {Number} ts - Timestamp.
+ * @returns {Promise}
+ */
+
+Chain.prototype._resetTime = co(function* resetTime(ts) {
+  var entry = yield this.byTime(ts);
+
+  if (!entry)
+    return;
+
+  yield this._reset(entry.height, false);
+});
+
+/**
+ * Add a block to the chain, perform all necessary verification.
+ * @method
+ * @param {Block} block
+ * @returns {Promise}
+ */
+
+Chain.prototype.add = co(function* add(block) {
+  var hash = block.hash('hex');
+  var unlock = yield this.locker.lock(hash);
+  try {
+    return yield this._add(block);
+  } finally {
+    unlock();
+  }
+});
+
+/**
+ * Add a block to the chain without a lock.
+ * @method
+ * @private
+ * @param {Block} block
+ * @returns {Promise}
+ */
+
+Chain.prototype._add = co(function* add(block) {
+  var ret = new VerifyResult();
+  var initial = true;
+  var hash, entry, prev, result;
+
+  assert(block);
+
+  while (block) {
+    hash = block.hash('hex');
+
+    // Mark the start time.
+    this.mark();
+
+    // Special case for genesis block.
+    if (hash === this.network.genesis.hash) {
+      this.emit('exists', block, block.getCoinbaseHeight());
+      throw new VerifyError(block, 'duplicate', 'duplicate', 0);
+    }
+
+    // Do we already have this block in the queue?
+    if (this.hasPending(hash)) {
+      this.emit('exists', block, block.getCoinbaseHeight());
+      throw new VerifyError(block, 'duplicate', 'duplicate', 0);
+    }
+
+    // If the block is already known to be
+    // an orphan, ignore it.
+    if (this.seenOrphan(hash)) {
+      this.emit('orphan', block, block.getCoinbaseHeight());
+      throw new VerifyError(block, 'duplicate', 'duplicate', 0);
+    }
+
+    // Do not revalidate known invalid blocks.
+    if (this.hasInvalid(hash, block)) {
+      this.emit('invalid', block, block.getCoinbaseHeight());
+      throw new VerifyError(block, 'duplicate', 'duplicate', 100);
+    }
+
+    // Non-contextual verification.
+    // If this is a memblock, it will
+    // only be a POW validation.
+    if (!block.verify(ret)) {
+      this.emit('invalid', block, block.getCoinbaseHeight());
+      throw new VerifyError(block, 'invalid', ret.reason, ret.score);
+    }
+
+    // Do we already have this block?
+    if (yield this.db.hasEntry(hash)) {
+      this.emit('exists', block, block.getCoinbaseHeight());
+      throw new VerifyError(block, 'duplicate', 'duplicate', 0);
+    }
+
+    // Find the previous block entry.
+    prev = yield this.db.getEntry(block.prevBlock);
+
+    // If previous block wasn't ever seen,
+    // add it current to orphans and break.
+    if (!prev) {
+      this.storeOrphan(block);
+      throw new VerifyError(block, 'invalid', 'bad-prevblk', 0);
+    }
+
+    // Verify a checkpoint if there is one.
+    if (!this.verifyCheckpoint(prev, hash)) {
+      throw new VerifyError(block,
+        'checkpoint',
+        'checkpoint mismatch',
+        100);
+    }
+
+    // Explanation: we try to keep as much data
+    // off the javascript heap as possible. Blocks
+    // in the future may be 8mb or 20mb, who knows.
+    // In fullnode-mode we store the blocks in
+    // "compact" form (the headers plus the raw
+    // Buffer object) until they're ready to be
+    // fully validated here. They are deserialized,
+    // validated, and emitted. Hopefully the deserialized
+    // blocks get cleaned up by the GC quickly.
+    if (block.memory) {
+      try {
+        block = block.toBlock();
+      } catch (e) {
+        this.logger.error(e);
+        throw new VerifyError(block,
+          'malformed',
+          'error parsing message',
+          100);
+      }
+    }
+
+    // Create a new chain entry.
+    entry = ChainEntry.fromBlock(this, block, prev);
+
+    // The block is on a alternate chain if the
+    // chainwork is less than or equal to
+    // our tip's. Add the block but do _not_
+    // connect the inputs.
+    if (entry.chainwork.cmp(this.tip.chainwork) &lt;= 0) {
+      // Save block to an alternate chain.
+      yield this.saveAlternate(entry, block, prev);
+
+      if (!initial)
+        this.emit('competitor resolved', block, entry);
+    } else {
+      // Attempt to add block to the chain index.
+      yield this.setBestChain(entry, block, prev);
+
+      if (!initial)
+        this.emit('resolved', block, entry);
+    }
+
+    // Keep track of stats.
+    this.finish(block, entry);
+
+    // Try to resolve orphan chain.
+    block = this.resolveOrphan(hash);
+    initial = false;
+
+    if (!result)
+      result = entry;
+  }
+
+  // Failsafe for large orphan chains. Do not
+  // allow more than 20mb stored in memory.
+  this.pruneOrphans();
+
+  // Check sync state.
+  this.maybeSync();
+
+  return result;
+});
+
+/**
+ * Test whether the chain has reached its slow height.
+ * @private
+ * @returns {Boolean}
+ */
+
+Chain.prototype.isSlow = function isSlow() {
+  if (this.options.spv)
+    return false;
+
+  if (this.total === 1 || this.total % 20 === 0)
+    return true;
+
+  return this.synced || this.height >= this.network.block.slowHeight;
+};
+
+/**
+ * Mark the start time for block processing.
+ * @private
+ */
+
+Chain.prototype.mark = function mark() {
+  this.startTime = util.hrtime();
+};
+
+/**
+ * Calculate the time difference from
+ * start time and log block.
+ * @private
+ * @param {Block} block
+ * @param {ChainEntry} entry
+ */
+
+Chain.prototype.finish = function finish(block, entry) {
+  var elapsed, time;
+
+  // Keep track of total blocks handled.
+  this.total += 1;
+
+  if (!this.isSlow())
+    return;
+
+  // Report memory for debugging.
+  util.gc();
+  this.logger.memory();
+
+  elapsed = util.hrtime(this.startTime);
+  time = elapsed[0] * 1000 + elapsed[1] / 1e6;
+
+  this.logger.info(
+    'Block %s (%d) added to chain (size=%d txs=%d time=%d).',
+    entry.rhash(),
+    entry.height,
+    block.getSize(),
+    block.txs.length,
+    time);
+
+  if (this.db.coinCache.capacity > 0) {
+    this.logger.debug('Coin Cache: size=%dmb, items=%d.',
+      util.mb(this.db.coinCache.size), this.db.coinCache.items);
+  }
+};
+
+/**
+ * Verify a block hash and height against the checkpoints.
+ * @private
+ * @param {ChainEntry} prev
+ * @param {Hash} hash
+ * @returns {Boolean}
+ */
+
+Chain.prototype.verifyCheckpoint = function verifyCheckpoint(prev, hash) {
+  var height = prev.height + 1;
+  var checkpoint;
+
+  if (!this.checkpoints)
+    return true;
+
+  checkpoint = this.network.checkpointMap[height];
+
+  if (!checkpoint)
+    return true;
+
+  if (hash === checkpoint) {
+    this.emit('checkpoint', hash, height);
+    return true;
+  }
+
+  // Someone is either mining on top of
+  // an old block for no reason, or the
+  // consensus protocol is broken and
+  // there was a 20k+ block reorg.
+  this.logger.warning('Checkpoint mismatch!');
+
+  this.purgeOrphans();
+
+  this.emit('fork', hash, height, checkpoint);
+
+  return false;
+};
+
+/**
+ * Verify we do not already have an orphan.
+ * Throw if there is an orphan fork.
+ * @private
+ * @param {Block} block
+ * @returns {Boolean}
+ * @throws {VerifyError}
+ */
+
+Chain.prototype.seenOrphan = function seenOrphan(block) {
+  var orphan = this.orphanPrev[block.prevBlock];
+  var hash;
+
+  if (!orphan)
+    return false;
+
+  hash = block.hash('hex');
+
+  // The orphan chain forked.
+  if (orphan.hash('hex') !== hash) {
+    this.emit('fork', hash,
+      block.getCoinbaseHeight(),
+      orphan.hash('hex'));
+
+    this.resolveOrphan(block.prevBlock);
+    this.storeOrphan(block);
+
+    throw new VerifyError(block, 'invalid', 'bad-prevblk', 0);
+  }
+
+  return true;
+};
+
+/**
+ * Store an orphan.
+ * @private
+ * @param {Block} block
+ */
+
+Chain.prototype.storeOrphan = function storeOrphan(block) {
+  var hash = block.hash('hex');
+  var height = block.getCoinbaseHeight();
+
+  this.orphanCount++;
+  this.orphanSize += block.getSize();
+  this.orphanPrev[block.prevBlock] = block;
+  this.orphanMap[hash] = block;
+
+  this.emit('orphan', block, height);
+};
+
+/**
+ * Resolve an orphan.
+ * @private
+ * @param {Hash} hash - Previous block hash.
+ * @returns {Block}
+ */
+
+Chain.prototype.resolveOrphan = function resolveOrphan(hash) {
+  var block = this.orphanPrev[hash];
+
+  if (!block)
+    return;
+
+  delete this.orphanMap[block.hash('hex')];
+  delete this.orphanPrev[hash];
+
+  this.orphanCount--;
+  this.orphanSize -= block.getSize();
+
+  return block;
+};
+
+/**
+ * Purge any waiting orphans.
+ */
+
+Chain.prototype.purgeOrphans = function purgeOrphans() {
+  var count = this.orphanCount;
+  var size = this.orphanSize;
+
+  if (count === 0)
+    return;
+
+  this.orphanPrev = {};
+  this.orphanMap = {};
+  this.orphanCount = 0;
+  this.orphanSize = 0;
+
+  this.emit('purge', count, size);
+};
+
+/**
+ * Prune orphans, only keep the orphan with the highest
+ * coinbase height (likely to be the peer's tip).
+ */
+
+Chain.prototype.pruneOrphans = function pruneOrphans() {
+  var i, hashes, hash, orphan, height, best, last;
+
+  if (this.orphanSize &lt;= this.options.orphanLimit)
+    return false;
+
+  hashes = Object.keys(this.orphanPrev);
+
+  if (hashes.length === 0)
+    return false;
+
+  for (i = 0; i &lt; hashes.length; i++) {
+    hash = hashes[i];
+    orphan = this.orphanPrev[hash];
+    height = orphan.getCoinbaseHeight();
+
+    delete this.orphanPrev[hash];
+
+    if (!best || height > best.getCoinbaseHeight())
+      best = orphan;
+
+    last = orphan;
+  }
+
+  // Save the best for last... or the
+  // last for best in this case.
+  if (best.getCoinbaseHeight() &lt;= 0)
+    best = last;
+
+  hashes = Object.keys(this.orphanMap);
+
+  for (i = 0; i &lt; hashes.length; i++) {
+    hash = hashes[i];
+    orphan = this.orphanMap[hash];
+
+    delete this.orphanMap[hash];
+
+    if (orphan !== best)
+      this.emit('unresolved', orphan);
+  }
+
+  this.emit('purge',
+    this.orphanCount - 1,
+    this.orphanSize - best.getSize());
+
+  this.orphanPrev[best.prevBlock] = best;
+  this.orphanMap[best.hash('hex')] = best;
+  this.orphanCount = 1;
+  this.orphanSize = best.getSize();
+
+  return true;
+};
+
+/**
+ * Test whether an invalid block hash has been seen.
+ * @private
+ * @param {Hash} hash
+ * @param {Block} block
+ * @returns {Boolean}
+ */
+
+Chain.prototype.hasInvalid = function hasInvalid(hash, block) {
+  if (this.invalid.has(hash))
+    return true;
+
+  if (this.invalid.has(block.prevBlock)) {
+    this.setInvalid(hash);
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Mark a block as invalid.
+ * @private
+ * @param {Hash} hash
+ */
+
+Chain.prototype.setInvalid = function setInvalid(hash) {
+  this.invalid.set(hash, true);
+};
+
+/**
+ * Forget an invalid block hash.
+ * @private
+ * @param {Hash} hash
+ */
+
+Chain.prototype.removeInvalid = function removeInvalid(hash) {
+  this.invalid.remove(hash);
+};
+
+/**
+ * Test the chain to see if it contains
+ * a block, or has recently seen a block.
+ * @method
+ * @param {Hash} hash
+ * @returns {Promise} - Returns Boolean.
+ */
+
+Chain.prototype.has = co(function* has(hash) {
+  if (this.hasOrphan(hash))
+    return true;
+
+  if (this.locker.has(hash))
+    return true;
+
+  if (this.invalid.has(hash))
+    return true;
+
+  return yield this.hasEntry(hash);
+});
+
+/**
+ * Find the corresponding block entry by hash or height.
+ * @param {Hash|Number} hash/height
+ * @returns {Promise} - Returns {@link ChainEntry}.
+ */
+
+Chain.prototype.getEntry = function getEntry(hash) {
+  return this.db.getEntry(hash);
+};
+
+/**
+ * Test the chain to see if it contains a block.
+ * @param {Hash} hash
+ * @returns {Promise} - Returns Boolean.
+ */
+
+Chain.prototype.hasEntry = function hasEntry(hash) {
+  return this.db.hasEntry(hash);
+};
+
+/**
+ * Get an orphan block.
+ * @param {Hash} hash
+ * @returns {Block}
+ */
+
+Chain.prototype.getOrphan = function getOrphan(hash) {
+  return this.orphanMap[hash] || null;
+};
+
+/**
+ * Test the chain to see if it contains an orphan.
+ * @param {Hash} hash
+ * @returns {Promise} - Returns Boolean.
+ */
+
+Chain.prototype.hasOrphan = function hasOrphan(hash) {
+  return this.orphanMap[hash] != null;
+};
+
+/**
+ * Test the chain to see if it contains a pending block in its queue.
+ * @param {Hash} hash
+ * @returns {Promise} - Returns Boolean.
+ */
+
+Chain.prototype.hasPending = function hasPending(hash) {
+  return this.locker.hasPending(hash);
+};
+
+/**
+ * Get coin viewpoint.
+ * @method
+ * @param {TX} tx
+ * @returns {Promise} - Returns {@link CoinView}.
+ */
+
+Chain.prototype.getCoinView = co(function* getCoinView(tx) {
+  var unlock = yield this.locker.lock();
+  try {
+    return yield this.db.getCoinView(tx);
+  } finally {
+    unlock();
+  }
+});
+
+/**
+ * Test the chain to see if it is synced.
+ * @returns {Boolean}
+ */
+
+Chain.prototype.isFull = function isFull() {
+  return this.synced;
+};
+
+/**
+ * Potentially emit a `full` event.
+ * @private
+ */
+
+Chain.prototype.maybeSync = function maybeSync() {
+  if (this.synced)
+    return;
+
+  if (this.checkpoints) {
+    if (this.tip.height &lt; this.network.lastCheckpoint)
+      return;
+
+    this.logger.info('Last checkpoint reached. Disabling checkpoints.');
+    this.checkpoints = false;
+  }
+
+  if (this.tip.ts &lt; util.now() - this.network.block.maxTipAge)
+    return;
+
+  if (!this.hasChainwork())
+    return;
+
+  this.synced = true;
+  this.emit('full');
+};
+
+/**
+ * Test the chain to see if it has the
+ * minimum required chainwork for the
+ * network.
+ * @returns {Boolean}
+ */
+
+Chain.prototype.hasChainwork = function hasChainwork() {
+  return this.tip.chainwork.cmp(this.network.pow.chainwork) >= 0;
+};
+
+/**
+ * Get the fill percentage.
+ * @returns {Number} percent - Ranges from 0.0 to 1.0.
+ */
+
+Chain.prototype.getProgress = function getProgress() {
+  var start = this.network.genesis.ts;
+  var current = this.tip.ts - start;
+  var end = util.now() - start - 40 * 60;
+  return Math.min(1, current / end);
+};
+
+/**
+ * Calculate chain locator (an array of hashes).
+ * @method
+ * @param {Hash} start - Height or hash to treat as the tip.
+ * The current tip will be used if not present. Note that this can be a
+ * non-existent hash, which is useful for headers-first locators.
+ * @returns {Promise} - Returns {@link Hash}[].
+ */
+
+Chain.prototype.getLocator = co(function* getLocator(start) {
+  var unlock = yield this.locker.lock();
+  try {
+    return yield this._getLocator(start);
+  } finally {
+    unlock();
+  }
+});
+
+/**
+ * Calculate chain locator without a lock.
+ * @method
+ * @private
+ * @param {Hash} start
+ * @returns {Promise}
+ */
+
+Chain.prototype._getLocator = co(function* getLocator(start) {
+  var hashes = [];
+  var step = 1;
+  var height, entry, main, hash;
+
+  if (start == null)
+    start = this.tip.hash;
+
+  assert(typeof start === 'string');
+
+  entry = yield this.db.getEntry(start);
+
+  if (!entry) {
+    hashes.push(start);
+    entry = this.tip;
+  }
+
+  hash = entry.hash;
+  height = entry.height;
+  main = yield entry.isMainChain();
+
+  while (hash) {
+    hashes.push(hash);
+
+    if (height === 0)
+      break;
+
+    height = Math.max(0, height - step);
+
+    if (hashes.length > 10)
+      step *= 2;
+
+    if (height === 0) {
+      hash = this.network.genesis.hash;
+      continue;
+    }
+
+    // If we're on the main chain, we can
+    // do a fast lookup of the hash.
+    if (main) {
+      hash = yield this.db.getHash(height);
+      continue;
+    }
+
+    entry = yield entry.getAncestor(height);
+
+    if (!entry)
+      break;
+
+    hash = entry.hash;
+  }
+
+  return hashes;
+});
+
+/**
+ * Calculate the orphan root of the hash (if it is an orphan).
+ * @param {Hash} hash
+ * @returns {Hash}
+ */
+
+Chain.prototype.getOrphanRoot = function getOrphanRoot(hash) {
+  var root;
+
+  assert(hash);
+
+  while (this.orphanMap[hash]) {
+    root = hash;
+    hash = this.orphanMap[hash].prevBlock;
+  }
+
+  return root;
+};
+
+/**
+ * Calculate the time difference (in seconds)
+ * between two blocks by examining chainworks.
+ * @param {ChainEntry} to
+ * @param {ChainEntry} from
+ * @returns {Number}
+ */
+
+Chain.prototype.getProofTime = function getProofTime(to, from) {
+  var sign, work;
+
+  if (to.chainwork.cmp(from.chainwork) > 0) {
+    work = to.chainwork.sub(from.chainwork);
+    sign = 1;
+  } else {
+    work = from.chainwork.sub(to.chainwork);
+    sign = -1;
+  }
+
+  work = work.imuln(this.network.pow.targetSpacing);
+  work = work.idiv(this.tip.getProof());
+
+  if (work.bitLength() > 53)
+    return sign * util.MAX_SAFE_INTEGER;
+
+  return sign * work.toNumber();
+};
+
+/**
+ * Calculate the next target based on the chain tip.
+ * @method
+ * @returns {Promise} - returns Number
+ * (target is in compact/mantissa form).
+ */
+
+Chain.prototype.getCurrentTarget = co(function* getCurrentTarget() {
+  return yield this.getTargetAsync(null, this.tip);
+});
+
+/**
+ * Calculate the target based on the passed-in chain entry.
+ * @method
+ * @param {ChainEntry} prev - Previous entry.
+ * @param {Block} - Current block.
+ * @returns {Promise} - returns Number
+ * (target is in compact/mantissa form).
+ */
+
+Chain.prototype.getTargetAsync = co(function* getTargetAsync(block, prev) {
+  var pow = this.network.pow;
+  var ancestors;
+
+  if ((prev.height + 1) % pow.retargetInterval !== 0) {
+    if (!pow.targetReset)
+      return this.getTarget(block, prev);
+  }
+
+  ancestors = yield prev.getAncestors(pow.retargetInterval);
+
+  return this.getTarget(block, prev, ancestors);
+});
+
+/**
+ * Calculate the target synchronously. _Must_
+ * have ancestors pre-allocated.
+ * @param {Block} - Current block.
+ * @param {ChainEntry} prev - Previous entry.
+ * @param {ChainEntry[]} ancestors
+ * @returns {Promise} - returns Number
+ * (target is in compact/mantissa form).
+ */
+
+Chain.prototype.getTarget = function getTarget(block, prev, ancestors) {
+  var pow = this.network.pow;
+  var ts, first, i;
+
+  // Genesis
+  if (!prev)
+    return pow.bits;
+
+  // Do not retarget
+  if ((prev.height + 1) % pow.retargetInterval !== 0) {
+    if (pow.targetReset) {
+      // Special behavior for testnet:
+      ts = block ? (block.ts || block) : this.network.now();
+      if (ts > prev.ts + pow.targetSpacing * 2)
+        return pow.bits;
+
+      i = 1;
+      while (ancestors[i]
+        &amp;&amp; prev.height % pow.retargetInterval !== 0
+        &amp;&amp; prev.bits === pow.bits) {
+        prev = ancestors[i++];
+      }
+    }
+    return prev.bits;
+  }
+
+  // Back 2 weeks
+  first = ancestors[pow.retargetInterval - 1];
+
+  assert(first);
+
+  return this.retarget(prev, first);
+};
+
+/**
+ * Retarget. This is called when the chain height
+ * hits a retarget diff interval.
+ * @param {ChainEntry} prev - Previous entry.
+ * @param {ChainEntry} first - Chain entry from 2 weeks prior.
+ * @returns {Number} target - Target in compact/mantissa form.
+ */
+
+Chain.prototype.retarget = function retarget(prev, first) {
+  var pow = this.network.pow;
+  var targetTimespan = pow.targetTimespan;
+  var actualTimespan, target;
+
+  if (pow.noRetargeting)
+    return prev.bits;
+
+  actualTimespan = prev.ts - first.ts;
+  target = consensus.fromCompact(prev.bits);
+
+  if (actualTimespan &lt; targetTimespan / 4 | 0)
+    actualTimespan = targetTimespan / 4 | 0;
+
+  if (actualTimespan > targetTimespan * 4)
+    actualTimespan = targetTimespan * 4;
+
+  target.imuln(actualTimespan);
+  target.idivn(targetTimespan);
+
+  if (target.cmp(pow.limit) > 0)
+    return pow.bits;
+
+  return consensus.toCompact(target);
+};
+
+/**
+ * Find a locator. Analagous to bitcoind's `FindForkInGlobalIndex()`.
+ * @method
+ * @param {Hash[]} locator - Hashes.
+ * @returns {Promise} - Returns {@link Hash} (the
+ * hash of the latest known block).
+ */
+
+Chain.prototype.findLocator = co(function* findLocator(locator) {
+  var i, hash;
+
+  for (i = 0; i &lt; locator.length; i++) {
+    hash = locator[i];
+    if (yield this.db.isMainChain(hash))
+      return hash;
+  }
+
+  return this.network.genesis.hash;
+});
+
+/**
+ * Check whether a versionbits deployment is active (BIP9: versionbits).
+ * @example
+ * yield chain.isActive(tip, deployments.segwit);
+ * @method
+ * @see https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki
+ * @param {ChainEntry} prev - Previous chain entry.
+ * @param {String} id - Deployment id.
+ * @returns {Promise} - Returns Number.
+ */
+
+Chain.prototype.isActive = co(function* isActive(prev, deployment) {
+  var state = yield this.getState(prev, deployment);
+  return state === common.thresholdStates.ACTIVE;
+});
+
+/**
+ * Get chain entry state for a deployment (BIP9: versionbits).
+ * @method
+ * @example
+ * yield chain.getState(tip, deployments.segwit);
+ * @see https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki
+ * @param {ChainEntry} prev - Previous chain entry.
+ * @param {String} id - Deployment id.
+ * @returns {Promise} - Returns Number.
+ */
+
+Chain.prototype.getState = co(function* getState(prev, deployment) {
+  var period = this.network.minerWindow;
+  var threshold = this.network.activationThreshold;
+  var thresholdStates = common.thresholdStates;
+  var bit = deployment.bit;
+  var compute = [];
+  var i, entry, count, state, cached;
+  var block, time, height;
+
+  if (!prev)
+    return thresholdStates.DEFINED;
+
+  if (((prev.height + 1) % period) !== 0) {
+    height = prev.height - ((prev.height + 1) % period);
+    prev = yield prev.getAncestor(height);
+
+    if (prev) {
+      assert(prev.height === height);
+      assert(((prev.height + 1) % period) === 0);
+    }
+  }
+
+  entry = prev;
+  state = thresholdStates.DEFINED;
+
+  while (entry) {
+    cached = this.db.stateCache.get(bit, entry);
+
+    if (cached !== -1) {
+      state = cached;
+      break;
+    }
+
+    time = yield entry.getMedianTimeAsync();
+
+    if (time &lt; deployment.startTime) {
+      state = thresholdStates.DEFINED;
+      this.db.stateCache.set(bit, entry, state);
+      break;
+    }
+
+    compute.push(entry);
+
+    height = entry.height - period;
+    entry = yield entry.getAncestor(height);
+  }
+
+  while (compute.length) {
+    entry = compute.pop();
+
+    switch (state) {
+      case thresholdStates.DEFINED:
+        time = yield entry.getMedianTimeAsync();
+
+        if (time >= deployment.timeout) {
+          state = thresholdStates.FAILED;
+          break;
+        }
+
+        if (time >= deployment.startTime) {
+          state = thresholdStates.STARTED;
+          break;
+        }
+
+        break;
+      case thresholdStates.STARTED:
+        time = yield entry.getMedianTimeAsync();
+
+        if (time >= deployment.timeout) {
+          state = thresholdStates.FAILED;
+          break;
+        }
+
+        block = entry;
+        count = 0;
+
+        for (i = 0; i &lt; period; i++) {
+          if (block.hasBit(bit))
+            count++;
+
+          if (count >= threshold) {
+            state = thresholdStates.LOCKED_IN;
+            break;
+          }
+
+          block = yield block.getPrevious();
+          assert(block);
+        }
+
+        break;
+      case thresholdStates.LOCKED_IN:
+        state = thresholdStates.ACTIVE;
+        break;
+      case thresholdStates.FAILED:
+      case thresholdStates.ACTIVE:
+        break;
+      default:
+        assert(false, 'Bad state.');
+        break;
+    }
+
+    this.db.stateCache.set(bit, entry, state);
+  }
+
+  return state;
+});
+
+/**
+ * Compute the version for a new block (BIP9: versionbits).
+ * @method
+ * @see https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki
+ * @param {ChainEntry} prev - Previous chain entry (usually the tip).
+ * @returns {Promise} - Returns Number.
+ */
+
+Chain.prototype.computeBlockVersion = co(function* computeBlockVersion(prev) {
+  var version = 0;
+  var i, deployment, state;
+
+  for (i = 0; i &lt; this.network.deploys.length; i++) {
+    deployment = this.network.deploys[i];
+    state = yield this.getState(prev, deployment);
+
+    if (state === common.thresholdStates.LOCKED_IN
+        || state === common.thresholdStates.STARTED) {
+      version |= 1 &lt;&lt; deployment.bit;
+    }
+  }
+
+  version |= consensus.VERSION_TOP_BITS;
+  version >>>= 0;
+
+  return version;
+});
+
+/**
+ * Get the current deployment state of the chain. Called on load.
+ * @method
+ * @private
+ * @returns {Promise} - Returns {@link DeploymentState}.
+ */
+
+Chain.prototype.getDeploymentState = co(function* getDeploymentState() {
+  var prev = yield this.tip.getPrevious();
+
+  if (!prev) {
+    assert(this.tip.isGenesis());
+    return this.state;
+  }
+
+  if (this.options.spv)
+    return this.state;
+
+  return yield this.getDeployments(this.tip.toHeaders(), prev);
+});
+
+/**
+ * Check transaction finality, taking into account MEDIAN_TIME_PAST
+ * if it is present in the lock flags.
+ * @method
+ * @param {ChainEntry} prev - Previous chain entry.
+ * @param {TX} tx
+ * @param {LockFlags} flags
+ * @returns {Promise} - Returns Boolean.
+ */
+
+Chain.prototype.verifyFinal = co(function* verifyFinal(prev, tx, flags) {
+  var height = prev.height + 1;
+  var ts;
+
+  // We can skip MTP if the locktime is height.
+  if (tx.locktime &lt; consensus.LOCKTIME_THRESHOLD)
+    return tx.isFinal(height, -1);
+
+  if (flags &amp; common.lockFlags.MEDIAN_TIME_PAST) {
+    ts = yield prev.getMedianTimeAsync();
+    return tx.isFinal(height, ts);
+  }
+
+  return tx.isFinal(height, this.network.now());
+});
+
+/**
+ * Get the necessary minimum time and height sequence locks for a transaction.
+ * @method
+ * @param {ChainEntry} prev
+ * @param {TX} tx
+ * @param {CoinView} view
+ * @param {LockFlags} flags
+ * @returns {Promise}
+ * [Error, Number(minTime), Number(minHeight)].
+ */
+
+Chain.prototype.getLocks = co(function* getLocks(prev, tx, view, flags) {
+  var mask = consensus.SEQUENCE_MASK;
+  var granularity = consensus.SEQUENCE_GRANULARITY;
+  var disableFlag = consensus.SEQUENCE_DISABLE_FLAG;
+  var typeFlag = consensus.SEQUENCE_TYPE_FLAG;
+  var hasFlag = flags &amp; common.lockFlags.VERIFY_SEQUENCE;
+  var nextHeight = this.height + 1;
+  var minHeight = -1;
+  var minTime = -1;
+  var coinHeight, coinTime;
+  var i, input, entry;
+
+  if (tx.isCoinbase() || tx.version &lt; 2 || !hasFlag)
+    return new LockTimes(minHeight, minTime);
+
+  for (i = 0; i &lt; tx.inputs.length; i++) {
+    input = tx.inputs[i];
+
+    if (input.sequence &amp; disableFlag)
+      continue;
+
+    coinHeight = view.getHeight(input);
+
+    if (coinHeight === -1)
+      coinHeight = nextHeight;
+
+    if ((input.sequence &amp; typeFlag) === 0) {
+      coinHeight += (input.sequence &amp; mask) - 1;
+      minHeight = Math.max(minHeight, coinHeight);
+      continue;
+    }
+
+    entry = yield prev.getAncestor(Math.max(coinHeight - 1, 0));
+    assert(entry, 'Database is corrupt.');
+
+    coinTime = yield entry.getMedianTimeAsync();
+    coinTime += ((input.sequence &amp; mask) &lt;&lt; granularity) - 1;
+    minTime = Math.max(minTime, coinTime);
+  }
+
+  return new LockTimes(minHeight, minTime);
+});
+
+/**
+ * Verify sequence locks.
+ * @method
+ * @param {ChainEntry} prev
+ * @param {TX} tx
+ * @param {CoinView} view
+ * @param {LockFlags} flags
+ * @returns {Promise} - Returns Boolean.
+ */
+
+Chain.prototype.verifyLocks = co(function* verifyLocks(prev, tx, view, flags) {
+  var locks = yield this.getLocks(prev, tx, view, flags);
+  var medianTime;
+
+  // Also catches case where
+  // height is `-1`. Fall through.
+  if (locks.height >= prev.height + 1)
+    return false;
+
+  if (locks.time === -1)
+    return true;
+
+  medianTime = yield prev.getMedianTimeAsync();
+
+  if (locks.time >= medianTime)
+    return false;
+
+  return true;
+});
+
+/**
+ * ChainOptions
+ * @alias module:blockchain.ChainOptions
+ * @constructor
+ * @param {Object} options
+ */
+
+function ChainOptions(options) {
+  if (!(this instanceof ChainOptions))
+    return new ChainOptions(options);
+
+  this.network = Network.primary;
+  this.logger = Logger.global;
+
+  this.location = null;
+  this.db = 'memory';
+  this.maxFiles = 64;
+  this.cacheSize = 32 &lt;&lt; 20;
+  this.compression = true;
+  this.bufferKeys = !util.isBrowser;
+
+  this.spv = false;
+  this.prune = false;
+  this.indexTX = false;
+  this.indexAddress = false;
+  this.forceWitness = false;
+
+  this.coinCache = 0;
+  this.entryCache = 5000;
+  this.orphanLimit = 20 &lt;&lt; 20;
+  this.checkpoints = true;
+
+  if (options)
+    this.fromOptions(options);
+}
+
+/**
+ * Inject properties from object.
+ * @private
+ * @param {Object} options
+ * @returns {ChainOptions}
+ */
+
+ChainOptions.prototype.fromOptions = function fromOptions(options) {
+  if (options.network != null)
+    this.network = Network.get(options.network);
+
+  if (options.logger != null) {
+    assert(typeof options.logger === 'object');
+    this.logger = options.logger;
+  }
+
+  if (options.location != null) {
+    assert(typeof options.location === 'string');
+    this.location = options.location;
+  }
+
+  if (options.db != null) {
+    assert(typeof options.db === 'string');
+    this.db = options.db;
+  }
+
+  if (options.maxFiles != null) {
+    assert(util.isNumber(options.maxFiles));
+    this.maxFiles = options.maxFiles;
+  }
+
+  if (options.cacheSize != null) {
+    assert(util.isNumber(options.cacheSize));
+    this.cacheSize = options.cacheSize;
+  }
+
+  if (options.compression != null) {
+    assert(typeof options.compression === 'boolean');
+    this.compression = options.compression;
+  }
+
+  if (options.spv != null) {
+    assert(typeof options.spv === 'boolean');
+    this.spv = options.spv;
+  }
+
+  if (options.prune != null) {
+    assert(typeof options.prune === 'boolean');
+    this.prune = options.prune;
+  }
+
+  if (options.indexTX != null) {
+    assert(typeof options.indexTX === 'boolean');
+    this.indexTX = options.indexTX;
+  }
+
+  if (options.indexAddress != null) {
+    assert(typeof options.indexAddress === 'boolean');
+    this.indexAddress = options.indexAddress;
+  }
+
+  if (options.forceWitness != null) {
+    assert(typeof options.forceWitness === 'boolean');
+    this.forceWitness = options.forceWitness;
+  }
+
+  if (options.coinCache != null) {
+    assert(util.isNumber(options.coinCache));
+    this.coinCache = options.coinCache;
+  }
+
+  if (options.entryCache != null) {
+    assert(util.isNumber(options.entryCache));
+    this.entryCache = options.entryCache;
+  }
+
+  if (options.orphanLimit != null) {
+    assert(util.isNumber(options.orphanLimit));
+    this.orphanLimit = options.orphanLimit;
+  }
+
+  if (options.checkpoints != null) {
+    assert(typeof options.checkpoints === 'boolean');
+    this.checkpoints = options.checkpoints;
+  }
+
+  return this;
+};
+
+/**
+ * Instantiate chain options from object.
+ * @param {Object} options
+ * @returns {ChainOptions}
+ */
+
+ChainOptions.fromOptions = function fromOptions(options) {
+  return new ChainOptions().fromOptions(options);
+};
+
+/**
+ * Represents the deployment state of the chain.
+ * @alias module:blockchain.DeploymentState
+ * @constructor
+ * @property {VerifyFlags} flags
+ * @property {LockFlags} lockFlags
+ * @property {Boolean} bip34
+ */
+
+function DeploymentState() {
+  if (!(this instanceof DeploymentState))
+    return new DeploymentState();
+
+  this.flags = Script.flags.MANDATORY_VERIFY_FLAGS;
+  this.flags &amp;= ~Script.flags.VERIFY_P2SH;
+  this.lockFlags = common.lockFlags.MANDATORY_LOCKTIME_FLAGS;
+  this.bip34 = false;
+}
+
+/**
+ * Test whether p2sh is active.
+ * @returns {Boolean}
+ */
+
+DeploymentState.prototype.hasP2SH = function hasP2SH() {
+  return (this.flags &amp; Script.flags.VERIFY_P2SH) !== 0;
+};
+
+/**
+ * Test whether bip34 (coinbase height) is active.
+ * @returns {Boolean}
+ */
+
+DeploymentState.prototype.hasBIP34 = function hasBIP34() {
+  return this.bip34;
+};
+
+/**
+ * Test whether bip66 (VERIFY_DERSIG) is active.
+ * @returns {Boolean}
+ */
+
+DeploymentState.prototype.hasBIP66 = function hasBIP66() {
+  return (this.flags &amp; Script.flags.VERIFY_DERSIG) !== 0;
+};
+
+/**
+ * Test whether cltv is active.
+ * @returns {Boolean}
+ */
+
+DeploymentState.prototype.hasCLTV = function hasCLTV() {
+  return (this.flags &amp; Script.flags.VERIFY_CHECKLOCKTIMEVERIFY) !== 0;
+};
+
+/**
+ * Test whether median time past locktime is active.
+ * @returns {Boolean}
+ */
+
+DeploymentState.prototype.hasMTP = function hasMTP() {
+  return (this.lockFlags &amp; common.lockFlags.MEDIAN_TIME_PAST) !== 0;
+};
+
+/**
+ * Test whether csv is active.
+ * @returns {Boolean}
+ */
+
+DeploymentState.prototype.hasCSV = function hasCSV() {
+  return (this.flags &amp; Script.flags.VERIFY_CHECKSEQUENCEVERIFY) !== 0;
+};
+
+/**
+ * Test whether segwit is active.
+ * @returns {Boolean}
+ */
+
+DeploymentState.prototype.hasWitness = function hasWitness() {
+  return (this.flags &amp; Script.flags.VERIFY_WITNESS) !== 0;
+};
+
+/**
+ * LockTimes
+ * @constructor
+ * @ignore
+ */
+
+function LockTimes(height, time) {
+  this.height = height;
+  this.time = time;
+}
+
+/**
+ * ContextResult
+ * @constructor
+ * @ignore
+ */
+
+function ContextResult(view, state) {
+  this.view = view;
+  this.state = state;
+}
+
+/*
+ * Expose
+ */
+
+module.exports = Chain;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: utils/util.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: utils/util.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*!
+ * util.js - utils for bcoin
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+/* global gc */
+
+var assert = require('assert');
+var nodeUtil = require('util');
+var fs = require('fs');
+var os = require('os');
+var Number, Math, Date;
+
+/**
+ * @exports utils/util
+ */
+
+var util = exports;
+
+/**
+ * Reference to the global object.
+ * @const {Object}
+ */
+
+util.global = (function() {
+  /* global self */
+
+  if (this)
+    return this;
+
+  if (typeof window !== 'undefined')
+    return window;
+
+  if (typeof self !== 'undefined')
+    return self;
+
+  if (typeof global !== 'undefined')
+    return global;
+
+  assert(false, 'No global defined.');
+})();
+
+/*
+ * Globals
+ */
+
+Number = util.global.Number;
+Math = util.global.Math;
+Date = util.global.Date;
+
+/**
+ * Whether we're in a browser or not.
+ * @const {Boolean}
+ */
+
+util.isBrowser =
+  (typeof process !== 'undefined' &amp;&amp; process.browser)
+  || typeof window !== 'undefined';
+
+/**
+ * The home directory.
+ * @const {String}
+ */
+
+if (os.homedir) {
+  util.HOME = os.homedir();
+} else {
+  util.HOME = process.env.HOME
+    || process.env.USERPROFILE
+    || process.env.HOMEPATH
+    || '/';
+}
+
+/**
+ * Global NOP function.
+ * @type function
+ * @static
+ * @method
+ */
+
+util.nop = function() {};
+
+/**
+ * Garbage collector for `--expose-gc`.
+ * @type function
+ * @static
+ * @method
+ */
+
+util.gc = !util.isBrowser &amp;&amp; typeof gc === 'function' ? gc : util.nop;
+
+/**
+ * Clone a buffer.
+ * @param {Buffer} data
+ * @returns {Buffer}
+ */
+
+util.copy = function copy(data) {
+  var clone = new Buffer(data.length);
+  data.copy(clone, 0, 0, data.length);
+  return clone;
+};
+
+/**
+ * Concatenate two buffers.
+ * @param {Buffer} a
+ * @param {Buffer} b
+ * @returns {Buffer}
+ */
+
+util.concat = function concat(a, b) {
+  var data = new Buffer(a.length + b.length);
+  a.copy(data, 0);
+  b.copy(data, a.length);
+  return data;
+};
+
+/**
+ * Test whether a string is base58 (note that you
+ * may get a false positive on a hex string).
+ * @param {String?} obj
+ * @returns {Boolean}
+ */
+
+util.isBase58 = function isBase58(obj) {
+  return typeof obj === 'string' &amp;&amp; /^[1-9a-zA-Z]+$/.test(obj);
+};
+
+/**
+ * Return hrtime (shim for browser).
+ * @param {Array} time
+ * @returns {Array}
+ */
+
+util.hrtime = function hrtime(time) {
+  var now, ms, sec;
+
+  if (util.isBrowser) {
+    now = util.ms();
+    if (time) {
+      time = time[0] * 1000 + time[1] / 1e6;
+      now -= time;
+    }
+    ms = now % 1000;
+    sec = (now - ms) / 1000;
+    return [sec, ms * 1e6];
+  }
+
+  if (time)
+    return process.hrtime(time);
+
+  return process.hrtime();
+};
+
+/**
+ * Test whether a string is hex (length must be even).
+ * Note that this _could_ yield a false positive on
+ * base58 strings.
+ * @param {String?} obj
+ * @returns {Boolean}
+ */
+
+util.isHex = function isHex(obj) {
+  return typeof obj === 'string'
+    &amp;&amp; /^[0-9a-f]+$/i.test(obj)
+    &amp;&amp; obj.length % 2 === 0;
+};
+
+/**
+ * Test whether two buffers are equal.
+ * @param {Buffer?} a
+ * @param {Buffer?} b
+ * @returns {Boolean}
+ */
+
+util.equal = function equal(a, b) {
+  var i;
+
+  if (a == null)
+    return false;
+
+  if (b == null)
+    return false;
+
+  assert(Buffer.isBuffer(a));
+  assert(Buffer.isBuffer(b));
+
+  if (a.compare)
+    return a.compare(b) === 0;
+
+  if (a.length !== b.length)
+    return false;
+
+  for (i = 0; i &lt; a.length; i++) {
+    if (a[i] !== b[i])
+      return false;
+  }
+
+  return true;
+};
+
+/**
+ * Call `setImmediate`, `process.nextTick`,
+ * or `setInterval` depending.
+ * @function
+ * @returns {Promise}
+ */
+
+util.nextTick = require('./nexttick');
+
+/**
+ * Reverse a hex-string (used because of
+ * bitcoind's affinity for uint256le).
+ * @param {String} data - Hex string.
+ * @returns {String} Reversed hex string.
+ */
+
+util.revHex = function revHex(data) {
+  var out = '';
+  var i;
+
+  assert(typeof data === 'string');
+
+  for (i = 0; i &lt; data.length; i += 2)
+    out = data.slice(i, i + 2) + out;
+
+  return out;
+};
+
+/**
+ * Shallow merge between multiple objects.
+ * @param {Object} target
+ * @param {...Object} args
+ * @returns {Object} target
+ */
+
+util.merge = function merge(target) {
+  var i, j, obj, keys, key;
+
+  for (i = 1; i &lt; arguments.length; i++) {
+    obj = arguments[i];
+    keys = Object.keys(obj);
+    for (j = 0; j &lt; keys.length; j++) {
+      key = keys[j];
+      target[key] = obj[key];
+    }
+  }
+
+  return target;
+};
+
+if (Object.assign)
+  util.merge = Object.assign;
+
+/**
+ * Max safe integer (53 bits).
+ * @const {Number}
+ * @default
+ */
+
+util.MAX_SAFE_INTEGER = 0x1fffffffffffff;
+
+/**
+ * Max 52 bit integer (safe for additions).
+ * `(MAX_SAFE_INTEGER - 1) / 2`
+ * @const {Number}
+ * @default
+ */
+
+util.MAX_SAFE_ADDITION = 0xfffffffffffff;
+
+/**
+ * Test whether a number is below MAX_SAFE_INTEGER.
+ * @param {Number} value
+ * @returns {Boolean}
+ */
+
+util.isSafeInteger = function isSafeInteger(value) {
+  if (Number.isSafeInteger)
+    return Number.isSafeInteger(value);
+  return Math.abs(value) &lt;= util.MAX_SAFE_INTEGER;
+};
+
+/**
+ * Test whether a number is Number,
+ * finite, and below MAX_SAFE_INTEGER.
+ * @param {Number?} value
+ * @returns {Boolean}
+ */
+
+util.isNumber = function isNumber(value) {
+  return typeof value === 'number'
+    &amp;&amp; isFinite(value)
+    &amp;&amp; util.isSafeInteger(value);
+};
+
+/**
+ * Test whether an object is an int.
+ * @param {Number?} value
+ * @returns {Boolean}
+ */
+
+util.isInt = function isInt(value) {
+  return util.isNumber(value) &amp;&amp; value % 1 === 0;
+};
+
+/**
+ * Test whether an object is an int8.
+ * @param {Number?} value
+ * @returns {Boolean}
+ */
+
+util.isInt8 = function isInt8(value) {
+  return util.isInt(value) &amp;&amp; Math.abs(value) &lt;= 0x7f;
+};
+
+/**
+ * Test whether an object is a uint8.
+ * @param {Number?} value
+ * @returns {Boolean}
+ */
+
+util.isUInt8 = function isUInt8(value) {
+  return util.isInt(value) &amp;&amp; value >= 0 &amp;&amp; value &lt;= 0xff;
+};
+
+/**
+ * Test whether an object is an int32.
+ * @param {Number?} value
+ * @returns {Boolean}
+ */
+
+util.isInt32 = function isInt32(value) {
+  return util.isInt(value) &amp;&amp; Math.abs(value) &lt;= 0x7fffffff;
+};
+
+/**
+ * Test whether an object is a uint32.
+ * @param {Number?} value
+ * @returns {Boolean}
+ */
+
+util.isUInt32 = function isUInt32(value) {
+  return util.isInt(value) &amp;&amp; value >= 0 &amp;&amp; value &lt;= 0xffffffff;
+};
+
+/**
+ * Test whether an object is a int53.
+ * @param {Number?} value
+ * @returns {Boolean}
+ */
+
+util.isInt53 = function isInt53(value) {
+  return util.isInt(value);
+};
+
+/**
+ * Test whether an object is a uint53.
+ * @param {Number?} value
+ * @returns {Boolean}
+ */
+
+util.isUInt53 = function isUInt53(value) {
+  return util.isInt(value) &amp;&amp; value >= 0;
+};
+
+/**
+ * Test whether an object is a 160 bit hash (hex string).
+ * @param {String?} value
+ * @returns {Boolean}
+ */
+
+util.isHex160 = function isHex160(hash) {
+  return util.isHex(hash) &amp;&amp; hash.length === 40;
+};
+
+/**
+ * Test whether an object is a 256 bit hash (hex string).
+ * @param {String?} value
+ * @returns {Boolean}
+ */
+
+util.isHex256 = function isHex256(hash) {
+  return util.isHex(hash) &amp;&amp; hash.length === 64;
+};
+
+/**
+ * Test whether a string qualifies as a float.
+ * @param {String?} value
+ * @returns {Boolean}
+ */
+
+util.isFloat = function isFloat(value) {
+  return typeof value === 'string'
+    &amp;&amp; /^-?(\d+)?(?:\.\d*)?$/.test(value)
+    &amp;&amp; value.length !== 0
+    &amp;&amp; value !== '-';
+};
+
+/**
+ * util.inspect() with 20 levels of depth.
+ * @param {Object|String} obj
+ * @param {Boolean?} color
+ * @return {String}
+ */
+
+util.inspectify = function inspectify(obj, color) {
+  return typeof obj !== 'string'
+    ? nodeUtil.inspect(obj, null, 20, color !== false)
+    : obj;
+};
+
+/**
+ * Format a string.
+ * @function
+ */
+
+util.fmt = nodeUtil.format;
+
+/**
+ * Format a string.
+ * @param {Array} args
+ * @param {Boolean?} color
+ * @return {String}
+ */
+
+util.format = function format(args, color) {
+  if (color == null)
+    color = process.stdout ? process.stdout.isTTY : false;
+
+  return typeof args[0] === 'object'
+    ? util.inspectify(args[0], color)
+    : nodeUtil.format.apply(nodeUtil, args);
+};
+
+/**
+ * Write a message to stdout (console in browser).
+ * @param {Object|String} obj
+ * @param {...String} args
+ */
+
+util.log = function log() {
+  var args = new Array(arguments.length);
+  var i, msg;
+
+  for (i = 0; i &lt; args.length; i++)
+    args[i] = arguments[i];
+
+  if (util.isBrowser) {
+    msg = typeof args[0] !== 'object'
+      ? util.format(args, false)
+      : args[0];
+    console.log(msg);
+    return;
+  }
+
+  msg = util.format(args);
+  process.stdout.write(msg + '\n');
+};
+
+/**
+ * Write a message to stderr (console in browser).
+ * @param {Object|String} obj
+ * @param {...String} args
+ */
+
+util.error = function error() {
+  var args = new Array(arguments.length);
+  var i, msg;
+
+  for (i = 0; i &lt; args.length; i++)
+    args[i] = arguments[i];
+
+  if (util.isBrowser) {
+    msg = typeof args[0] !== 'object'
+      ? util.format(args, false)
+      : args[0];
+    console.error(msg);
+    return;
+  }
+
+  msg = util.format(args);
+  process.stderr.write(msg + '\n');
+};
+
+/**
+ * Unique-ify an array of strings.
+ * @param {String[]} obj
+ * @returns {String[]}
+ */
+
+util.uniq = function uniq(obj) {
+  var table = {};
+  var out = [];
+  var i = 0;
+
+  for (; i &lt; obj.length; i++) {
+    if (!table[obj[i]]) {
+      out.push(obj[i]);
+      table[obj[i]] = true;
+    }
+  }
+
+  return out;
+};
+
+/**
+ * Get current time in unix time (seconds).
+ * @returns {Number}
+ */
+
+util.now = function now() {
+  return Math.floor(util.ms() / 1000);
+};
+
+/**
+ * Get current time in unix time (milliseconds).
+ * @returns {Number}
+ */
+
+util.ms = function ms() {
+  if (Date.now)
+    return Date.now();
+  return +new Date();
+};
+
+/**
+ * Create a Date ISO string from time in unix time (seconds).
+ * @param {Number?} ts - Seconds in unix time.
+ * @returns {String}
+ */
+
+util.date = function date(ts) {
+  if (ts == null)
+    ts = util.now();
+
+  return new Date(ts * 1000).toISOString().slice(0, -5) + 'Z';
+};
+
+/**
+ * Get unix seconds from a Date string.
+ * @param {String} date - Date ISO String.
+ * @returns {Number}
+ */
+
+util.time = function time(date) {
+  if (date == null)
+    return util.now();
+
+  return new Date(date) / 1000 | 0;
+};
+
+/**
+ * Get random range.
+ * @param {Number} min
+ * @param {Number} max
+ * @returns {Number}
+ */
+
+util.random = function random(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+};
+
+/**
+ * Create a 64 bit nonce.
+ * @returns {Buffer}
+ */
+
+util.nonce = function _nonce() {
+  var nonce = new Buffer(8);
+  var a = util.random(0, 0x100000000);
+  var b = util.random(0, 0x100000000);
+
+  nonce.writeUInt32LE(a, 0, true);
+  nonce.writeUInt32LE(b, 4, true);
+
+  return nonce;
+};
+
+/**
+ * String comparator (memcmp + length comparison).
+ * @param {Buffer} a
+ * @param {Buffer} b
+ * @returns {Number} -1, 1, or 0.
+ */
+
+util.strcmp = function strcmp(a, b) {
+  var len = Math.min(a.length, b.length);
+  var i;
+
+  for (i = 0; i &lt; len; i++) {
+    if (a[i] &lt; b[i])
+      return -1;
+    if (a[i] > b[i])
+      return 1;
+  }
+
+  if (a.length &lt; b.length)
+    return -1;
+
+  if (a.length > b.length)
+    return 1;
+
+  return 0;
+};
+
+/**
+ * Buffer comparator (memcmp + length comparison).
+ * @param {Buffer} a
+ * @param {Buffer} b
+ * @returns {Number} -1, 1, or 0.
+ */
+
+util.cmp = function cmp(a, b) {
+  return a.compare(b);
+};
+
+// Warning: polymorphism.
+if (!Buffer.prototype.compare)
+  util.cmp = util.strcmp;
+
+/**
+ * Convert bytes to mb.
+ * @param {Number} size
+ * @returns {Number} mb
+ */
+
+util.mb = function mb(size) {
+  return Math.floor(size / 1024 / 1024);
+};
+
+/**
+ * Inheritance.
+ * @param {Function} obj - Constructor to inherit.
+ * @param {Function} from - Parent constructor.
+ */
+
+util.inherits = function inherits(obj, from) {
+  var f;
+
+  obj.super_ = from;
+
+  if (Object.setPrototypeOf) {
+    Object.setPrototypeOf(obj.prototype, from.prototype);
+    Object.defineProperty(obj.prototype, 'constructor', {
+      value: obj,
+      enumerable: false
+    });
+    return;
+  }
+
+  if (Object.create) {
+    obj.prototype = Object.create(from.prototype, {
+      constructor: {
+        value: obj,
+        enumerable: false
+      }
+    });
+    return;
+  }
+
+  f = function() {};
+  f.prototype = from.prototype;
+  obj.prototype = new f;
+  obj.prototype.constructor = obj;
+};
+
+/**
+ * Find index of a buffer in an array of buffers.
+ * @param {Buffer[]} obj
+ * @param {Buffer} data - Target buffer to find.
+ * @returns {Number} Index (-1 if not found).
+ */
+
+util.indexOf = function indexOf(obj, data) {
+  var i;
+
+  assert(Array.isArray(obj));
+  assert(Buffer.isBuffer(data));
+
+  for (i = 0; i &lt; obj.length; i++) {
+    if (!Buffer.isBuffer(obj[i]))
+      continue;
+    if (util.equal(obj[i], data))
+      return i;
+  }
+
+  return -1;
+};
+
+/**
+ * Convert a number to a padded uint8
+ * string (3 digits in decimal).
+ * @param {Number} num
+ * @returns {String} Padded number.
+ */
+
+util.pad8 = function pad8(num) {
+  assert(num >= 0);
+  num = num + '';
+  switch (num.length) {
+    case 1:
+      return '00' + num;
+    case 2:
+      return '0' + num;
+    case 3:
+      return num;
+  }
+  assert(false);
+};
+
+/**
+ * Convert a number to a padded uint32
+ * string (10 digits in decimal).
+ * @param {Number} num
+ * @returns {String} Padded number.
+ */
+
+util.pad32 = function pad32(num) {
+  assert(num >= 0);
+  num = num + '';
+  switch (num.length) {
+    case 1:
+      return '000000000' + num;
+    case 2:
+      return '00000000' + num;
+    case 3:
+      return '0000000' + num;
+    case 4:
+      return '000000' + num;
+    case 5:
+      return '00000' + num;
+    case 6:
+      return '0000' + num;
+    case 7:
+      return '000' + num;
+    case 8:
+      return '00' + num;
+    case 9:
+      return '0' + num;
+    case 10:
+      return num;
+    default:
+      assert(false);
+  }
+};
+
+/**
+ * Convert a number to a padded uint8
+ * string (2 digits in hex).
+ * @param {Number} num
+ * @returns {String} Padded number.
+ */
+
+util.hex8 = function hex8(num) {
+  assert(num >= 0);
+  num = num.toString(16);
+  switch (num.length) {
+    case 1:
+      return '0' + num;
+    case 2:
+      return num;
+    default:
+      assert(false);
+  }
+};
+
+/**
+ * Convert a number to a padded uint32
+ * string (8 digits in hex).
+ * @param {Number} num
+ * @returns {String} Padded number.
+ */
+
+util.hex32 = function hex32(num) {
+  assert(num >= 0);
+  num = num.toString(16);
+  switch (num.length) {
+    case 1:
+      return '0000000' + num;
+    case 2:
+      return '000000' + num;
+    case 3:
+      return '00000' + num;
+    case 4:
+      return '0000' + num;
+    case 5:
+      return '000' + num;
+    case 6:
+      return '00' + num;
+    case 7:
+      return '0' + num;
+    case 8:
+      return num;
+    default:
+      assert(false);
+  }
+};
+
+/**
+ * Convert an array to a map.
+ * @param {String[]} obj
+ * @returns {Object} Map.
+ */
+
+util.toMap = function toMap(obj) {
+  var map = {};
+  var i, value;
+
+  for (i = 0; i &lt; obj.length; i++) {
+    value = obj[i];
+    map[value] = true;
+  }
+
+  return map;
+};
+
+/**
+ * Reverse a map.
+ * @param {Object} map
+ * @returns {Object} Reversed map.
+ */
+
+util.revMap = function revMap(map) {
+  var reversed = {};
+  var keys = Object.keys(map);
+  var i, key;
+
+  for (i = 0; i &lt; keys.length; i++) {
+    key = keys[i];
+    reversed[map[key]] = key;
+  }
+
+  return reversed;
+};
+
+/**
+ * Get object values.
+ * @param {Object} map
+ * @returns {Array} Values.
+ */
+
+util.values = function values(map) {
+  var keys = Object.keys(map);
+  var out = [];
+  var i, key;
+
+  for (i = 0; i &lt; keys.length; i++) {
+    key = keys[i];
+    out.push(map[key]);
+  }
+
+  return out;
+};
+
+/**
+ * Perform a binary search on a sorted array.
+ * @param {Array} items
+ * @param {Object} key
+ * @param {Function} compare
+ * @param {Boolean?} insert
+ * @returns {Number} Index.
+ */
+
+util.binarySearch = function binarySearch(items, key, compare, insert) {
+  var start = 0;
+  var end = items.length - 1;
+  var pos, cmp;
+
+  while (start &lt;= end) {
+    pos = (start + end) >>> 1;
+    cmp = compare(items[pos], key);
+
+    if (cmp === 0)
+      return pos;
+
+    if (cmp &lt; 0)
+      start = pos + 1;
+    else
+      end = pos - 1;
+  }
+
+  if (!insert)
+    return -1;
+
+  return start;
+};
+
+/**
+ * Perform a binary insert on a sorted array.
+ * @param {Array} items
+ * @param {Object} item
+ * @param {Function} compare
+ * @returns {Number} index
+ */
+
+util.binaryInsert = function binaryInsert(items, item, compare, uniq) {
+  var i = util.binarySearch(items, item, compare, true);
+
+  if (uniq &amp;&amp; i &lt; items.length) {
+    if (compare(items[i], item) === 0)
+      return -1;
+  }
+
+  if (i === 0)
+    items.unshift(item);
+  else if (i === items.length)
+    items.push(item);
+  else
+    items.splice(i, 0, item);
+
+  return i;
+};
+
+/**
+ * Perform a binary removal on a sorted array.
+ * @param {Array} items
+ * @param {Object} item
+ * @param {Function} compare
+ * @returns {Boolean}
+ */
+
+util.binaryRemove = function binaryRemove(items, item, compare) {
+  var i = util.binarySearch(items, item, compare, false);
+  if (i === -1)
+    return false;
+  items.splice(i, 1);
+  return true;
+};
+
+/**
+ * Unique-ify and sort an array of buffers.
+ * @param {Buffer[]} items
+ * @returns {Buffer[]}
+ */
+
+util.uniqBuffer = function uniqBuffer(items) {
+  var out = [];
+  var i, j, item;
+
+  for (i = 0; i &lt; items.length; i++) {
+    item = items[i];
+    j = util.binarySearch(out, item, util.cmp, true);
+
+    if (j &lt; out.length &amp;&amp; util.cmp(out[j], item) === 0)
+      continue;
+
+    if (j === 0)
+      out.unshift(item);
+    else if (j === out.length)
+      out.push(item);
+    else
+      out.splice(j, 0, item);
+  }
+
+  return out;
+};
+
+/**
+ * Normalize a path.
+ * @param {String} path
+ * @param {Boolean?} dirname
+ */
+
+util.normalize = function normalize(path, dirname) {
+  var parts;
+
+  path = path.replace(/\\/g, '/');
+  path = path.replace(/(^|\/)\.\//, '$1');
+  path = path.replace(/\/+\.?$/, '');
+  parts = path.split(/\/+/);
+
+  if (dirname)
+    parts.pop();
+
+  return parts.join('/');
+};
+
+/**
+ * Create a full directory structure.
+ * @param {String} path
+ */
+
+util.mkdirp = function mkdirp(path) {
+  var i, parts, stat;
+
+  if (fs.unsupported)
+    return;
+
+  path = path.replace(/\\/g, '/');
+  path = path.replace(/(^|\/)\.\//, '$1');
+  path = path.replace(/\/+\.?$/, '');
+  parts = path.split(/\/+/);
+  path = '';
+
+  if (process.platform === 'win32') {
+    if (parts[0].indexOf(':') !== -1)
+      path = parts.shift() + '/';
+  }
+
+  if (parts.length > 0) {
+    if (parts[0].length === 0) {
+      parts.shift();
+      path = '/';
+    }
+  }
+
+  for (i = 0; i &lt; parts.length; i++) {
+    path += parts[i];
+
+    try {
+      stat = fs.statSync(path);
+      if (!stat.isDirectory())
+        throw new Error('Could not create directory.');
+    } catch (e) {
+      if (e.code === 'ENOENT')
+        fs.mkdirSync(path, 488 /* 0750 */);
+      else
+        throw e;
+    }
+
+    path += '/';
+  }
+};
+
+/**
+ * Ensure a directory.
+ * @param {String} path
+ * @param {Boolean?} dirname
+ */
+
+util.mkdir = function mkdir(path, dirname) {
+  if (util.isBrowser)
+    return;
+
+  path = util.normalize(path, dirname);
+
+  if (util._paths[path])
+    return;
+
+  util._paths[path] = true;
+
+  return util.mkdirp(path);
+};
+
+/**
+ * Cached mkdirp paths.
+ * @private
+ * @type {Object}
+ */
+
+util._paths = {};
+
+/**
+ * Ensure hidden-class mode for object.
+ * @param {Object} obj
+ */
+
+util.fastProp = function fastProp(obj) {
+  ({ __proto__: obj });
+};
+
+/**
+ * Quick test to see if a string is uppercase.
+ * @param {String} str
+ * @returns {Boolean}
+ */
+
+util.isUpperCase = function isUpperCase(str) {
+  if (str.length === 0)
+    return false;
+  return (str.charCodeAt(0) &amp; 32) === 0;
+};
+
+/**
+ * Test to see if a string starts with a prefix.
+ * @param {String} str
+ * @param {String} prefix
+ * @returns {Boolean}
+ */
+
+util.startsWith = function startsWiths(str, prefix) {
+  return str.startsWith(prefix);
+};
+
+if (!''.startsWith) {
+  util.startsWith = function startsWith(str, prefix) {
+    return str.indexOf(prefix) === 0;
+  };
+}
+
+/**
+ * Promisify a function.
+ * @param {Function} func
+ * @returns {Function}
+ */
+
+util.promisify = function promisify(func) {
+  return function() {
+    var result;
+    try {
+      result = func.apply(this, arguments);
+    } catch (e) {
+      return Promise.reject(e);
+    }
+    return Promise.resolve(result);
+  };
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

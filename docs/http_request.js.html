@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: http/request.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: http/request.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*
+ * request.js - http request for bcoin
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+/* jshint -W069 */
+
+var Stream = require('stream').Stream;
+var assert = require('assert');
+var url, qs, http, https, StringDecoder;
+
+/*
+ * Constants
+ */
+
+var USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1)'
+  + ' AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.1 Safari/537.36';
+
+/**
+ * Request Options
+ * @constructor
+ * @ignore
+ * @param {Object} options
+ */
+
+function RequestOptions(options) {
+  if (!(this instanceof RequestOptions))
+    return new RequestOptions(options);
+
+  this.uri = 'http://localhost:80/';
+  this.host = 'localhost';
+  this.path = '/';
+  this.port = 80;
+  this.ssl = false;
+  this.method = 'GET';
+  this.strictSSL = true;
+  this.pool = false;
+  this.agent = USER_AGENT;
+
+  this.type = null;
+  this.expect = null;
+  this.query = null;
+  this.body = null;
+  this.auth = null;
+  this.limit = 10 &lt;&lt; 20;
+  this.maxRedirects = 5;
+  this.timeout = 5000;
+  this.buffer = false;
+
+  // Hack
+  ensureRequires();
+
+  if (options)
+    this.fromOptions(options);
+}
+
+RequestOptions.prototype.setURI = function setURI(uri) {
+  var parts;
+
+  assert(typeof uri === 'string');
+
+  if (!/:\/\//.test(uri))
+    uri = (this.ssl ? 'https://' : 'http://') + uri;
+
+  uri = url.parse(uri);
+
+  assert(uri.protocol === 'http:' || uri.protocol === 'https:');
+
+  this.uri = uri;
+  this.ssl = uri.protocol === 'https:';
+
+  if (uri.search)
+    this.query = qs.parse(uri.search);
+
+  this.host = uri.hostname;
+  this.path = uri.pathname;
+  this.port = uri.port || (this.ssl ? 443 : 80);
+
+  if (uri.auth) {
+    parts = uri.auth.split(':');
+    this.auth = {
+      username: parts[0] || '',
+      password: parts[1] || ''
+    };
+  }
+};
+
+RequestOptions.prototype.fromOptions = function fromOptions(options) {
+  if (typeof options === 'string')
+    options = { uri: options };
+
+  if (options.ssl != null) {
+    assert(typeof options.ssl === 'boolean');
+    this.ssl = options.ssl;
+  }
+
+  if (options.uri != null)
+    this.setURI(options.uri);
+
+  if (options.url != null)
+    this.setURI(options.url);
+
+  if (options.method != null) {
+    assert(typeof options.method === 'string');
+    this.method = options.method.toUpperCase();
+  }
+
+  if (options.strictSSL != null) {
+    assert(typeof options.strictSSL === 'boolean');
+    this.strictSSL = options.strictSSL;
+  }
+
+  if (options.pool != null) {
+    assert(typeof options.pool === 'boolean');
+    this.pool = options.pool;
+  }
+
+  if (options.agent != null) {
+    assert(typeof options.agent === 'string');
+    this.agent = options.agent;
+  }
+
+  if (options.auth != null) {
+    assert(typeof options.auth === 'object');
+    assert(typeof options.auth.username === 'string');
+    assert(typeof options.auth.password === 'string');
+    this.auth = options.auth;
+  }
+
+  if (options.query != null) {
+    if (typeof options.query === 'string') {
+      this.query = qs.stringify(options.query);
+    } else {
+      assert(typeof options.query === 'object');
+      this.query = options.query;
+    }
+  }
+
+  if (options.json != null) {
+    assert(typeof options.json === 'object');
+    this.body = new Buffer(JSON.stringify(options.json), 'utf8');
+    this.type = 'json';
+  }
+
+  if (options.form != null) {
+    assert(typeof options.form === 'object');
+    this.body = new Buffer(qs.stringify(options.form), 'utf8');
+    this.type = 'form';
+  }
+
+  if (options.type != null) {
+    assert(typeof options.type === 'string');
+    assert(getType(options.type));
+    this.type = options.type;
+  }
+
+  if (options.expect != null) {
+    assert(typeof options.expect === 'string');
+    assert(getType(options.expect));
+    this.expect = options.expect;
+  }
+
+  if (options.body != null) {
+    if (typeof options.body === 'string') {
+      this.body = new Buffer(options.body, 'utf8');
+    } else {
+      assert(Buffer.isBuffer(options.body));
+      this.body = options.body;
+    }
+  }
+
+  if (options.timeout != null) {
+    assert(typeof options.timeout === 'number');
+    this.timeout = options.timeout;
+  }
+
+  if (options.limit != null) {
+    assert(typeof options.limit === 'number');
+    this.limit = options.limit;
+  }
+
+  if (options.maxRedirects != null) {
+    assert(typeof options.maxRedirects === 'number');
+    this.maxRedirects = options.maxRedirects;
+  }
+
+  if (options.buffer != null) {
+    assert(typeof options.buffer === 'boolean');
+    this.buffer = options.buffer;
+  }
+};
+
+RequestOptions.prototype.isExpected = function isExpected(type) {
+  if (!this.expect)
+    return true;
+
+  return this.expect === type;
+};
+
+RequestOptions.prototype.isOverflow = function isOverflow(length) {
+  if (!length)
+    return false;
+
+  if (!this.buffer)
+    return false;
+
+  length = parseInt(length, 10);
+
+  if (length !== length)
+    return true;
+
+  return length > this.limit;
+};
+
+RequestOptions.prototype.getBackend = function getBackend() {
+  ensureRequires(this.ssl);
+  return this.ssl ? https : http;
+};
+
+RequestOptions.prototype.toHTTP = function toHTTP() {
+  var query = '';
+  var headers = {};
+  var auth;
+
+  if (this.query)
+    query = '?' + qs.stringify(this.query);
+
+  headers['User-Agent'] = this.agent;
+
+  if (this.body) {
+    headers['Content-Type'] = getType(this.type);
+    headers['Content-Length'] = this.body.length + '';
+  }
+
+  if (this.auth) {
+    auth = this.auth.username + ':' + this.auth.password;
+    headers['Authorization'] =
+      'Basic ' + new Buffer(auth, 'utf8').toString('base64');
+  }
+
+  return {
+    method: this.method,
+    host: this.host,
+    port: this.port,
+    path: this.path + query,
+    headers: headers,
+    agent: this.pool ? null : false,
+    rejectUnauthorized: this.strictSSL
+  };
+};
+
+/**
+ * Request
+ * @alias module:http.Request
+ * @constructor
+ * @private
+ * @param {Object} options
+ */
+
+function Request(options) {
+  if (!(this instanceof Request))
+    return new Request(options);
+
+  Stream.call(this);
+
+  this.options = new RequestOptions(options);
+  this.request = null;
+  this.response = null;
+  this.statusCode = 0;
+  this.headers = null;
+  this.type = 'bin';
+  this.redirects = 0;
+  this.timeout = null;
+  this.finished = false;
+
+  this.onResponse = this._onResponse.bind(this);
+  this.onData = this._onData.bind(this);
+  this.onEnd = this._onEnd.bind(this);
+
+  this.total = 0;
+  this.decoder = null;
+  this.body = null;
+}
+
+Request.prototype.__proto__ = Stream.prototype;
+
+Request.prototype.startTimeout = function startTimeout() {
+  var self = this;
+
+  if (!this.options.timeout)
+    return;
+
+  this.timeout = setTimeout(function() {
+    self.finish(new Error('Request timed out.'));
+  }, this.options.timeout);
+};
+
+Request.prototype.stopTimeout = function stopTimeout() {
+  if (this.timeout != null) {
+    clearTimeout(this.timeout);
+    this.timeout = null;
+  }
+};
+
+Request.prototype.cleanup = function cleanup() {
+  this.stopTimeout();
+
+  if (this.request) {
+    this.request.removeListener('response', this.onResponse);
+    this.request.removeListener('error', this.onEnd);
+    this.request.addListener('error', nop);
+  }
+
+  if (this.response) {
+    this.response.removeListener('data', this.onData);
+    this.response.removeListener('error', this.onEnd);
+    this.response.removeListener('end', this.onEnd);
+    this.response.addListener('error', nop);
+  }
+};
+
+Request.prototype.close = function close() {
+  if (this.request) {
+    try {
+      this.request.abort();
+    } catch (e) {
+      ;
+    }
+  }
+
+  if (this.response) {
+    try {
+      this.response.destroy();
+    } catch (e) {
+      ;
+    }
+  }
+
+  this.cleanup();
+
+  this.request = null;
+  this.response = null;
+};
+
+Request.prototype.destroy = function destroy() {
+  this.close();
+};
+
+Request.prototype.start = function start() {
+  var backend = this.options.getBackend();
+  var options = this.options.toHTTP();
+
+  this.startTimeout();
+
+  this.request = backend.request(options);
+  this.response = null;
+
+  if (this.options.body)
+    this.request.write(this.options.body);
+
+  this.request.on('response', this.onResponse);
+  this.request.on('error', this.onEnd);
+};
+
+Request.prototype.write = function write(data) {
+  return this.request.write(data);
+};
+
+Request.prototype.end = function end() {
+  return this.request.end();
+};
+
+Request.prototype.finish = function finish(err) {
+  if (this.finished)
+    return;
+
+  this.finished = true;
+
+  if (err) {
+    this.destroy();
+    this.emit('error', err);
+    return;
+  }
+
+  this.cleanup();
+
+  if (this.options.buffer &amp;&amp; this.body) {
+    switch (this.type) {
+      case 'bin':
+        this.body = Buffer.concat(this.body);
+        break;
+      case 'json':
+        try {
+          this.body = JSON.parse(this.body);
+        } catch (e) {
+          this.emit('error', e);
+          return;
+        }
+        break;
+      case 'form':
+        try {
+          this.body = qs.parse(this.body);
+        } catch (e) {
+          this.emit('error', e);
+          return;
+        }
+        break;
+    }
+  }
+
+  this.emit('end');
+  this.emit('close');
+};
+
+Request.prototype._onResponse = function _onResponse(response) {
+  var type = response.headers['content-type'];
+  var length = response.headers['content-length'];
+  var location = response.headers['location'];
+
+  if (location) {
+    if (++this.redirects > this.options.maxRedirects) {
+      this.finish(new Error('Too many redirects.'));
+      return;
+    }
+    this.close();
+    this.options.setURI(location);
+    this.start();
+    this.end();
+    return;
+  }
+
+  type = parseType(type);
+
+  if (!this.options.isExpected(type)) {
+    this.finish(new Error('Wrong content-type for response.'));
+    return;
+  }
+
+  if (this.options.isOverflow(length)) {
+    this.finish(new Error('Response exceeded limit.'));
+    return;
+  }
+
+  this.response = response;
+  this.statusCode = response.statusCode;
+  this.headers = response.headers;
+  this.type = type;
+
+  this.response.on('data', this.onData);
+  this.response.on('error', this.onEnd);
+  this.response.on('end', this.onEnd);
+
+  this.emit('headers', response.headers);
+  this.emit('type', this.type);
+  this.emit('response', response);
+
+  if (this.options.buffer) {
+    if (this.type !== 'bin') {
+      this.decoder = new StringDecoder('utf8');
+      this.body = '';
+    } else {
+      this.body = [];
+    }
+  }
+};
+
+Request.prototype._onData = function _onData(data) {
+  this.total += data.length;
+
+  this.emit('data', data);
+
+  if (this.options.buffer) {
+    if (this.options.limit) {
+      if (this.total > this.options.limit) {
+        this.finish(new Error('Response exceeded limit.'));
+        return;
+      }
+    }
+    if (this.decoder) {
+      this.body += this.decoder.write(data);
+      return;
+    }
+    this.body.push(data);
+  }
+};
+
+Request.prototype._onEnd = function _onEnd(err) {
+  this.finish(err);
+};
+
+/**
+ * Make an HTTP request.
+ * @alias module:http.request
+ * @param {Object} options
+ * @param {String} options.uri
+ * @param {Object?} options.query
+ * @param {Object?} options.body
+ * @param {Object?} options.json
+ * @param {Object?} options.form
+ * @param {String?} options.type - One of `"json"`,
+ * `"form"`, `"text"`, or `"bin"`.
+ * @param {String?} options.agent - User agent string.
+ * @param {Object?} [options.strictSSL=true] - Whether to accept bad certs.
+ * @param {Object?} options.method - HTTP method.
+ * @param {Object?} options.auth
+ * @param {String?} options.auth.username
+ * @param {String?} options.auth.password
+ * @param {String?} options.expect - Type to expect (see options.type).
+ * Error will be returned if the response is not of this type.
+ * @param {Number?} options.limit - Byte limit on response.
+ * @returns {Promise}
+ */
+
+function request(options) {
+  if (typeof options === 'string')
+    options = { uri: options };
+
+  options.buffer = true;
+
+  return new Promise(function(resolve, reject) {
+    var stream = new Request(options);
+
+    stream.on('error', function(err) {
+      reject(err);
+    });
+
+    stream.on('end', function() {
+      resolve(stream);
+    });
+
+    stream.start();
+    stream.end();
+  });
+}
+
+request.stream = function _stream(options) {
+  var stream = new Request(options);
+  stream.start();
+  return stream;
+};
+
+/*
+ * Helpers
+ */
+
+function parseType(type) {
+  type = type || '';
+  type = type.split(';')[0];
+  type = type.toLowerCase();
+  type = type.trim();
+
+  switch (type) {
+    case 'text/x-json':
+    case 'application/json':
+      return 'json';
+    case 'application/x-www-form-urlencoded':
+      return 'form';
+    case 'text/html':
+    case 'application/xhtml+xml':
+      return 'html';
+    case 'text/javascript':
+    case 'application/javascript':
+      return 'js';
+    case 'text/css':
+      return 'css';
+    case 'text/plain':
+      return 'txt';
+    case 'application/octet-stream':
+      return 'bin';
+    default:
+      return 'bin';
+  }
+}
+
+function getType(type) {
+  switch (type) {
+    case 'json':
+      return 'application/json; charset=utf-8';
+    case 'form':
+      return 'application/x-www-form-urlencoded; charset=utf-8';
+    case 'html':
+      return 'text/html; charset=utf-8';
+    case 'js':
+      return 'application/javascript; charset=utf-8';
+    case 'css':
+      return 'text/css; charset=utf-8';
+    case 'txt':
+      return 'text/plain; charset=utf-8';
+    case 'bin':
+      return 'application/octet-stream';
+    default:
+      throw new Error('Unknown type: ' + type);
+  }
+}
+
+function ensureRequires(ssl) {
+  if (!url)
+    url = require('url');
+
+  if (!qs)
+    qs = require('querystring');
+
+  if (!http)
+    http = require('http');
+
+  if (ssl &amp;&amp; !https)
+    https = require('https');
+
+  if (!StringDecoder)
+    StringDecoder = require('string_decoder').StringDecoder;
+}
+
+function nop() {}
+
+/*
+ * Expose
+ */
+
+module.exports = request;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-bip70.html">bip70</a></li><li><a href="module-bip70_pk.html">bip70/pk</a></li><li><a href="module-bip70_x509.html">bip70/x509</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-crypto.html">crypto</a></li><li><a href="module-crypto_chachapoly.html">crypto/chachapoly</a></li><li><a href="module-crypto_ec.html">crypto/ec</a></li><li><a href="module-crypto_pk.html">crypto/pk</a></li><li><a href="module-crypto_schnorr.html">crypto/schnorr</a></li><li><a href="module-crypto_siphash.html">crypto/siphash</a></li><li><a href="module-db.html">db</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-http.html">http</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_dns.html">net/dns</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-net_socks.html">net/socks</a></li><li><a href="module-net_tcp.html">net/tcp</a></li><li><a href="module-node.html">node</a></li><li><a href="module-node_config.html">node/config</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_asn1.html">utils/asn1</a></li><li><a href="module-utils_base32.html">utils/base32</a></li><li><a href="module-utils_base58.html">utils/base58</a></li><li><a href="module-utils_co.html">utils/co</a></li><li><a href="module-utils_encoding.html">utils/encoding</a></li><li><a href="module-utils_ip.html">utils/ip</a></li><li><a href="module-utils_pem.html">utils/pem</a></li><li><a href="module-utils_protobuf.html">utils/protobuf</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="Environment.html">Environment</a></li><li><a href="module-bip70.Payment.html">Payment</a></li><li><a href="module-bip70.PaymentACK.html">PaymentACK</a></li><li><a href="module-bip70.PaymentDetails.html">PaymentDetails</a></li><li><a href="module-bip70.PaymentRequest.html">PaymentRequest</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainFlags.html">ChainFlags</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.ChainState.html">ChainState</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockchain.StateCache.html">StateCache</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoin.html">UndoCoin</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-crypto_aes.AESCipher.html">AESCipher</a></li><li><a href="module-crypto_aes.AESDecipher.html">AESDecipher</a></li><li><a href="module-crypto_aes.AESKey.html">AESKey</a></li><li><a href="module-crypto_chachapoly.AEAD.html">AEAD</a></li><li><a href="module-crypto_chachapoly.ChaCha20.html">ChaCha20</a></li><li><a href="module-crypto_chachapoly.Poly1305.html">Poly1305</a></li><li><a href="module-crypto_sha256.SHA256.html">SHA256</a></li><li><a href="module-crypto_sha256.SHA256Hmac.html">SHA256Hmac</a></li><li><a href="module-db.LowlevelUp.html">LowlevelUp</a></li><li><a href="module-db.RBT.html">RBT</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.Base.html">Base</a></li><li><a href="module-http.Client.html">Client</a></li><li><a href="module-http.HTTPBaseOptions.html">HTTPBaseOptions</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.Request.html">Request</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.RPCClient.html">RPCClient</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-http.Wallet.html">Wallet</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerBlock.html">MinerBlock</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-PrefilledTX.html">PrefilledTX</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-net_socks-Proxy.html">Proxy</a></li><li><a href="module-net_socks-SOCKS.html">SOCKS</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Logger.html">Logger</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.NetAddress.html">NetAddress</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-protocol_errors-VerifyResult.html">VerifyResult</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-utils.AsyncEmitter.html">AsyncEmitter</a></li><li><a href="module-utils.AsyncObject.html">AsyncObject</a></li><li><a href="module-utils.Bloom.html">Bloom</a></li><li><a href="module-utils.BufferReader.html">BufferReader</a></li><li><a href="module-utils.BufferWriter.html">BufferWriter</a></li><li><a href="module-utils.List.html">List</a></li><li><a href="module-utils.ListItem.html">ListItem</a></li><li><a href="module-utils.Lock.html">Lock</a></li><li><a href="module-utils.LRU.html">LRU</a></li><li><a href="module-utils.LRUBatch.html">LRUBatch</a></li><li><a href="module-utils.LRUItem.html">LRUItem</a></li><li><a href="module-utils.LRUOp.html">LRUOp</a></li><li><a href="module-utils.Map.html">Map</a></li><li><a href="module-utils.MappedLock.html">MappedLock</a></li><li><a href="module-utils.RollingFilter.html">RollingFilter</a></li><li><a href="module-utils.StaticWriter.html">StaticWriter</a></li><li><a href="module-utils_ip.Address.html">Address</a></li><li><a href="module-utils_protobuf-ProtoReader.html">ProtoReader</a></li><li><a href="module-utils_protobuf-ProtoWriter.html">ProtoWriter</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.ChainState.html">ChainState</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.DetailsMember.html">DetailsMember</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletClient.html">WalletClient</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_records-BlockMapRecord.html">BlockMapRecord</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-OutpointMapRecord.html">OutpointMapRecord</a></li><li><a href="module-wallet_records-PathMapRecord.html">PathMapRecord</a></li><li><a href="module-wallet_records-TXMapRecord.html">TXMapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.ParserClient.html">ParserClient</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="module-workers_packets-VerifyInputPacket.html">VerifyInputPacket</a></li><li><a href="module-workers_packets-VerifyInputResultPacket.html">VerifyInputResultPacket</a></li><li><a href="module-workers_packets-VerifyPacket.html">VerifyPacket</a></li><li><a href="module-workers_packets-VerifyResultPacket.html">VerifyResultPacket</a></li></ul><h3>Namespaces</h3><ul><li><a href="module-crypto_pk.ecdsa.html">ecdsa</a></li><li><a href="module-crypto_pk.rsa.html">rsa</a></li></ul><h3>Global</h3><ul><li><a href="global.html"></a></li><li><a href="global.html#DoubleMap">DoubleMap</a></li><li><a href="global.html#StatEntry">StatEntry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri Feb 10 2017 09:40:23 GMT-0800 (PST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
