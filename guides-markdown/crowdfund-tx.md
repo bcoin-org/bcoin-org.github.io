@@ -3,6 +3,10 @@
 Buck Perley
 ```
 
+```post-description
+Learn how SIGHASH flags work in Bitcoin by building out a custom crowdfunding transaction that lets anyone add their own inputs to a transaction with a fixed output.
+```
+
 ## SIGHASH Flags
 In most Bitcoin transactions, when a transaction is signed, the entirety of the data in that transaction is committed to in that input's signature, with all outputs and inputs being included in the unlocking script. This, however, doesn't always have to be the case. The level of commitment is indicated by using `SIGHASH` flags. The most common flag is `SIGHASH_ALL` which has a value of 0x01 (you'll see this represented as a `01` at the end of DER-encoded signatures). To learn more about how the flags work and what other options are available, you should checkout [Chapter 6](https://github.com/bitcoinbook/bitcoinbook/blob/8d01749bcf45f69f36cf23606bbbf3f0bd540db3/ch06.asciidoc) of *Mastering Bitcoin* by Andreas Antonopolous. In that chapter, Andreas posits one novel use of a specialized flag, `ALL|ANYONECANPAY`, and in this guide we'll try and build out a couple of examples implementing this idea using bcoin.
 
@@ -128,60 +132,107 @@ Above, we just funded our funder accounts with a single 5BTC outpoint. This mean
 
 So what we want to do is have each funder create a coin (UTXO) with the value of what they want to donate.
 
-Let's create an asyncronous utility function to help us split the coinbases we created in the previous step (we use the `fund` method on the `MTX` primitive to do this, which is asynchronous).
+The first thing we need to do make this work is calculate what the input will be. In our examples we are assuming that the funders cover the fee. Since different keyrings can be using different transaction types of different sizes (p2sh, multisig, etc.), we need a utility to calculate how much the fee should be for that input and add that to the amount to fund with.
+
+##### Utility functions
+We'll need some utility functions to help us out. It's nice to split these out separate from our main operations since we'll actually be reusing some of the functionality.
+
+Before we build out the tools to calculate fees and split coins, we'll need a utility for composing the inputs for txs that we'll use for our mock transactions in the fee calculator and later for templating our real transaction
 
 ```javascript
-const splitCoinbase = async function splitCoinbase(keyrings, coins, targetAmount, txRate) {
+const addInput = function addInput(coin, inputIndex, mtx, keyring, hashType) {
+  const sampleCoin = coin instanceof Coin ? coin : Coin.fromJSON(coin);
+  if(!hashType) hashType = Script.hashType.ANYONECANPAY | Script.hashType.ALL;
 
+  mtx.addCoin(sampleCoin);
+  mtx.scriptInput(inputIndex, sampleCoin, keyring);
+  mtx.signInput(inputIndex, sampleCoin, keyring, hashType);
+  assert(mtx.isSigned(), 'Input was not signed properly');
+}
+```
+
+Now let's build the utility for calculating the fee for a single input of unknown type or size
+
+```javascript
+const getFeeForInput = function getFeeForInput(coin, address, keyring, rate) {
+  const fundingTarget = 100000000; // 1 BTC (arbitrary for purposes of this function)
+  const testMTX = new MTX();
+
+  // we're not actually going to use this tx for anything other than calculate what fee should be
+  addInput(coin, 0, testMTX, keyring);
+
+  return testMTX.getMinFee(null, rate);
+}
+```
+
+Our last utility is an asyncronous function to help us split the coinbases we created in the previous step (we use the `fund` method on the `MTX` primitive to do this, which is asynchronous).
+
+```javascript
+const splitCoinbase = async function splitCoinbase(funderKeyring, coin, targetAmount, txRate) {
   // loop through each coinbase coin to split
-  for(const coinsIndex in coins) {
-    // funder will be at the same index as the key of the coins we are accessing
-    const funderKeyring = keyrings[coinsIndex];
-    const mtx = new MTX();
+  let coins = [];
 
-    assert(coins[coinsIndex][0].value > targetAmount, 'coin value is not enough!');
+  const mtx = new MTX();
 
-    // create a transaction that will have an output equal to what we want to fund
-    mtx.addOutput({
-      address: funderKeyring.getAddress(),
-      value: targetAmount
+  assert(coin.value > targetAmount, 'coin value is not enough!');
+
+  // creating a transaction that will have an output equal to what we want to fund
+  mtx.addOutput({
+    address: funderKeyring.getAddress(),
+    value: targetAmount
+  });
+
+  // the fund method will automatically split
+  // the remaining funds to the change address
+  // Note that in a real application these splitting transactions will also
+  // have to be broadcast to the network
+  await mtx.fund([coin], {
+    rate: txRate,
+    // send change back to an address belonging to the funder
+    changeAddress: funderKeyring.getAddress()
+  }).then(() => {
+    // sign the mtx to finalize split
+    mtx.sign(funderKeyring);
+    assert(mtx.verify());
+
+    const tx = mtx.toTX();
+    assert(tx.verify(mtx.view));
+
+    const outputs = tx.outputs;
+
+    // get coins from tx
+    outputs.forEach((outputs, index) => {
+      coins.push(Coin.fromTX(tx, index, -1));
     });
-
-    // shift off the coinbase coin to use to fund the splitting transaction
-    // the fund method will automatically split the remaining funds to the change address
-    await mtx.fund([coins[coinsIndex].shift()], {
-      rate: txRate,
-      // send change back to an address belonging to the funder
-      changeAddress: funderKeyring.getAddress()
-    }).then(() => {
-      // sign the mtx to finalize split
-      mtx.sign(funderKeyring);
-      assert(mtx.verify());
-
-      const tx = mtx.toTX();
-      assert(tx.verify(mtx.view));
-
-      const outputs = tx.outputs;
-
-      // get coins from tx
-      outputs.forEach((outputs, index) => {
-        coins[coinsIndex].push(Coin.fromTX(tx, index, -1));
-      });
-    })
-    .catch(e => console.log('There was an error: ', e));
-  }
+  })
+  .catch(e => console.log('There was an error: ', e));
 
   return coins;
 };
+
 ```
 
 Because of the async methods being used, in order to take advantage of the async/await structure, the rest of the code will be enclosed in an async function.
 
-The first thing we'll do is split the coinbase coins we created earlier using the utility function we just built.
+The first thing we'll do is split the coinbase coins we created earlier using the utility function we just built (we'll also have to calculate the fee and add it to the funding amount in order to get an output of the right value).
 
 ```javascript
-const composeCrowdfund = async function composeCrowdfund() {
-  const funderCoins = await splitCoinbase(funders, coins, amountToFund, txRate);
+const composeCrowdfund = async function composeCrowdfund(coins) {
+  const funderCoins = {};
+  // Loop through each coinbase
+  for (let index in coins) {
+    const coinbase = coins[index][0];
+    // estimate fee for each coin (assuming their split coins will use same tx type)
+    const estimatedFee = getFeeForInput(coinbase, fundeeAddress, funders[index], txRate);
+    const targetPlusFee = amountToFund + estimatedFee;
+
+    // split the coinbase with targetAmount plus estimated fee
+    const splitCoins = await Utils.splitCoinbase(funders[index], coinbase, targetPlusFee, txRate);
+
+    // add to funderCoins object with returned coins from splitCoinbase being value,
+    // and index being the key
+    funderCoins[index] = splitCoins;
+  }
   // ... we'll keep filling out the rest of the code here
 };
 ```
@@ -198,7 +249,7 @@ For example...
         "type": "pubkeyhash",
         "version": 1,
         "height": -1,
-        "value": "0.5",
+        "value": "0.5000157"
         "script": <Script: OP_DUP OP_HASH160 0x14 0x62f725e83caf894aa6c3efd29ef28649fc448825 OP_EQUALVERIFY OP_CHECKSIG>,
         "coinbase": false,
         "hash": "774822d84bd5af02f1b3eacd6215e0a1bcf07cfb6675a000c8a01d2ea34f2a32",
@@ -210,75 +261,21 @@ For example...
   "1": [...]
 }
 ```
-#### Step 5: Calculating the Fee
-
-We have a tricky problem now. In a real world situation you're not going to know how many inputs (i.e. funders) you will have. But the more inputs you have, the bigger the transaction and thus the higher the fee you will need to broadcast it. The best we can do is to estimate the size based off of the max number of inputs we are willing to accept.
-
-In our example, we know there are two inputs. In a more complex application, you might put a cap of say 5, then estimate the fee based on that. If there turn out to be fewer then you just have a relatively high fee.
-
-So, let's next add a utility for estimating a max fee. The way this will work is by creating a mock transaction that uses one of our coins to add inputs up to our maximum, calculate the size of the transaction and the fee based on that amount. We'll also build a utility that we'll need again later for adding coins to a tx and signing the input created.
-
-```javascript
-const getMaxFee = function getMaxFee(maxInputs, coin, address, keyring, rate) {
-  const fundingTarget = 100000000; // 1 BTC (arbitrary for purposes of this function)
-  const testMTX = new MTX();
-
-  testMTX.addOutput({ value: fundingTarget, address })
-
-  while(testMTX.inputs.length < maxInputs) {
-    const index = testMTX.inputs.length;
-    addInput(coin, index, testMTX, keyring);
-  }
-
-  return testMTX.getMinFee(null, rate);
-}
-
-const addInput = function addInput(coin, inputIndex, mtx, keyring, hashType) {
-  const sampleCoin = coin instanceof Coin ? coin : Coin.fromJSON(coin);
-  if(!hashType) hashType = Script.hashType.ANYONECANPAY | Script.hashType.ALL;
-
-  mtx.addCoin(sampleCoin);
-  mtx.scriptInput(inputIndex, sampleCoin, keyring);
-  mtx.signInput(inputIndex, sampleCoin, keyring, hashType);
-  assert(mtx.isSigned(), 'Input was not signed properly');
-}
-
-```
-
-Now we can get the fee for our funder transaction. We'll assume a max of 2 inputs, but this can be variable.
-
-```javascript
-const composeCrowdfund = async function composeCrowdfund() {
-  //...
-  const maxInputs = 2;
-  const maxFee = getMaxFee(
-    maxInputs,
-    funderCoins['0'][0],
-    fundeeAddress,
-    funder1Keyring,
-    txRate
-  );
-
-  console.log(`Based on a rate of ${txRate} satoshis/kb and a tx with max ${maxInputs}`);
-  console.log(`the tx fee should be ${maxFee} satoshis`);
-};
-```
-This should log something like:
-> Based on a rate of 10000 satoshis/kb and a tx with max 2 inputs, the tx fee should be 3380 satoshis
 
 #### Step 6: Construct the Transaction
-Now that we've got our tools and coins ready, we can start to build the transaction! Note that we are going to use the maxFee we calculated earlier and subtract it from the output we add to the mtx.
+Now that we've got our tools and coins ready, we can start to build the transaction!
 
 ```javascript
-const composeCrowdfund = async function composeCrowdfund() {
+const composeCrowdfund = async function composeCrowdfund(coins) {
   //...
 
   const fundMe = new MTX();
 
-  // add an output with the target funding amount minus the fee calculated earlier
-  fundMe.addOutput({ value: fundingTarget - maxFee, address: fundeeAddress });
+  // add an output with the target funding amount
 
-  // fund with first funder (using the utility we built earlier)
+  fundMe.addOutput({ value: fundingTarget, address: fundeeAddress });
+
+  // fund with first funder
   let fundingCoin = funderCoins['0'][0];
   addInput(fundingCoin, 0, fundMe, funder1Keyring);
 
@@ -292,15 +289,18 @@ const composeCrowdfund = async function composeCrowdfund() {
   assert(fundMe.verify(), 'The mtx is malformed');
 
   const tx = fundMe.toTX();
+  console.log('total input value = ', fundMe.getInputValue());
+  console.log('Fee getting sent to miners:', fundMe.getInputValue() - fundingTarget, 'satoshis');
+
   assert(tx.verify(fundMe.view), 'there is a problem with your tx');
 
   return tx;
 };
 
-composeCrowdfund().then(myCrowdfundTx => console.log(myCrowdfundTx));
+composeCrowdfund(coins).then(myCrowdfundTx => console.log(myCrowdfundTx));
 ```
 
-`composeCrowdfund()` will now return a promise (thanks to async/await) that returns a fully templated transaction that can be transmitted to the network. It should have two inputs and one output equal to the funding target minus the fee. You should also notice the `SIGHASH` flag 0x81 at the end of the input scripts which confirms they are `ALL|ANYONECANPAY` scripts.
+`composeCrowdfund` will now return a promise (thanks to async/await) that returns a fully templated transaction that can be transmitted to the network. It should have two inputs and one output with a value of 1. The inputs will have a value equal to the amount to fund plus the cost of the fee. You should also notice the `SIGHASH` flag 0x81 at the end of the input scripts which confirms they are `ALL|ANYONECANPAY` scripts.
 
 ### Version 2: Using the Bcoin Wallet System
 Since trying to manage your own keys is pretty tedious, not to mention impractical especially if you want to let other people contribute to your campaign, let's use the bcoin wallet system to take care of that part of the process. For the this example, we're going to interact via the wallet client, but you could also do something similar within a bcoin node (using the wallet and walletdb directly) which would also be more secure.
@@ -311,7 +311,7 @@ Note that this is a little more tedious to test since you need to have funded wa
 We'll skip the setup of constants since and import modules since we can use the same from the previous example. Since there are a lot of asynchronous operations here now that we're using the client, we'll also put this in an async function and will continue to build out the contents of the function throughout this guide.
 
 ```javascript
-const network = 'simnet';
+const network = 'regtest';
 const composeWalletCrowdfund = async function composeWalletCrowdfund() {
   const client = await new bcoin.http.Client({ network });
 
@@ -327,7 +327,9 @@ const composeWalletCrowdfund = async function composeWalletCrowdfund() {
 ```
 
 #### Step 2: Prepare Your Coins
-We have the same issue to deal with here as in step 2 in the previous example: we need to have "exact change" coins available for funding. The process of splitting is a little different with the wallet system though so let's walk through this version
+We have the same issue to deal with here as in step 2 in the previous example: we need to have "exact change" coins available for funding. The process of splitting is a little different with the wallet system though so let's walk through this version.
+
+Note that the way that we're retrieving the keyring information is pretty insecure as we are sending private keys unencrypted across the network, but we'll leave for the sake of the example. **DON'T USE THIS IN PRODUCTION**.
 
 ```javascript
 const composeWalletCrowdfund = async function composeWalletCrowdfund() {
@@ -342,7 +344,15 @@ const composeWalletCrowdfund = async function composeWalletCrowdfund() {
     const coins = await funder.getCoins();
     const funderInfo = await funder.getInfo();
 
-    // go through available coins to find a coin equal to or greater than value to fund
+    // Before we do anything we need to get
+    // the fee that will be necessary for each funder's input.
+    const funderKey = await funder.getWIF(coins[0].address);
+    const funderKeyring = new bcoin.keyring.fromSecret(funderKey.privateKey);
+    const feeForInput = Utils.getFeeForInput(coins[0], fundeeAddress.address, funderKeyring, rate);
+    amountToFund += feeForInput;
+
+    // Next, go through available coins
+    // to find a coin equal to or greater than value to fund
 
     // We didn't do this before because we knew what coins were available. But if we have one already in our wallets, then we can just use that!
     let fundingCoin = {};
@@ -389,14 +399,14 @@ const composeWalletCrowdfund = async function composeWalletCrowdfund() {
 }
 ```
 
-We now should have an object available that has the information of the coins we will be using to fund our transaction with mapped to the name of each wallet (so we can retrieve the wallet information later). It should look something like this:
+We now should have an object available that has the information of the coins we will be using to fund our transaction with mapped to the name of each wallet (so we can retrieve the wallet information later). It should look something like this (note that the values are larger than our funding amount due to the fee):
 
 ```json
 {
   "funder1": {
     "version": 1,
     "height": -1,
-    "value": 50000000,
+    "value": 50002370,
     "script": "76a914127cb1a40212169c49fe22d13307b18af1fa07ad88ac",
     "address": "SNykaBMuTyeUQkK8exZyymWNrnYX5vVPuY",
     "coinbase": false,
@@ -406,7 +416,7 @@ We now should have an object available that has the information of the coins we 
   "funder2": {
     "version": 1,
     "height": -1,
-    "value": 50000000,
+    "value": 50002370,
     "script": "76a9146e08c73b355e690ba0b1198d578c4c6c52b3813688ac",
     "address": "SXKossD65D7h62fhzGrntERBrPeXUfiC92",
     "coinbase": false,
@@ -417,19 +427,17 @@ We now should have an object available that has the information of the coins we 
 ```
 
 #### Step 3: Create our Crowdfund Tx
-We also have to include the `getmaxFee` step as before, but we can use the same utility that we created for the other example. The way that we're funding the inputs is pretty insecure as we are sending private keys unencrypted across the network, but we'll leave for the sake of the example. **DON'T USE THIS IN PRODUCTION**.
+Now that we have our coins ready we can start to template the transaction!
+
+Please note again that the way we are funding the transactions is by sending our private keys unencrypted across the network so don't use this in production.
 
 ```javascript
 const composeWalletCrowdfund = async function composeWalletCrowdfund() {
   //...
-  const testKey = await funders['funder1'].getWIF(fundingCoins['funder1'].address);
-  const testKeyring = new bcoin.keyring.fromSecret(testKey.privateKey);
-  const maxFee = getMaxFee(maxInputs, fundingCoins['funder1'], fundeeAddress.address, testKeyring, rate);
-
   const fundMe = new MTX();
 
   // Use the maxFee to calculate output value for transaction
-  fundMe.addOutput({value: fundingTarget - maxFee, address: fundeeAddress.address });
+  fundMe.addOutput({value: fundingTarget, address: fundeeAddress.address });
 
   // go through our coins and add each as an input in our transaction
   let inputCounter = 0;
@@ -458,7 +466,11 @@ const composeWalletCrowdfund = async function composeWalletCrowdfund() {
 
   assert(tx.verify(fundMe.view), 'TX is malformed. Fix before broadcasting');
 
-  // Step 6: broadcast tx
+  // check the value of our inputs just to confirm what the fees are
+  console.log('Total value of inputs: ', fundMe.getInputValue() );
+  console.log('Fee to go to miners: ', fundMe.getInputValue() - fundingTarget);
+
+  // Finally, broadcast tx
   try {
     const broadcastStatus = await client.broadcast(tx);
     return tx;
@@ -481,7 +493,6 @@ These examples are obviously pretty basic, but they should give you an idea of h
 - More advanced interface for fee estimation and include platform for large number of funders (for example, since you may be limited to number of funders per tx, you could include interface for multiple transactions for a single campaign. You would also want to include a check to make sure your tx is not bigger than 100kb otherwise it'll get rejected by the network)
 - Add a fund matching scheme where someone can say they will match future contributions
 - Currently the examples split transactions to make a coin available that equals the target contribution amount. This is expensive since you have to broadcast multiple transactions. An interface to choose to donate from available available coins might help to make this more efficient.
-- This approach also isn't ideal if funders have non-p2pkh outputs. Something like a multisig will be much bigger and will cause the estimated fee to be too low. One possible approach would be to shift the burden of fees on the funders, have the application calculate the size of their contribution and add the resulting fee to their funding amount. Finally, use the amount calculated (including the fee) when [splitting the coins](#step-4-prepare-your-coins). This has the added advantage of not needing to limit the number of inputs
 
 Make sure to get in touch with us on Twitter or Slack if you build out any of these ideas!
 
