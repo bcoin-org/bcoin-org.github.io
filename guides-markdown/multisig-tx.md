@@ -423,6 +423,12 @@ const addSharedKey = async function addSharedKey(client, account, xpubkey, skipR
 You will notice that we grab the `.account.accountKey`, first key is the xpubkey
 and both will be using xpubkey key derivation to come up with new addresses.
 You won't need to share any other public keys, they will derive them for you.
+```js
+  const wallet1xpubkey = wallet1info.account.accountKey;
+  // ...
+  // this will add shared key to the wallet/account
+  //  res = await client.addSharedKey(account, xpubkey);
+```
 Depth of the account is the only thing you'll need to keep in mind.  
 addSharedKey in wallet/account is used for adding cosigner xpubkeys keys.
 
@@ -436,8 +442,8 @@ We have received transaction
 
 We are going to send `1 BTC` to `RBg1TLaNuRpH6UTFzogFXhjqubPYZaqWgs` on the regtest network.
 
-But we won't need this information, it will be automatically allocated from coins
-by bcoin node wallet service.
+We won't need transaction ID and output index when using wallet API.  It will be automatically
+allocated from coins by bcoin node wallet service.
 
 ```js
 'use strict';
