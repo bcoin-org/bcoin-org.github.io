@@ -25,7 +25,7 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
   // Custom renderer for top two level headers
   renderer.heading = (text, level) => {
     let textURL = text.replace(/\(.+\)/, '').trim(); // for url remove any parentheses and their contents
-    textURL = textURL.replace(/ /g, '-').toLowerCase(); // and replace spaces with dashes
+    textURL = textURL.replace(/[$-/:-?{-~!"^_`\[\]]/, '').replace(/ /g, '-').toLowerCase(); // and replace spaces with dashes
 
     if (level == '1' ) {
       // remove icon tag for the url
