@@ -29,16 +29,16 @@ signatories chooses a different `m` or a different `n`, they'll end up with diff
 You also need to know the pubkey for all cosigners.
 You can share these pubkeys however you want. Wallets support various ways for sharing pubkeys, using QR Codes
 or sending base58check encoded strings.  After you have collected all pubkeys and agreed on `m` and `n`,
-you construct the multisig script and generate P2SH address from that.  
+you construct the multisig script and generate P2SH address from that.
 
 
 #### Spending Received Transaction
 After you've received a transaction on your multisig address, you can spend it if the minimum number of signatures are provided
-in a signature script.  
-1. You need all public keys, the same as were used in address generation. 
-2. From that you can construct the redeem script, that is the original script you constructed for address. 
+in a signature script.
+1. You need all public keys, the same as were used in address generation.
+2. From that you can construct the redeem script, that is the original script you constructed for address.
 3. Once you have the redeem script, you can start creating the signature script which will be constructed according
-to BIP11 and BIP16. 
+to BIP11 and BIP16.
 4. When you prepend your signature, you take this transaction (not yet fully valid) and send it to another pubkey owner,
 who'll be signing next. The next person will do the same, until you have `m` signatures in the sigscript.
 
@@ -55,9 +55,9 @@ After this process is done, your transaction is fully signed and you can broadca
 ### Manual construction
 
 In this setup, we won't be running a node or running any of the blockchain or wallet functionality of bcoin.
-This is a slightly more abstract than constructing bare scripts ourselves.  
+This is a slightly more abstract than constructing bare scripts ourselves.
 We'll split code in multiple files and share keys using the current directory (So you can use fresh dir).
- 
+
 
 ### Step 1: Address Creation
 
@@ -257,14 +257,14 @@ assert(spend2.verify(), 'Transaction isnt valid.');
 console.log(spend2.toRaw().toString('hex'));
 ```
 
-Since there's a lot of code here, I wanted to review a couple of sections. 
+Since there's a lot of code here, I wanted to review a couple of sections.
 This snippet below will return a raw transaction and also makes sure the
 transaction has all the signatures.
 
 
 ---
 ```js
-// send change to ourselves 
+// send change to ourselves
 spend1.addOutput({
   address: changeAddr,
   value: Amount.fromBTC('49.99').toValue()
@@ -279,7 +279,7 @@ spend1.addCoin(coin);
 In this next snippet we send change to ourselves and specify it manually.
 Alternatively, we could also use `MTX.prototype.fund` which automatically
 allocates coins to outputs, based on the amounts they need and
-also calculate change and append a new output for it.  
+also calculate change and append a new output for it.
 Instead of the code above, we could have simpler and more automated
 
 calculations:
@@ -423,7 +423,7 @@ const addSharedKey = async function addSharedKey(client, account, xpubkey, skipR
 You will notice that we grab the `.account.accountKey`, first key is the xpubkey
 and both will be using xpubkey key derivation to come up with new addresses.
 You won't need to share any other public keys, they will derive them for you.
-Depth of the account is the only thing you'll need to keep in mind.  
+Depth of the account is the only thing you'll need to keep in mind.
 [addSharedKey](http://bcoin.io/api-docs/index.html#add-xpubkey-multisig) in
 wallet/account is used for adding cosigner xpubkeys keys.
 
@@ -431,7 +431,7 @@ wallet/account is used for adding cosigner xpubkeys keys.
 
 We have received transaction
 
-> Transaction ID: 3c12e1b260354fd2a2848030222c4a66339892f1d63b18752ff80ef4eb0197d2  
+> Transaction ID: c12e1b260354fd2a2848030222c4a66339892f1d63b18752ff80ef4eb0197d2  
 > Output index: 0  
 > Amount: 100 BTC  
 
@@ -457,7 +457,7 @@ const sendTo = 'RBg1TLaNuRpH6UTFzogFXhjqubPYZaqWgs';
 
   // Because we can't sign and spend from account
   // We can't use `spend` as we do with normal transactions
-  // since it immediately publishes to the network 
+  // since it immediately publishes to the network
   // and we need other signatures first.
   // So we first create the transaction
   const outputs = [{ address: sendTo, value: Amount.fromBTC(1).toValue() }];
@@ -470,7 +470,7 @@ const sendTo = 'RBg1TLaNuRpH6UTFzogFXhjqubPYZaqWgs';
   // also create changeAddress and calculate fee
   const tx1 = await wallet1.createTX(options);
 
-  // Now you can share this raw output 
+  // Now you can share this raw output
   const raw = tx1.hex;
 
   // Wallet2 will also sign the transaction
@@ -485,7 +485,7 @@ const sendTo = 'RBg1TLaNuRpH6UTFzogFXhjqubPYZaqWgs';
 });
 ```
 
-Here you can see it's much cleaner and easier. 
+Here you can see it's much cleaner and easier.
 We still need to manually, using other means, share
 raw transaction data for signing.
 
@@ -501,8 +501,9 @@ After that we can just broadcast the transaction to the network.
 
 ## Final Notes
 
-I hope, this guide gives you opportunity to understand multisig transactions better and build apps on top of it.
-You can play with this code and even build use it in production with small changes (e.g. rate estimation).
+I hope this guide gives you the opportunity to better understand multisig transactions and build apps on top of it.
+
+You can play with this code, extend it, and even use it in production with small changes (e.g. rate estimation).
 
 Here are some other ideas for how to build out on top of the app we built in this guide:
 - Build UI for configuring and initializing `m` and `n`.

@@ -267,9 +267,10 @@
 <ul class="icons-list">
 <!-- GUIDES-LIST -->
 <li><a href="scripting.html">Intro to Scripting</a></li>
-<li><a href="op_return.html">Create an OP_RETURN output transaction</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
 <li><a href="multisig-tx.html">Creating Multi Signature Transactions</a></li>
 <li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
 <!-- /GUIDES-LIST -->
 </ul>
 </div>
@@ -324,21 +325,22 @@ signatories chooses a different <code>m</code> or a different <code>n</code>, th
 You also need to know the pubkey for all cosigners.
 You can share these pubkeys however you want. Wallets support various ways for sharing pubkeys, using QR Codes
 or sending base58check encoded strings.  After you have collected all pubkeys and agreed on <code>m</code> and <code>n</code>,
-you construct the multisig script and generate P2SH address from that.  </p>
+you construct the multisig script and generate P2SH address from that.</p>
 <h4 id="spending-received-transaction">Spending Received Transaction</h4><p>After you&#39;ve received a transaction on your multisig address, you can spend it if the minimum number of signatures are provided
-in a signature script.  </p>
+in a signature script.</p>
 <ol>
-<li>You need all public keys, the same as were used in address generation. </li>
-<li>From that you can construct the redeem script, that is the original script you constructed for address. </li>
+<li>You need all public keys, the same as were used in address generation.</li>
+<li>From that you can construct the redeem script, that is the original script you constructed for address.</li>
 <li>Once you have the redeem script, you can start creating the signature script which will be constructed according
-to BIP11 and BIP16. </li>
+to BIP11 and BIP16.</li>
 <li>When you prepend your signature, you take this transaction (not yet fully valid) and send it to another pubkey owner,
 who&#39;ll be signing next. The next person will do the same, until you have <code>m</code> signatures in the sigscript.</li>
 </ol>
 <p>After this process is done, your transaction is fully signed and you can broadcast your transaction.</p>
 <h2 id="the-code">The Code</h2><h3 id="manual-construction">Manual construction</h3><p>In this setup, we won&#39;t be running a node or running any of the blockchain or wallet functionality of bcoin.
-This is a slightly more abstract than constructing bare scripts ourselves.<br>We&#39;ll split code in multiple files and share keys using the current directory (So you can use fresh dir).</p>
-<h3 id="step-1:-address-creation">Step 1: Address Creation</h3><p>In the following code, we&#39;ll import all necessary libraries, generate private and public keys, and create
+This is a slightly more abstract than constructing bare scripts ourselves.
+We&#39;ll split code in multiple files and share keys using the current directory (So you can use fresh dir).</p>
+<h3 id="step-1-address-creation">Step 1: Address Creation</h3><p>In the following code, we&#39;ll import all necessary libraries, generate private and public keys, and create
 a multisig address.</p>
 <pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
 
@@ -384,7 +386,7 @@ console<span class="token punctuation">.</span><span class="token function">log<
 <pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> ring1 <span class="token operator">=</span> KeyRing<span class="token punctuation">.</span><span class="token function">generate</span><span class="token punctuation">(</span>compressed<span class="token punctuation">,</span> network<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Here we generate a private key and public key pair. We need to provide
 information about the network and public key format. There are two <a href="https://bitcoin.org/en/developer-guide#public-key-formats">Public key formats</a>
 one compressed and one uncompressed.  More details can be found at the <a href="https://bitcoin.org/en/developer-guide#public-key-formats">Bitcoin Developer Guide</a></p>
-<h3 id="step-2:-generate-transaction">Step 2: Generate Transaction</h3><p>In this part, we assume that we received a transaction on the network with the following information:</p>
+<h3 id="step-2-generate-transaction">Step 2: Generate Transaction</h3><p>In this part, we assume that we received a transaction on the network with the following information:</p>
 <blockquote>
 <p>Transaction ID: 3b1dd17cc82e2ac43ba62bf8f1c6a0fe805df43911653d22c902571eb3a212ce<br>Output index: 0<br>Amount: 100 BTC  </p>
 </blockquote>
@@ -513,11 +515,11 @@ spend2<span class="token punctuation">.</span><span class="token function">signI
 <span class="token comment" spellcheck="true">// Let's make sure that the transaction is valid</span>
 <span class="token function">assert</span><span class="token punctuation">(</span>spend2<span class="token punctuation">.</span><span class="token function">verify</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">'Transaction isnt valid.'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>spend2<span class="token punctuation">.</span><span class="token function">toRaw</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token string">'hex'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Since there&#39;s a lot of code here, I wanted to review a couple of sections. 
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>spend2<span class="token punctuation">.</span><span class="token function">toRaw</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token string">'hex'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Since there&#39;s a lot of code here, I wanted to review a couple of sections.
 This snippet below will return a raw transaction and also makes sure the
 transaction has all the signatures.</p>
 <hr>
-<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token comment" spellcheck="true">// send change to ourselves </span>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token comment" spellcheck="true">// send change to ourselves</span>
 spend1<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
   address<span class="token punctuation">:</span> changeAddr<span class="token punctuation">,</span>
   value<span class="token punctuation">:</span> Amount<span class="token punctuation">.</span><span class="token function">fromBTC</span><span class="token punctuation">(</span><span class="token string">'49.99'</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -529,7 +531,8 @@ spend1<span class="token punctuation">.</span><span class="token function">addOu
 spend1<span class="token punctuation">.</span><span class="token function">addCoin</span><span class="token punctuation">(</span>coin<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>In this next snippet we send change to ourselves and specify it manually.
 Alternatively, we could also use <code>MTX.prototype.fund</code> which automatically
 allocates coins to outputs, based on the amounts they need and
-also calculate change and append a new output for it.<br>Instead of the code above, we could have simpler and more automated</p>
+also calculate change and append a new output for it.
+Instead of the code above, we could have simpler and more automated</p>
 <p>calculations:</p>
 <pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token comment" spellcheck="true">// this will automatically select coins and</span>
 <span class="token comment" spellcheck="true">// send change back to our address</span>
@@ -541,7 +544,7 @@ also calculate change and append a new output for it.<br>Instead of the code abo
 convenient to handle all logic manually, and even more complex to deal with all HD wallet logic. So if you have a bcoin node running and you have access to it via HTTP, you can use <code>bcoin.http.Client</code> and <code>bcoin.http.Wallet</code>. These classes
 provide all API methods described on bcoin and will communicate with the node&#39;s Wallets.</p>
 <p><em>NOTE: You can check <a href="http://bcoin.io/api-docs/index.html">API Docs</a></em></p>
-<h3 id="step-1:-address-creation">Step 1: Address Creation</h3><p>In this step we&#39;ll create two new wallets for two cosigners. In this demo, they will exist on same node,
+<h3 id="step-1-address-creation">Step 1: Address Creation</h3><p>In this step we&#39;ll create two new wallets for two cosigners. In this demo, they will exist on same node,
 but it shouldn&#39;t matter if these two wallets are on the same node or not.</p>
 <pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
 
@@ -654,11 +657,12 @@ but it shouldn&#39;t matter if these two wallets are on the same node or not.</p
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>You will notice that we grab the <code>.account.accountKey</code>, first key is the xpubkey
 and both will be using xpubkey key derivation to come up with new addresses.
 You won&#39;t need to share any other public keys, they will derive them for you.
-Depth of the account is the only thing you&#39;ll need to keep in mind.<br><a href="http://bcoin.io/api-docs/index.html#add-xpubkey-multisig">addSharedKey</a> in
+Depth of the account is the only thing you&#39;ll need to keep in mind.
+<a href="http://bcoin.io/api-docs/index.html#add-xpubkey-multisig">addSharedKey</a> in
 wallet/account is used for adding cosigner xpubkeys keys.</p>
-<h3 id="step-2:-generate-transaction">Step 2: Generate Transaction</h3><p>We have received transaction</p>
+<h3 id="step-2-generate-transaction">Step 2: Generate Transaction</h3><p>We have received transaction</p>
 <blockquote>
-<p>Transaction ID: 3c12e1b260354fd2a2848030222c4a66339892f1d63b18752ff80ef4eb0197d2<br>Output index: 0<br>Amount: 100 BTC  </p>
+<p>Transaction ID: c12e1b260354fd2a2848030222c4a66339892f1d63b18752ff80ef4eb0197d2<br>Output index: 0<br>Amount: 100 BTC  </p>
 </blockquote>
 <p>We are going to send <code>1 BTC</code> to <code>RBg1TLaNuRpH6UTFzogFXhjqubPYZaqWgs</code> on the regtest network.</p>
 <p>We won&#39;t need transaction ID and output index when using wallet API.  It will be automatically
@@ -679,7 +683,7 @@ allocated from coins by bcoin node wallet service.</p>
 
   <span class="token comment" spellcheck="true">// Because we can't sign and spend from account</span>
   <span class="token comment" spellcheck="true">// We can't use `spend` as we do with normal transactions</span>
-  <span class="token comment" spellcheck="true">// since it immediately publishes to the network </span>
+  <span class="token comment" spellcheck="true">// since it immediately publishes to the network</span>
   <span class="token comment" spellcheck="true">// and we need other signatures first.</span>
   <span class="token comment" spellcheck="true">// So we first create the transaction</span>
   <span class="token keyword">const</span> outputs <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">{</span> address<span class="token punctuation">:</span> sendTo<span class="token punctuation">,</span> value<span class="token punctuation">:</span> Amount<span class="token punctuation">.</span><span class="token function">fromBTC</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
@@ -692,7 +696,7 @@ allocated from coins by bcoin node wallet service.</p>
   <span class="token comment" spellcheck="true">// also create changeAddress and calculate fee</span>
   <span class="token keyword">const</span> tx1 <span class="token operator">=</span> <span class="token keyword">await</span> wallet1<span class="token punctuation">.</span><span class="token function">createTX</span><span class="token punctuation">(</span>options<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// Now you can share this raw output </span>
+  <span class="token comment" spellcheck="true">// Now you can share this raw output</span>
   <span class="token keyword">const</span> raw <span class="token operator">=</span> tx1<span class="token punctuation">.</span>hex<span class="token punctuation">;</span>
 
   <span class="token comment" spellcheck="true">// Wallet2 will also sign the transaction</span>
@@ -704,7 +708,7 @@ allocated from coins by bcoin node wallet service.</p>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
   console<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span>e<span class="token punctuation">)</span><span class="token punctuation">;</span>
   process<span class="token punctuation">.</span><span class="token function">exit</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Here you can see it&#39;s much cleaner and easier. 
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Here you can see it&#39;s much cleaner and easier.
 We still need to manually, using other means, share
 raw transaction data for signing.</p>
 <p><code>wallet1.createTX(options)</code> will automatically find the coins
@@ -712,8 +716,8 @@ sent to the multisig wallet, allocate them for spending,
 send remaining funds (minus fee) to change address and sign it.</p>
 <p><code>wallet2.sign</code> will take raw transaction and sign it with according key.
 After that we can just broadcast the transaction to the network.</p>
-<h2 id="final-notes">Final Notes</h2><p>I hope, this guide gives you opportunity to understand multisig transactions better and build apps on top of it.
-You can play with this code and even build use it in production with small changes (e.g. rate estimation).</p>
+<h2 id="final-notes">Final Notes</h2><p>I hope this guide gives you the opportunity to better understand multisig transactions and build apps on top of it.</p>
+<p>You can play with this code, extend it, and even use it in production with small changes (e.g. rate estimation).</p>
 <p>Here are some other ideas for how to build out on top of the app we built in this guide:</p>
 <ul>
 <li>Build UI for configuring and initializing <code>m</code> and <code>n</code>.</li>
