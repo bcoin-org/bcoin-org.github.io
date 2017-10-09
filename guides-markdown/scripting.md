@@ -1,7 +1,7 @@
 # Intro to Scripting
 
 ```post-author
-Christopher Jeffery
+Christopher Jeffrey
 ```
 ```post-description
 Scripts are array-like objects with some helper functions. Learn the basics here.
