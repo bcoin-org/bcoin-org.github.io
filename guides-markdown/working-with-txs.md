@@ -3,7 +3,7 @@
 Christopher Jeffrey
 ```
 ```post-description
-Working with transaction with bcoin, MTX and TX objects.
+Working with transactions using bcoin and the MTX and TX objects.
 ```
 
 ## TX creation

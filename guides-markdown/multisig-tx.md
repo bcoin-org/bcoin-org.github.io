@@ -4,6 +4,10 @@
 Nodar Chkuaselidze
 ```
 
+```post-description
+Working with transactions using bcoin and the MTX and TX objects.
+```
+
 ## How It Works
 #### General
 In bitcoin there are several transaction types and one of them is Multisig. Multisig addresses and transactions are created

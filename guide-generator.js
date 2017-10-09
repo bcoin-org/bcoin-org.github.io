@@ -46,8 +46,6 @@ const options = {
   author: author
 };
 
-//generateArchive(__dirname, markdownDir, options)
-//generatePages(markdownDir, all, __dirname, file)
 generatePages(__dirname, markdownDir, options)
 .then((files) => {
   console.log('Finished generating files: ', files);
