@@ -570,6 +570,18 @@
                     <a href="#change-passphrase" class="toc-h2 toc-link" data-title="Wallet">Change Passphrase</a>
                   </li>
                   <li>
+                    <a href="#send-a-transaction" class="toc-h2 toc-link" data-title="Wallet">Send a transaction</a>
+                  </li>
+                  <li>
+                    <a href="#create-a-transaction" class="toc-h2 toc-link" data-title="Wallet">Create a Transaction</a>
+                  </li>
+                  <li>
+                    <a href="#sign-transaction" class="toc-h2 toc-link" data-title="Wallet">Sign Transaction</a>
+                  </li>
+                  <li>
+                    <a href="#zap-transactions" class="toc-h2 toc-link" data-title="Wallet">Zap Transactions</a>
+                  </li>
+                  <li>
                     <a href="#unlock-wallet" class="toc-h2 toc-link" data-title="Wallet">Unlock Wallet</a>
                   </li>
                   <li>
@@ -632,34 +644,19 @@
             <a href="#wallet-transactions" class="toc-h1 toc-link" data-title="Wallet Transactions">Wallet Transactions</a>
               <ul class="toc-list-h2">
                   <li>
-                    <a href="#send-a-transaction" class="toc-h2 toc-link" data-title="Wallet Transactions">Send a transaction</a>
-                  </li>
-                  <li>
-                    <a href="#create-a-transaction" class="toc-h2 toc-link" data-title="Wallet Transactions">Create a Transaction</a>
-                  </li>
-                  <li>
-                    <a href="#sign-transaction" class="toc-h2 toc-link" data-title="Wallet Transactions">Sign Transaction</a>
-                  </li>
-                  <li>
-                    <a href="#zap-transactions" class="toc-h2 toc-link" data-title="Wallet Transactions">Zap Transactions</a>
+                    <a href="#get-wallet-tx-details" class="toc-h2 toc-link" data-title="Wallet Transactions">Get Wallet TX Details</a>
                   </li>
                   <li>
                     <a href="#delete-transaction" class="toc-h2 toc-link" data-title="Wallet Transactions">Delete Transaction</a>
                   </li>
                   <li>
-                    <a href="#get-wallet-id-tx-history" class="toc-h2 toc-link" data-title="Wallet Transactions">GET /wallet/:id/tx/history</a>
+                    <a href="#get-wallet-tx-history" class="toc-h2 toc-link" data-title="Wallet Transactions">Get Wallet TX History</a>
                   </li>
                   <li>
-                    <a href="#get-wallet-id-tx-unconfirmed" class="toc-h2 toc-link" data-title="Wallet Transactions">GET /wallet/:id/tx/unconfirmed</a>
+                    <a href="#get-pending-transactions" class="toc-h2 toc-link" data-title="Wallet Transactions">Get Pending Transactions</a>
                   </li>
                   <li>
-                    <a href="#get-wallet-id-tx-range" class="toc-h2 toc-link" data-title="Wallet Transactions">GET /wallet/:id/tx/range</a>
-                  </li>
-                  <li>
-                    <a href="#get-wallet-id-tx-last" class="toc-h2 toc-link" data-title="Wallet Transactions">GET /wallet/:id/tx/last</a>
-                  </li>
-                  <li>
-                    <a href="#get-wallet-id-tx-hash" class="toc-h2 toc-link" data-title="Wallet Transactions">GET /wallet/:id/tx/:hash</a>
+                    <a href="#get-range-of-transactions" class="toc-h2 toc-link" data-title="Wallet Transactions">Get Range of Transactions</a>
                   </li>
               </ul>
           </li>
@@ -686,6 +683,7 @@
       </div>
         <ul class="toc-footer">
             <li><a href='http://bcoin.io/slack-signup.html'>Join us on slack</a></li>
+            <li><a href='https://github.com/bcoin-org/bcoin'>See the code on GitHub</a></li>
             <li><a href='http://bcoin.io/guides.html'>Browse the guides</a></li>
             <li><a href='http://bcoin.io/docs/index.html'>Full API Documentation</a></li>
             <li><a href='https://github.com/tripit/slate'>Documentation Powered by Slate</a></li>
@@ -5746,19 +5744,22 @@ bcoin cli wallet get --id<span class="o">=</span><span class="nv">$id</span>
 <td>named id of the wallet whose info you would like to retrieve</td>
 </tr>
 </tbody></table>
-<h2 id='create-a-wallet'>Create A Wallet</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">passphrase</span><span class="p">,</span> <span class="nx">witness</span><span class="p">;</span>
+<h2 id='create-a-wallet'>Create A Wallet</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">passphrase</span><span class="p">,</span> <span class="nx">witness</span><span class="p">,</span> <span class="nx">accountKey</span><span class="p">;</span>
 </code></pre><pre class="highlight shell tab-shell--vars"><code>id <span class="o">=</span> <span class="s1">'foo'</span>
 passphrase <span class="o">=</span> <span class="s1">'bar'</span>
-witness <span class="o">=</span> <span class="nb">false</span>
+witness <span class="o">=</span> <span class="nb">false
+</span><span class="nv">accountKey</span><span class="o">=</span><span class="s1">'tpubDDh2XgSds1vBbeVgye88gsGQeCityoywRndtyrXcmvWqCgsFUyUKwzeDv8HiJhu9fC8jRAFMqxr4jj8eRTNTycmMao5wmsAScVf4jSMdPYZ'</span>
 </code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span> <span class="se">\</span>
   -X PUT <span class="se">\</span>
-  --data <span class="s1">'{"witness":'</span><span class="nv">$witness</span><span class="s1">', "passphrase":"'</span><span class="nv">$passphrase</span><span class="s1">'"}'</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet create <span class="nv">$id</span> --witness<span class="o">=</span><span class="nv">$witness</span> --passphrase<span class="o">=</span><span class="nv">$passphrase</span>
+  --data <span class="s1">'{"witness":'</span><span class="nv">$witness</span><span class="s1">', "passphrase":"'</span><span class="nv">$passphrase</span><span class="s1">'", watchOnly: "true", "accountKey":"'</span><span class="nv">$accountKey</span><span class="s1">'"}'</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet create <span class="nv">$id</span> --witness<span class="o">=</span><span class="nv">$witness</span> --passphrase<span class="o">=</span><span class="nv">$passphrase</span> --watch<span class="o">=</span><span class="nv">$accountKey</span>
 </code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="p">();</span>
 <span class="kr">const</span> <span class="nx">options</span> <span class="o">=</span> <span class="p">{</span>
   <span class="na">id</span><span class="p">:</span> <span class="nx">id</span><span class="p">,</span>
   <span class="na">passphrase</span><span class="p">:</span> <span class="nx">passphrase</span><span class="p">,</span>
-  <span class="na">witness</span><span class="p">:</span> <span class="nx">witness</span>
+  <span class="na">witness</span><span class="p">:</span> <span class="nx">witness</span><span class="p">,</span>
+  <span class="na">watchOnly</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+  <span class="na">accountKey</span><span class="p">:</span> <span class="nx">accountKey</span>
 <span class="p">};</span>
 
 <span class="p">(</span><span class="nx">async</span><span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
@@ -5870,845 +5871,7 @@ oldPass <span class="o">=</span> <span class="s1">'oldpass123'</span>
   Note that the old passphrase is still required even if none was set prior. In this case, an empty string should be passed for the old passphrase.
   e.g. <code>client.setPassphrase(id,'""', 'newPass')</code>
 </aside>
-<h2 id='unlock-wallet'>Unlock Wallet</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">pass</span><span class="p">,</span> <span class="nx">timeout</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
-<span class="nv">pass</span><span class="o">=</span><span class="s1">'bar'</span>,
-<span class="nv">timeout</span><span class="o">=</span>60
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet unlock --id<span class="o">=</span><span class="nv">$id</span> <span class="nv">$pass</span> <span class="nv">$timeout</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/unlock <span class="se">\</span>
-  -X POST
-  --data <span class="s1">'{"passphrase":'</span><span class="nv">$pass</span><span class="s1">', "timeout": '</span><span class="nv">$timeout</span><span class="s1">'}'</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="p">();</span>
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">client</span><span class="p">.</span><span class="nx">unlock</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">pass</span><span class="p">,</span> <span class="nx">timeout</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample Response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Derive the AES key from passphrase and hold it in memory for a specified number of seconds. Note: During this time, account creation and signing of transactions will not require a passphrase.</p>
-<h3 id='http-request-6'>HTTP Request</h3>
-<p><code>POST /wallet/:id/unlock</code></p>
-<h3 id='body-parameters-2'>Body Parameters</h3>
-<table><thead>
-<tr>
-<th>Parameter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>passphrase <br> <em>string</em></td>
-<td>Password used to encrypt the wallet being unlocked</td>
-</tr>
-<tr>
-<td>timeout <br> <em>number</em></td>
-<td>time to re-lock the wallet in seconds. (default=60)</td>
-</tr>
-</tbody></table>
-<h2 id='lock-wallet'>Lock Wallet</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet lock --id<span class="o">=</span><span class="nv">$id</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/lock <span class="se">\</span>
-  -X POST
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="p">();</span>
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">client</span><span class="p">.</span><span class="nx">lock</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample Response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>If unlock was called, zero the derived AES key and revert to normal behavior.</p>
-<h3 id='http-request-7'>HTTP Request</h3>
-<p><code>POST /wallet/:id/lock</code></p>
-<h2 id='import-public-private-key'>Import Public/Private Key</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">,</span> <span class="nx">key</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
-<span class="nv">account</span><span class="o">=</span><span class="s1">'test-account'</span>
-<span class="nv">key</span><span class="o">=</span><span class="s1">'0215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9'</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet import --id<span class="o">=</span><span class="nv">$id</span> <span class="nv">$key</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/import <span class="se">\</span>
-  -X POST <span class="se">\</span>
-  --data <span class="s1">'{"account":"'</span><span class="nv">$account</span><span class="s1">'", "privateKey":"'</span><span class="nv">$key</span><span class="s1">'"}'</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">wallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">wallet</span><span class="p">.</span><span class="nx">importPrivate</span><span class="p">(</span><span class="nx">account</span><span class="p">,</span> <span class="nx">key</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample Response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Import a standard WIF key.</p>
-
-<p>An import can be either a private key or a public key for watch-only. (Watch Only wallets will throw an error if trying to import a private key)</p>
-
-<p>A rescan will be required to see any transaction history associated with the
-key.</p>
-
-<aside class="warning">
-Note that imported keys do not exist anywhere in the wallet's HD tree. They can be associated with accounts but will not be properly backed up with only the mnemonic.
-</aside>
-<h3 id='http-request-8'>HTTP Request</h3>
-<p><code>POST /wallet/:id/import</code></p>
-<h3 id='body-paramters'>Body Paramters</h3>
-<table><thead>
-<tr>
-<th>Paramter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>id of target wallet to import key into</td>
-</tr>
-<tr>
-<td>privateKey <br> <em>string</em></td>
-<td>Base58Check encoded private key</td>
-</tr>
-<tr>
-<td>publicKey <br> <em>string</em></td>
-<td>Hex encoded public key</td>
-</tr>
-</tbody></table>
-
-<blockquote>
-<p>Will return following error if incorrectly formatted:
-<code>Bad key for import</code></p>
-</blockquote>
-<h2 id='import-address'>Import Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">,</span> <span class="nx">address</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
-<span class="nv">account</span><span class="o">=</span><span class="s1">'bar'</span>
-<span class="nv">address</span><span class="o">=</span><span class="s1">'moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA'</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet watch --id<span class="o">=</span><span class="nv">$id</span> --account<span class="o">=</span><span class="nv">$account</span> <span class="nv">$address</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/import <span class="se">\</span>
-  -X POST <span class="se">\</span>
-  --data <span class="s1">'{"account":"'</span><span class="nv">$account</span><span class="s1">'", "address":"'</span><span class="nv">$address</span><span class="s1">'"}'</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">importAddress</span><span class="p">(</span><span class="nx">account</span><span class="p">,</span> <span class="nx">address</span><span class="p">)</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample Response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Import a Base58Check encoded address. Addresses (like public keys) can only be imported into watch-only wallets</p>
-
-<p>The HTTP endpoint is the same as for key imports.</p>
-<h3 id='http-request-9'>HTTP Request</h3>
-<p><code>POST /wallet/:id/import</code></p>
-<h3 id='body-paramters-2'>Body Paramters</h3>
-<table><thead>
-<tr>
-<th>Paramter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>id of target wallet to import key into</td>
-</tr>
-<tr>
-<td>address <br> <em>string</em></td>
-<td>Base58Check encoded address</td>
-</tr>
-</tbody></table>
-<h2 id='get-blocks-with-wallet-txs'>Get Blocks with Wallet Txs</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/block
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet blocks --id<span class="o">=</span><span class="nv">$id</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">blocks</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getBlocks</span><span class="p">();</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">blocks</span><span class="p">);</span>
-<span class="p">}())</span>
-</code></pre>
-<blockquote>
-<p>Sample Response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">[</span><span class="w"> </span><span class="mi">1179720</span><span class="p">,</span><span class="w"> </span><span class="mi">1179721</span><span class="p">,</span><span class="w"> </span><span class="mi">1180146</span><span class="p">,</span><span class="w"> </span><span class="mi">1180147</span><span class="p">,</span><span class="w"> </span><span class="mi">1180148</span><span class="p">,</span><span class="w"> </span><span class="mi">1180149</span><span class="w"> </span><span class="p">]</span><span class="w">
-</span></code></pre>
-<p>List all block heights which contain any wallet transactions. Returns an array of block heights</p>
-<h3 id='http-request-10'>HTTP Request</h3>
-<p><code>GET /wallet/:id/block</code></p>
-
-<table><thead>
-<tr>
-<th>Parameters</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>id of wallet to query blocks with its transactions in it</td>
-</tr>
-</tbody></table>
-<h2 id='get-wallet-block-by-height'>Get Wallet Block by Height</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">height</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-<span class="nv">height</span><span class="o">=</span>1179720
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> block <span class="nv">$height</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/block/<span class="nv">$height</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">blockInfo</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getBlock</span><span class="p">(</span><span class="nx">height</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">blockInfo</span><span class="p">);</span>
-<span class="p">})</span>
-</code></pre>
-<blockquote>
-<p>Sample response:</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0000000000013cc12ea4b3ff403a3c05d96da695638e468cf26409eca87beb6a"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">1179720</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"time"</span><span class="p">:</span><span class="w"> </span><span class="mi">1503359756</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"hashes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
-    </span><span class="s2">"2c3d708bc21358e0a8a112ab00267ede0992d85add295d622e2b2c58b2c6720d"</span><span class="w">
-  </span><span class="p">]</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Get block info by height.</p>
-<h3 id='http-request-11'>HTTP Request</h3>
-<p><code>GET /wallet/:id/block/:height</code></p>
-
-<table><thead>
-<tr>
-<th>Paramaters</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>id of wallet which has tx in the block being queried</td>
-</tr>
-<tr>
-<td>height <br> <em>int</em></td>
-<td>height of block being queried</td>
-</tr>
-</tbody></table>
-<h2 id='add-xpubkey-multisig'>Add xpubkey (Multisig)</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">account</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"multi-foo"</span>
-<span class="nv">key</span><span class="o">=</span><span class="s2">"tpubDCUQshhR98hjDDPtefuQdg4Dmpk5mes3TRyUp1Qa4BjxCVytfqmqNWmJ3tUZfqu4qLfEypQhNcpMF3yhZJ8h8hcahnxCzrqWmV5qVHHTqGM"</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> shared add <span class="nv">$key</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/shared-key <span class="se">\</span>
-  -X PUT
-  --data <span class="s1">'{"accountKey": $key}'</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-<span class="nx">account</span> <span class="o">=</span> <span class="s1">'default'</span><span class="p">;</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">addSharedKey</span><span class="p">(</span><span class="nx">account</span><span class="p">,</span> <span class="nx">key</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample Response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Add a shared xpubkey to wallet. Must be a multisig wallet.</p>
-
-<aside class="notice">
-Note that since it must be a multisig, the wallet on creation should be set with <code>m</code> and <code>n</code> where <code>n</code> is greater than 1 (since the first key is always that wallet's own xpubkey)
-</aside>
-<h3 id='http-request-12'>HTTP Request</h3>
-<p><code>PUT /wallet/:id/shared-key</code></p>
-<h3 id='body-parameters-3'>Body Parameters</h3>
-<table><thead>
-<tr>
-<th>Paramter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>accountKey <br> <em>string</em></td>
-<td>xpubkey to add to the multisig wallet</td>
-</tr>
-<tr>
-<td>account <br> <em>string</em></td>
-<td>multisig account to add the xpubkey to (default=&#39;default&#39;)</td>
-</tr>
-</tbody></table>
-<h2 id='remove-xpubkey-multisig'>Remove xpubkey (Multisig)</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">key</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"multi-foo"</span>
-<span class="nv">key</span><span class="o">=</span><span class="s2">"tpubDCUQshhR98hjDDPtefuQdg4Dmpk5mes3TRyUp1Qa4BjxCVytfqmqNWmJ3tUZfqu4qLfEypQhNcpMF3yhZJ8h8hcahnxCzrqWmV5qVHHTqGM"</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> shared remove <span class="nv">$key</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/shared-key <span class="se">\</span>
-  -X DELETE
-  --data <span class="s1">'{"accountKey": "'</span><span class="nv">$key</span><span class="s1">'"}'</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-<span class="kr">const</span> <span class="nx">account</span> <span class="o">=</span> <span class="s1">'default'</span><span class="p">;</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">removeSharedKey</span><span class="p">(</span><span class="nx">account</span><span class="p">,</span> <span class="nx">key</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample Response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Remove shared xpubkey from wallet if present.</p>
-<h3 id='http-request-13'>HTTP Request</h3>
-<p><code>DEL /wallet/:id/shared-key</code></p>
-<h3 id='body-parameters-4'>Body Parameters</h3>
-<table><thead>
-<tr>
-<th>Paramter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>accountKey <br> <em>string</em></td>
-<td>xpubkey to add to the multisig wallet</td>
-</tr>
-<tr>
-<td>account <br> <em>string</em></td>
-<td>multisig account to remove the key from (default=&#39;default&#39;)</td>
-</tr>
-</tbody></table>
-<h2 id='get-public-key-by-address'>Get Public Key By Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">address</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-<span class="nv">address</span><span class="o">=</span><span class="s2">"n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> key <span class="nv">$address</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/key/<span class="nv">$address</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getKey</span><span class="p">(</span><span class="nx">address</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample Response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"network"</span><span class="p">:</span><span class="w"> </span><span class="s2">"testnet"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"branch"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"witness"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"nested"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"publicKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"032b110a0f83d45c1010cf03adea64b440d83a1a3726f7c2d5e94db1d6509b3ac6"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"program"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pubkeyhash"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Get wallet key by address. Returns wallet information with address and public key</p>
-<h3 id='http-request-14'>HTTP Request</h3>
-<p><code>GET /wallet/:id/key/:address</code></p>
-
-<table><thead>
-<tr>
-<th>Parameters</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>id of wallet that holds the address being queried</td>
-</tr>
-<tr>
-<td>address <br> _string&gt;</td>
-<td>Base58 encoded address to get corresponding public key for</td>
-</tr>
-</tbody></table>
-<h2 id='get-private-key-by-address'>Get Private Key By Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">address</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-<span class="nv">address</span><span class="o">=</span><span class="s2">"n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> dump <span class="nv">$address</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/wif/<span class="nv">$address</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getWIF</span><span class="p">(</span><span class="nx">address</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample Response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"privateKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cTMUJ7WeFsoQ6dLGR9xdLZeNQafcU88bbibR9TV3W2HheRntYa53"</span><span class="w">
-</span><span class="p">}</span><span class="w">
-
-</span></code></pre>
-<p>Get wallet private key (WIF format) by address. Returns just the private key</p>
-<h3 id='http-request-15'>HTTP Request</h3>
-<p><code>GET /wallet/:id/wif/:address</code></p>
-
-<table><thead>
-<tr>
-<th>Parameters</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>id of wallet that holds the address being queried</td>
-</tr>
-<tr>
-<td>address <br> _string&gt;</td>
-<td>Base58 encoded address to get corresponding public key for</td>
-</tr>
-</tbody></table>
-<h2 id='generate-receiving-address'>Generate Receiving Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-<span class="nv">account</span><span class="o">=</span><span class="s2">"default"</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> address
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/address -X POST --data <span class="s1">'{"account":"'</span><span class="nv">$account</span><span class="s1">'"}'</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">receiveAddress</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">createAddress</span><span class="p">(</span><span class="nx">account</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">receiveAddress</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample response:</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"network"</span><span class="p">:</span><span class="w"> </span><span class="s2">"testnet"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"branch"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"witness"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"nested"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"publicKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"02801d9457837ed50e9538ee1806b6598e12a3c259fdc9258bbd32934f22cb1f80"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"program"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pubkeyhash"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mwX8J1CDGUqeQcJPnjNBG4s97vhQsJG7Eq"</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Derive new receiving address for account.</p>
-
-<aside class="notice">
-Note that, except for the CLI which assumes 'default' account, an account must be passed for the call to work.
-</aside>
-<h3 id='http-request-16'>HTTP Request</h3>
-<p><code>POST /wallet/:id/address</code></p>
-<h3 id='post-paramters'>Post Paramters</h3>
-<table><thead>
-<tr>
-<th>Parameter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>account <br><em>string</em></td>
-<td>BIP44 account to generate address from</td>
-</tr>
-</tbody></table>
-<h2 id='generate-change-address'>Generate Change Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-<span class="nv">account</span><span class="o">=</span><span class="s2">"default"</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> change
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/change -X POST --data <span class="s1">'{"account":"'</span><span class="nv">$account</span><span class="s1">'"}'</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">receiveAddress</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">createChange</span><span class="p">(</span><span class="nx">account</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">receiveAddress</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample response:</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"network"</span><span class="p">:</span><span class="w"> </span><span class="s2">"testnet"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"branch"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"witness"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"nested"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"publicKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"022f5afafcc8c35dbbbe52842d58dc18d739f2dea85021ea1e9183031032f9fa1c"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"program"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pubkeyhash"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mgdArtHtCsxvcjzxRTMfk5ZyBcnsTgNKTT"</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Derive new change address for account.</p>
-
-<aside class="info">
-Note that, except for the CLI which assumes 'default' account, an account must be passed for the call to work.
-</aside>
-<h3 id='http-request-17'>HTTP Request</h3>
-<p><code>POST /wallet/:id/change</code></p>
-<h3 id='post-paramters-2'>Post Paramters</h3>
-<table><thead>
-<tr>
-<th>Parameter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>account <br><em>string</em></td>
-<td>BIP44 account to generate address from</td>
-</tr>
-</tbody></table>
-<h2 id='derive-nested-address'>Derive Nested Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-<span class="nv">account</span><span class="o">=</span><span class="s2">"baz"</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> nested --account<span class="o">=</span><span class="nv">$account</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/nested -X POST --data <span class="s1">'{"account": "'</span><span class="nv">$account</span><span class="s1">'"}'</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">createNested</span><span class="p">(</span><span class="nx">account</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"network"</span><span class="p">:</span><span class="w"> </span><span class="s2">"testnet"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">31</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"baz"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"branch"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"witness"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"nested"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"publicKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"02a7a12fa67a7f0dc0bb2ae2c45d80c9b6248c004ef8b3f8da3f6feaf623f60939"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"program"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0014be20ad0c7ad43d1bb9f922f15cd7ba63b7fee290"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"scripthash"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2NBzYG49AiNJjUr7NA1r4eee8jUpacb3Eo2"</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Derive new nested p2sh receiving address for account. Note that this can&#39;t be done on a non-witness account otherwise you will receive the following error:</p>
-
-<p><code>[error] (node) Cannot derive nested on non-witness account.</code></p>
-<h3 id='http-request-18'>HTTP Request</h3>
-<p><code>POST /wallet/:id/nested</code></p>
-<h3 id='post-paramters-3'>Post Paramters</h3>
-<table><thead>
-<tr>
-<th>Paramter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>account <br> <em>string</em></td>
-<td>account to derive the nested address for (default=&#39;default&#39;)</td>
-</tr>
-</tbody></table>
-<h2 id='get-balance'>Get Balance</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
-<span class="nv">account</span><span class="o">=</span><span class="s1">'bar'</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> balance --account<span class="o">=</span><span class="nv">$account</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/balance?account<span class="o">=</span><span class="nv">$account</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getBalance</span><span class="p">(</span><span class="nx">account</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample response:</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"unconfirmed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"8149.9999546"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"confirmed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"8150.0"</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Get wallet or account balance. If no account option is passed, the call defaults to wallet balance (with account index of <code>-1</code>)</p>
-<h3 id='http-request-19'>HTTP Request</h3>
-<p><code>GET /wallet/:id/balance?account=:account</code></p>
-<h3 id='request-paramters'>Request Paramters</h3>
-<table><thead>
-<tr>
-<th>Paramters</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>wallet id to get balance of</td>
-</tr>
-<tr>
-<td>account <br> <em>string</em></td>
-<td>account name (optional, defaults to entire wallet balance)</td>
-</tr>
-</tbody></table>
-<h2 id='list-all-coins'>List all Coins</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/coin
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> coins
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getCoins</span><span class="p">();</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample Response</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">[</span><span class="w">
-  </span><span class="p">{</span><span class="w">
-    </span><span class="s2">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">1180963</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="s2">"76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac"</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"coinbase"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bf49aaf50dfa229b99e83d29cae2515487b05cccb88cd111fb2ac738dac1058a"</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
-  </span><span class="p">},</span><span class="w">
-  </span><span class="p">{</span><span class="w">
-    </span><span class="s2">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">1180963</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="s2">"76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac"</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"coinbase"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae"</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
-  </span><span class="p">}</span><span class="w">
-</span><span class="p">]</span><span class="w">
-</span></code></pre>
-<p>List all wallet coins available.</p>
-<h3 id='http-request-20'>HTTP Request</h3>
-<p><code>GET /wallet/:id/coin</code></p>
-<h2 id='lock-coin-outpoints'>Lock Coin/Outpoints</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">passphrase</span><span class="p">,</span> <span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-<span class="nv">passphrase</span><span class="o">=</span><span class="s2">"bar"</span>
-<span class="nb">hash</span><span class="o">=</span><span class="s2">"dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f"</span>
-<span class="nv">index</span><span class="o">=</span><span class="s2">"0"</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code><span class="c"># Not Supported in CLI</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/locked<span class="nv">$hash</span>/<span class="nv">$index</span> -X PUT --data <span class="s1">'{"passphrase": "'</span><span class="nv">$pasphrase</span><span class="s1">'"}'</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">lockCoin</span><span class="p">(</span><span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample response:</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Lock outpoints.</p>
-<h3 id='http-request-21'>HTTP Request</h3>
-<p><code>PUT /wallet/:id/locked/:hash/:index</code></p>
-<h3 id='request-parameters'>Request Parameters</h3>
-<table><thead>
-<tr>
-<th>Paramters</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>id of wallet that contains the outpoint</td>
-</tr>
-<tr>
-<td>hash <br> <em>string</em></td>
-<td>hash of transaction that created the outpoint</td>
-</tr>
-<tr>
-<td>index <br> <em>string</em> or <em>int</em></td>
-<td>index of the output in the transaction being referenced</td>
-</tr>
-</tbody></table>
-<h3 id='body-paramters-3'>Body Paramters</h3>
-<table><thead>
-<tr>
-<th>Parameter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>passphrase <br> <em>string</em></td>
-<td>passphrase of wallet being referenced</td>
-</tr>
-</tbody></table>
-<h2 id='unlock-outpoint'>Unlock Outpoint</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">passphrase</span><span class="p">,</span> <span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-<span class="nv">passphrase</span><span class="o">=</span><span class="s2">"bar"</span>
-<span class="nb">hash</span><span class="o">=</span><span class="s2">"dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f"</span>
-<span class="nv">index</span><span class="o">=</span><span class="s2">"0"</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code><span class="c"># Not Supported in CLI</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/locked/<span class="nv">$hash</span>/<span class="nv">$index</span> -X DELETE --data <span class="s1">'{"passphrase": "'</span><span class="nv">$pasphrase</span><span class="s1">'"}'</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">unlockCoin</span><span class="p">(</span><span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample response:</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Unlock outpoints.</p>
-<h3 id='http-request-22'>HTTP Request</h3>
-<p><code>DEL /wallet/:id/locked/:hash/:index</code></p>
-<h3 id='request-parameters-2'>Request Parameters</h3>
-<table><thead>
-<tr>
-<th>Paramters</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>id of wallet that contains the outpoint</td>
-</tr>
-<tr>
-<td>hash <br> <em>string</em></td>
-<td>hash of transaction that created the outpoint</td>
-</tr>
-<tr>
-<td>index <br> <em>string</em> or <em>int</em></td>
-<td>index of the output in the transaction being referenced</td>
-</tr>
-</tbody></table>
-<h3 id='body-paramters-4'>Body Paramters</h3>
-<table><thead>
-<tr>
-<th>Parameter</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>passphrase <br> <em>string</em></td>
-<td>passphrase of wallet being referenced</td>
-</tr>
-</tbody></table>
-<h2 id='get-locked-outpoints'>Get Locked Outpoints</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code><span class="c"># Not supported in CLI</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/locked
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getLocked</span><span class="p">();</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample response:</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">[</span><span class="w">
-  </span><span class="p">{</span><span class="w">
-    </span><span class="s2">"hash"</span><span class="p">:</span><span class="s2">"dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f"</span><span class="p">,</span><span class="w">
-    </span><span class="s2">"index"</span><span class="p">:</span><span class="mi">0</span><span class="w">
-  </span><span class="p">}</span><span class="w">
-</span><span class="p">]</span><span class="w">
-</span></code></pre>
-<p>Get all locked outpoints.</p>
-<h3 id='http-request-23'>HTTP Request</h3>
-<p><code>GET /wallet/:id/locked</code></p>
-<h3 id='request-parameters-3'>Request Parameters</h3>
-<table><thead>
-<tr>
-<th>Paramters</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>id of wallet to check for outpoints</td>
-</tr>
-</tbody></table>
-<h2 id='get-wallet-coin'>Get Wallet Coin</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">;</span>
-</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
-<span class="nb">hash</span><span class="o">=</span><span class="s2">"efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae"</span>
-<span class="nv">index</span><span class="o">=</span>0
-</code></pre><pre class="highlight shell tab-shell--cli"><code><span class="c"># command is wallet agnostic, same as in vanilla coin command</span>
-
-bcoin cli coin <span class="nv">$hash</span> <span class="nv">$index</span>
-</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/coin/<span class="nv">$hash</span>/<span class="nv">$index</span>
-</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
-
-<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getCoin</span><span class="p">(</span><span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">);</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
-<span class="p">})();</span>
-</code></pre>
-<blockquote>
-<p>Sample response:</p>
-</blockquote>
-<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="s2">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">1180963</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="s2">"76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"coinbase"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae"</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre>
-<p>Get wallet coin</p>
-<h3 id='http-request-24'>HTTP Request</h3>
-<p><code>GET /wallet/:id/coin/:hash/:index</code></p>
-<h3 id='request-parameters-4'>Request Parameters</h3>
-<table><thead>
-<tr>
-<th>Paramters</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>id <br> <em>string</em></td>
-<td>id of wallet that contains the outpoint</td>
-</tr>
-<tr>
-<td>hash <br> <em>string</em></td>
-<td>hash of transaction that created the outpoint</td>
-</tr>
-<tr>
-<td>index <br> <em>string</em> or <em>int</em></td>
-<td>index of the output in the transaction being referenced</td>
-</tr>
-</tbody></table>
-<h1 id='wallet-transactions'>Wallet Transactions</h1><h2 id='send-a-transaction'>Send a transaction</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">passphrase</span><span class="p">,</span> <span class="nx">rate</span><span class="p">,</span> <span class="nx">value</span><span class="p">,</span> <span class="nx">address</span><span class="p">;</span>
+<h2 id='send-a-transaction'>Send a transaction</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">passphrase</span><span class="p">,</span> <span class="nx">rate</span><span class="p">,</span> <span class="nx">value</span><span class="p">,</span> <span class="nx">address</span><span class="p">;</span>
 </code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
 <span class="nv">passphrase</span><span class="o">=</span><span class="s2">"bar"</span>
 <span class="nv">rate</span><span class="o">=</span>100
@@ -6739,7 +5902,6 @@ bcoin cli coin <span class="nv">$hash</span> <span class="nv">$index</span>
 <p>Sample response:</p>
 </blockquote>
 <pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-</span><span class="p">{</span><span class="w">
   </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">13</span><span class="p">,</span><span class="w">
   </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
   </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"c2da22cafcd076ea3db74bb2e3cf50f030e5240aa5daf4f778fb4954a866b41c"</span><span class="p">,</span><span class="w">
@@ -6783,7 +5945,7 @@ bcoin cli coin <span class="nv">$hash</span> <span class="nv">$index</span>
 
 </span></code></pre>
 <p>Create, sign, and send a transaction.</p>
-<h3 id='http-request'>HTTP Request</h3>
+<h3 id='http-request-6'>HTTP Request</h3>
 <p><code>POST /wallet/:id/send</code></p>
 <h3 id='post-paramaters'>Post Paramaters</h3>
 <table><thead>
@@ -6905,7 +6067,7 @@ bcoin cli coin <span class="nv">$hash</span> <span class="nv">$index</span>
 </span></code></pre>
 <p>Create and template a transaction (useful for multisig).
 Do not broadcast or add to wallet.</p>
-<h3 id='http-request-2'>HTTP Request</h3>
+<h3 id='http-request-7'>HTTP Request</h3>
 <p><code>POST /wallet/:id/create</code></p>
 <h3 id='post-paramters'>Post Paramters</h3>
 <table><thead>
@@ -7008,7 +6170,7 @@ Do not broadcast or add to wallet.</p>
 </span><span class="p">}</span><span class="w">
 </span></code></pre>
 <p>Sign a templated transaction (useful for multisig).</p>
-<h3 id='http-request-3'>HTTP Request</h3>
+<h3 id='http-request-8'>HTTP Request</h3>
 <p><code>POST /wallet/:id/sign</code></p>
 <h3 id='post-paramters-2'>Post Paramters</h3>
 <table><thead>
@@ -7052,7 +6214,7 @@ Do not broadcast or add to wallet.</p>
 </span><span class="p">}</span><span class="w">
 </span></code></pre>
 <p>Remove all pending transactions older than a specified age.</p>
-<h3 id='http-request-4'>HTTP Request</h3>
+<h3 id='http-request-9'>HTTP Request</h3>
 <p><code>POST /wallet/:id/zap?age=3600</code></p>
 <h3 id='post-parameters'>Post Parameters</h3>
 <table><thead>
@@ -7070,6 +6232,906 @@ Do not broadcast or add to wallet.</p>
 <td>age threshold to zap up to (unix time)</td>
 </tr>
 </tbody></table>
+<h2 id='unlock-wallet'>Unlock Wallet</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">pass</span><span class="p">,</span> <span class="nx">timeout</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
+<span class="nv">pass</span><span class="o">=</span><span class="s1">'bar'</span>,
+<span class="nv">timeout</span><span class="o">=</span>60
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet unlock --id<span class="o">=</span><span class="nv">$id</span> <span class="nv">$pass</span> <span class="nv">$timeout</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/unlock <span class="se">\</span>
+  -X POST
+  --data <span class="s1">'{"passphrase":'</span><span class="nv">$pass</span><span class="s1">', "timeout": '</span><span class="nv">$timeout</span><span class="s1">'}'</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="p">();</span>
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">client</span><span class="p">.</span><span class="nx">unlock</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">pass</span><span class="p">,</span> <span class="nx">timeout</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Derive the AES key from passphrase and hold it in memory for a specified number of seconds. Note: During this time, account creation and signing of transactions will not require a passphrase.</p>
+<h3 id='http-request-10'>HTTP Request</h3>
+<p><code>POST /wallet/:id/unlock</code></p>
+<h3 id='body-parameters-2'>Body Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>passphrase <br> <em>string</em></td>
+<td>Password used to encrypt the wallet being unlocked</td>
+</tr>
+<tr>
+<td>timeout <br> <em>number</em></td>
+<td>time to re-lock the wallet in seconds. (default=60)</td>
+</tr>
+</tbody></table>
+<h2 id='lock-wallet'>Lock Wallet</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet lock --id<span class="o">=</span><span class="nv">$id</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/lock <span class="se">\</span>
+  -X POST
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="p">();</span>
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">client</span><span class="p">.</span><span class="nx">lock</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>If unlock was called, zero the derived AES key and revert to normal behavior.</p>
+<h3 id='http-request-11'>HTTP Request</h3>
+<p><code>POST /wallet/:id/lock</code></p>
+<h2 id='import-public-private-key'>Import Public/Private Key</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">,</span> <span class="nx">key</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
+<span class="nv">account</span><span class="o">=</span><span class="s1">'test-account'</span>
+<span class="nv">key</span><span class="o">=</span><span class="s1">'0215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9'</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet import --id<span class="o">=</span><span class="nv">$id</span> <span class="nv">$key</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/import <span class="se">\</span>
+  -X POST <span class="se">\</span>
+  --data <span class="s1">'{"account":"'</span><span class="nv">$account</span><span class="s1">'", "privateKey":"'</span><span class="nv">$key</span><span class="s1">'"}'</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">wallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">wallet</span><span class="p">.</span><span class="nx">importPrivate</span><span class="p">(</span><span class="nx">account</span><span class="p">,</span> <span class="nx">key</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Import a standard WIF key.</p>
+
+<p>An import can be either a private key or a public key for watch-only. (Watch Only wallets will throw an error if trying to import a private key)</p>
+
+<p>A rescan will be required to see any transaction history associated with the
+key.</p>
+
+<aside class="warning">
+Note that imported keys do not exist anywhere in the wallet's HD tree. They can be associated with accounts but will not be properly backed up with only the mnemonic.
+</aside>
+<h3 id='http-request-12'>HTTP Request</h3>
+<p><code>POST /wallet/:id/import</code></p>
+<h3 id='body-paramters'>Body Paramters</h3>
+<table><thead>
+<tr>
+<th>Paramter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of target wallet to import key into</td>
+</tr>
+<tr>
+<td>privateKey <br> <em>string</em></td>
+<td>Base58Check encoded private key</td>
+</tr>
+<tr>
+<td>publicKey <br> <em>string</em></td>
+<td>Hex encoded public key</td>
+</tr>
+</tbody></table>
+
+<blockquote>
+<p>Will return following error if incorrectly formatted:
+<code>Bad key for import</code></p>
+</blockquote>
+<h2 id='import-address'>Import Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">,</span> <span class="nx">address</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
+<span class="nv">account</span><span class="o">=</span><span class="s1">'bar'</span>
+<span class="nv">address</span><span class="o">=</span><span class="s1">'moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA'</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet watch --id<span class="o">=</span><span class="nv">$id</span> --account<span class="o">=</span><span class="nv">$account</span> <span class="nv">$address</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/import <span class="se">\</span>
+  -X POST <span class="se">\</span>
+  --data <span class="s1">'{"account":"'</span><span class="nv">$account</span><span class="s1">'", "address":"'</span><span class="nv">$address</span><span class="s1">'"}'</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">importAddress</span><span class="p">(</span><span class="nx">account</span><span class="p">,</span> <span class="nx">address</span><span class="p">)</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Import a Base58Check encoded address. Addresses (like public keys) can only be imported into watch-only wallets</p>
+
+<p>The HTTP endpoint is the same as for key imports.</p>
+<h3 id='http-request-13'>HTTP Request</h3>
+<p><code>POST /wallet/:id/import</code></p>
+<h3 id='body-paramters-2'>Body Paramters</h3>
+<table><thead>
+<tr>
+<th>Paramter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of target wallet to import key into</td>
+</tr>
+<tr>
+<td>address <br> <em>string</em></td>
+<td>Base58Check encoded address</td>
+</tr>
+</tbody></table>
+<h2 id='get-blocks-with-wallet-txs'>Get Blocks with Wallet Txs</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/block
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet blocks --id<span class="o">=</span><span class="nv">$id</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">blocks</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getBlocks</span><span class="p">();</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">blocks</span><span class="p">);</span>
+<span class="p">}())</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">[</span><span class="w"> </span><span class="mi">1179720</span><span class="p">,</span><span class="w"> </span><span class="mi">1179721</span><span class="p">,</span><span class="w"> </span><span class="mi">1180146</span><span class="p">,</span><span class="w"> </span><span class="mi">1180147</span><span class="p">,</span><span class="w"> </span><span class="mi">1180148</span><span class="p">,</span><span class="w"> </span><span class="mi">1180149</span><span class="w"> </span><span class="p">]</span><span class="w">
+</span></code></pre>
+<p>List all block heights which contain any wallet transactions. Returns an array of block heights</p>
+<h3 id='http-request-14'>HTTP Request</h3>
+<p><code>GET /wallet/:id/block</code></p>
+
+<table><thead>
+<tr>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet to query blocks with its transactions in it</td>
+</tr>
+</tbody></table>
+<h2 id='get-wallet-block-by-height'>Get Wallet Block by Height</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">height</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nv">height</span><span class="o">=</span>1179720
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> block <span class="nv">$height</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/block/<span class="nv">$height</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">blockInfo</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getBlock</span><span class="p">(</span><span class="nx">height</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">blockInfo</span><span class="p">);</span>
+<span class="p">})</span>
+</code></pre>
+<blockquote>
+<p>Sample response:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0000000000013cc12ea4b3ff403a3c05d96da695638e468cf26409eca87beb6a"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">1179720</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"time"</span><span class="p">:</span><span class="w"> </span><span class="mi">1503359756</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"hashes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="s2">"2c3d708bc21358e0a8a112ab00267ede0992d85add295d622e2b2c58b2c6720d"</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Get block info by height.</p>
+<h3 id='http-request-15'>HTTP Request</h3>
+<p><code>GET /wallet/:id/block/:height</code></p>
+
+<table><thead>
+<tr>
+<th>Paramaters</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet which has tx in the block being queried</td>
+</tr>
+<tr>
+<td>height <br> <em>int</em></td>
+<td>height of block being queried</td>
+</tr>
+</tbody></table>
+<h2 id='add-xpubkey-multisig'>Add xpubkey (Multisig)</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">account</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"multi-foo"</span>
+<span class="nv">key</span><span class="o">=</span><span class="s2">"tpubDCUQshhR98hjDDPtefuQdg4Dmpk5mes3TRyUp1Qa4BjxCVytfqmqNWmJ3tUZfqu4qLfEypQhNcpMF3yhZJ8h8hcahnxCzrqWmV5qVHHTqGM"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> shared add <span class="nv">$key</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/shared-key <span class="se">\</span>
+  -X PUT
+  --data <span class="s1">'{"accountKey": $key}'</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+<span class="nx">account</span> <span class="o">=</span> <span class="s1">'default'</span><span class="p">;</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">addSharedKey</span><span class="p">(</span><span class="nx">account</span><span class="p">,</span> <span class="nx">key</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Add a shared xpubkey to wallet. Must be a multisig wallet.</p>
+
+<aside class="notice">
+Note that since it must be a multisig, the wallet on creation should be set with <code>m</code> and <code>n</code> where <code>n</code> is greater than 1 (since the first key is always that wallet's own xpubkey)
+</aside>
+<h3 id='http-request-16'>HTTP Request</h3>
+<p><code>PUT /wallet/:id/shared-key</code></p>
+<h3 id='body-parameters-3'>Body Parameters</h3>
+<table><thead>
+<tr>
+<th>Paramter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>accountKey <br> <em>string</em></td>
+<td>xpubkey to add to the multisig wallet</td>
+</tr>
+<tr>
+<td>account <br> <em>string</em></td>
+<td>multisig account to add the xpubkey to (default=&#39;default&#39;)</td>
+</tr>
+</tbody></table>
+<h2 id='remove-xpubkey-multisig'>Remove xpubkey (Multisig)</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">key</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"multi-foo"</span>
+<span class="nv">key</span><span class="o">=</span><span class="s2">"tpubDCUQshhR98hjDDPtefuQdg4Dmpk5mes3TRyUp1Qa4BjxCVytfqmqNWmJ3tUZfqu4qLfEypQhNcpMF3yhZJ8h8hcahnxCzrqWmV5qVHHTqGM"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> shared remove <span class="nv">$key</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/shared-key <span class="se">\</span>
+  -X DELETE
+  --data <span class="s1">'{"accountKey": "'</span><span class="nv">$key</span><span class="s1">'"}'</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+<span class="kr">const</span> <span class="nx">account</span> <span class="o">=</span> <span class="s1">'default'</span><span class="p">;</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">removeSharedKey</span><span class="p">(</span><span class="nx">account</span><span class="p">,</span> <span class="nx">key</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Remove shared xpubkey from wallet if present.</p>
+<h3 id='http-request-17'>HTTP Request</h3>
+<p><code>DEL /wallet/:id/shared-key</code></p>
+<h3 id='body-parameters-4'>Body Parameters</h3>
+<table><thead>
+<tr>
+<th>Paramter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>accountKey <br> <em>string</em></td>
+<td>xpubkey to add to the multisig wallet</td>
+</tr>
+<tr>
+<td>account <br> <em>string</em></td>
+<td>multisig account to remove the key from (default=&#39;default&#39;)</td>
+</tr>
+</tbody></table>
+<h2 id='get-public-key-by-address'>Get Public Key By Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">address</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nv">address</span><span class="o">=</span><span class="s2">"n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> key <span class="nv">$address</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/key/<span class="nv">$address</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getKey</span><span class="p">(</span><span class="nx">address</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"network"</span><span class="p">:</span><span class="w"> </span><span class="s2">"testnet"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"branch"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"witness"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"nested"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"publicKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"032b110a0f83d45c1010cf03adea64b440d83a1a3726f7c2d5e94db1d6509b3ac6"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"program"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pubkeyhash"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Get wallet key by address. Returns wallet information with address and public key</p>
+<h3 id='http-request-18'>HTTP Request</h3>
+<p><code>GET /wallet/:id/key/:address</code></p>
+
+<table><thead>
+<tr>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet that holds the address being queried</td>
+</tr>
+<tr>
+<td>address <br> _string&gt;</td>
+<td>Base58 encoded address to get corresponding public key for</td>
+</tr>
+</tbody></table>
+<h2 id='get-private-key-by-address'>Get Private Key By Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">address</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nv">address</span><span class="o">=</span><span class="s2">"n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> dump <span class="nv">$address</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/wif/<span class="nv">$address</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getWIF</span><span class="p">(</span><span class="nx">address</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"privateKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cTMUJ7WeFsoQ6dLGR9xdLZeNQafcU88bbibR9TV3W2HheRntYa53"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+
+</span></code></pre>
+<p>Get wallet private key (WIF format) by address. Returns just the private key</p>
+<h3 id='http-request-19'>HTTP Request</h3>
+<p><code>GET /wallet/:id/wif/:address</code></p>
+
+<table><thead>
+<tr>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet that holds the address being queried</td>
+</tr>
+<tr>
+<td>address <br> _string&gt;</td>
+<td>Base58 encoded address to get corresponding public key for</td>
+</tr>
+</tbody></table>
+<h2 id='generate-receiving-address'>Generate Receiving Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nv">account</span><span class="o">=</span><span class="s2">"default"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> address
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/address -X POST --data <span class="s1">'{"account":"'</span><span class="nv">$account</span><span class="s1">'"}'</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">receiveAddress</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">createAddress</span><span class="p">(</span><span class="nx">account</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">receiveAddress</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample response:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"network"</span><span class="p">:</span><span class="w"> </span><span class="s2">"testnet"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"branch"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"witness"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"nested"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"publicKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"02801d9457837ed50e9538ee1806b6598e12a3c259fdc9258bbd32934f22cb1f80"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"program"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pubkeyhash"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mwX8J1CDGUqeQcJPnjNBG4s97vhQsJG7Eq"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Derive new receiving address for account.</p>
+
+<aside class="notice">
+Note that, except for the CLI which assumes 'default' account, an account must be passed for the call to work.
+</aside>
+<h3 id='http-request-20'>HTTP Request</h3>
+<p><code>POST /wallet/:id/address</code></p>
+<h3 id='post-paramters-3'>Post Paramters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>account <br><em>string</em></td>
+<td>BIP44 account to generate address from</td>
+</tr>
+</tbody></table>
+<h2 id='generate-change-address'>Generate Change Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nv">account</span><span class="o">=</span><span class="s2">"default"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> change
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/change -X POST --data <span class="s1">'{"account":"'</span><span class="nv">$account</span><span class="s1">'"}'</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">receiveAddress</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">createChange</span><span class="p">(</span><span class="nx">account</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">receiveAddress</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample response:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"network"</span><span class="p">:</span><span class="w"> </span><span class="s2">"testnet"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"branch"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"witness"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"nested"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"publicKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"022f5afafcc8c35dbbbe52842d58dc18d739f2dea85021ea1e9183031032f9fa1c"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"program"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pubkeyhash"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mgdArtHtCsxvcjzxRTMfk5ZyBcnsTgNKTT"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Derive new change address for account.</p>
+
+<aside class="info">
+Note that, except for the CLI which assumes 'default' account, an account must be passed for the call to work.
+</aside>
+<h3 id='http-request-21'>HTTP Request</h3>
+<p><code>POST /wallet/:id/change</code></p>
+<h3 id='post-paramters-4'>Post Paramters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>account <br><em>string</em></td>
+<td>BIP44 account to generate address from</td>
+</tr>
+</tbody></table>
+<h2 id='derive-nested-address'>Derive Nested Address</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nv">account</span><span class="o">=</span><span class="s2">"baz"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> nested --account<span class="o">=</span><span class="nv">$account</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/nested -X POST --data <span class="s1">'{"account": "'</span><span class="nv">$account</span><span class="s1">'"}'</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">createNested</span><span class="p">(</span><span class="nx">account</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"network"</span><span class="p">:</span><span class="w"> </span><span class="s2">"testnet"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">31</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"baz"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"branch"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"witness"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"nested"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"publicKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"02a7a12fa67a7f0dc0bb2ae2c45d80c9b6248c004ef8b3f8da3f6feaf623f60939"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"program"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0014be20ad0c7ad43d1bb9f922f15cd7ba63b7fee290"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"scripthash"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2NBzYG49AiNJjUr7NA1r4eee8jUpacb3Eo2"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Derive new nested p2sh receiving address for account. Note that this can&#39;t be done on a non-witness account otherwise you will receive the following error:</p>
+
+<p><code>[error] (node) Cannot derive nested on non-witness account.</code></p>
+<h3 id='http-request-22'>HTTP Request</h3>
+<p><code>POST /wallet/:id/nested</code></p>
+<h3 id='post-paramters-5'>Post Paramters</h3>
+<table><thead>
+<tr>
+<th>Paramter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>account <br> <em>string</em></td>
+<td>account to derive the nested address for (default=&#39;default&#39;)</td>
+</tr>
+</tbody></table>
+<h2 id='get-balance'>Get Balance</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
+<span class="nv">account</span><span class="o">=</span><span class="s1">'bar'</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> balance --account<span class="o">=</span><span class="nv">$account</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/balance?account<span class="o">=</span><span class="nv">$account</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getBalance</span><span class="p">(</span><span class="nx">account</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample response:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"unconfirmed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"8149.9999546"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"confirmed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"8150.0"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Get wallet or account balance. If no account option is passed, the call defaults to wallet balance (with account index of <code>-1</code>)</p>
+<h3 id='http-request-23'>HTTP Request</h3>
+<p><code>GET /wallet/:id/balance?account=:account</code></p>
+<h3 id='request-paramters'>Request Paramters</h3>
+<table><thead>
+<tr>
+<th>Paramters</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>wallet id to get balance of</td>
+</tr>
+<tr>
+<td>account <br> <em>string</em></td>
+<td>account name (optional, defaults to entire wallet balance)</td>
+</tr>
+</tbody></table>
+<h2 id='list-all-coins'>List all Coins</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/coin
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> coins
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getCoins</span><span class="p">();</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">[</span><span class="w">
+  </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">1180963</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="s2">"76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"coinbase"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bf49aaf50dfa229b99e83d29cae2515487b05cccb88cd111fb2ac738dac1058a"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">1180963</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="s2">"76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"coinbase"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">]</span><span class="w">
+</span></code></pre>
+<p>List all wallet coins available.</p>
+<h3 id='http-request-24'>HTTP Request</h3>
+<p><code>GET /wallet/:id/coin</code></p>
+<h2 id='lock-coin-outpoints'>Lock Coin/Outpoints</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">passphrase</span><span class="p">,</span> <span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nv">passphrase</span><span class="o">=</span><span class="s2">"bar"</span>
+<span class="nb">hash</span><span class="o">=</span><span class="s2">"dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f"</span>
+<span class="nv">index</span><span class="o">=</span><span class="s2">"0"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code><span class="c"># Not Supported in CLI</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/locked<span class="nv">$hash</span>/<span class="nv">$index</span> -X PUT --data <span class="s1">'{"passphrase": "'</span><span class="nv">$pasphrase</span><span class="s1">'"}'</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">lockCoin</span><span class="p">(</span><span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample response:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Lock outpoints.</p>
+<h3 id='http-request-25'>HTTP Request</h3>
+<p><code>PUT /wallet/:id/locked/:hash/:index</code></p>
+<h3 id='request-parameters'>Request Parameters</h3>
+<table><thead>
+<tr>
+<th>Paramters</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet that contains the outpoint</td>
+</tr>
+<tr>
+<td>hash <br> <em>string</em></td>
+<td>hash of transaction that created the outpoint</td>
+</tr>
+<tr>
+<td>index <br> <em>string</em> or <em>int</em></td>
+<td>index of the output in the transaction being referenced</td>
+</tr>
+</tbody></table>
+<h3 id='body-paramters-3'>Body Paramters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>passphrase <br> <em>string</em></td>
+<td>passphrase of wallet being referenced</td>
+</tr>
+</tbody></table>
+<h2 id='unlock-outpoint'>Unlock Outpoint</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">passphrase</span><span class="p">,</span> <span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nv">passphrase</span><span class="o">=</span><span class="s2">"bar"</span>
+<span class="nb">hash</span><span class="o">=</span><span class="s2">"dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f"</span>
+<span class="nv">index</span><span class="o">=</span><span class="s2">"0"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code><span class="c"># Not Supported in CLI</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/locked/<span class="nv">$hash</span>/<span class="nv">$index</span> -X DELETE --data <span class="s1">'{"passphrase": "'</span><span class="nv">$pasphrase</span><span class="s1">'"}'</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">unlockCoin</span><span class="p">(</span><span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample response:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Unlock outpoints.</p>
+<h3 id='http-request-26'>HTTP Request</h3>
+<p><code>DEL /wallet/:id/locked/:hash/:index</code></p>
+<h3 id='request-parameters-2'>Request Parameters</h3>
+<table><thead>
+<tr>
+<th>Paramters</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet that contains the outpoint</td>
+</tr>
+<tr>
+<td>hash <br> <em>string</em></td>
+<td>hash of transaction that created the outpoint</td>
+</tr>
+<tr>
+<td>index <br> <em>string</em> or <em>int</em></td>
+<td>index of the output in the transaction being referenced</td>
+</tr>
+</tbody></table>
+<h3 id='body-paramters-4'>Body Paramters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>passphrase <br> <em>string</em></td>
+<td>passphrase of wallet being referenced</td>
+</tr>
+</tbody></table>
+<h2 id='get-locked-outpoints'>Get Locked Outpoints</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code><span class="c"># Not supported in CLI</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/locked
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getLocked</span><span class="p">();</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample response:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">[</span><span class="w">
+  </span><span class="p">{</span><span class="w">
+    </span><span class="s2">"hash"</span><span class="p">:</span><span class="s2">"dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"index"</span><span class="p">:</span><span class="mi">0</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">]</span><span class="w">
+</span></code></pre>
+<p>Get all locked outpoints.</p>
+<h3 id='http-request-27'>HTTP Request</h3>
+<p><code>GET /wallet/:id/locked</code></p>
+<h3 id='request-parameters-3'>Request Parameters</h3>
+<table><thead>
+<tr>
+<th>Paramters</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet to check for outpoints</td>
+</tr>
+</tbody></table>
+<h2 id='get-wallet-coin'>Get Wallet Coin</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nb">hash</span><span class="o">=</span><span class="s2">"efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae"</span>
+<span class="nv">index</span><span class="o">=</span>0
+</code></pre><pre class="highlight shell tab-shell--cli"><code><span class="c"># command is wallet agnostic, same as in vanilla coin command</span>
+
+bcoin cli coin <span class="nv">$hash</span> <span class="nv">$index</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/coin/<span class="nv">$hash</span>/<span class="nv">$index</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getCoin</span><span class="p">(</span><span class="nx">hash</span><span class="p">,</span> <span class="nx">index</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample response:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">1180963</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="s2">"76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"coinbase"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Get wallet coin</p>
+<h3 id='http-request-28'>HTTP Request</h3>
+<p><code>GET /wallet/:id/coin/:hash/:index</code></p>
+<h3 id='request-parameters-4'>Request Parameters</h3>
+<table><thead>
+<tr>
+<th>Paramters</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet that contains the outpoint</td>
+</tr>
+<tr>
+<td>hash <br> <em>string</em></td>
+<td>hash of transaction that created the outpoint</td>
+</tr>
+<tr>
+<td>index <br> <em>string</em> or <em>int</em></td>
+<td>index of the output in the transaction being referenced</td>
+</tr>
+</tbody></table>
+<h1 id='wallet-transactions'>Wallet Transactions</h1><h2 id='get-wallet-tx-details'>Get Wallet TX Details</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">hash</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nb">hash</span><span class="o">=</span><span class="s2">"18d2cf5683d7befe06941f59b7fb4ca0e915dcb9c6aece4ce8966a29e7c576fe"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> tx <span class="nv">$hash</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/tx/<span class="nv">$hash</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getTX</span><span class="p">(</span><span class="nx">hash</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"foo"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"18d2cf5683d7befe06941f59b7fb4ca0e915dcb9c6aece4ce8966a29e7c576fe"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">-1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"block"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"time"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"mtime"</span><span class="p">:</span><span class="w"> </span><span class="mi">1507077109</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"date"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2017-10-04T00:31:49Z"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"size"</span><span class="p">:</span><span class="w"> </span><span class="mi">225</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"virtualSize"</span><span class="p">:</span><span class="w"> </span><span class="mi">225</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"fee"</span><span class="p">:</span><span class="w"> </span><span class="mi">4540</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"rate"</span><span class="p">:</span><span class="w"> </span><span class="mi">20177</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"confirmations"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"inputs"</span><span class="p">:</span><span class="w">
+   </span><span class="p">[</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">value</span><span class="p">:</span><span class="w"> </span><span class="mi">5000009080</span><span class="p">,</span><span class="w">
+       </span><span class="err">address</span><span class="p">:</span><span class="w"> </span><span class="s2">"SdCEuxkbdMygcKtL36x2CT8p1vhz56SsbG"</span><span class="p">,</span><span class="w">
+       </span><span class="err">path</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">Object</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">],</span><span class="w">
+  </span><span class="s2">"outputs"</span><span class="p">:</span><span class="w">
+   </span><span class="p">[</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="err">value</span><span class="p">:</span><span class="w"> </span><span class="mi">100000000</span><span class="p">,</span><span class="w">
+       </span><span class="err">address</span><span class="p">:</span><span class="w"> </span><span class="s2">"SP7K3cSLH66zDisioqPrTC3QSRwP9GPENB"</span><span class="p">,</span><span class="w">
+       </span><span class="err">path</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="p">},</span><span class="w">
+     </span><span class="p">{</span><span class="w"> </span><span class="err">value</span><span class="p">:</span><span class="w"> </span><span class="mi">4900004540</span><span class="p">,</span><span class="w">
+       </span><span class="err">address</span><span class="p">:</span><span class="w"> </span><span class="s2">"SSzzdLbBeWBwNTUpbGdD9gBk6Wzk34sT7J"</span><span class="p">,</span><span class="w">
+       </span><span class="err">path</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">Object</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">],</span><span class="w">
+  </span><span class="s2">"tx"</span><span class="p">:</span><span class="w"> </span><span class="s2">"010000000148ae6682231f381845f98049c871e9b6bf0a9a7f5c5270354f71079262577977000000006a47304402203359117c409d292700fbacc03e4b540066a6b8ca763f1dd578e8262fe5e74c1b02206c91f816755469cd4a6b110941b51f29e251b86afe246456cf17823ef4fc7f5301210299c1a1049d546a720dd614034ce2802a3f64d64c37b729ae184825f71d0a037affffffff0200e1f505000000001976a91413eab6745a3fcbcf8b4448c130ff8bc37db6e91b88acbc221024010000001976a9143e9958577401fe8d75ed6f162cc6832fcb26094188ac00000000"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<p>Get wallet transaction details.</p>
+<h3 id='http-request'>HTTP Request</h3>
+<p><code>GET /wallet/:id/tx/:hash</code></p>
+<h3 id='request-parameters'>Request Parameters</h3>
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet that handled the transaction</td>
+</tr>
+<tr>
+<td>hash <br> <em>string</em></td>
+<td>hash of the transaction you&#39;re trying to retrieve</td>
+</tr>
+</tbody></table>
 <h2 id='delete-transaction'>Delete Transaction</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">hash</span><span class="p">,</span> <span class="nx">passphrase</span><span class="p">;</span>
 </code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
 <span class="nb">hash</span><span class="o">=</span><span class="s2">"2a22606ee555d2c26ec979f0c45cd2dc18c7177056189cb345989749fd58786"</span>
@@ -7082,7 +7144,7 @@ Do not broadcast or add to wallet.</p>
 </code></pre>
 <p>Abandon single pending transaction. Confirmed transactions will throw an error.
 <code>&quot;TX not eligible&quot;</code></p>
-<h3 id='http-request-5'>HTTP Request</h3>
+<h3 id='http-request-2'>HTTP Request</h3>
 <p><code>DEL /wallet/:id/tx/:hash</code></p>
 
 <table><thead>
@@ -7100,26 +7162,179 @@ Do not broadcast or add to wallet.</p>
 <td>hash of transaction you would like to remove.</td>
 </tr>
 </tbody></table>
-<h2 id='get-wallet-id-tx-history'>GET /wallet/:id/tx/history</h2>
+<h2 id='get-wallet-tx-history'>Get Wallet TX History</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> <span class="nb">history</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/tx/history
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+<span class="kr">const</span> <span class="nx">account</span> <span class="o">=</span> <span class="s1">'default'</span><span class="p">;</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getHistory</span><span class="p">(</span><span class="nx">account</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">[</span><span class="w">
+  </span><span class="p">{</span><span class="w">
+     </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"primary"</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"f5968051ce275d89b7a6b797eb6e6b081243ecf027872fc6949fae443e21b858"</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">-1</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"block"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"time"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"mtime"</span><span class="p">:</span><span class="w"> </span><span class="mi">1503690544</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"date"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2017-08-25T19:49:04Z"</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"size"</span><span class="p">:</span><span class="w"> </span><span class="mi">226</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"virtualSize"</span><span class="p">:</span><span class="w"> </span><span class="mi">226</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"fee"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"rate"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"confirmations"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+     </span><span class="s2">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+       </span><span class="p">{</span><span class="w">
+         </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+         </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mp2w1u4oqZnHDd1zDeAvCTX9B3SaFsUFQx"</span><span class="p">,</span><span class="w">
+         </span><span class="s2">"path"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w">
+       </span><span class="p">}</span><span class="w">
+     </span><span class="p">],</span><span class="w">
+     </span><span class="s2">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+       </span><span class="p">{</span><span class="w">
+         </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="mi">100000</span><span class="p">,</span><span class="w">
+         </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"myCkrhQbJwqM8wKi9YuhyTjN3pukNuWxZ9"</span><span class="p">,</span><span class="w">
+         </span><span class="s2">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+           </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
+           </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+           </span><span class="s2">"change"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+           </span><span class="s2">"derivation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"m/0'/0/3"</span><span class="w">
+         </span><span class="p">}</span><span class="w">
+       </span><span class="p">},</span><span class="w">
+       </span><span class="p">{</span><span class="w">
+         </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="mi">29790920</span><span class="p">,</span><span class="w">
+         </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mqNm1rSYVqD23Aj6fkupApuSok9DNZAeBk"</span><span class="p">,</span><span class="w">
+         </span><span class="s2">"path"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w">
+       </span><span class="p">}</span><span class="w">
+     </span><span class="p">],</span><span class="w">
+     </span><span class="s2">"tx"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0100000001ef8a38cc946c57634c2db05fc298bf94f5c88829c5a6e2b0610fcc7b38a9264f010000006b483045022100e98db5ddb92686fe77bb44f86ce8bf6ff693c1a1fb2fb434c6eeed7cf5e7bed4022053dca3980a902ece82fb8e9e5204c26946893388e4663dbb71e78946f49dd0f90121024c4abc2a3683891b35c04e6d40a07ee78e7d86ad9d7a14265fe214fe84513676ffffffff02a0860100000000001976a914c2013ac1a5f6a9ae91f66e71bbfae4cc762c2ca988acc892c601000000001976a9146c2483bf52052e1125fc75dd77dad06d65b70a8288ac00000000"</span><span class="w">
+   </span><span class="p">},</span><span class="w">
+ </span><span class="err">...</span><span class="w">
+</span><span class="p">]</span><span class="w">
+</span></code></pre>
 <p>Get wallet TX history. Returns array of tx details.</p>
-<h3 id='http-request-6'>HTTP Request</h3>
+<h3 id='http-request-3'>HTTP Request</h3>
 <p><code>GET /wallet/:id/tx/history</code></p>
-<h2 id='get-wallet-id-tx-unconfirmed'>GET /wallet/:id/tx/unconfirmed</h2>
+<h3 id='request-parameters-2'>Request Parameters</h3>
+<table><thead>
+<tr>
+<th>Paramter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet to get history of</td>
+</tr>
+</tbody></table>
+<h2 id='get-pending-transactions'>Get Pending Transactions</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'foo'</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> pending
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/tx/unconfirmed
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getPending</span><span class="p">(</span><span class="nx">account</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
 <p>Get pending wallet transactions. Returns array of tx details.</p>
-<h3 id='http-request-7'>HTTP Request</h3>
+<h3 id='http-request-4'>HTTP Request</h3>
 <p><code>GET /wallet/:id/tx/unconfirmed</code></p>
-<h2 id='get-wallet-id-tx-range'>GET /wallet/:id/tx/range</h2>
+<h3 id='request-parameters-3'>Request Parameters</h3>
+<table><thead>
+<tr>
+<th>Paramter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>id <br> <em>string</em></td>
+<td>id of wallet to get pending/unconfirmed txs</td>
+</tr>
+</tbody></table>
+<h2 id='get-range-of-transactions'>Get Range of Transactions</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">account</span><span class="p">,</span> <span class="nx">start</span><span class="p">,</span> <span class="nx">end</span><span class="p">;</span>
+</code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nv">account</span><span class="o">=</span><span class="s2">"foo"</span>
+<span class="nv">start</span><span class="o">=</span><span class="s2">"1506909119"</span>
+<span class="nv">end</span><span class="o">=</span><span class="s2">"1506909154"</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code><span class="c"># range not available in CLI</span>
+</code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/tx/range?start<span class="o">=</span><span class="nv">$start</span>
+</code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">httpWallet</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Wallet</span><span class="p">({</span> <span class="na">id</span><span class="p">:</span> <span class="nx">id</span> <span class="p">});</span>
+
+<span class="p">(</span><span class="nx">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kr">const</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">await</span> <span class="nx">httpWallet</span><span class="p">.</span><span class="nx">getRange</span><span class="p">(</span><span class="nx">account</span><span class="p">,</span> <span class="p">{</span><span class="na">start</span><span class="p">:</span> <span class="nx">start</span><span class="p">,</span> <span class="na">end</span><span class="p">:</span> <span class="nx">end</span><span class="p">});</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+<span class="p">})();</span>
+</code></pre>
+<blockquote>
+<p>Sample Response</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">[</span><span class="w">
+  </span><span class="p">{</span><span class="w"> </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"primary"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"80ac63671e7b8635d10d372c4c3bed5615624d9fa28dfd747abf440417d70983"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">-1</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"block"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"time"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"mtime"</span><span class="p">:</span><span class="w"> </span><span class="mi">1506909119</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"date"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2017-10-02T01:51:59Z"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"size"</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"virtualSize"</span><span class="p">:</span><span class="w"> </span><span class="mi">173</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"fee"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"rate"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"confirmations"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">[</span><span class="err">Object</span><span class="p">]</span><span class="w"> </span><span class="p">],</span><span class="w">
+    </span><span class="s2">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="p">[</span><span class="err">Object</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="err">Object</span><span class="p">]</span><span class="w"> </span><span class="p">],</span><span class="w">
+    </span><span class="s2">"tx"</span><span class="p">:</span><span class="w"> </span><span class="s2">"010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff20028d010e6d696e65642062792062636f696e045460ad97080000000000000000ffffffff02bc03062a010000001976a914d7ee508e06ece23679ba9ee0a770561ae2ed595688ac0000000000000000266a24aa21a9ed5772988727e8641cf3c7d2bf5a7fee9a5d0e827de0b6bed5658eee8f0821b5200120000000000000000000000000000000000000000000000000000000000000000000000000"</span><span class="w">
+  </span><span class="p">},</span><span class="w">
+  </span><span class="err">...</span><span class="w">
+</span><span class="p">]</span><span class="w">
+</span></code></pre>
 <p>Get range of wallet transactions by timestamp. Returns array of tx details.</p>
-<h3 id='http-request-8'>HTTP Request</h3>
+
+<aside class="notice">
+Note that there are other options documented that `getRange` accepts in the options body, `limit` and `reverse`. At the time of writing however they do not have any effect.
+</aside>
+<h3 id='http-request-5'>HTTP Request</h3>
 <p><code>GET /wallet/:id/tx/range</code></p>
-<h2 id='get-wallet-id-tx-last'>GET /wallet/:id/tx/last</h2>
-<p>Get last N wallet transactions.</p>
-<h3 id='http-request-9'>HTTP Request</h3>
-<p><code>GET /wallet/:id/tx/last</code></p>
-<h2 id='get-wallet-id-tx-hash'>GET /wallet/:id/tx/:hash</h2>
-<p>Get wallet transaction details.</p>
-<h3 id='http-request-10'>HTTP Request</h3>
-<p><code>GET /wallet/:id/tx/:hash</code></p>
+<h3 id='body-parameters'>Body Parameters</h3>
+<table><thead>
+<tr>
+<th>Paramter</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>account <br><em>string</em></td>
+<td>account to get the tx history from</td>
+</tr>
+<tr>
+<td>start <br> <em>int</em></td>
+<td>start time to get range from</td>
+</tr>
+<tr>
+<td>end <br> <em>int</em></td>
+<td>end time to get range from</td>
+</tr>
+</tbody></table>
+
+<!-- ##GET /wallet/:id/tx/last
+
+Get last N wallet transactions.
+
+### HTTP Request
+
+`GET /wallet/:id/tx/last` -->
 <h1 id='wallet-accounts'>Wallet Accounts</h1><h2 id='account-object'>Account Object</h2>
 <blockquote>
 <p>An account object looks like this:</p>
