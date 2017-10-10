@@ -4,6 +4,10 @@
 Nodar Chkuaselidze
 ```
 
+```post-description
+Working with and creating multi-signature transactions using built in bcoin utilities and the wallet api.
+```
+
 ## How It Works
 #### General
 In bitcoin there are several transaction types and one of them is Multisig. Multisig addresses and transactions are created
