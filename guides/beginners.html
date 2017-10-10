@@ -310,15 +310,51 @@
 									<div class="col-sm-12 panel panel-default">
 										<div class="post-content" style="color:#000;">
 					<!-- START OF GUIDE -->
-<h2 class="post-title panel-title" id="install-on-windows"><i class="fa fa-windows"></i>Install on Windows (Video)</h2><ul class="post-meta"><li class="author">By HeKaz</li></ul><p>A quick step-by-step video to learn the basics of running a bcoin fullnode on a Windows.</p>
-<div class="post-video">
-  <iframe width="100%" height="315" src="https://www.youtube.com/embed/H6T72CJ50M8" frameborder="0" allowfullscreen></iframe>
-</div>
+<h2 class="post-title panel-title" id="beginners-guide-to-getting-started">Beginners Guide to Getting Started</h2><ul class="post-meta"><li class="author">By Bcoin Team</li></ul><h2 id="introduction">Introduction</h2><p>Bcoin is an <em>alternative</em> implementation of the bitcoin protocol, written in node.js. It is a full node which can be used for full blockchain validation and is aware of all known consensus rules.</p>
+<h2 id="requirements">Requirements</h2><ul>
+<li>Linux, OSX, or Windows (*) (**)</li>
+<li>node.js &gt;=v5.0.0</li>
+<li>npm &gt;=v4.0.0</li>
+<li>python2 (for node-gyp)</li>
+<li>gcc/g++ (for leveldb and secp256k1)</li>
+<li>git (optional, see below)</li>
+</ul>
+<p>(*): Note that bcoin works best with unix-like OSes, and has not yet been thoroughly tested on windows.
+(**): The BSDs and Solaris have also not been tested yet, but should work in theory.</p>
+<h2 id="build-amp;-install">Build &amp; Install</h2><p>Bcoin is meant to be installed via npm, but for the security conscious, it may be better to clone from github. All tagged commits for release should be signed by @chjj&#39;s <a href="https://keybase.io/chjj#show-public">PGP key</a> (<code>B4B1F62DBAC084E333F3A04A8962AB9DE6666BBD</code>). Signed copies of node.js are available from <a href="https://nodejs.org/dist/v7.5.0/">nodejs.org</a>, or from your respective OS&#39;s package repositories.</p>
+<h3 id="installing-via-npm">Installing via NPM</h3><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ npm <span class="token function">install</span> -g bcoin --production</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="installing-via-git">Installing via Git</h3><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ curl https://keybase.io/chjj/pgp_keys.asc <span class="token operator">|</span> gpg --import
+$ <span class="token function">git</span> clone git://github.com/bcoin-org/bcoin.git
+$ <span class="token function">cd</span> bcoin
+$ <span class="token function">git</span> tag
+<span class="token punctuation">..</span>.
+v1.0.0-alpha <span class="token operator">|</span> latest version
+$ <span class="token function">git</span> tag -v v1.0.0-alpha <span class="token operator">|</span> verify signature
+$ <span class="token function">git</span> checkout v1.0.0-alpha
+$ npm <span class="token function">install</span> -g --production</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="troubleshooting">Troubleshooting</h3><p>If the build fails compilation for <code>bcoin-native</code> or <code>secp256k1-node</code> <em>validation will be slow</em> (a block verification which should take 1 second on consumer grade hardware may take up to 15 seconds). Bcoin will throw a warning on boot if it detects a build failure. If you run into this issue, please post an issue on the repo.</p>
+<h2 id="starting-up-your-first-bcoin-node">Starting up your first bcoin node</h2><p>If bcoin is installed globally, <code>$ bcoin</code> should be in your PATH. If not, the bcoin bootstrap script resides in <code>/path/to/bcoin/bin/bcoin</code>.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Will run a bcoin node as the foreground process, displaying all debug logs.</p>
+<p>To run as a daemon:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin --daemon</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>This will start up a full node, complete with: a blockchain, mempool, miner, p2p server, wallet server, and an HTTP REST+RPC server.</p>
+<p>All logs will be written to <code>~/.bcoin/debug.log</code> by default.</p>
+<p>By default, the http server will only listen on <code>127.0.0.1:8332</code>. No auth will be required if an API key was not passed in. If you listen on any other host, auth will be required and an API key will be auto-generated if one was not passed in.</p>
+<h2 id="listening-externally">Listening Externally</h2><p>To listen publicly on the HTTP server, <code>--http-host=0.0.0.0</code> (ipv4) or <code>--http-host=::</code> (ipv4 and ipv6) can be passed. Additionally this: <code>--http-port=1337</code> can set the port.</p>
+<p>To advertise your node on the P2P network <code>--public-host=[your-public-ip]</code> and <code>--public-port=[your-public-port]</code> may be passed.</p>
+<h2 id="using-an-api-key">Using an API Key</h2><p>If listening publicly on the HTTP server, an API key is required. One will be generated and reported in the logs automatically if no key was chosen. An api key can be chosen with the <code>--api-key</code> option.</p>
+<p>Example:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin --http-host<span class="token operator">=</span>0.0.0.0 --api-key hunter2 --daemon</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>API keys are used with HTTP Basic Auth:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ curl http://x:hunter2@localhost:8332/</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Bcoin CLI is the prepackaged tool for hitting both the REST and RPC api.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin cli info --api-key hunter2
+$ bcoin rpc getblockchaininfo --api-key hunter2</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="using-torsocks">Using Tor/SOCKS</h2><p>Bcoin has native support for SOCKS proxies, and will accept a <code>--proxy</code> option in the format of <code>--proxy=[user]:[pass]@host:port</code>.</p>
+<p>Passing the <code>--onion</code> option tells bcoin that the SOCKS proxy is a Tor socks proxy, and will enable Tor resolution for DNS lookups, as well as try to connect to <code>.onion</code> addresses found on the P2P network.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin --proxy joe:hunter2@127.0.0.1:9050 --onion</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="running-bcoin-as-a-tor-hidden-service">Running bcoin as a tor hidden service</h3><p>Your hidden service must first be configured with <code>tor</code>. Once you have the <code>.onion</code> address, it can be passed into <code>--public-host</code> in the form of <code>--public-host foo.onion</code>.</p>
+<h2 id="target-nodes">Target Nodes</h2><p>It&#39;s often desirable to run behind several trusted bitcoin nodes. To select permanent nodes to connect to, the <code>--nodes</code> option is available:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin --nodes foo.example.com:8333,1.2.3.4:8333,5.6.7.8:8333</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>If chosen, bcoin will <em>always</em> try to connect to these nodes as outbound peers. They are top priority and whitelisted (not susceptible to permanent bans, only disconnections).</p>
+<p>To <em>only</em> connect to these nodes. <code>--max-outbound</code> could be set to 3:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin --nodes foo.example.com,1.2.3.4,5.6.7.8 --max-outbound 3</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="disabling-listening">Disabling Listening</h2><p>To avoid accepting connections on the P2P network altogether, <code>--listen=false</code> can be passed to bcoin.</p>
+<h3 id="selfish-mode">Selfish Mode</h3><p>Bcoin also supports a &quot;selfish&quot; mode. In this mode, bcoin still has full blockchain and mempool validation, but network services are disabled: it will not relay transactions or serve blocks to anyone.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin --selfish --listen<span class="token operator">=</span>false</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Note: Selfish mode is not recommended. We encourage you to <em>help</em> the network by relaying transactions and blocks. At the same time, selfish mode does have its uses if you do not have the bandwidth to spare, or if you&#39;re absolutely worried about potential DoS attacks.</p>
+<h2 id="further-configuration">Further Configuration</h2><p>See <a href="https://github.com/bcoin-org/bcoin/blob/master/docs/Configuration.md">Configuration</a>.</p>
 
-<h6 id="source-install">Source Install (Requires: Node &gt;= 7.6)</h6><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">git</span> clone https://github.com/bcoin-org/bcoin.git
-<span class="token function">cd</span> bcoin
-npm <span class="token function">install</span>
-bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre>
 
 					<!-- END OF GUIDE -->
 									</div>
