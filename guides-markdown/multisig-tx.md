@@ -5,7 +5,7 @@ Nodar Chkuaselidze
 ```
 
 ```post-description
-Working with transactions using bcoin and the MTX and TX objects.
+Working with and creating multi-signature transactions using built in bcoin utilities and the wallet api.
 ```
 
 ## How It Works
