@@ -1,4 +1,4 @@
-# Creating Multi Signature Transactions
+# Creating Multisignature Transactions
 
 ```post-author
 Nodar Chkuaselidze
