@@ -9,3 +9,10 @@ Have an idea for a guide you'd like to contribute to [our collection of Bitcoin 
 
 ## Adding a New Guide
 To add a new guide, just a submit a Pull Request with a markdown file added to the `/guides-markdown` directory in this repo (take a look at [some of the other guides already there](https://github.com/bcoin-org/bcoin-org.github.io/tree/staging/guides-markdown)). Make sure to include a title using a top level header (with a single `#` hashtag in the markdown) and then a `post-author` and `post-description` at the top using code-snippet blocks labeled accordingly. If your PR is accepted, it will automatically be converted to html, added to the website and any bounty associated with the GitHub issue will be yours!
+
+#### New guides should include the following:
+- Working code examples
+- Description of the design choices made
+- If different approaches are possible, these should be elaborated on and if possible demonstrated (e.g. SPV vs. Full Node, WalletDB vs. manual key management)
+- Section at the end for how the example could be expanded on, i.e. ready for production or additional functionality
+- If possible, links to repo with full working code implementation
