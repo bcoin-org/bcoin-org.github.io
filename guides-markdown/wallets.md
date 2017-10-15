@@ -1,0 +1,322 @@
+# Wallets and Accounts and Keys, Oh My!
+```post-author
+Daniel McNally
+```
+```post-description
+A guide to creating and working with wallets in bcoin
+```
+
+Bcoin offers a powerful, modular way to create and manage bitcoin wallets. In this guide, I'll walk you through the concepts and features you'll need to know about to get started.
+
+## The Basics
+
+If you're a seasoned bitcoiner, you can probably skim this section or even scroll all the way down to the **Examples** section. But if you're relatively new or just want a refresher, this section will help you understand how wallets actually work. 
+
+### Wallets
+
+In the most basic sense, a bitcoin wallet is data that enables you to receive and spend bitcoins. Wallets come in [many different types and structures](https://www.coindesk.com/information/how-to-store-your-bitcoins/), and assessing all the options can be overwhelming. Fortunately, bcoin implements the latest specifications for structuring wallets that are easy to backup, easy to restore, and that work just as well for a bitcoin novice making their first transactions as for a business with millions of users depositing and withdrawing bitcoin.
+
+#### Keys to the Game
+
+If you want to transact with bitcoin, you'll need keys. Each bitcoin address is associated with a particular key, and wallets are made up of many different keys. Keys consist of both a private key and a public key. The private key is required for spending and is extremely sensitive information, while a public key can be used to receive bitcoins and monitor a particular address. If you want to learn more about how this works, read up on [Public-Key Cryptography](https://en.wikipedia.org/wiki/Public-key_cryptography).
+
+#### HD vs Non-HD, you mean like TVs?
+
+You may have seen references to "HD" wallets and wondered what that means. HD in this context does not mean "high definition," as I assumed it did at first, but rather "heirarchal deterministic." An HD wallet takes a *heirarchy* of keys in order and makes it so any key in that sequence can be *determined* by the one before it. This means that if you can produce the first key in the heirarchy, you can then generate a practically unlimited number of subsequent keys. The specification for HD wallets as implemented in bcoin is defined by [Bitcoin Improvement Proposal (BIP) 32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki).
+
+Non-HD wallets, on the other hand, contain keys that are unrelated to one another. Backing up such a wallet means each key must be preserved individually. Not only is this more cumbersome, but it means that backups can quickly become out of date as new keys are added to the wallet. With an HD wallet, as long as you hold on to the seed - the data needed to recreate the first key - you will be able to recover every other key.
+
+While bcoin uses HD wallets, it does allow you to import individual keys into a wallet. This can be a handy feature in certain cases, but it means you'll need to backup any imported keys separately as they will not be recoverable simply by using your seed.
+
+But what exactly is the seed for an HD wallet? It can come in several forms, but bcoin implements [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) which enables seeds to be represented by a mnemonic of twelve common words. This means your seed can be easily spoken, written down, or perhaps even memorized. But be careful! Your seed can be used to recover and spend everything in your HD wallet (except for the aforementioned imported keys), so treat it like you would an actual wallet with cash in it.
+
+### Accounts
+
+Wallets in bcoin are partitioned into accounts. When you first create a wallet, a "default" account is created automatically along with it. Accounts can be used to track and manage separate sets of keys all within a single wallet. For example, a business can use accounts to generate distinct addresses for depositors or to segregate customer funds internally. 
+
+Bcoin implements [BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) as a method of generating unlimited accounts deterministically. This adds additional dimensions to the heirarchy described above, meaning the same seed that can recover all your keys can also recover all your addresses.
+
+Each account also comes with its own "extended public key," a piece of data that can be used to generate all public keys for that account in a deterministic fashion. Remember that public keys can be used for receiving bitcoins, but not for spending. This means, for instance, that a business can create limitless deposit addresses for any number of its users without having to touch its critical private keys or seed.
+
+### Watch Only Wallets
+
+Speaking of not touching private keys, bcoin gives you the option to create wallets that are "watch only." Watch only wallets don't contain *any* private keys, which means they can't be used to spend the bitcoins they receive. However, they do a perfectly good job for creating addresses, receiving bitcoins, and detecting incoming transactions. Using watch only wallets where possible reduces the risk of your keys and bitcoin being stolen and is good security practice.
+
+Accounts always inherit the watch only behavior of their parent wallet. In other words, a watch only wallet will have exclusively watch only accounts while a non-watch only wallet will have only non-watch only accounts.
+
+### API Authentication
+
+Bcoin can run as a server and allow you to interact with your wallets via a [REST API](http://bcoin.io/api-docs/index.html?shell--curl#wallet). It also allows you protect wallets from unauthenticated requests by running the server with the `wallet-auth` configuration option. Each wallet you create will have a `token` value that must be passed in with each request. Tokens, like accounts and keys, can also be deterministically generated using your HD seed. This means you can change the token on a wallet as often as you'd like.
+
+### Recovery
+
+By using the established standards mentioned above, bcoin allows one to easily restore or transfer their entire wallet to different wallet implementations. With only that twelve word mnemonic, one can fully recover their wallet to a fresh instance of bcoin. Furthermore, you can recreate the wallet with only your seed on any other software that properly implements BIP33, BIP39, and BIP44 mentioned above, like the [Trezor](https://trezor.io/) hardware wallet.
+
+## Examples
+
+Enough chit chat, let's get down to business. 
+
+### NodeJS
+
+First, here's a quick example of how to generate wallets, accounts, and keys in javascript with bcoin. Since bcoin is modular, you can easily use just the wallet functionality as I've done here.
+
+```javascript
+//import the bcoin module and set it to testnet
+const bcoin = require('bcoin').set('testnet');
+
+async function walletExample() {
+	//for demonstration purposes, we'll be creating a temporary wallet in memory
+	const wdb = new bcoin.walletdb({ db: 'memory' });
+	await wdb.open();
+
+	//creates and returns a Wallet object from scratch with default options
+	const wallet = await wdb.create();
+	console.log(wallet);
+	/*{ 
+	  wid: 2,
+	  id: 'WLTdx4aYEPmmrQiYNwPop4nLtbpTEdJYwrN4',
+	  network: 'testnet',
+	  initialized: true,
+	  accountDepth: 1,
+	  token: 'eeae267e99d112793b892a8e30f89b1e1e0ba0d4984c2e6f09fc7931e750af5a', //the token you'll need to use the REST API with `wallet-auth` set to true
+	  tokenDepth: 0,
+	  state: 
+	   { wid: undefined,
+	     id: undefined,
+	     tx: 0,
+	     coin: 0,
+	     unconfirmed: 0,
+	     confirmed: 0 },
+	  master: 
+	   { encrypted: false,
+	     key: { xprivkey: 'tprv8ZgxMBicQKsPdcD55gci7HBednWRaosU4CkAHNEAs3kAAj9m8TVrEzxAW3EPrTrFevVssHCCoRsA37vB65SUZs727k45Nz1Cjmy4tyaSFeR' }, //the keys to the castle, guard this carefully!
+	     mnemonic: 
+	      { bits: 128,
+	        language: 'english',
+	        entropy: '04a50a56fbaaadc26a2b1690ec74243f',
+	        phrase: 'again choose noble warrior print thrive post glare movie glove animal legal', //the keys to the castle in human readable form
+	        passphrase: '' } },
+	  account: 
+	   { wid: 2,
+	     name: 'default',
+	     network: <Network: testnet>,
+	     initialized: true,
+	     witness: false,
+	     watchOnly: false,
+	     type: 'pubkeyhash',
+	     m: 1,
+	     n: 1,
+	     accountIndex: 0,
+	     receiveDepth: 1,
+	     changeDepth: 1,
+	     nestedDepth: 0,
+	     lookahead: 10,
+	     address: <Address: type=pubkeyhash version=-1 str=mhNHETXFKDk7ZpGg3iEZb7guWZ2fbCuFjv>,
+	     nestedAddress: null,
+	     accountKey: 'tpubDDZ1r85SUsur87eW6uCrWancnCVHSLf5YcXzudCF6qBUQguR8upC6pgSuzxahDkf75SQ4LJ3R4x5NvfgQPmNjxhg2pcHzBCKcG2fBUQJ5U5', //the extended public key that can be used to generate receiving addresses for this account
+	     keys: [] } 
+ 	}*/
+
+	const account = await wallet.getAccount('default');
+
+	//now we have a wallet and default account, lets get out first receiving public key and address
+	const key0 = account.deriveReceive(0);
+	console.log(key0);
+	/*{ network: 'testnet',
+	  wid: 2,
+	  id: 'WLTdx4aYEPmmrQiYNwPop4nLtbpTEdJYwrN4',
+	  name: 'default',
+	  account: 0,
+	  branch: 0,
+	  index: 0,
+	  witness: false,
+	  nested: false,
+	  publicKey: '02d0ca7287e40e914084cfc0c5d1ee369ff1f2cdc3d3d16213318a31431333d3d1',
+	  script: null,
+	  program: null,
+	  type: 'pubkeyhash',
+	  address: 'mhNHETXFKDk7ZpGg3iEZb7guWZ2fbCuFjv'
+	}*/
+
+	const key100 = account.deriveReceive(100); //we can also get the hundredth key in the heirarchy
+	console.log(key100.getAddress('string')); //to save your screen space, let's get just the address in string format
+	//mjVdQqQYWBpE6YzKyMRd96LxCMoJyeTX2i
+
+	//ok that account is boring, lets create another one for hypothetical customer John Doe
+	const jdAccount = await wallet.createAccount({name: 'john_doe'});
+	console.log(jdAccount);
+	/*{ 
+	  wid: 2,
+	  name: 'john_doe',
+	  network: <Network: testnet>,
+	  initialized: true,
+	  witness: false,
+	  watchOnly: false,
+	  type: 'pubkeyhash',
+	  m: 1,
+	  n: 1,
+	  accountIndex: 1,
+	  receiveDepth: 1,
+	  changeDepth: 1,
+	  nestedDepth: 0,
+	  lookahead: 10,
+	  address: <Address: type=pubkeyhash version=-1 str=muCSbWC6z1tAr2i1M5BKPWEZ8zapzcKfKh>,
+	  nestedAddress: null,
+	  accountKey: 'tpubDDZ1r85SUsur9txJF5ziLRD6757E1Q7x6VLfPby4YKqAdNwgmrkXBNDzMowxYJVoAizd7CCLHELY5X2HYzh6YurbH9vMyQJN
+	T92n87z22yX',
+	  keys: [] 
+	}*/
+
+	//Mr. Doe wants to make 10 deposits, lets get him a unique address for each one
+	const depositAddressesToPrint = 10;
+	for(var i=0; i<depositAddressesToPrint; i++) {
+		console.log(jdAccount.deriveReceive(i).getAddress('string'));
+	}
+	/*
+	muCSbWC6z1tAr2i1M5BKPWEZ8zapzcKfKh
+	n4TWmQyPQ8mAr2oEfbBzKF8Dw6LXXBidYJ
+	ms1jRu71BvEsJ4K3dMFrKFUnB8axZQdmSq
+	mn8xFgB68RjWGdKPVb8Up4P4v5MyqPoEQj
+	mzfXXKRXJBjTGRFrrg4wm1XPsdU9TLoN6T
+	n36TShvFCDaWgCMHHszUGiczA7Tcru4AQp
+	mnZBaquULuUhtwwxKTuxWNF7ZDMDNxScJd
+	mfpwjevu3FY4ZsWPd31J9oBH1qrxZLF1tH
+	mhTrDspHReXThUmMeo8dVJHqhkyHG8VPZ1
+	mxKo27kJpNazq9Q3cQ7458k2S2vcQar9Pd
+	*/
+}
+
+walletExample().catch(console.error.bind(console));
+```
+
+### Command Line Examples against a Local bcoin Server
+
+If you already have bcoin [set up as a full node](https://github.com/bcoin-org/bcoin/wiki/Beginner's-Guide), you can use the command line to create wallets and demonstrate some of the topics I discussed in this guide. My examples below are against a running testnet bcoin instance with `wallet-auth` set to true.
+
+```
+~$ bcoin wallet create guide1
+{
+  "network": "testnet",
+  "wid": 2,
+  "id": "guide1",
+  "initialized": true,
+  "watchOnly": false,
+  "accountDepth": 1,
+  "token": "c88bc2fda2f265bc00c8fd28771c62695dbbddfd05ef2510f9e0afbec14818ba",
+  "tokenDepth": 0,
+  "state": {
+    "tx": 0,
+    "coin": 0,
+    "unconfirmed": 0,
+    "confirmed": 0
+  },
+  "master": {
+    "encrypted": false
+  },
+  "account": {
+    "name": "default",
+    "initialized": true,
+    "witness": false,
+    "watchOnly": false,
+    "type": "pubkeyhash",
+    "m": 1,
+    "n": 1,
+    "accountIndex": 0,
+    "receiveDepth": 1,
+    "changeDepth": 1,
+    "nestedDepth": 0,
+    "lookahead": 10,
+    "receiveAddress": "mirZQBLNFsjgxRC6STfCJU71nXqSon9U17",
+    "nestedAddress": null,
+    "changeAddress": "n3qdAvsVk7v4q4CAp25SSPsfcBARJexSUr",
+    "accountKey": "tpubDCsPHK6xw9CziuN6o7tk1rubLopp5ipy4rDsapkA12KYdcuLXNH7frWUcWsMiFjU5Jxqp2d37SidfmvAahsLqon14wXtor7uQvjLZscb2fh",
+    "keys": []
+  }
+}
+```
+
+#### Auth Tokens
+
+See that `token`? We'll be needing that. With the token, we can do things like query our wallet balance.
+
+```
+~$ bcoin wallet balance --id guide1 --token c88bc2fda2f265bc00c8fd28771c62695d
+bbddfd05ef2510f9e0afbec14818ba
+{
+  "wid": 2,
+  "id": "guide1",
+  "account": -1,
+  "unconfirmed": 0,
+  "confirmed": 0
+}
+```
+
+Without it, we get a 403 Forbidden error.
+
+```
+~$ bcoin wallet balance --id guide1Error: Status code: 403.
+    at HTTPClient._request (/opt/bitnami/nodejs/lib/node_modules/bcoin/lib/http/client.js:229:11)
+    at process._tickCallback (internal/process/next_tick.js:109:7)
+```
+
+However, we can change our token for this wallet as often as we'd like. In a production-like setting, you'd probably want to encrypt the wallet with a passphrase which would also be required for the `retoken` call below. 
+
+```
+~$ bcoin wallet retoken --id guide1 --token c88bc2fda2f265bc00c8fd28771c62695dbbddfd05ef2510f9e0afbec14818ba
+26ea429fe1c0da8505c9b0e61a46343d802779d73393ee72130df0fb1a9eaa7e
+```
+
+#### Creating an Account
+
+With our new token, lets create an account for John Doe's sister, Jane.
+
+```
+~$ bcoin wallet --id guide1 account create jane_doe --token 26ea429fe1c0da8505c9b0e61a46343d802779d73393ee72130df0fb1a9eaa7e
+{
+  "wid": 2,
+  "id": "guide1",
+  "name": "jane_doe",
+  "initialized": true,
+  "witness": false,
+  "watchOnly": false,
+  "type": "pubkeyhash",
+  "m": 1,
+  "n": 1,
+  "accountIndex": 1,
+  "receiveDepth": 1,
+  "changeDepth": 1,
+  "nestedDepth": 0,
+  "lookahead": 10,
+  "receiveAddress": "n4RwFEkSV7MSxBqqvNziakuGgeS8XFusKq",
+  "nestedAddress": null,
+  "changeAddress": "mfaHH8ESM8pzoR1wLSSRQS89kpaBi9dBVt",
+  "accountKey": "tpubDCsPHK6xw9CzjZQMnqwoZjLjMHqbkWjNYakAatZ9ktAf6Lou2H7jw2h93x24zT86BadMMmCAsp69yuUjBsGgHkfC41TpgXMPzSZRFxu3Ghi",
+  "keys": []
+}
+```
+
+We already have the first receiving address for Jane in `receiveAddress` above, but lets get one more for good measure.
+
+```
+~$ bcoin wallet --id guide1 address --account jane_doe --token 26ea429fe1c0da8505c9b0e61a46343d802779d73393ee72130df0fb1a9eaa7e
+{
+  "network": "testnet",
+  "wid": 2,
+  "id": "guide1",
+  "name": "jane_doe",
+  "account": 1,
+  "branch": 0,
+  "index": 1,
+  "witness": false,
+  "nested": false,
+  "publicKey": "02dda1237f65e26d05451fb96b15e85c3fb5c420ebdfcf31835857c38daa8ef5d6",
+  "script": null,
+  "program": null,
+  "type": "pubkeyhash",
+  "address": "mqDhGEywrWDm5DHw71Qxm5U8Lc6WvhZVeM"
+}
+```
+
+## Conclusion
+
+After reading this guide, you should have a decent understanding of not only the concepts behind bitcoin wallets, but also of how to go about creating and managing them with bcoin. Now you can integrate bcoin's wallet functionality directly into your application, or run bcoin as a full node and interact with it for your wallet creation needs. Good luck!
