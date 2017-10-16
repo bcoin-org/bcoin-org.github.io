@@ -54,22 +54,32 @@ By using the established standards mentioned above, bcoin allows one to easily r
 
 ## Examples
 
-Enough chit chat, let's get down to business. 
+Enough chit chat, let's get down to business on how to create wallets, accounts, and keys with bcoin.
 
 ### NodeJS
 
-First, here's a quick example of how to generate wallets, accounts, and keys in javascript with bcoin. Since bcoin is modular, you can easily use just the wallet functionality as I've done here.
+Below is a demo using javascript to instatiate a wallet and output important data and keys. Since bcoin is modular, you can easily use just the wallet functionality as I've done here.
+
+#### Setup
 
 ```javascript
 //import the bcoin module and set it to testnet
 const bcoin = require('bcoin').set('testnet');
+const WalletDB = bcoin.walletdb;
+const WalletKey = bcoin.walletkey;
+
+walletExample().catch(console.error.bind(console));
 
 async function walletExample() {
 	//for demonstration purposes, we'll be creating a temporary wallet in memory
-	const wdb = new bcoin.walletdb({ db: 'memory' });
+	const wdb = new WalletDB({ db: 'memory' });
 	await wdb.open();
+```
 
-	//creates and returns a Wallet object from scratch with default options
+#### Creating a Wallet
+
+```javascript
+	//creates and returns a Wallet object from scratch using a random master key and default options
 	const wallet = await wdb.create();
 	console.log(wallet);
 	/*{ 
@@ -116,10 +126,14 @@ async function walletExample() {
 	     accountKey: 'tpubDDZ1r85SUsur87eW6uCrWancnCVHSLf5YcXzudCF6qBUQguR8upC6pgSuzxahDkf75SQ4LJ3R4x5NvfgQPmNjxhg2pcHzBCKcG2fBUQJ5U5', //the extended public key that can be used to generate receiving addresses for this account
 	     keys: [] } 
  	}*/
+```
 
+#### Creating Accounts and Receiving Addresses
+
+```javascript
 	const account = await wallet.getAccount('default');
 
-	//now we have a wallet and default account, lets get out first receiving public key and address
+	//now we have a wallet and default account, let's get our first receiving public key and address
 	const key0 = account.deriveReceive(0);
 	console.log(key0);
 	/*{ network: 'testnet',
@@ -128,26 +142,30 @@ async function walletExample() {
 	  name: 'default',
 	  account: 0,
 	  branch: 0,
-	  index: 0,
+	  index: 100,
 	  witness: false,
 	  nested: false,
-	  publicKey: '02d0ca7287e40e914084cfc0c5d1ee369ff1f2cdc3d3d16213318a31431333d3d1',
+	  publicKey: '02f4f200cb9391f8bbcc0a35e1f654b9b993b214a04ae7efd0313f4d4bf3d95745',
 	  script: null,
 	  program: null,
 	  type: 'pubkeyhash',
-	  address: 'mhNHETXFKDk7ZpGg3iEZb7guWZ2fbCuFjv'
+	  address: 'mjVdQqQYWBpE6YzKyMRd96LxCMoJyeTX2i'
 	}*/
 
 	const key100 = account.deriveReceive(100); //we can also get the hundredth key in the heirarchy
 	console.log(key100.getAddress('string')); //to save your screen space, let's get just the address in string format
 	//mjVdQqQYWBpE6YzKyMRd96LxCMoJyeTX2i
+```
 
-	//ok that account is boring, lets create another one for hypothetical customer John Doe
+We can create a second account and name it after a customer.
+
+```javascript
+	//ok that account is boring, let's create another one for hypothetical customer John Doe
 	const jdAccount = await wallet.createAccount({name: 'john_doe'});
 	console.log(jdAccount);
 	/*{ 
 	  wid: 2,
-	  name: 'john_doe',
+	  name: '1',
 	  network: <Network: testnet>,
 	  initialized: true,
 	  witness: false,
@@ -184,9 +202,26 @@ async function walletExample() {
 	mhTrDspHReXThUmMeo8dVJHqhkyHG8VPZ1
 	mxKo27kJpNazq9Q3cQ7458k2S2vcQar9Pd
 	*/
-}
+```
 
-walletExample().catch(console.error.bind(console));
+#### Getting Private Keys
+
+```javascript
+	//the keys above are only good for receiving bitcoins, not spending them
+	//let's get the extended private key for John Doe's account, which can be used to generate every private key for the account
+	const jdExtendedPrivateKey = wallet.master.key.deriveAccount(44, jdAccount.accountIndex); //44 is the fixed purpose for bip44 accounts 
+	console.log(jdExtendedPrivateKey.xprivkey());
+	//tprv8gryhi3CLWEBGRvWMSL7w1YyY3bHr4w3XBjt75vm842mntgv9Tvvzsc8Bf3NZt13ydD5QZaJVShMudE33egMhSLnEM41t5UUhRj5wA5u8Sc
+
+	//for good measure, let's get the private key for John's first receiving address
+	const branch = 0; //the branch for receiving addresses
+	const index = 0; //index of 0 means the first key among the receiving addresses
+	const jdPrivateKey0 = jdExtendedPrivateKey.derive(branch).derive(index);
+	const jdWalletKey0 = WalletKey.fromHD(jdAccount, jdPrivateKey0, branch, index);
+	//the private key below can be imported into almost any bitcoin wallet, HD or non-HD, and used to spend bitcoins from the corresponding address
+	console.log(jdWalletKey0.getPrivateKey('base58')); 
+	//cNZfR3NhQ9oCP3pTjvPZETUuTWZo2k6EXtfczvbWyv7FdjMhppvJ
+}
 ```
 
 ### Command Line Examples against a Local bcoin Server
