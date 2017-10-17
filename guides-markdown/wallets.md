@@ -10,7 +10,7 @@ Bcoin offers a powerful, modular way to create and manage bitcoin wallets. In th
 
 ## The Basics
 
-If you're a seasoned bitcoiner, you can probably skim this section or even scroll all the way down to the **Examples** section. But if you're relatively new or just want a refresher, this section will help you understand how wallets actually work. 
+If you're a seasoned bitcoiner, you can probably skim this section or skip straight ahead to the [Examples](#examples) section. But if you're relatively new or just want a refresher, this section will help you understand how wallets actually work. 
 
 ### Wallets
 
@@ -28,7 +28,9 @@ Non-HD wallets, on the other hand, contain keys that are unrelated to one anothe
 
 While bcoin uses HD wallets, it does allow you to import individual keys into a wallet. This can be a handy feature in certain cases, but it means you'll need to backup any imported keys separately as they will not be recoverable simply by using your seed.
 
-But what exactly is the seed for an HD wallet? It can come in several forms, but bcoin implements [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) which enables seeds to be represented by a mnemonic of twelve common words. This means your seed can be easily spoken, written down, or perhaps even memorized. But be careful! Your seed can be used to recover and spend everything in your HD wallet (except for the aforementioned imported keys), so treat it like you would an actual wallet with cash in it.
+But what exactly is the seed for an HD wallet? It can come in several forms, but bcoin implements [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) which enables seeds to be represented by a mnemonic made up common words. This means your seed can be easily spoken, written down, or perhaps even memorized. But be careful! Your seed can be used to recover and spend everything in your HD wallet (except for the aforementioned imported keys), so treat it like you would an actual wallet with cash in it.
+
+By default, mnemonics in bcoin are made up of twelve words representing 128 bits of entropy. This is a common standard that is far and away beyond what cutting edge computers can hope to crack. But if you want additional entropy, bcoin supports up to 512 bits of entropy which makes a 48 word mnemonic.
 
 ### Accounts
 
@@ -42,7 +44,25 @@ Each account also comes with its own "extended public key," a piece of data that
 
 Speaking of not touching private keys, bcoin gives you the option to create wallets that are "watch only." Watch only wallets don't contain *any* private keys, which means they can't be used to spend the bitcoins they receive. However, they do a perfectly good job for creating addresses, receiving bitcoins, and detecting incoming transactions. Using watch only wallets where possible reduces the risk of your keys and bitcoin being stolen and is good security practice.
 
-Accounts always inherit the watch only behavior of their parent wallet. In other words, a watch only wallet will have exclusively watch only accounts while a non-watch only wallet will have only non-watch only accounts.
+Accounts always inherit the watch only behavior of their parent wallet. In other words, a watch only wallet will have exclusively watch only accounts while a non-watch only wallet will have only non-watch only accounts. Accordingly, you can't import private keys into a watch only wallet or public keys into regular wallets. If you try to mix and match watch only wallets and keys with bcoin, you're gonna have a bad time.
+
+```
+~$ curl http://127.0.0.1:18332/wallet/watchonlywallet/import -X POST -d '{"account":"default"
+,"privateKey":"cNZfR3NhQ9oCP3pTjvPZETUuTW
+Zo2k6EXtfczvbWyv7FdjMhppvJ"}'
+{
+  "error": {
+    "type": "Error",
+    "message": "Cannot import privkey into watch-only wallet."
+  }
+}
+~$ curl http://127.0.0.1:18332/wallet/privatekeywallet/import -X POST -d '{"account":"default","publicKey":"02f4f200cb9391f8bbcc0a35e1f654b9b993b214a04ae7efd0313f4d4bf3d95745"}'{
+  "error": {
+    "type": "Error",
+    "message": "Cannot import pubkey into non watch-only wallet."
+  }
+}
+```
 
 ### API Authentication
 
@@ -62,11 +82,16 @@ Below is a demo using javascript to instatiate a wallet and output important dat
 
 #### Setup
 
+With the [bcoin npm package](https://www.npmjs.com/package/bcoin) installed, we'll first import bcoin and open a wallet database in memory.
+
 ```javascript
 //import the bcoin module and set it to testnet
 const bcoin = require('bcoin').set('testnet');
 const WalletDB = bcoin.walletdb;
 const WalletKey = bcoin.walletkey;
+const KeyRing = bcoin.keyring;
+const Mnemonic = bcoin.hd.Mnemonic;
+const HD = bcoin.hd;
 
 walletExample().catch(console.error.bind(console));
 
@@ -77,6 +102,8 @@ async function walletExample() {
 ```
 
 #### Creating a Wallet
+
+Creating a wallet in our database takes only one line.
 
 ```javascript
 	//creates and returns a Wallet object from scratch using a random master key and default options
@@ -130,37 +157,27 @@ async function walletExample() {
 
 #### Creating Accounts and Receiving Addresses
 
+You can start generating addresses with our first account right away.
+
 ```javascript
 	const account = await wallet.getAccount('default');
 
-	//now we have a wallet and default account, let's get our first receiving public key and address
-	const key0 = account.deriveReceive(0);
+	//now we have a wallet and default account, let's get our first and current receiving address
+	const key0 = account.getAddress('string');
+	//this will be the same value as seen in the 'address' property under 'account' in our wallet above
 	console.log(key0);
-	/*{ network: 'testnet',
-	  wid: 2,
-	  id: 'WLTdx4aYEPmmrQiYNwPop4nLtbpTEdJYwrN4',
-	  name: 'default',
-	  account: 0,
-	  branch: 0,
-	  index: 100,
-	  witness: false,
-	  nested: false,
-	  publicKey: '02f4f200cb9391f8bbcc0a35e1f654b9b993b214a04ae7efd0313f4d4bf3d95745',
-	  script: null,
-	  program: null,
-	  type: 'pubkeyhash',
-	  address: 'mjVdQqQYWBpE6YzKyMRd96LxCMoJyeTX2i'
-	}*/
+	//mhNHETXFKDk7ZpGg3iEZb7guWZ2fbCuFjv
 
-	const key100 = account.deriveReceive(100); //we can also get the hundredth key in the heirarchy
-	console.log(key100.getAddress('string')); //to save your screen space, let's get just the address in string format
+	//we can skip ahead if we want, grabbing the hundredth key in the heirarchy like so
+	const key100 = account.deriveReceive(100); //ok, technically this is the hundred-and-first key because the sequence is zero-based
+	console.log(key100.getAddress('string'));
 	//mjVdQqQYWBpE6YzKyMRd96LxCMoJyeTX2i
 ```
 
-We can create a second account and name it after a customer.
+You can also create a second account with a custom name.
 
 ```javascript
-	//ok that account is boring, let's create another one for hypothetical customer John Doe
+	// let's create another account for hypothetical customer John Doe
 	const jdAccount = await wallet.createAccount({name: 'john_doe'});
 	console.log(jdAccount);
 	/*{ 
@@ -206,6 +223,8 @@ We can create a second account and name it after a customer.
 
 #### Getting Private Keys
 
+Bcoin handles your private keys automatically for things like sending transactions and signing messages, but you can also manually extract private keys from a wallet.
+
 ```javascript
 	//the keys above are only good for receiving bitcoins, not spending them
 	//let's get the extended private key for John Doe's account, which can be used to generate every private key for the account
@@ -218,8 +237,35 @@ We can create a second account and name it after a customer.
 	const index = 0; //index of 0 means the first key among the receiving addresses
 	const jdPrivateKey0 = jdExtendedPrivateKey.derive(branch).derive(index);
 	const jdWalletKey0 = WalletKey.fromHD(jdAccount, jdPrivateKey0, branch, index);
-	//the private key below can be imported into almost any bitcoin wallet, HD or non-HD, and used to spend bitcoins from the corresponding address
+	//the private key below can be imported into almost any bitcoin wallet, HD or non-HD, and used to spend coins from the corresponding address
 	console.log(jdWalletKey0.getPrivateKey('base58')); 
+	//cNZfR3NhQ9oCP3pTjvPZETUuTWZo2k6EXtfczvbWyv7FdjMhppvJ
+```
+
+#### Generating Mnemonics and Recovering Keys
+
+Finally, you can create mnemonics manually and seed new wallets with them. And if you need to generate keys from a mnemonic you provide - either by recreating a wallet or by extracting specific keys - you can do that as well.
+
+```javascript
+	//can we generate a mnemonic with twice as many bits of entropy to future proof against brute force attacks from the next millenium? sure we can.
+	const mnemonic24 = new Mnemonic({bits: 256});
+	console.log(mnemonic24.toString());
+	//page unknown ladder thunder airport merry run ball inject clinic danger valley equip consider normal twist casual duck essay almost trade regular two segment
+
+	//what if we need to recover the wallet we've created above? no problem.
+	const mnemonic = new Mnemonic('again choose noble warrior print thrive post glare movie glove animal legal');
+	const masterKey = HD.fromMnemonic(mnemonic);
+	//this wallet will generate all the same accounts, keys, addresses, and tokens if swapped in for the 'wallet' variable in examples above
+	const recoveredWallet = await wdb.create({master: masterKey});
+	
+	//we can also recover only the keys for John Doe's first receiving address without recreating the wallet or account
+	//this time we'll skip instantiating the account and use the BIP44 path for the second account, first branch, first index
+	const jdRecoveredPrivateKey = masterKey.derivePath("m/44'/1'/1'/0/0");
+	const jdKeyRing = new KeyRing(jdRecoveredPrivateKey); 
+	//our output should be the same as what we logged to the console earlier in this example
+	console.log(jdKeyRing.getAddress('string'));
+	//muCSbWC6z1tAr2i1M5BKPWEZ8zapzcKfKh
+	console.log(jdKeyRing.getPrivateKey('base58'));
 	//cNZfR3NhQ9oCP3pTjvPZETUuTWZo2k6EXtfczvbWyv7FdjMhppvJ
 }
 ```
