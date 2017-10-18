@@ -14,7 +14,7 @@ If you're a seasoned bitcoiner, you can probably skim this section or skip strai
 
 ### Wallets
 
-In the most basic sense, a bitcoin wallet is data that enables you to receive and spend bitcoins. Wallets come in [many different types and structures](https://www.coindesk.com/information/how-to-store-your-bitcoins/), and assessing all the options can be overwhelming. Fortunately, bcoin implements the latest specifications for structuring wallets that are easy to backup, easy to restore, and that work just as well for a bitcoin novice making their first transactions as for a business with millions of users depositing and withdrawing bitcoin.
+In the most basic sense, a bitcoin wallet is data that enables you to receive and spend bitcoins. Wallets come in [many different types and designs](https://www.coindesk.com/information/how-to-store-your-bitcoins/), and assessing all the options can be overwhelming. Fortunately, bcoin implements the latest specifications for structuring wallets that are easy to backup, easy to restore, and that work just as well for a bitcoin novice making their first transactions as for a business with millions of users depositing and withdrawing bitcoin.
 
 #### Keys to the Game
 
@@ -28,9 +28,9 @@ Non-HD wallets, on the other hand, contain keys that are unrelated to one anothe
 
 While bcoin uses HD wallets, it does allow you to import individual keys into a wallet. This can be a handy feature in certain cases, but it means you'll need to backup any imported keys separately as they will not be recoverable simply by using your seed.
 
-But what exactly is the seed for an HD wallet? It can come in several forms, but bcoin implements [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) which enables seeds to be represented by a mnemonic made up common words. This means your seed can be easily spoken, written down, or perhaps even memorized. But be careful! Your seed can be used to recover and spend everything in your HD wallet (except for the aforementioned imported keys), so treat it like you would an actual wallet with cash in it.
+But what exactly is the seed for an HD wallet? It can come in several forms, but bcoin implements [BIP39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) which enables seeds to be represented by a mnemonic made up of a fixed set of common words. This means your seed can be easily spoken, written down, or perhaps even memorized. But be careful! Your seed can be used to recover and spend everything in your HD wallet (except for the aforementioned imported keys), so treat it like you would an actual wallet with cash in it.
 
-By default, mnemonics in bcoin are made up of twelve words representing 128 bits of entropy. This is a common standard that is far and away beyond what cutting edge computers can hope to crack. But if you want additional entropy, bcoin supports up to 512 bits of entropy which makes a 48 word mnemonic.
+By default, mnemonics in bcoin are made up of twelve words representing 128 bits of entropy. This is a common standard that is far and away beyond what cutting edge computers can hope to crack via [brute force](https://en.wikipedia.org/wiki/Brute-force_attack). But if you want additional entropy, bcoin supports up to 512 bits of entropy which makes a 48 word mnemonic.
 
 ### Accounts
 
@@ -38,13 +38,13 @@ Wallets in bcoin are partitioned into accounts. When you first create a wallet, 
 
 Bcoin implements [BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) as a method of generating unlimited accounts deterministically. This adds additional dimensions to the hierarchy described above, meaning the same seed that can recover all your keys can also recover all your addresses.
 
-Each account also comes with its own "extended public key," a piece of data that can be used to generate all public keys for that account in a deterministic fashion. Remember that public keys can be used for receiving bitcoins, but not for spending. This means, for instance, that a business can create limitless deposit addresses for any number of its users without having to touch its critical private keys or seed.
+Each account also comes with its own "extended public key," a piece of data that can be used to generate all public keys for that account in deterministic fashion. This means, for instance, that a business can create limitless deposit addresses for its users without having to touch its critical private keys or seed. Remember that public keys can be used for receiving bitcoins, but not for spending, so a public key falling into the wrong hands will not immediately result in theft. 
 
 ### Watch Only Wallets
 
-Speaking of not touching private keys, bcoin gives you the option to create wallets that are "watch only." Watch only wallets don't contain *any* private keys, which means they can't be used to spend the bitcoins they receive. However, they do a perfectly good job for creating addresses, receiving bitcoins, and detecting incoming transactions. Using watch only wallets where possible reduces the risk of your keys and bitcoin being stolen and is good security practice.
+Speaking of not touching private keys, bcoin gives you the option to create wallets that are "watch only." Watch only wallets don't contain *any* private keys, which means they can't be used to spend the bitcoins they receive. However, they work perfectly fine for creating addresses, receiving bitcoins, and detecting incoming transactions. Using watch only wallets where appropriate reduces the risk of your keys and bitcoin being stolen and is good security practice.
 
-Accounts always inherit the watch only behavior of their parent wallet. In other words, a watch only wallet will have exclusively watch only accounts while a non-watch only wallet will have only non-watch only accounts. Accordingly, you can't import private keys into a watch only wallet or public keys into regular wallets. If you try to mix and match watch only wallets and keys with bcoin, you're gonna have a bad time.
+Accounts always inherit the watch only behavior of their parent wallet. In other words, a watch only wallet will have exclusively watch only accounts while a regular wallet will have only regular accounts. Accordingly, you can't import private keys into a watch only wallet or public keys into regular wallets. If you try to mix and match watch only wallets and keys with bcoin, you're gonna have a bad time.
 
 ```bash
 ~$ curl http://127.0.0.1:18332/wallet/watchonlywallet/import -X POST -d '{"account":"default"
@@ -66,23 +66,23 @@ Zo2k6EXtfczvbWyv7FdjMhppvJ"}'
 
 ### API Authentication
 
-Bcoin can run as a server and allow you to interact with your wallets via a [REST API](http://bcoin.io/api-docs/index.html?shell--curl#wallet). It also allows you protect wallets from unauthenticated requests by running the server with the `wallet-auth` configuration option. Each wallet you create will have a `token` value that must be passed in with each request. Tokens, like accounts and keys, can also be deterministically generated using your HD seed. This means you can change the token on a wallet as often as you'd like.
+Bcoin can run as a server and allow you to interact with your wallets via a [REST API](http://bcoin.io/api-docs/index.html?shell--curl#wallet). It also allows you protect wallets from unauthenticated requests by running the server with the `wallet-auth` option. Each wallet you create has a `token` value that must be passed in with each request. Tokens, like accounts and keys, can also be deterministically generated using your HD seed. This means you can change the token on a wallet as often as you'd like.
 
 ### Recovery
 
-By using the established standards mentioned above, bcoin allows one to easily restore or transfer their entire wallet to different wallet implementations. With only that twelve word mnemonic, one can fully recover their wallet to a fresh instance of bcoin. Furthermore, you can recreate the wallet with only your seed on any other software that properly implements BIP33, BIP39, and BIP44 mentioned above, like the [Trezor](https://trezor.io/) hardware wallet.
+By using the HD standards mentioned above, bcoin allows one to easily restore or transfer their entire wallet to different wallet implementations. By providing just the mnemonic, one can fully recover their wallet to a fresh instance of bcoin or any other software that properly implements BIP33, BIP39, and BIP44, like the [Trezor](https://trezor.io/) hardware wallet.
 
 ## Examples
 
 Enough chit chat, let's get down to business on how to create wallets, accounts, and keys with bcoin.
 
-### NodeJS
+### Node.js
 
 Below is a demo using javascript to instantiate a wallet and output important data and keys. Since bcoin is modular, you can easily use just the wallet functionality as I've done here.
 
 #### Setup
 
-With the [bcoin npm package](https://www.npmjs.com/package/bcoin) installed, we'll first import bcoin and open a wallet database in memory.
+With the [bcoin package](https://www.npmjs.com/package/bcoin) installed, we'll first import bcoin and open a wallet database in memory.
 
 ```javascript
 //import the bcoin module and set it to testnet
