@@ -22,7 +22,7 @@ aren't broadcasted with block) leaving space for more transaction with the same
 block size. It was crucial to make this update soft fork, so instead of submitting merkle root into
 block, it's included in coinbase transaction.  
 Another benefit it brings is future possible soft forks for Script updates.  
-For backwards compatibility, you can nest Witness programs in P2SH and get
+For backwards compatibility, you can nest Witness programs in [P2SH][BIP16] and get
 transactions from old nodes.
 Check references on reference topic.
 
@@ -345,6 +345,55 @@ of scriptSig.
 
 Redeem script for P2WSH is in the witness with its signature.
 
+### P2SH Nested
+
+Bcoin MTX and KeyRing construct all necessary scripts for us, so only thing
+that changes when moving to nested segwit addresses is the UTXO script.
+
+So instead of using `ring.getAddress();`
+```js
+const address = ring.getAddress();
+
+console.log(`Address where we received money: ${address}`);
+
+const sendTo = 'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi';
+const txhash = revHex('88885ac82ab0b61e909755e7f64f2deeedb89c83'
+                    + '3b68242da7de98c0934e1143');
+const txinfo = {
+  // prevout
+  hash: txhash,
+  index: 1,
+
+  value: Amount.fromBTC('200').toValue(),
+  script: Script.fromAddress(address)
+};
+```
+
+You will use `ring.getNestedAddress()`.
+```js
+const address = ring.getNestedAddress();
+
+console.log(`Address: ${address}`);
+
+const sendTo = 'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi';
+const txhash = revHex('88885ac82ab0b61e909755e7f64f2deeedb89c83'
+                    + '3b68242da7de98c0934e1143');
+const txinfo = {
+  // prevout
+  hash: txhash,
+  index: 0,
+
+  value: Amount.fromBTC('200').toValue(),
+  script: Script.fromAddress(address)
+};
+```
+
+You can find full version of the code in [guide-repo][guide-repo]
+
+## Final Notes
+You need to have in mind, that sending transaction from old clients to new
+is only possible if Witness program is nested inside P2SH.
+In order to get better understanding how Segwit scripts work check [BIP141][BIP141].
 
 ## References
 Activated with segwit:
@@ -382,5 +431,5 @@ You can check [BIP List][BIPS] for other related proposals.
 [BIP91]: https://github.com/bitcoin/bips/blob/master/bip-0091.mediawiki
 [BIP9]: https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki
 [BIP173]: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+[BIP16]: https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki
 [BIPS]: https://github.com/bitcoin/bips
-
