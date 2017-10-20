@@ -9,7 +9,6 @@ What is segwit, how to use segwit with bcoin and what are the updates
 ```
 
 Following guide will introduce you to Segwit, its changes and how to fully employ all these changes with bcoin.
-Code reviewed here is in its own [repo][guide-repo].
 
 ## Segwit
 Originally it started as [TX malleability][tx-malleability] fix. Miners and Full nodes in charge
@@ -50,6 +49,9 @@ will always use `bech32` addresses. It supports error checking and is comprised 
 `bc` for `mainnet` and `tb` for the `testnet` separated by `1` followed by data and the checksum. 
 
 ## Code
+
+Code reviewed here is in separate [repo][guide-repo].
+
 You will notice, that bcoin API doesn't change much between different transaction types. Also
 most of the ring management is same so we'll discuss them first.
 *Note: We'll be using `regtest` for in our code.*
@@ -65,10 +67,9 @@ will tell `KeyRing` to construct P2WPKH addresses instead of P2PKH and vice vers
 
 *Note: Segwit only uses Compressed public keys.*
 
+## Creating Segwit Addresses
 
 ### Create P2WPKH Address
-
-[create-p2wpkh.js][create-p2wpkh.js]
 
 Getting `P2WPKH` Address is as simple as `ring.getAddress();`. Let's see it
 in action.  
@@ -120,7 +121,6 @@ We won't cover manual scripts in the next codes, but the process is similar
 and can be created using same API.
 
 ### Create P2WSH Address
-[create-p2wsh.js][create-p2wsh.js]
 
 In this code example, we'll create Multisig/P2WSH address. This process
 is similar to [multisig][multisig-guide], only difference is the output address we'll get.
@@ -158,7 +158,6 @@ assert(addrRes.hash.equals(multisigScript.sha256()));
 ```
 
 ### Create P2SH-P2WPKH Address
-[create-p2sh-p2wpkh.js][create-p2sh-p2wpkh.js]
 
 Old clients on bitcoin network won't be able to send coins to bech32 addresses,
 they know neither bech32 address nor segwit format. To overcome that limitation
@@ -184,7 +183,6 @@ and then retreived redeem script (Witness program) will continue
 executing as P2WPKH.
 
 ### Create P2SH-P2WSH Address
-[create-p2sh-p2wsh.js][create-p2sh-p2wsh.js]
 
 Nested address is defined for P2WSH programs too. With this
 example we'll create multisig inside a p2wsh inside a p2sh...
@@ -202,8 +200,95 @@ const address = ring.getNestedAddress();
 
 console.log('Address from ring:', address.toString());
 ```
+## Spending from Segwit Addresses
 
-### References
+All legacy transactions need to be signed with scriptSig, which are also included in
+transaction and then in blocks. When using segwit addresses we won't use the same
+space for putting our signatures, scriptSig of inputs won't contain anything (Unless it's nested in P2SH).
+They will be appended to witness stack.
+
+Spending from segwit addresses is as simple as regular addresses using bcoin API.
+It will automatically allocate coins, construct scripts and sign.
+We will use `MTX.fund` for automatically generating change Output.
+
+To create and sign transactions "offline"(without going to chain db), we'll need:
+`prevTransaction Hash/Id`, `prevTransaction Vout/Index`, `Amount` and `Script`(Which
+can be constructed from Address).
+
+### Spend from P2WPKH 
+When you're spending from P2WPKH you need to put 2 things in Segwit stack: Signature
+and Public key. Bcoin will handle that for us.
+
+First let's grab the address, where we received transaction
+```js
+const [ring] = ringUtils.getRings(1, network);
+ring.witness = true;
+
+const address = ring.getAddress();
+```
+
+We need go gather information about the transaction we are spending from and
+the address we send money to.
+
+```js
+const sendTo = 'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi';
+const txhash = revHex('88885ac82ab0b61e909755e7f64f2deeedb89c83'
+                    + '3b68242da7de98c0934e1143');
+const txinfo = {
+  // prevout
+  hash: txhash,
+  index: 1,
+
+  value: Amount.fromBTC('200').toValue(),
+  script: Script.fromAddress(address)
+};
+
+const coin = Coin.fromOptions(txinfo);
+```
+
+We use revHex to convert BE to LE.
+Coin is used for working with UTXOs, it contains
+information about previous output. Coin later will be used
+in MTX to fund our transaction.
+
+We have received 200 BTC and we are going to send
+only 100 BTC to our recipient, we send change to ourselves
+and pay some fee.
+```js
+(async () => {
+  const spend = new MTX();
+
+  // Let's spend 100 BTC only
+  spend.addOutput(sendTo, Amount.fromBTC('100').toValue());
+
+  await spend.fund([coin], {
+    rate: 10000,
+    changeAddress: address
+  });
+
+  spend.sign(ring);
+
+  assert(spend.verify());
+
+  console.log('Transaction is ready');
+  console.log('Now you can broadcast it to the network');
+  console.log(spend.toRaw().toString('hex'));
+})()
+```
+
+We could manage inputs and outputs manually by adding
+change input and calculate fees. `MTX.fund` will do that for us.
+Based on existing outputs in MTX, `MTX.fund` will allocate coin(s),
+calculate fee based on rate and send change to change address.
+
+`spend.sign(ring)` - Will construct the scripts for every input and then sign them. At this
+point transaction can be spend. To validate correctness of our transaction (Signature), we
+run one final check `assert(spend.verify())`.
+
+`MTX.toRaw()` will return encoded transaction which can be broadcasted with any method.
+e.g. `bcoin cli broadcast RAWTRANSACTION`.
+
+## References
 Activated with segwit:
   - Segwit - [BIP141][BIP141] 
   - Transaction Signature Verification for Version 0 Witness Program - [BIP143][BIP143]
