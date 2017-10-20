@@ -9,7 +9,7 @@ What is segwit, how to use segwit with bcoin and what are the updates
 ```
 
 Following guide will introduce you to Segwit, its changes and how to fully employ all these changes with bcoin.
-Code reviewed here is in it's on [repo][guide-repo]
+Code reviewed here is in its own [repo][guide-repo].
 
 ## Segwit
 Originally it started as [TX malleability][tx-malleability] fix. Miners and Full nodes in charge
@@ -30,7 +30,7 @@ Check references on reference topic.
 ## Witness Programs
 You can check details in [Segwit BIP][BIP141], we'll cover them as we go for our examples.
 In segwit addresses/scriptPubKeys first byte is the `version byte`, which will be used
-for extending scripts with new funcitonalities. Currently `0` is used and supports
+for extending scripts with new functionalities. Currently version `0` is used and supports
 `P2WPKH` and `P2WSH` transactions. After `OP_0` version byte, we expect hash with size
 of `20` in case of `P2WPKH` or `32` in case of `P2WSH`.  
 scriptPubKeys:
@@ -45,21 +45,22 @@ When nesting witness programs inside *P2SH*, you will take witness program(stack
 have done with normal scripts.
 
 Native Segwit programs come with new Address format [bech32][BIP173], so `P2WPKH` and `P2WSH` scripts
-will always use `bech32` addresses. It supports error chacking and is comprised from 3 parts:
-`human-readable-part(hrp)`, `version number` and `data`. HRP is used for indicating the network
+will always use `bech32` addresses. It supports error checking and is comprised from 4 parts:
+`human-readable-part(hrp)`, `version number`, `data` and `checksum`. HRP is used for indicating the network:
 `bc` for `mainnet` and `tb` for the `testnet` separated by `1` followed by data and the checksum. 
 
 ## Code
-You will notice, that bcoins API doesn't change much between different transaction types. Also
-most of they ring management is same so we'll discuss them first.
+You will notice, that bcoin API doesn't change much between different transaction types. Also
+most of the ring management is same so we'll discuss them first.
+*Note: We'll be using `regtest` for in our code.*
 
 ### Common Parts
 
 Most important part in our examples will be `KeyRing`s. They store and manage keys and also provide
-every method needed to handle scripts and signatures. That's why we have separated `keyring` in separate,
+every method needed to handle scripts and signatures. That's why we have separated `keyring` in separate
 utils folder which will cache `privateKey`s in folder `keys/`. We only expose `.getRings` method,
 which will generate or return from cache `N` number of keys.  
-After importing we always set `ring.witness = true`, because by defualt it's false. This
+After importing we always set `ring.witness = true`, because by default it's false. This
 will tell `KeyRing` to construct P2WPKH addresses instead of P2PKH and vice versa. 
 
 *Note: Segwit only uses Compressed public keys.*
@@ -67,9 +68,9 @@ will tell `KeyRing` to construct P2WPKH addresses instead of P2PKH and vice vers
 
 ### Create P2WPKH Address
 
-Getting `P2WPKH` Address is as simple as `ring.getAddress();`. Let's
-check the script and address. We'll run this code on `regtest`.
-This will print the bech32 address and check if bech32 address data
+Getting `P2WPKH` Address is as simple as `ring.getAddress();`. Let's see it
+in action.  
+The code below will print the bech32 address and check if bech32 address data
 is Pubkeyhash.
 
 ```js
@@ -78,7 +79,7 @@ let address = ring.getAddress();
 // Will print bech32 address
 console.log('Address from ring:', address.toString());
 
-// Check whether pubkeyhash is in the program
+// Grab the pubkeyhash from ring.
 const pubkeyhash = ring.getKeyHash('hex');
 
 // Here we can inspect generated bech32 address
@@ -92,20 +93,20 @@ const addrRes = bech32.decode(address.toString());
 assert(addrRes.hash.toString('hex') === pubkeyhash);
 ```
 
-We could also assemble this code manually using pure scripts.
+We could also assemble this code manually using `Script`.
 
 ```js
 let p2wpkhScript = new Script();
-p2wpkhScript.pushOp(opcodes.OP_0);
-p2wpkhScript.pushData(ring.getKeyHash());
-p2wpkhScript.compile();
+p2wpkhScript.pushOp(opcodes.OP_0); // Push Segwit Version
+p2wpkhScript.pushData(ring.getKeyHash()); // Push Pubkeyhash
+p2wpkhScript.compile(); // Encode the script internally
 
 address = p2wpkhScript.getAddress();
 console.log('Address from script:', address.toString(network));
 ```
-This will return same address but here we manage everything manually, so it's not convenient.
+Here you can see inner workings of the P2WPKH script, but obviously it's not convenient.
 
-The equvalent script can be generated with helper function
+The equvalent script can be generated with helper function too.
 ```js
 p2wpkhScript = Script.fromProgram(0, ring.getKeyHash());
 address = p2wpkhScript.getAddress();
