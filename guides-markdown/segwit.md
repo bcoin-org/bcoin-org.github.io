@@ -68,10 +68,13 @@ will tell `KeyRing` to construct P2WPKH addresses instead of P2PKH and vice vers
 
 ### Create P2WPKH Address
 
+[create-p2wpkh.js][create-p2wpkh.js]
+
 Getting `P2WPKH` Address is as simple as `ring.getAddress();`. Let's see it
 in action.  
 The code below will print the bech32 address and check if bech32 address data
 is Pubkeyhash.
+
 
 ```js
 let address = ring.getAddress();
@@ -116,6 +119,44 @@ console.log('Address from Script/Program:', address.toString(network));
 We won't cover manual scripts in the next codes, but the process is similar
 and can be created using same API.
 
+## Create P2WSH Address
+[create-p2wsh.js][create-p2wsh.js]
+
+In this code example, we'll create Multisig/P2WSH address. This process
+is similar to [multisig][multisig-guide], only difference is the output address we'll get.
+
+We'll need two public keys, so we grab two rings from cache
+```js
+const [ring, ring2] = ringUtils.getRings(2, network);
+
+ring.witness = true;
+ring2.witness = true;
+```
+
+And then create multisig script
+```js
+const pubkeys = [ring.publicKey, ring2.publicKey];
+const multisigScript = Script.fromMultisig(1, 2, pubkeys);
+```
+
+Now we can pass multisig script to ring (Ring already knows it needs to generate segwit address).
+*Note: If ring has script assigned, it will return P2SH or P2WSH address.*
+```js
+ring.script = multisigScript;
+const address = ring.getAddress();
+
+console.log('Address from ring:', address.toString());
+```
+
+Now bech32 address should contain `version byte = 0` and 32 byte long `hash` for script.
+
+```js
+const addrRes = bech32.decode(address.toString());
+
+// data in bech32 should be md5(script)
+assert(addrRes.hash.equals(multisigScript.sha256()));
+```
+
 
 ### References
 Activated with segwit:
@@ -136,6 +177,10 @@ You can check [BIP List][BIPS] for other related proposals.
 [tx-malleability]: https://en.bitcoin.it/wiki/Transaction_Malleability
 [BIP62]: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#motivation
 [guide-repo]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide
+[multisig-guide]: http://bcoin.io/guides/multisig-tx.html
+
+[create-p2wpkh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2wpkh.js
+[create-p2wsh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2wsh.js
 
 [BIP141]: https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki
 [BIP143]: https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki
@@ -144,3 +189,4 @@ You can check [BIP List][BIPS] for other related proposals.
 [BIP9]: https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki
 [BIP173]: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
 [BIPS]: https://github.com/bitcoin/bips
+
