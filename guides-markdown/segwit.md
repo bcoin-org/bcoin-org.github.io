@@ -288,6 +288,64 @@ run one final check `assert(spend.verify())`.
 `MTX.toRaw()` will return encoded transaction which can be broadcasted with any method.
 e.g. `bcoin cli broadcast RAWTRANSACTION`.
 
+
+### Spending from P2WSH
+
+We first need to generate the original address where we received funds.
+
+```js
+const [ring, ring2] = ringUtils.getRings(2, network);
+ring.witness = true;
+ring2.witness = true;
+
+const pubkeys = [ring.publicKey, ring2.publicKey];
+const redeemScript = Script.fromMultisig(1, 2, pubkeys);
+
+// let's grab the address
+ring.script = redeemScript;
+
+const address = ring.getAddress();
+
+console.log('Address for p2wsh:', address.toString());
+```
+
+redeemScript will be used later to Redeem P2WPKH program. Now
+we can construct the Coin from this Address.
+
+```js
+const script = Script.fromAddress(address);
+
+const sendTo = 'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi';
+const txhash = revHex('a12738af61f01c94ff3eba949da5bd23edb67ef4'
+                  + '5c65b6445c988421eb9c3a37');
+const txinfo = {
+  // prevout
+  hash: txhash,
+  index: 0,
+
+  value: Amount.fromBTC('20').toValue(),
+  script: script
+};
+
+const coin = Coin.fromOptions(txinfo);
+```
+
+Signing code for P2WSH is almost identical to standard multisig addresses, with difference
+of scriptSig.
+
+```js
+  // Now you should see that our TX
+  // has two witness items in it:
+  // First is the signature
+  // Second redeem script
+  const input = spend1.inputs[0];
+  const redeem = input.witness.getRedeem();
+  assert(redeem.equals(redeemScript));
+```
+
+Redeem script for P2WSH is in the witness with its signature.
+
+
 ## References
 Activated with segwit:
   - Segwit - [BIP141][BIP141] 
