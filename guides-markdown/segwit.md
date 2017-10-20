@@ -157,6 +157,30 @@ const addrRes = bech32.decode(address.toString());
 assert(addrRes.hash.equals(multisigScript.sha256()));
 ```
 
+## Create P2SH-P2WPKH Address
+Old clients on bitcoin network won't be able to send coins to bech32 addresses,
+they know neither bech32 address nor segwit format. To overcome that limitation
+we nest segwit programs in P2SH. With bcoin you can achieve this pretty simply:
+
+```js
+const ringUtils = require('./utils/keys');
+
+const network = 'regtest';
+const [ring] = ringUtils.getRings(1, network);
+
+ring.witness = true;
+
+// Generates Witness program which will redeem
+// the P2SH script.
+const address = ring.getNestedAddress();
+
+console.log('Nested Address:', address.toString());
+```
+
+Transactions received on this address, first will be redeemed P2SH way
+and then retreived redeem script (Witness program) will continue
+executing as P2WPKH
+
 
 ### References
 Activated with segwit:
