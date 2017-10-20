@@ -15,9 +15,7 @@ deploy:
   file: ./*
   local_dir: .
   github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
-  # target_branch: master
-  target_branch: gh-pages
+  target_branch: master
   on:
-    all_branches: true
-  #   branch: staging
-  #   repo: bcoin-org/bcoin-org.github.io
+    branch: staging
+    repo: bcoin-org/bcoin-org.github.io
