@@ -119,7 +119,7 @@ console.log('Address from Script/Program:', address.toString(network));
 We won't cover manual scripts in the next codes, but the process is similar
 and can be created using same API.
 
-## Create P2WSH Address
+### Create P2WSH Address
 [create-p2wsh.js][create-p2wsh.js]
 
 In this code example, we'll create Multisig/P2WSH address. This process
@@ -157,7 +157,7 @@ const addrRes = bech32.decode(address.toString());
 assert(addrRes.hash.equals(multisigScript.sha256()));
 ```
 
-## Create P2SH-P2WPKH Address
+### Create P2SH-P2WPKH Address
 [create-p2sh-p2wpkh.js][create-p2sh-p2wpkh.js]
 
 Old clients on bitcoin network won't be able to send coins to bech32 addresses,
@@ -181,8 +181,27 @@ console.log('Nested Address:', address.toString());
 
 Transactions received on this address, first will be redeemed P2SH way
 and then retreived redeem script (Witness program) will continue
-executing as P2WPKH
+executing as P2WPKH.
 
+### Create P2SH-P2WSH Address
+[create-p2sh-p2wsh.js][create-p2sh-p2wsh.js]
+
+Nested address is defined for P2WSH programs too. With this
+example we'll create multisig inside a p2wsh inside a p2sh...
+Code is same for p2sh-p2wsh as for p2wsh, only difference is address
+generation.
+```js
+const pubkeys = [ring.publicKey, ring2.publicKey];
+const multisigScript = Script.fromMultisig(1, 2, pubkeys);
+
+ring.script = multisigScript;
+
+// This will return nested hash -> nested address
+// legacy base58.
+const address = ring.getNestedAddress();
+
+console.log('Address from ring:', address.toString());
+```
 
 ### References
 Activated with segwit:
@@ -208,6 +227,11 @@ You can check [BIP List][BIPS] for other related proposals.
 [create-p2wpkh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2wpkh.js
 [create-p2wsh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2wsh.js
 [create-p2sh-p2wpkh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2sh-p2wpkh.js
+[create-p2sh-p2wsh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2sh-p2wsh.js
+[spend-p2wpkh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2pkh.js
+[spend-p2wsh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2wsh.js
+[spend-p2sh-p2wpkh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2sh-p2wpkh.js
+[spend-p2sh-p2sh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2sh-p2wsh.js
 
 [BIP141]: https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki
 [BIP143]: https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki
