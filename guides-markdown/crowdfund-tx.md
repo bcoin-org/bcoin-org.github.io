@@ -20,7 +20,7 @@ This construction can be used to make a "crowdfunding”-style transaction. Some
 ## The Code
 We'll walk through the steps of creating the transaction first without any wallet database or node running. Then we'll do the same thing using bcoin's walletdb to manage the keys to see how it would work in a more realistic application (skip to [Version 2](#version-2-using-the-bcoin-wallet-system)) further in the guide to check it out). At the end, we'll put out some ideas of how these can be built upon for a more robust, production ready application. (If this is something you'd be interested in building, [get in touch](http://bcoin.io/slack-signup.html)!). If you want to see the code, checkout the [repo on github](https://github.com/Bucko13/bitcoin-fundraise).
 
-If you're not comfortable with key management, coin selection, and how transactions are constructed, checkout the tutorial on [working with transactions](https://github.com/bcoin-org/bcoin/blob/master/docs/Working-with-transactions.md) first.
+If you're not comfortable with key management, coin selection, and how transactions are constructed, checkout the tutorial on [working with transactions](http://bcoin.io/guides/working-with-txs.html) first.
 
 ### Version 1 - Manual Key Management
 #### Step 1: Setup
@@ -127,7 +127,7 @@ The coins object you've created above should look something like this:
 }
 ```
 
-#### Step 4: Prepare your Coins
+#### Step 3: Prepare your Coins
 Above, we just funded our funder accounts with a single 5BTC outpoint. This means that the next transaction funded from these accounts can only use that one outpoint (or *coin*) as an input and send the remainder back as change. Remember, in Bitcoin the way you send funds is you fund a transaction with a full UTXO (in this case we only have one worth 5BTC available to our keychains) and then send the change back to yourself as an additional output. Since ALL|ANYONECANPAY transactions mean a fixed output, you can't add new change outputs without other signatures becoming invalid which means we need a coin available equal to the amount we want to contribute to the crowdfund.
 
 So what we want to do is have each funder create a coin (UTXO) with the value of what they want to donate.
@@ -262,7 +262,7 @@ For example...
 }
 ```
 
-#### Step 6: Construct the Transaction
+#### Step 4: Construct the Transaction
 Now that we've got our tools and coins ready, we can start to build the transaction!
 
 ```javascript
@@ -485,7 +485,7 @@ composeWalletCrowdfund()
 
 And there you have it! If you were doing this on testnet, your `fundeeWallet` should now be 1BTC richer. If you're on a simnet or regtest network, you'll have to mine a block with your transactions to get those funds confirmed. Also note that, unless you have exact change coins, there will be 3 transactions that need to be confirmed: one each for the wallets that are splitting coins, and one for the crowdfund transaction.
 
-## How to Build it Out
+## How to Extend and Improve
 These examples are obviously pretty basic, but they should give you an idea of how to use Bitcoin's scripting to build out the foundation for more complex applications. Here are some ideas on how you could build on top of these examples and get closer to a production ready application.
 
 - More flexible contribution scheme (currently it's just 2 funders that split the amount evenly). E.g. custom number of contributers, custom contribution amount, etc.
