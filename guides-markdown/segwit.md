@@ -158,6 +158,8 @@ assert(addrRes.hash.equals(multisigScript.sha256()));
 ```
 
 ## Create P2SH-P2WPKH Address
+[create-p2sh-p2wpkh.js][create-p2sh-p2wpkh.js]
+
 Old clients on bitcoin network won't be able to send coins to bech32 addresses,
 they know neither bech32 address nor segwit format. To overcome that limitation
 we nest segwit programs in P2SH. With bcoin you can achieve this pretty simply:
@@ -205,6 +207,7 @@ You can check [BIP List][BIPS] for other related proposals.
 
 [create-p2wpkh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2wpkh.js
 [create-p2wsh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2wsh.js
+[create-p2sh-p2wpkh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2sh-p2wpkh.js
 
 [BIP141]: https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki
 [BIP143]: https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki
