@@ -4,13 +4,14 @@ Jonathan Gonzalez
 
 Create a Regtest Chain
 
-## Regtest
-#### General
+## Regtest Mode
+### General
 
 The Regtest Network, is a local Blockchain; In which a individuals can almost instantaneously generate blocks on demand.
 The including the option to generate private satoshi with no real-world value. Ideal for testing applications.
 The following example generates a three consecutive blocks, with transaction confirmations in the User's WalletDB
 
+## Example 
 'use strict';
 
 process.title = 'bcoin';
