@@ -363,14 +363,12 @@ operator">=</span> <span class="token function">await node.chain.tip;</span>
 <span class="token string"> await node.chain.add(block);</span>
 <span class="token string"> await node.relay(node.chain.db.state);</span>
 
-<span class="token string"> const block2 = await node.miner.cpu.mineBlock();</span>
+<span class="token string"> const block2 = await node.miner.mineBlock();</span>
 <span class="token string"> const tx2 = block2.txs[1];</span>
 <span class="token string"> await block2.refresh(true);</span>
 <span class="token string"> await node.chain.add(block2);</span>
 
 <span class="token string"> const nextEntry = await node.chain.getEntryByHeight(node.chain.height);</span>
-<span class="token string"> const nextBlock = await node.miner.mineBlock(nextEntry);</span>
-<span class="token string"> await node.chain.add(nextBlock);</span>
 
 <span class="token string"> const balance = wdb.primary.getBalance();</span>
 <span class="token string">}); </span>
