@@ -10,62 +10,69 @@ What is segwit, how to use segwit with bcoin and what are the updates
 
 Following guide will introduce you to Segwit, its changes and how to fully employ all these changes with bcoin.
 
-## Segwit
-Originally it started as [TX malleability][tx-malleability] fix. Miners and Full nodes in charge
-of relaying or including transaction in blocks could change transaction hash and broadcast modified
+## What is Segwit and What Does it Solve?
+Segwit was first proposed as a [TX malleability][tx-malleability] fix. Miners and Full nodes in charge
+of relaying or including transaction in blocks could change transaction hash and broadcast a modified version
 without invalidating the transaction. This prevented sidechains and some applications
 to be built on top of bitcoin blockchain (Lightning Network).
-You can check the list of Malleability sources in [BIP62 (Withdrawn)][BIP62].  
-Segwit removes sigScripts from the transaction and constructs another merkle tree
-for witnesses. Signatures are also subtracted from block size calculations (They
-aren't broadcasted with block) leaving space for more transaction with the same
-block size. It was crucial to make this update soft fork, so instead of submitting merkle root into
+For a full list of malleability sources see [BIP62 (Withdrawn)][BIP62].  
+Segwit solves this by removing validating sigScripts (also known as "witnesses") from the transaction and constructing another merkle tree
+for these scripts. The witnesses are also not counted towards from block size calculations as they
+aren't broadcasted with the block, leaving space for more transactions with the same
+block size limit (which needs a hard fork to implement). In order to make this update a soft fork, and thus safer to deploy, instead of adding the merkle root into the
 block, it's included in coinbase transaction.  
 Another benefit it brings is future possible soft forks for Script updates.  
-For backwards compatibility, you can nest Witness programs in [P2SH][BIP16] and get
-transactions from old nodes.
-Check references on reference topic.
+For backwards compatibility, you can nest witness programs in [P2SH][BIP16]. This allows old, unupdated nodes to still see a Segwit transaction as a valid (but ANYONECANSPEND) transaction ensuring it will get propogated in the network.
+
 
 ## Witness Programs
 You can check details in [Segwit BIP][BIP141], we'll cover them as we go for our examples.
-In segwit addresses/scriptPubKeys first byte is the `version byte`, which will be used
+In segwit addresses/scriptPubKeys, the first byte is the `version byte`, which will be used
 for extending scripts with new functionalities. Currently version `0` is used and supports
-`P2WPKH` and `P2WSH` transactions. After `OP_0` version byte, we expect hash with size
-of `20` in case of `P2WPKH` or `32` in case of `P2WSH`.  
+`P2WPKH` (Pay To Witness Public Key Hash) and `P2WSH` (Pay To Witness Script Hash) transactions. After `OP_0` version byte, we expect a hash with a size
+of `20` in the case of `P2WPKH` transactions or `32` in the case of `P2WSH` transactions.  
 scriptPubKeys:
-  - `P2WPKH` scriptPubkey is `OP_0 0x14 {20-byte-hash}`, where `OP_0` is *version byte*
-*0x14* is size of data, `{20-byte-hash}` is HASH160(PubKey).
-  - `P2WSH` scriptPubkey is `OP_0 0x20 {32-byte-hash}`, where `OP_0` is *version byte*
-*0x20* is size of data, `{32-byte-hash}` is md5(script).
+  - `P2WPKH` scriptPubkey is `OP_0 0x14 {20-byte-hash}`, where `OP_0` is the *version byte*
+*0x14* is the size of the data, and the `{20-byte-hash}` is HASH160(PubKey).
+  - `P2WSH` scriptPubkey is `OP_0 0x20 {32-byte-hash}`, where `OP_0` is the *version byte*
+*0x20* is the size of the data, and the `{32-byte-hash}` is md5(script).
 Note: These witness programs aren't executed right away, they are stacks and are used
 to construct the scripts for verification.
 
-When nesting witness programs inside *P2SH*, you will take witness program(stack) and hash it, as you would
+When nesting witness programs inside *P2SH*, you will take the witness program (stack) and hash it, as you would
 have done with normal scripts.
 
-Native Segwit programs come with new Address format [bech32][BIP173], so `P2WPKH` and `P2WSH` scripts
-will always use `bech32` addresses. It supports error checking and is comprised from 4 parts:
+Native Segwit programs also come with a new address format [bech32][BIP173], so `P2WPKH` and `P2WSH` scripts
+will always use `bech32` addresses. Bech32 addresses support error checking and are comprised of 4 parts:
 `human-readable-part(hrp)`, `version number`, `data` and `checksum`. HRP is used for indicating the network:
 `bc` for `mainnet` and `tb` for the `testnet` separated by `1` followed by data and the checksum. 
 
 ## Code
 
-Code reviewed here is in separate [repo][guide-repo].
+You can see the full code used in the examples below in a separate [repo][guide-repo].
 
-You will notice, that bcoin API doesn't change much between different transaction types. Also
-most of the ring management is same so we'll discuss them first.
-*Note: We'll be using `regtest` for in our code.*
+You will notice, that the bcoin API doesn't change much between different transaction types. Also
+most of the ring management is the same so we'll discuss them first.
+*Note: We'll be using `regtest` network for our code.*
 
 ### Common Parts
 
-Most important part in our examples will be `KeyRing`s. They store and manage keys and also provide
-every method needed to handle scripts and signatures. That's why we have separated `keyring` in separate
-utils folder which will cache `privateKey`s in folder `keys/`. We only expose `.getRings` method,
+The most important part in our examples will be `KeyRing`s. They store and manage keys and also provide
+every method needed to handle scripts and signatures. That's why we've separated `keyring` into a separate
+utils folder which will cache the `privateKey`s in a folder `keys/`. We only expose `.getRings` method,
 which will generate or return from cache `N` number of keys.  
 After importing we always set `ring.witness = true`, because by default it's false. This
 will tell `KeyRing` to construct P2WPKH addresses instead of P2PKH and vice versa. 
 
 *Note: Segwit only uses Compressed public keys.*
+
+The code for this, which should precede all of the following examples, looks like:
+
+```js
+const network = 'regtest';
+const ring = bcoin.keyring.generate(true, network);
+ring.witness = true;
+```
 
 ## Creating Segwit Addresses
 
@@ -117,15 +124,15 @@ address = p2wpkhScript.getAddress();
 console.log('Address from Script/Program:', address.toString(network));
 ```
 
-We won't cover manual scripts in the next codes, but the process is similar
-and can be created using same API.
+We won't cover manual scripts in the next examples, but the process is similar
+and can be created using the same API.
 
 ### Create P2WSH Address
 
-In this code example, we'll create Multisig/P2WSH address. This process
-is similar to [multisig][multisig-guide], only difference is the output address we'll get.
+In this code example, we'll create a Multisig/P2WSH address. This process
+is similar to the [multisig][multisig-guide], the only difference is the output address we'll get.
 
-We'll need two public keys, so we grab two rings from cache
+We'll need two public keys, so we grab two rings from the cache
 ```js
 const [ring, ring2] = ringUtils.getRings(2, network);
 
@@ -133,14 +140,15 @@ ring.witness = true;
 ring2.witness = true;
 ```
 
-And then create multisig script
+Then create multisig script
 ```js
 const pubkeys = [ring.publicKey, ring2.publicKey];
 const multisigScript = Script.fromMultisig(1, 2, pubkeys);
 ```
 
-Now we can pass multisig script to ring (Ring already knows it needs to generate segwit address).
-*Note: If ring has script assigned, it will return P2SH or P2WSH address.*
+Now we can pass the multisig script to the ring (which already knows it needs to generate segwit address).
+*Note: If the ring has a script property assigned, it will automatically return a P2SH or P2WSH address.*
+
 ```js
 ring.script = multisigScript;
 const address = ring.getAddress();
@@ -178,15 +186,15 @@ const address = ring.getNestedAddress();
 console.log('Nested Address:', address.toString());
 ```
 
-Transactions received on this address, first will be redeemed P2SH way
-and then retreived redeem script (Witness program) will continue
-executing as P2WPKH.
+Transactions sent to this address first will be redeemed as a P2SH
+and then redeem script (Witness program) will be retrieved and then it will continue
+executing as a P2WPKH.
 
 ### Create P2SH-P2WSH Address
 
-Nested address is defined for P2WSH programs too. With this
-example we'll create multisig inside a p2wsh inside a p2sh...
-Code is same for p2sh-p2wsh as for p2wsh, only difference is address
+Nested address is also defined for P2WSH programs. With this
+example we'll create a multisig inside a P2WSH inside a P2SH...
+The code is the same for P2SH-P2WSH as for P2WSH, where the only difference is address
 generation.
 ```js
 const pubkeys = [ring.publicKey, ring2.publicKey];
@@ -202,21 +210,21 @@ console.log('Address from ring:', address.toString());
 ```
 ## Spending from Segwit Addresses
 
-All legacy transactions need to be signed with scriptSig, which are also included in
-transaction and then in blocks. When using segwit addresses we won't use the same
-space for putting our signatures, scriptSig of inputs won't contain anything (Unless it's nested in P2SH).
-They will be appended to witness stack.
+All legacy transactions need to be signed with a scriptSig, which are also included in a
+transaction and therefore in the blocks that mine them. When using segwit addresses we won't use the same
+space for putting our signatures, so the scriptSig of inputs won't contain anything (Unless it's nested in P2SH).
+Instead, they will be appended to witness stack.
 
-Spending from segwit addresses is as simple as regular addresses using bcoin API.
-It will automatically allocate coins, construct scripts and sign.
-We will use `MTX.fund` for automatically generating change Output.
+Spending from segwit addresses is as simple as it is for regular addresses with the bcoin API.
+It will automatically allocate coins, construct scripts and sign the transaction for us.
+We will use `MTX.fund` for automatically generating change output.
 
 To create and sign transactions "offline"(without going to chain db), we'll need:
-`prevTransaction Hash/Id`, `prevTransaction Vout/Index`, `Amount` and `Script`(Which
+`prevTransaction Hash/Id`, `prevTransaction Vout/Index`, `Amount` and `Script`(which
 can be constructed from Address).
 
 ### Spend from P2WPKH 
-When you're spending from P2WPKH you need to put 2 things in Segwit stack: Signature
+When you're spending from P2WPKH you need to put 2 things in the Segwit stack: Signature
 and Public key. Bcoin will handle that for us.
 
 First let's grab the address, where we received transaction
@@ -228,9 +236,11 @@ const address = ring.getAddress();
 ```
 
 We need go gather information about the transaction we are spending from and
-the address we send money to.
+the address we sent money to.
 
 ```js
+import {revHex, amount as Amount, script as Script, coin as Coin} from bcoin;
+
 const sendTo = 'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi';
 const txhash = revHex('88885ac82ab0b61e909755e7f64f2deeedb89c83'
                     + '3b68242da7de98c0934e1143');
@@ -247,13 +257,13 @@ const coin = Coin.fromOptions(txinfo);
 ```
 
 We use revHex to convert BE to LE.
-Coin is used for working with UTXOs, it contains
-information about previous output. Coin later will be used
+Coin is used for working with UTXOs and contains
+information about the previous output. Coin will later be used
 in MTX to fund our transaction.
 
 We have received 200 BTC and we are going to send
-only 100 BTC to our recipient, we send change to ourselves
-and pay some fee.
+only 100 BTC to our recipient, sending change to ourselves
+minus fees.
 ```js
 (async () => {
   const spend = new MTX();
@@ -277,12 +287,12 @@ and pay some fee.
 ```
 
 We could manage inputs and outputs manually by adding
-change input and calculate fees. `MTX.fund` will do that for us.
+change input and calculate fees but `MTX.fund` does that for us.
 Based on existing outputs in MTX, `MTX.fund` will allocate coin(s),
-calculate fee based on rate and send change to change address.
+calculate fees based on the passed in rate and send change to the change address.
 
 `spend.sign(ring)` - Will construct the scripts for every input and then sign them. At this
-point transaction can be spend. To validate correctness of our transaction (Signature), we
+point the transaction can be spent. To validate the correctness of our transaction (signature), we
 run one final check `assert(spend.verify())`.
 
 `MTX.toRaw()` will return encoded transaction which can be broadcasted with any method.
@@ -309,8 +319,8 @@ const address = ring.getAddress();
 console.log('Address for p2wsh:', address.toString());
 ```
 
-redeemScript will be used later to Redeem P2WPKH program. Now
-we can construct the Coin from this Address.
+redeemScript will be used later to redeem P2WPKH program. Now
+we can construct the coin from this Address.
 
 ```js
 const script = Script.fromAddress(address);
@@ -330,8 +340,7 @@ const txinfo = {
 const coin = Coin.fromOptions(txinfo);
 ```
 
-Signing code for P2WSH is almost identical to standard multisig addresses, with difference
-of scriptSig.
+Signing code for P2WSH is almost identical to standard multisig addresses just with a different scriptSig.
 
 ```js
   // Now you should see that our TX
@@ -347,10 +356,10 @@ Redeem script for P2WSH is in the witness with its signature.
 
 ### P2SH Nested
 
-Bcoin MTX and KeyRing construct all necessary scripts for us, so only thing
+Bcoin MTX and KeyRing primitives construct all necessary scripts for us, so the only thing
 that changes when moving to nested segwit addresses is the UTXO script.
 
-So instead of using `ring.getAddress();`
+So instead of using `ring.getAddress()`...
 ```js
 const address = ring.getAddress();
 
@@ -391,8 +400,8 @@ const txinfo = {
 You can find full version of the code in [guide-repo][guide-repo]
 
 ## Final Notes
-You need to have in mind, that sending transaction from old clients to new
-is only possible if Witness program is nested inside P2SH.
+You need to keep in mind that sending transactions from old clients to new ones
+is only possible if witness program is nested inside P2SH.
 In order to get better understanding how Segwit scripts work check [BIP141][BIP141].
 
 ## References
