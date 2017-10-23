@@ -1,4 +1,4 @@
-# Store Data on the Blockchain
+# Create a Local Regtest Blockchain
 
 ```post-author
 Jonathan Gonzalez
