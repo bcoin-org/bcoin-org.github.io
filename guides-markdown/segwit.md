@@ -11,7 +11,7 @@ What is segwit, how to use segwit with bcoin and what are the updates
 Following guide will introduce you to Segwit, its changes and how to fully employ all these changes with bcoin.
 
 ## What is Segwit and What Does it Solve?
-Originally it started as [TX malleability][tx-malleability] fix. Miners and Full nodes in charge
+Segwit was first proposed as a [TX malleability][tx-malleability] fix. Miners and Full nodes in charge
 of relaying or including transaction in blocks could change transaction hash and broadcast a modified version
 without invalidating the transaction. This prevented sidechains and some applications
 to be built on top of bitcoin blockchain (Lightning Network).
@@ -210,21 +210,21 @@ console.log('Address from ring:', address.toString());
 ```
 ## Spending from Segwit Addresses
 
-All legacy transactions need to be signed with scriptSig, which are also included in
-transaction and then in blocks. When using segwit addresses we won't use the same
-space for putting our signatures, scriptSig of inputs won't contain anything (Unless it's nested in P2SH).
-They will be appended to witness stack.
+All legacy transactions need to be signed with a scriptSig, which are also included in a
+transaction and therefore in the blocks that mine them. When using segwit addresses we won't use the same
+space for putting our signatures, so the scriptSig of inputs won't contain anything (Unless it's nested in P2SH).
+Instead, they will be appended to witness stack.
 
-Spending from segwit addresses is as simple as regular addresses using bcoin API.
-It will automatically allocate coins, construct scripts and sign.
-We will use `MTX.fund` for automatically generating change Output.
+Spending from segwit addresses is as simple as it is for regular addresses with the bcoin API.
+It will automatically allocate coins, construct scripts and sign the transaction for us.
+We will use `MTX.fund` for automatically generating change output.
 
 To create and sign transactions "offline"(without going to chain db), we'll need:
-`prevTransaction Hash/Id`, `prevTransaction Vout/Index`, `Amount` and `Script`(Which
+`prevTransaction Hash/Id`, `prevTransaction Vout/Index`, `Amount` and `Script`(which
 can be constructed from Address).
 
 ### Spend from P2WPKH 
-When you're spending from P2WPKH you need to put 2 things in Segwit stack: Signature
+When you're spending from P2WPKH you need to put 2 things in the Segwit stack: Signature
 and Public key. Bcoin will handle that for us.
 
 First let's grab the address, where we received transaction
@@ -236,9 +236,11 @@ const address = ring.getAddress();
 ```
 
 We need go gather information about the transaction we are spending from and
-the address we send money to.
+the address we sent money to.
 
 ```js
+import {revHex, amount as Amount, script as Script, coin as Coin} from bcoin;
+
 const sendTo = 'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi';
 const txhash = revHex('88885ac82ab0b61e909755e7f64f2deeedb89c83'
                     + '3b68242da7de98c0934e1143');
@@ -255,13 +257,13 @@ const coin = Coin.fromOptions(txinfo);
 ```
 
 We use revHex to convert BE to LE.
-Coin is used for working with UTXOs, it contains
-information about previous output. Coin later will be used
+Coin is used for working with UTXOs and contains
+information about the previous output. Coin will later be used
 in MTX to fund our transaction.
 
 We have received 200 BTC and we are going to send
-only 100 BTC to our recipient, we send change to ourselves
-and pay some fee.
+only 100 BTC to our recipient, sending change to ourselves
+minus fees.
 ```js
 (async () => {
   const spend = new MTX();
@@ -285,12 +287,12 @@ and pay some fee.
 ```
 
 We could manage inputs and outputs manually by adding
-change input and calculate fees. `MTX.fund` will do that for us.
+change input and calculate fees but `MTX.fund` does that for us.
 Based on existing outputs in MTX, `MTX.fund` will allocate coin(s),
-calculate fee based on rate and send change to change address.
+calculate fees based on the passed in rate and send change to the change address.
 
 `spend.sign(ring)` - Will construct the scripts for every input and then sign them. At this
-point transaction can be spend. To validate correctness of our transaction (Signature), we
+point the transaction can be spent. To validate the correctness of our transaction (signature), we
 run one final check `assert(spend.verify())`.
 
 `MTX.toRaw()` will return encoded transaction which can be broadcasted with any method.
@@ -317,8 +319,8 @@ const address = ring.getAddress();
 console.log('Address for p2wsh:', address.toString());
 ```
 
-redeemScript will be used later to Redeem P2WPKH program. Now
-we can construct the Coin from this Address.
+redeemScript will be used later to redeem P2WPKH program. Now
+we can construct the coin from this Address.
 
 ```js
 const script = Script.fromAddress(address);
@@ -338,8 +340,7 @@ const txinfo = {
 const coin = Coin.fromOptions(txinfo);
 ```
 
-Signing code for P2WSH is almost identical to standard multisig addresses, with difference
-of scriptSig.
+Signing code for P2WSH is almost identical to standard multisig addresses just with a different scriptSig.
 
 ```js
   // Now you should see that our TX
@@ -355,10 +356,10 @@ Redeem script for P2WSH is in the witness with its signature.
 
 ### P2SH Nested
 
-Bcoin MTX and KeyRing construct all necessary scripts for us, so only thing
+Bcoin MTX and KeyRing primitives construct all necessary scripts for us, so the only thing
 that changes when moving to nested segwit addresses is the UTXO script.
 
-So instead of using `ring.getAddress();`
+So instead of using `ring.getAddress()`...
 ```js
 const address = ring.getAddress();
 
@@ -399,8 +400,8 @@ const txinfo = {
 You can find full version of the code in [guide-repo][guide-repo]
 
 ## Final Notes
-You need to have in mind, that sending transaction from old clients to new
-is only possible if Witness program is nested inside P2SH.
+You need to keep in mind that sending transactions from old clients to new ones
+is only possible if witness program is nested inside P2SH.
 In order to get better understanding how Segwit scripts work check [BIP141][BIP141].
 
 ## References
