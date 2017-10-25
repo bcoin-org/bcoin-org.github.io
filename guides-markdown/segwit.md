@@ -24,6 +24,9 @@ block, it's included in coinbase transaction.
 Another benefit it brings is future possible soft forks for Script updates.  
 For backwards compatibility, you can nest witness programs in [P2SH][BIP16]. This allows old, unupdated nodes to still see a Segwit transaction as a valid (but ANYONECANSPEND) transaction ensuring it will get propogated in the network.
 
+> Witness - this structure contains data required to check transaction validity but not required to determine transaction effects. In particular, scripts and signatures are moved into this new structure.  
+> BIP141
+
 
 ## Witness Programs
 You can check details in [Segwit BIP][BIP141], we'll cover them as we go for our examples.
@@ -95,13 +98,11 @@ const pubkeyhash = ring.getKeyHash('hex');
 
 // Here we can inspect generated bech32 address
 // and see that pubkeyhash is included there.
-const addrRes = bech32.decode(address.toString());
-// addrRes.hrp = 'rb'; // for regtest
-// addrRes.version = 0; // Segwit program version
-// addrRes.hash = Buffer... // 20 byte Pubkeyhash.
+const decodedAddress = bech32.decode(address.toString());
 
-
-assert(addrRes.hash.toString('hex') === pubkeyhash);
+assert(decodedAddress.hrp === 'rb'); // rb for regtest
+assert(decodedAddress.version === 0); // Segwit program version
+assert(decodedAddress.hash.toString('hex') === pubkeyhash); // 20 byte Pubkeyhash
 ```
 
 We could also assemble this code manually using `Script`.
@@ -159,10 +160,10 @@ console.log('Address from ring:', address.toString());
 Now bech32 address should contain `version byte = 0` and 32 byte long `hash` for script.
 
 ```js
-const addrRes = bech32.decode(address.toString());
+const decodedAddress = bech32.decode(address.toString());
 
 // data in bech32 should be md5(script)
-assert(addrRes.hash.equals(multisigScript.sha256()));
+assert(decodedAddress.hash.equals(multisigScript.sha256()));
 ```
 
 ### Create P2SH-P2WPKH Address
@@ -239,7 +240,12 @@ We need go gather information about the transaction we are spending from and
 the address we sent money to.
 
 ```js
-import {revHex, amount as Amount, script as Script, coin as Coin} from bcoin;
+const Amount = bcoin.amount;
+const Script = bcoin.script;
+const Coin = bcoin.coin;
+const revHex = bcoin.util.revHex;
+
+// ...
 
 const sendTo = 'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi';
 const txhash = revHex('88885ac82ab0b61e909755e7f64f2deeedb89c83'
@@ -256,7 +262,7 @@ const txinfo = {
 const coin = Coin.fromOptions(txinfo);
 ```
 
-We use revHex to convert BE to LE.
+We use revHex to convert BE to LE ([Endianness][endianness]).
 Coin is used for working with UTXOs and contains
 information about the previous output. Coin will later be used
 in MTX to fund our transaction.
@@ -343,6 +349,25 @@ const coin = Coin.fromOptions(txinfo);
 Signing code for P2WSH is almost identical to standard multisig addresses just with a different scriptSig.
 
 ```js
+(async () => {
+  // Now let's spend our tx
+  const spend1 = new MTX();
+
+  ring.script = redeemScript;
+
+  spend1.addOutput({
+    address: sendTo,
+    value: Amount.fromBTC('10').toValue()
+  });
+
+  await spend1.fund([coin], {
+    changeAddress: address,
+    rate: 10000
+  });
+
+  spend1.scriptInput(0, coin, ring);
+  spend1.signInput(0, coin, ring);
+
   // Now you should see that our TX
   // has two witness items in it:
   // First is the signature
@@ -356,29 +381,14 @@ Redeem script for P2WSH is in the witness with its signature.
 
 ### P2SH Nested
 
-Bcoin MTX and KeyRing primitives construct all necessary scripts for us, so the only thing
-that changes when moving to nested segwit addresses is the UTXO script.
+Bcoin MTX and KeyRing primitives construct all necessary scripts for us, so the thing
+that changes when moving to nested segwit addresses is the UTXO pubkeyScript.
 
-So instead of using `ring.getAddress()`...
-```js
-const address = ring.getAddress();
+To spend P2SH inputs using bcoin change is small, we'll need
+to change `ring.getAddress()` with `ring.getNestedAddress()` or
+set the `ring.nested` variable to `true`, bcoin will handle rest for us.
 
-console.log(`Address where we received money: ${address}`);
-
-const sendTo = 'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi';
-const txhash = revHex('88885ac82ab0b61e909755e7f64f2deeedb89c83'
-                    + '3b68242da7de98c0934e1143');
-const txinfo = {
-  // prevout
-  hash: txhash,
-  index: 1,
-
-  value: Amount.fromBTC('200').toValue(),
-  script: Script.fromAddress(address)
-};
-```
-
-You will use `ring.getNestedAddress()`.
+Modified P2WPKH example:
 ```js
 const address = ring.getNestedAddress();
 
@@ -407,6 +417,10 @@ In order to get better understanding how Segwit scripts work check [BIP141][BIP1
 ## References
 Activated with segwit:
   - Segwit - [BIP141][BIP141] 
+      - P2WPKH [BIP141][BIP141-P2WPKH]
+      - P2WPKH nested in P2SH [BIP141][BIP141-NP2WPKH]
+      - P2WSH [BIP141][BIP141-P2WSH]
+      - P2WSH nested in P2SH [BIP141][BIP141-NP2SH]
   - Transaction Signature Verification for Version 0 Witness Program - [BIP143][BIP143]
   - Dummy stack element malleability [BIP147][BIP147]
 
@@ -442,3 +456,10 @@ You can check [BIP List][BIPS] for other related proposals.
 [BIP173]: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
 [BIP16]: https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki
 [BIPS]: https://github.com/bitcoin/bips
+
+[BIP141-P2WPKH]: https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wpkh
+[BIP141-NP2WPKH]: https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wpkh-nested-in-bip16-p2sh
+[BIP141-P2WSH]: https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wsh
+[BIP141-NP2SH]: https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wsh-nested-in-bip16-p2sh
+
+[endianness]: https://en.wikipedia.org/wiki/Endianness
