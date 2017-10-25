@@ -262,7 +262,7 @@ const txinfo = {
 const coin = Coin.fromOptions(txinfo);
 ```
 
-We use revHex to convert BE to LE ([Endianness][endianness]).
+We use revHex to convert Big Endian (BE) to Little Endian (LE) ([Endianness][endianness]).
 Coin is used for working with UTXOs and contains
 information about the previous output. Coin will later be used
 in MTX to fund our transaction.
@@ -384,9 +384,10 @@ Redeem script for P2WSH is in the witness with its signature.
 Bcoin MTX and KeyRing primitives construct all necessary scripts for us, so the thing
 that changes when moving to nested segwit addresses is the UTXO pubkeyScript.
 
-To spend P2SH inputs using bcoin change is small, we'll need
-to change `ring.getAddress()` with `ring.getNestedAddress()` or
-set the `ring.nested` variable to `true`, bcoin will handle rest for us.
+To spend P2SH inputs using bcoin, we just need to use `ring.getNestedAddress`
+instead of `ring.getAddress()` or set the `ring.nested` variable to `true` and bcoin
+can handle it automatically with `ring.getAddress()`.
+
 
 Modified P2WPKH example:
 ```js
