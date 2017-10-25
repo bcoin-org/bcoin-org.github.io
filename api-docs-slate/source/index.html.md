@@ -32,6 +32,7 @@ includes:
   - wallet
   - wallet_tx
   - wallet_accounts
+  - wallet_events
   - errors
 
 search: true

@@ -678,6 +678,35 @@
               </ul>
           </li>
           <li>
+            <a href="#wallet-events" class="toc-h1 toc-link" data-title="Wallet Events">Wallet Events</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#using-wallet-sockets" class="toc-h2 toc-link" data-title="Wallet Events">Using Wallet Sockets</a>
+                  </li>
+                  <li>
+                    <a href="#code-version-code" class="toc-h2 toc-link" data-title="Wallet Events"><code>version</code></a>
+                  </li>
+                  <li>
+                    <a href="#code-wallet-tx-code" class="toc-h2 toc-link" data-title="Wallet Events"><code>wallet tx</code></a>
+                  </li>
+                  <li>
+                    <a href="#code-wallet-conflict-code" class="toc-h2 toc-link" data-title="Wallet Events"><code>wallet conflict</code></a>
+                  </li>
+                  <li>
+                    <a href="#code-wallet-confirmed-code" class="toc-h2 toc-link" data-title="Wallet Events"><code>wallet confirmed</code></a>
+                  </li>
+                  <li>
+                    <a href="#code-wallet-unconfirmed-code" class="toc-h2 toc-link" data-title="Wallet Events"><code>wallet unconfirmed</code></a>
+                  </li>
+                  <li>
+                    <a href="#code-wallet-balance-code" class="toc-h2 toc-link" data-title="Wallet Events"><code>wallet balance</code></a>
+                  </li>
+                  <li>
+                    <a href="#code-wallet-address-code" class="toc-h2 toc-link" data-title="Wallet Events"><code>wallet address</code></a>
+                  </li>
+              </ul>
+          </li>
+          <li>
             <a href="#errors" class="toc-h1 toc-link" data-title="Errors">Errors</a>
           </li>
       </div>
@@ -7554,7 +7583,145 @@ Note that command defaults to primary (default) wallet if no wallet id is passed
 <td>for multisig accounts, what to make the <code>n</code> in m-of-n</td>
 </tr>
 </tbody></table>
-<h1 id='errors'>Errors</h1>
+<h1 id='wallet-events'>Wallet Events</h1><h2 id='using-wallet-sockets'>Using Wallet Sockets</h2>
+<p>Wallet events use the socket.io protocol.</p>
+
+<p>Socket IO implementations:</p>
+
+<ul>
+<li>JS: https://github.com/socketio/socket.io-client</li>
+<li>Python: https://github.com/miguelgrinberg/python-socketio</li>
+<li>Go: https://github.com/googollee/go-socket.io</li>
+<li>C++: https://github.com/socketio/socket.io-client-cpp</li>
+</ul>
+<h3 id='wallet-socket-auth'>Wallet Socket Auth</h3>
+<p>Authentication with the API server must be completed before any other events
+will be accepted.</p>
+
+<p>Note that even if the server API key is disabled on the test server, the
+<code>wallet auth</code> event must still be sent to complete the handshake.</p>
+
+<p><code>emit(&#39;wallet auth&#39;, &#39;server-api-key&#39;)</code></p>
+
+<p>The server will respond with a socket.io ACK packet once auth is completed.</p>
+<h3 id='listening-on-a-wallet'>Listening on a wallet</h3>
+<p>After creating a websocket and authing with the server, you must send a <code>wallet
+join</code> event to listen for events on a wallet.</p>
+
+<p><code>emit(&#39;wallet join&#39;, &#39;wallet-id&#39;, &#39;wallet-token&#39;)</code></p>
+<h3 id='unlistening-on-a-wallet'>Unlistening on a wallet</h3>
+<p><code>emit(&#39;wallet leave&#39;, &#39;wallet-id&#39;)</code></p>
+<h2 id='code-version-code'><code>version</code></h2>
+<p>Emitted on connection.</p>
+
+<p>Returns version. Object in the form:
+<code>[{ version: &#39;v1.0.0-alpha&#39;, agent: &#39;/bcoin:v1.0.0-alpha/&#39;, network: &#39;main&#39; }]</code>.</p>
+<h2 id='code-wallet-tx-code'><code>wallet tx</code></h2>
+<p>Received on transaction.</p>
+
+<blockquote>
+<p>Example:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"primary"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0de09025e68b78e13f5543f46a9516fa37fcc06409bf03eda0e85ed34018f822"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">-1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"block"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"time"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"mtime"</span><span class="p">:</span><span class="w"> </span><span class="mi">1486685530</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"date"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2017-02-10T00:12:10Z"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">-1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"size"</span><span class="p">:</span><span class="w"> </span><span class="mi">226</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"virtualSize"</span><span class="p">:</span><span class="w"> </span><span class="mi">226</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"fee"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.0000454"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"rate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.00020088"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"confirmations"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="s2">"50.0"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"n4UANJbj2ZWy1kgt9g45XFGp57FQvqR8ZJ"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"change"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"derivation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"m/0'/0/0"</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">],</span><span class="w">
+  </span><span class="s2">"outputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="s2">"5.0"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mu5Puppq4Es3mibRskMwoGjoZujHCFRwGS"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"change"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"derivation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"m/0'/0/7"</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">},</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="s2">"value"</span><span class="p">:</span><span class="w"> </span><span class="s2">"44.9999546"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"n3nFYgQR2mrLwC3X66xHNsx4UqhS3rkSnY"</span><span class="p">,</span><span class="w">
+      </span><span class="s2">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"change"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"derivation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"m/0'/1/0"</span><span class="w">
+      </span><span class="p">}</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">],</span><span class="w">
+  </span><span class="s2">"tx"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0100000001c5b23b4348b7fa801f498465e06f9e80cf2f61eead23028de14b67fa78df3716000000006b483045022100d3d4d945cdd85f0ed561ae8da549cb083ab37d82fcff5b9023f0cce608f1dffe02206fc1fd866575061dcfa3d12f691c0a2f03041bdb75a36cd72098be096ff62a810121021b018b19426faa59fdda7f57e68c42d925752454d9ea0d6feed8ac186074a4bcffffffff020065cd1d000000001976a91494bc546a84c481fbd30d34cfeeb58fd20d8a59bc88ac447b380c010000001976a914f4376876aa04f36fc71a2618878986504e40ef9c88ac00000000"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre><h2 id='code-wallet-conflict-code'><code>wallet conflict</code></h2>
+<p>Received on double spend.</p>
+
+<p>Returns tx details of removed double spender.</p>
+<h2 id='code-wallet-confirmed-code'><code>wallet confirmed</code></h2>
+<p>Received when a transaction is confirmed.</p>
+
+<p>Returns tx details.</p>
+<h2 id='code-wallet-unconfirmed-code'><code>wallet unconfirmed</code></h2>
+<p>Received if a transaction was changed from
+confirmed-&gt;unconfirmed as the result of a reorg.</p>
+
+<p>Returns tx details.</p>
+<h2 id='code-wallet-balance-code'><code>wallet balance</code></h2>
+<p>Received on balance update. Only emitted for
+entire wallet balance (not individual accounts).</p>
+
+<blockquote>
+<p>Example:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"primary"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"unconfirmed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"8149.9999546"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"confirmed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"8150.0"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre><h2 id='code-wallet-address-code'><code>wallet address</code></h2>
+<p>Received when a new address is derived.</p>
+
+<blockquote>
+<p>Example:</p>
+</blockquote>
+<pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"network"</span><span class="p">:</span><span class="w"> </span><span class="s2">"regtest"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"wid"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"primary"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"account"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"branch"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"index"</span><span class="p">:</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"witness"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"nested"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"publicKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"02801d9457837ed50e9538ee1806b6598e12a3c259fdc9258bbd32934f22cb1f80"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"script"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"program"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pubkeyhash"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mwX8J1CDGUqeQcJPnjNBG4s97vhQsJG7Eq"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre><h1 id='errors'>Errors</h1>
 <p>Any errors will be returned with an http status code other than 200, containing a JSON object in the form:</p>
 
 <p><code>{&quot;error&quot;: { message: &quot;message&quot; } }</code></p>
