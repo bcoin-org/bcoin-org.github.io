@@ -183,6 +183,7 @@ const client = new bcoin.http.Client({
   "hash": "00000000cabd2d0245add40f335bab18d3e837eccf868b64aabbbbac74fb21e0",
   "height": 1500,
   "version": 1,
+  "confirmations": 1192251,
   "prevBlock": "00000000f651e7fe6d9a4845dcf40f5642216e59054453a4368a73a7295f9f3d",
   "merkleRoot": "e3e4590784a828967e6d9319eca2915c1860a63167449f9605e649a0aafe6d0a",
   "time": 1337966228,
@@ -292,3 +293,4 @@ Broadcast a transaction by adding it to the node's mempool. If mempool verificat
 Parameter | Description
 --------- | -----------
 tx | transaction hash
+
