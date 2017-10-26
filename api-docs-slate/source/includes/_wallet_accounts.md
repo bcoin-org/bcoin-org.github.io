@@ -169,7 +169,7 @@ type='multisig'
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id account create $name --type=$type
+bcoin cli wallet --id=$id account create $name --type=$type --key=$accountKey
 ```
 
 ```shell--curl
@@ -225,7 +225,8 @@ Parameter | Description
 --------- | -----------------
 name <br> _string_ | name to give the account. Option can be `account` or `name`
 witness <br> _bool_ | whether or not to act as segregated witness wallet account
-watchOnly <br> _bool_ | whether or not to make watch only account. Watch only accounts can't accept private keys for import (or sign transactions)
+accountKey <br> _string_ | the extended public key for the account. This is ignored for non watch only wallets. Watch only accounts can't accept private keys for import (or sign transactions)
 type <br> _string_ | what type of wallet to make it ('multisig', 'pubkeyhash')
 m <br> _int_ | for multisig accounts, what to make `m` in m-of-n
 n <br> _int_ | for multisig accounts, what to make the `n` in m-of-n
+
