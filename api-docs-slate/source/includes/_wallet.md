@@ -88,7 +88,7 @@ Note that accounts should not be accessed directly from the public API. They do 
   "id": "walletId",
   "witness": true,
   "watchOnly": false,
-  "accountKey": key,
+  "accountKey": "tpubDCk7nRE1aq9MPdLEV1Y5LHdifspWxKDcQWKArMP7axEaZoNZQ2mxPxc1oBxiPahCtUPKAm5TYzf6WWtJ51Yn27Qzf7snxaK36ZASCgEtbPy",
   "accountIndex": 1,
   "type": "pubkeyhash"
   "m": 1,
@@ -105,8 +105,10 @@ Name | Type | Default | Description
 id | String |  | Wallet ID (used for storage)
 master | HDPrivateKey/HDPublicKey | | | Master HD key. If not present, it will be generated
 witness | Boolean | `false` | Whether to use witness programs
+watchOnly | Boolean | `false` | 
+accountKey | String | | The extended public key for the primary account in the new wallet. This value is ignored if `watchOnly` is `false`
 accountIndex | Number | `0` | The BIP44 [account index](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Account)
-receiveDepth | Number | | The index of the _next_ receiveing address
+receiveDepth | Number | | The index of the _next_ receiving address
 changeDepth | Number | | The index of the _next_ change address
 type | String | `'pubkeyhash'` |Type of wallet (pubkeyhash, multisig)
 compressed | Boolean | `true` | Whether to use compressed public keys
@@ -367,7 +369,9 @@ curl $url/wallet/$id \
 ```
 
 ```shell--cli
-bcoin cli wallet create $id --witness=$witness --passphrase=$passphrase --watch=$accountKey
+# watchOnly defaults to true if --key flag is set
+
+bcoin cli wallet create $id --witness=$witness --passphrase=$passphrase --watch=$watchOnly --key=$accountKey
 ```
 
 ```javascript
