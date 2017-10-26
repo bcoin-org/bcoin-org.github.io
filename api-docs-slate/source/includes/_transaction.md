@@ -88,7 +88,8 @@ const client = new bcoin.http.Client({
       "address": "n3BmXQPa1dKi3zEyCdCGNHTuE5GLdmw1Tr"
     }
   ],
-  "locktime": 0
+  "locktime": 0,
+  "confirmations": 1180820
 }
 ```
 
@@ -201,7 +202,8 @@ const client = new bcoin.http.Client({
         "address": "mkGrySSnxcqRbtPCisApj3zXCQVmUUWbf1"
       }
     ],
-    "locktime": 0
+    "locktime": 0,
+	"confirmations": 1187258
   }
 ]
 ```
@@ -320,7 +322,8 @@ const client = new bcoin.http.Client({
         "address": "mxfL3bJohxaoBkKNtUF8xSU1DVKzbiChnZ"
       }
     ],
-    "locktime": 0
+    "locktime": 0,
+	"confirmations": 1190528
   }
 ]
 ```
@@ -334,3 +337,4 @@ Returns transaction objects array by addresses
 Parameter | Description
 --------- | -----------
 addresses | array of bitcoin addresses
+
