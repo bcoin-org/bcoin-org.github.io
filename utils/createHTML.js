@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const Prism = require('prismjs');
 const PrismLanguages = require('prism-languages');
+const _ = require('underscore');
 
 const generateSidebar = require('./generateSidebar.js');
 const helpers = require('./helpers');
@@ -49,6 +50,7 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
   renderer.code = function (code, language) {
     if (language === 'post-author') {
       // only return code block if wasn't set by argument
+      author = code;
       return postMeta ? '' : getPostMeta(code);
     }
 
@@ -75,7 +77,7 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
 
   // Assemble guide text container
   let blogText = marked(markdownString);
-  let template = fs.readFileSync(path.resolve(templatesDir, 'guides-template.txt'))
+  let guideText = fs.readFileSync(path.resolve(templatesDir, 'guides-template.html'))
                       .toString();
 
   // these constants are comment text that mark the start
@@ -86,14 +88,21 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
 
   // generate sidebar and insert into our page template
   const sidebarText = await generateSidebar('guides', rootDir);
-  template = insertToTemplate(template, SIDEBAR_START, sidebarText);
+  guideText = insertToTemplate(guideText, SIDEBAR_START, sidebarText);
 
   // insert the guide text into our template
-  template = insertToTemplate(template, GUIDE_START, blogText);
+  guideText = insertToTemplate(guideText, GUIDE_START, blogText);
+
+  const guideTemplate = _.template(guideText);
+  const postInfo = {
+    title: guideTitle,
+    author,
+    description: guideDescription
+  }
 
   // create the html file for final output
   return new Promise((resolve, reject) => {
-    fs.writeFile(htmlFile, template, {flags: 'w+'}, (err) => {
+    fs.writeFile(htmlFile, guideTemplate(postInfo), {flags: 'w+'}, (err) => {
       if (err) reject(err);
       resolve(htmlFile)
     });
