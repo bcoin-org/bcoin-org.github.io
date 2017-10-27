@@ -105,7 +105,7 @@ Name | Type | Default | Description
 id | String |  | Wallet ID (used for storage)
 master | HDPrivateKey/HDPublicKey | | | Master HD key. If not present, it will be generated
 witness | Boolean | `false` | Whether to use witness programs
-watchOnly | Boolean | `false` | 
+watchOnly | Boolean | `false` |
 accountKey | String | | The extended public key for the primary account in the new wallet. This value is ignored if `watchOnly` is `false`
 accountIndex | Number | `0` | The BIP44 [account index](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Account)
 receiveDepth | Number | | The index of the _next_ receiving address
@@ -509,8 +509,8 @@ let id, passphrase, rate, value, address;
 ```shell--vars
 id="foo"
 passphrase="bar"
-rate=100
-value=3000
+rate=1000
+value=.3
 address="moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"
 ```
 
@@ -558,7 +558,7 @@ const options = {
   "size": 225,
   "virtualSize": 225,
   "fee": 22,
-  "rate": 100,
+  "rate": 1000,
   "confirmations": 0,
   "inputs": [
     {
@@ -609,7 +609,7 @@ passphrase <br> _string_ | passphrase to unlock the account
 ### Output object
 Property | Description
 --------- | -----------
-value <br> _int_ | Value to send in satoshis
+value <br> _int_ | Value to send in bitcoin
 address <br> _string_ | destination address for transaction
 
 ## Create a Transaction
@@ -721,7 +721,7 @@ passphrase <br> _string_ | passphrase to unlock the account
 ### Output object
 Property | Description
 --------- | -----------
-value <br> _int_ | Value to send in bitcoin (as of beta-1.14)
+value <br> _int_ | Value to send in bitcoin
 address <br> _string_ | destination address for transaction
 
 
