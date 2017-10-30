@@ -599,11 +599,17 @@ Create, sign, and send a transaction.
 ### Post Paramaters
 Parameter | Description
 --------- | ------------------
-rate <br> _int_ | the rate for transaction fees. Denominated in satoshis per kb
 outputs <br> _array_ | An array of outputs to send for the transaction
-smart <br> _bool_ | whether or not to estimate a smart fee based on current mempool
 account <br> _string_ | account to use for transaction
 passphrase <br> _string_ | passphrase to unlock the account
+smart <br> _bool_  | whether or not to choose smart coins, will also used unconfirmed transactions
+blocks <br> _int_ | number of blocks to use for fee estimation.
+rate <br> _int_ | the rate for transaction fees. Denominated in satoshis per kb
+maxFee <br> _int_ |  maximum fee you're willing to pay
+subtractFee <br> _bool_ | whether to subtract fee from outputs (evenly)
+subtractIndex <br> _int_ | subtract only from specified output index
+selection <br> _enum_ - `all`, `random`, `age`, `value`| How to select coins
+depth <br> _int_  | number of confirmation for coins to spend
 
 
 ### Output object
@@ -712,10 +718,15 @@ Do not broadcast or add to wallet.
 ### Post Paramters
 Paramter | Description
 --------- | ----------------
-rate <br> _int_ | the rate for transaction fees. Denominated in satoshis per kb
 outputs <br> _array_ | An array of outputs to send for the transaction
-smart <br> _bool_ | whether or not to estimate a smart fee based on current mempool
 passphrase <br> _string_ | passphrase to unlock the account
+smart <br> _bool_  | whether or not to choose smart coins, will also used unconfirmed transactions
+rate <br> _int_ | the rate for transaction fees. Denominated in satoshis per kb
+maxFee <br> _int_ |  maximum fee you're willing to pay
+subtractFee <br> _bool_ | whether to subtract fee from outputs (evenly)
+subtractIndex <br> _int_ | subtract only from specified output index
+selection <br> _enum_ - `all`, `random`, `age`, `value`| How to select coins
+depth <br> _int_  | number of confirmation for coins to spend
 
 
 ### Output object

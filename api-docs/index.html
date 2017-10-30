@@ -1070,6 +1070,7 @@ bcoin cli block <span class="nv">$blockHeight</span> <span class="c"># by height
   </span><span class="s2">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"00000000cabd2d0245add40f335bab18d3e837eccf868b64aabbbbac74fb21e0"</span><span class="p">,</span><span class="w">
   </span><span class="s2">"height"</span><span class="p">:</span><span class="w"> </span><span class="mi">1500</span><span class="p">,</span><span class="w">
   </span><span class="s2">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"confirmations"</span><span class="p">:</span><span class="w"> </span><span class="mi">1192251</span><span class="p">,</span><span class="w">
   </span><span class="s2">"prevBlock"</span><span class="p">:</span><span class="w"> </span><span class="s2">"00000000f651e7fe6d9a4845dcf40f5642216e59054453a4368a73a7295f9f3d"</span><span class="p">,</span><span class="w">
   </span><span class="s2">"merkleRoot"</span><span class="p">:</span><span class="w"> </span><span class="s2">"e3e4590784a828967e6d9319eca2915c1860a63167449f9605e649a0aafe6d0a"</span><span class="p">,</span><span class="w">
   </span><span class="s2">"time"</span><span class="p">:</span><span class="w"> </span><span class="mi">1337966228</span><span class="p">,</span><span class="w">
@@ -5113,7 +5114,8 @@ to lookup transactions by transaction hashes and addresses, respectively.
       </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"n3BmXQPa1dKi3zEyCdCGNHTuE5GLdmw1Tr"</span><span class="w">
     </span><span class="p">}</span><span class="w">
   </span><span class="p">],</span><span class="w">
-  </span><span class="s2">"locktime"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
+  </span><span class="s2">"locktime"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"confirmations"</span><span class="p">:</span><span class="w"> </span><span class="mi">1180820</span><span class="w">
 </span><span class="p">}</span><span class="w">
 </span></code></pre><h3 id='http-request'>HTTP Request</h3>
 <p><code>GET /tx/:txhash</code></p>
@@ -5214,7 +5216,8 @@ to lookup transactions by transaction hashes and addresses, respectively.
         </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mkGrySSnxcqRbtPCisApj3zXCQVmUUWbf1"</span><span class="w">
       </span><span class="p">}</span><span class="w">
     </span><span class="p">],</span><span class="w">
-    </span><span class="s2">"locktime"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
+    </span><span class="s2">"locktime"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"confirmations"</span><span class="p">:</span><span class="w"> </span><span class="mi">1187258</span><span class="w">
   </span><span class="p">}</span><span class="w">
 </span><span class="p">]</span><span class="w">
 </span></code></pre>
@@ -5322,7 +5325,8 @@ to lookup transactions by transaction hashes and addresses, respectively.
         </span><span class="s2">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"mxfL3bJohxaoBkKNtUF8xSU1DVKzbiChnZ"</span><span class="w">
       </span><span class="p">}</span><span class="w">
     </span><span class="p">],</span><span class="w">
-    </span><span class="s2">"locktime"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
+    </span><span class="s2">"locktime"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"confirmations"</span><span class="p">:</span><span class="w"> </span><span class="mi">1190528</span><span class="w">
   </span><span class="p">}</span><span class="w">
 </span><span class="p">]</span><span class="w">
 </span></code></pre>
@@ -5509,7 +5513,7 @@ Replace `[TARGET_ACTION]` with one of the available actions listed below
   </span><span class="s2">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"walletId"</span><span class="p">,</span><span class="w">
   </span><span class="s2">"witness"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
   </span><span class="s2">"watchOnly"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"accountKey"</span><span class="p">:</span><span class="w"> </span><span class="err">key</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"accountKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tpubDCk7nRE1aq9MPdLEV1Y5LHdifspWxKDcQWKArMP7axEaZoNZQ2mxPxc1oBxiPahCtUPKAm5TYzf6WWtJ51Yn27Qzf7snxaK36ZASCgEtbPy"</span><span class="p">,</span><span class="w">
   </span><span class="s2">"accountIndex"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
   </span><span class="s2">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pubkeyhash"</span><span class="w">
   </span><span class="s2">"m"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
@@ -5547,6 +5551,18 @@ Replace `[TARGET_ACTION]` with one of the available actions listed below
 <td>Whether to use witness programs</td>
 </tr>
 <tr>
+<td>watchOnly</td>
+<td>Boolean</td>
+<td><code>false</code></td>
+<td></td>
+</tr>
+<tr>
+<td>accountKey</td>
+<td>String</td>
+<td></td>
+<td>The extended public key for the primary account in the new wallet. This value is ignored if <code>watchOnly</code> is <code>false</code></td>
+</tr>
+<tr>
 <td>accountIndex</td>
 <td>Number</td>
 <td><code>0</code></td>
@@ -5556,7 +5572,7 @@ Replace `[TARGET_ACTION]` with one of the available actions listed below
 <td>receiveDepth</td>
 <td>Number</td>
 <td></td>
-<td>The index of the <em>next</em> receiveing address</td>
+<td>The index of the <em>next</em> receiving address</td>
 </tr>
 <tr>
 <td>changeDepth</td>
@@ -5781,7 +5797,9 @@ witness <span class="o">=</span> <span class="nb">false
 </code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span> <span class="se">\</span>
   -X PUT <span class="se">\</span>
   --data <span class="s1">'{"witness":'</span><span class="nv">$witness</span><span class="s1">', "passphrase":"'</span><span class="nv">$passphrase</span><span class="s1">'", watchOnly: "true", "accountKey":"'</span><span class="nv">$accountKey</span><span class="s1">'"}'</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet create <span class="nv">$id</span> --witness<span class="o">=</span><span class="nv">$witness</span> --passphrase<span class="o">=</span><span class="nv">$passphrase</span> --watch<span class="o">=</span><span class="nv">$accountKey</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code><span class="c"># watchOnly defaults to true if --key flag is set</span>
+
+bcoin cli wallet create <span class="nv">$id</span> --witness<span class="o">=</span><span class="nv">$witness</span> --passphrase<span class="o">=</span><span class="nv">$passphrase</span> --watch<span class="o">=</span><span class="nv">$watchOnly</span> --key<span class="o">=</span><span class="nv">$accountKey</span>
 </code></pre><pre class="highlight javascript tab-javascript"><code><span class="kr">const</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">bcoin</span><span class="p">.</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="p">();</span>
 <span class="kr">const</span> <span class="nx">options</span> <span class="o">=</span> <span class="p">{</span>
   <span class="na">id</span><span class="p">:</span> <span class="nx">id</span><span class="p">,</span>
@@ -5903,8 +5921,8 @@ oldPass <span class="o">=</span> <span class="s1">'oldpass123'</span>
 <h2 id='send-a-transaction'>Send a transaction</h2><pre class="highlight javascript tab-javascript"><code><span class="kd">let</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">passphrase</span><span class="p">,</span> <span class="nx">rate</span><span class="p">,</span> <span class="nx">value</span><span class="p">,</span> <span class="nx">address</span><span class="p">;</span>
 </code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s2">"foo"</span>
 <span class="nv">passphrase</span><span class="o">=</span><span class="s2">"bar"</span>
-<span class="nv">rate</span><span class="o">=</span>100
-<span class="nv">value</span><span class="o">=</span>3000
+<span class="nv">rate</span><span class="o">=</span>1000
+<span class="nv">value</span><span class="o">=</span>.3
 <span class="nv">address</span><span class="o">=</span><span class="s2">"moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"</span>
 </code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet send --id<span class="o">=</span><span class="nv">$id</span> --value<span class="o">=</span><span class="nv">$value</span> --address<span class="o">=</span><span class="nv">$address</span> ---passphrase<span class="o">=</span><span class="nv">$passphrase</span>
 </code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/send <span class="se">\</span>
@@ -5942,7 +5960,7 @@ oldPass <span class="o">=</span> <span class="s1">'oldpass123'</span>
   </span><span class="s2">"size"</span><span class="p">:</span><span class="w"> </span><span class="mi">225</span><span class="p">,</span><span class="w">
   </span><span class="s2">"virtualSize"</span><span class="p">:</span><span class="w"> </span><span class="mi">225</span><span class="p">,</span><span class="w">
   </span><span class="s2">"fee"</span><span class="p">:</span><span class="w"> </span><span class="mi">22</span><span class="p">,</span><span class="w">
-  </span><span class="s2">"rate"</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"rate"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w">
   </span><span class="s2">"confirmations"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
   </span><span class="s2">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
     </span><span class="p">{</span><span class="w">
@@ -5984,16 +6002,8 @@ oldPass <span class="o">=</span> <span class="s1">'oldpass123'</span>
 </tr>
 </thead><tbody>
 <tr>
-<td>rate <br> <em>int</em></td>
-<td>the rate for transaction fees. Denominated in satoshis per kb</td>
-</tr>
-<tr>
 <td>outputs <br> <em>array</em></td>
 <td>An array of outputs to send for the transaction</td>
-</tr>
-<tr>
-<td>smart <br> <em>bool</em></td>
-<td>whether or not to estimate a smart fee based on current mempool</td>
 </tr>
 <tr>
 <td>account <br> <em>string</em></td>
@@ -6002,6 +6012,38 @@ oldPass <span class="o">=</span> <span class="s1">'oldpass123'</span>
 <tr>
 <td>passphrase <br> <em>string</em></td>
 <td>passphrase to unlock the account</td>
+</tr>
+<tr>
+<td>smart <br> <em>bool</em></td>
+<td>whether or not to choose smart coins, will also used unconfirmed transactions</td>
+</tr>
+<tr>
+<td>blocks <br> <em>int</em></td>
+<td>number of blocks to use for fee estimation.</td>
+</tr>
+<tr>
+<td>rate <br> <em>int</em></td>
+<td>the rate for transaction fees. Denominated in satoshis per kb</td>
+</tr>
+<tr>
+<td>maxFee <br> <em>int</em></td>
+<td>maximum fee you&#39;re willing to pay</td>
+</tr>
+<tr>
+<td>subtractFee <br> <em>bool</em></td>
+<td>whether to subtract fee from outputs (evenly)</td>
+</tr>
+<tr>
+<td>subtractIndex <br> <em>int</em></td>
+<td>subtract only from specified output index</td>
+</tr>
+<tr>
+<td>selection <br> <em>enum</em> - <code>all</code>, <code>random</code>, <code>age</code>, <code>value</code></td>
+<td>How to select coins</td>
+</tr>
+<tr>
+<td>depth <br> <em>int</em></td>
+<td>number of confirmation for coins to spend</td>
 </tr>
 </tbody></table>
 <h3 id='output-object'>Output object</h3>
@@ -6013,7 +6055,7 @@ oldPass <span class="o">=</span> <span class="s1">'oldpass123'</span>
 </thead><tbody>
 <tr>
 <td>value <br> <em>int</em></td>
-<td>Value to send in satoshis</td>
+<td>Value to send in bitcoin</td>
 </tr>
 <tr>
 <td>address <br> <em>string</em></td>
@@ -6106,20 +6148,40 @@ Do not broadcast or add to wallet.</p>
 </tr>
 </thead><tbody>
 <tr>
-<td>rate <br> <em>int</em></td>
-<td>the rate for transaction fees. Denominated in satoshis per kb</td>
-</tr>
-<tr>
 <td>outputs <br> <em>array</em></td>
 <td>An array of outputs to send for the transaction</td>
 </tr>
 <tr>
-<td>smart <br> <em>bool</em></td>
-<td>whether or not to estimate a smart fee based on current mempool</td>
-</tr>
-<tr>
 <td>passphrase <br> <em>string</em></td>
 <td>passphrase to unlock the account</td>
+</tr>
+<tr>
+<td>smart <br> <em>bool</em></td>
+<td>whether or not to choose smart coins, will also used unconfirmed transactions</td>
+</tr>
+<tr>
+<td>rate <br> <em>int</em></td>
+<td>the rate for transaction fees. Denominated in satoshis per kb</td>
+</tr>
+<tr>
+<td>maxFee <br> <em>int</em></td>
+<td>maximum fee you&#39;re willing to pay</td>
+</tr>
+<tr>
+<td>subtractFee <br> <em>bool</em></td>
+<td>whether to subtract fee from outputs (evenly)</td>
+</tr>
+<tr>
+<td>subtractIndex <br> <em>int</em></td>
+<td>subtract only from specified output index</td>
+</tr>
+<tr>
+<td>selection <br> <em>enum</em> - <code>all</code>, <code>random</code>, <code>age</code>, <code>value</code></td>
+<td>How to select coins</td>
+</tr>
+<tr>
+<td>depth <br> <em>int</em></td>
+<td>number of confirmation for coins to spend</td>
 </tr>
 </tbody></table>
 <h3 id='output-object-2'>Output object</h3>
@@ -6131,7 +6193,7 @@ Do not broadcast or add to wallet.</p>
 </thead><tbody>
 <tr>
 <td>value <br> <em>int</em></td>
-<td>Value to send in bitcoin (as of beta-1.14)</td>
+<td>Value to send in bitcoin</td>
 </tr>
 <tr>
 <td>address <br> <em>string</em></td>
@@ -7511,7 +7573,7 @@ Note that command defaults to primary (default) wallet if no wallet id is passed
 </code></pre><pre class="highlight shell tab-shell--vars"><code><span class="nv">id</span><span class="o">=</span><span class="s1">'test'</span>
 <span class="nv">name</span><span class="o">=</span><span class="s1">'menace'</span>
 <span class="nb">type</span><span class="o">=</span><span class="s1">'multisig'</span>
-</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> account create <span class="nv">$name</span> --type<span class="o">=</span><span class="nv">$type</span>
+</code></pre><pre class="highlight shell tab-shell--cli"><code>bcoin cli wallet --id<span class="o">=</span><span class="nv">$id</span> account create <span class="nv">$name</span> --type<span class="o">=</span><span class="nv">$type</span> --key<span class="o">=</span><span class="nv">$accountKey</span>
 </code></pre><pre class="highlight shell tab-shell--curl"><code>curl <span class="nv">$url</span>/wallet/<span class="nv">$id</span>/account/<span class="nv">$name</span> <span class="se">\</span>
     -X PUT
     --data <span class="s1">'{"type": "'</span><span class="nv">$type</span><span class="s2">"}'
@@ -7567,8 +7629,8 @@ Note that command defaults to primary (default) wallet if no wallet id is passed
 <td>whether or not to act as segregated witness wallet account</td>
 </tr>
 <tr>
-<td>watchOnly <br> <em>bool</em></td>
-<td>whether or not to make watch only account. Watch only accounts can&#39;t accept private keys for import (or sign transactions)</td>
+<td>accountKey <br> <em>string</em></td>
+<td>the extended public key for the account. This is ignored for non watch only wallets. Watch only accounts can&#39;t accept private keys for import (or sign transactions)</td>
 </tr>
 <tr>
 <td>type <br> <em>string</em></td>
