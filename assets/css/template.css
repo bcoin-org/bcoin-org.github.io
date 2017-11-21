@@ -3708,11 +3708,19 @@ body.off-canvas-cart-open:after {
         height: 72px;
     }
 
+    /* padding-top and padding-bottom was set to 26px by template.
+    the menu bar height is set above to 72px, and the line-height of li > a is 20px
+    logic would have it that 26 + 26 + 20 = 72 but there's weird padding on scroll
+
+    in reality, the menu bar computes to 85px (so 32.5 + 32.5 + 20 = 85)
+    setting the padding to 32px fixes it for now */
+
     .header-small .main-nav-toggle,
     .header-small .inner-nav > li > a,
     .header-small .menu-extras .menu-item a {
-        padding-top: 26px;
-        padding-bottom: 26px;
+        padding-top: 32.5px;
+        padding-bottom: 32.5px;
+
     }/* Header transparent */
 
     .header.header-transparent {
