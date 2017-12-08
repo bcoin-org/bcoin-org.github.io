@@ -140,7 +140,6 @@ bcoin cli wallet get --network=testnet --token=$token
 ```
 
 ```javascript
-`use strict`
 
 const httpWallet = new bcoin.http.Wallet({
     id: id,
@@ -171,7 +170,7 @@ let id, passphrase;
 
 ```shell--vars
 id='foo'
-passphrase="bar"
+passphrase='bar'
 ```
 
 ```shell--cli
@@ -181,7 +180,7 @@ bcoin cli wallet retoken --id=$id --passphrase=$passphrase
 ```shell--curl
 curl $url/wallet/$id/retoken \
   -X POST
-  --data '{"passphrase":'$passphrase'}"
+  --data '{"passphrase":"'$passphrase'"}"
 ```
 
 ```javascript
@@ -356,16 +355,16 @@ let id, passphrase, witness, accountKey;
 ```
 
 ```shell--vars
-id = 'foo'
-passphrase = 'bar'
-witness = false
+id='foo'
+passphrase='bar'
+witness='false'
 accountKey='tpubDDh2XgSds1vBbeVgye88gsGQeCityoywRndtyrXcmvWqCgsFUyUKwzeDv8HiJhu9fC8jRAFMqxr4jj8eRTNTycmMao5wmsAScVf4jSMdPYZ'
 ```
 
 ```shell--curl
 curl $url/wallet/$id \
   -X PUT \
-  --data '{"witness":'$witness', "passphrase":"'$passphrase'", watchOnly: "true", "accountKey":"'$accountKey'"}'
+  --data '{"witness":'$witness', "passphrase":"'$passphrase'", "watchOnly": "true", "accountKey":"'$accountKey'"}'
 ```
 
 ```shell--cli
@@ -454,7 +453,7 @@ let id, oldPass, newPass;
 
 ```shell--vars
 id='foo'
-oldPass = 'oldpass123'
+oldPass='oldpass123'
 newPass='newpass123'
 ```
 
@@ -465,7 +464,7 @@ newPass='newpass123'
 ```shell-curl
 curl $url/wallet/$id/passphrase \
   -X POST
-  --data '{"old":'$oldPass', "new":'$newPass'}'
+  --data '{"old":"'$oldPass'", "new":"'$newPass'"}'
 ```
 
 ```javascript
@@ -493,7 +492,7 @@ Change wallet passphrase. Encrypt if unencrypted.
 Paramters | Description
 --------- | ---------------------
 old <br> _string_ | Old passphrase. Pass in empty string if none
-new <br> _string | New passphrase
+new <br> _string_ | New passphrase
 
 <aside class="notice">
   Note that the old passphrase is still required even if none was set prior. In this case, an empty string should be passed for the old passphrase.
