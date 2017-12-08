@@ -103,7 +103,7 @@ Options are used for wallet creation. None are required.
 Name | Type | Default | Description
 ---------- | ----------- | -------------- | -------------
 id | String |  | Wallet ID (used for storage)
-master | HDPrivateKey/HDPublicKey | | | Master HD key. If not present, it will be generated
+master | HDPrivateKey | | Master HD key. If not present, it will be generated
 witness | Boolean | `false` | Whether to use witness programs
 watchOnly | Boolean | `false` |
 accountKey | String | | The extended public key for the primary account in the new wallet. This value is ignored if `watchOnly` is `false`
