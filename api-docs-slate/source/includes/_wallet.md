@@ -533,7 +533,7 @@ curl $url/wallet/$id/send \
 const httpWallet = bcoin.http.Wallet({ id: id });
 const options = {
   rate: rate,
-  outputs: [{ value: value, address; address }]
+  outputs: [{ value: value, address: address }]
 };
 
 (async () => {
