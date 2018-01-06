@@ -1,17 +1,18 @@
 # Coin
-Getting coin information via APi.
+Getting coin information via API.
 
 *Coin stands for UTXO*
 
 <aside class="info">
-You need to enable <code>index-tx</code> in order
-to lookup transactions by transaction hashes and also
-enable <code>index-address</code> to lookup transaction by
-addresses too.
+You need to enable <code>index-address</code> in order to lookup coins by address(es).
 </aside>
 
 
 ## Get coin by Outpoint
+
+<aside class="info">
+This API call is always available regardless indexing options.
+</aside>
 
 ```javascript
 let hash, index;

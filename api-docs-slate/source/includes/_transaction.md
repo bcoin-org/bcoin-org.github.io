@@ -1,5 +1,5 @@
 # Transaction
-Getting transaction information via APi.
+Getting transaction information via API.
 
 <aside class="info">
 You need to enable <code>index-tx</code> in order
