@@ -2,8 +2,10 @@
 Getting transaction information via APi.
 
 <aside class="info">
-You need to enable <code>index-tx</code> and <code>index-address</code> in order
-to lookup transactions by transaction hashes and addresses, respectively.
+You need to enable <code>index-tx</code> in order
+to lookup transactions by transaction hashes and also
+enable <code>index-address</code> to lookup transaction by
+addresses too.
 </aside>
 
 ## Get tx by txhash
