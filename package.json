@@ -22,7 +22,7 @@
   "homepage": "https://github.com/bcoin-org/bcoin-org.github.io#readme",
   "dependencies": {
     "highlight.js": "^9.12.0",
-    "marked": "^0.3.6",
+    "marked": "^0.3.11",
     "prism-languages": "^0.3.3",
     "prismjs": "^1.6.0",
     "underscore": "^1.8.3"

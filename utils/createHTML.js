@@ -58,6 +58,8 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
       guideDescription = code;
       return '';
     }
+    if (!language || !PrismLanguages)
+      language = 'bash';
 
     return `<pre class="snippet line-numbers language-${language}">`
              + `<code class="line-numbers language-${language}">`
