@@ -16,17 +16,22 @@ Running a full node requires your computer always be online and connected to the
 
 1. Create an account at digitalocean.com
 2. Choose 'Create' -> 'Droplet' from the account dashboard
+![create droplet](https://raw.githubusercontent.com/bcoin-org/bcoin-org.github.io/staging/assets/images/guides/vps-create-droplet.png "Create Droplet")
 3. Choose 'Ubuntu 16.04' for OS Distribution
 4. Choose '4 GB 2 CPU $20/month' for Droplet Size
 5. Add Block Storage, 500GB $50/month.
+6. Choose a data center region.
+7. Add a new ssh key
 
 ### A Note on hardware requirements
 These hardware requirements are for a full node. When run in SPV node, you will not need the additional block storage. To run a full node you must maintain a complete history of all Bitcoin transactions. Without the full history the node is unable to validate transactions. If it cannot validate transactions, it cannot validate blocks or mine transactions to blocks.
 
 SPV Nodes use something called a bloom filter to maintain a smaller set of records. For example, if your Bitcoin address were `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa` your SPV node will ask its network peers for all transactions with an address that starts with `1A1z`. The returned data set will contain extra transactions irrelevant to your wallet. But its storage requirements will be far smaller than a full node. Consequently, SPV Nodes can only verify their own transactions.
 
-6. Choose a data center region.
-7. Add a new ssh key
+More information on SPV Nodes:
++ [Bitcoin Whitepaper - Section 8](https://bitcoin.org/bitcoin.pdf)
++ [Bitcoin.org Developer Guide](https://bitcoin.org/en/developer-guide#simplified-payment-verification-spv)
++ [BIP37](https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki)
 
 ### Setting Up SSH
 If you already have an ssh key you can copy your pubkey here. If you do not then follow these steps:
