@@ -169,6 +169,60 @@ $ nvm install 9.2.1
 $ sudo apt-get install build-essential
 $ sudo apt-get install python
 ```
+## Create a New User
+It's not ideal to run as the root user. While logged in as root:
+```
+$ addduser test
+root@igave:~# adduser test
+Adding user `test' ...
+Adding new group `test' (1002) ...
+Adding new user `test' (1001) with group `test' ...
+Creating home directory `/home/test' ...
+Copying files from `/etc/skel' ...
+New password:
+BAD PASSWORD: it does not contain enough DIFFERENT characters
+New password:
+Retype new password:
+passwd: password updated successfully
+Changing the user information for test
+Enter the new value, or press ENTER for the default
+	Full Name []:
+	Room Number []:
+	Work Phone []:
+	Home Phone []:
+	Other []:
+Is the information correct? [Y/n]
+```
+
+Sometimes you'll need root access. It's best to manage that with `visudo`
+
+```
+$ apt-get install visudo
+```
+And make the following addition, where `test` is the new user name:
+```
+test   ALL=(ALL:ALL) ALL
+```
+
+Then remove the `#` in front of `%admin` and `sudo` and add
+```
+$ usermod -aG admin test
+$ usermod -aG sudo test
+```
+
+Now to login to the server you will need to tell SSH to use this username
+
+```
+$ ssh test@fullnode
+```
+
+Once logged in, you can preface commands with `sudo` to run them as the root user or change into the root user
+
+```
+$ sudo apt-get install htop
+$ sudo su -
+```
+
 ## Install Bcoin
 
 ```
@@ -177,5 +231,7 @@ $ cd bcoin
 $ npm install
 $ node docs/Examples/fullnode
 ```
+
+
 
 You should begin to see blocks syncing as soon as the network peers pickup.

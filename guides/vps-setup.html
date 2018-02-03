@@ -344,6 +344,7 @@
 <h3 id="choose-#39;ubuntu-16.04&#39;-and-at-least-2cpu-4gib-for-hardware">Choose &#39;Ubuntu 16.04&#39; and at least 2CPU 4GiB for hardware</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-os.png" alt="choose os" title="Choose OS"></p>
 <h3 id="continue-to-add-storage-add-500gib">Continue to add storage. Add 500GiB</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-storage.png" alt="choose storage" title="Choose Storage"></p>
 <h3 id="review-and-launch">Review and Launch</h3><h3 id="amazon-will-prompt-you-for-an-ssh-keypair-download-a-new-keypair">Amazon will prompt you for an ssh keypair, download a new keypair</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-ssh.png" alt="amazon ssh" title="Amazon SSH"></p>
+<p>Treat this keyfile with the same respect you treat your Bitcoin wallet file. Both are private keys and you will be the only person with a copy of your keyfile. If you lose it, Amazon will not be able to recovery it for you.</p>
 <h3 id="accept-acknowledgement-amp;-launch-instances">Accept Acknowledgement &amp; Launch Instances</h3><h3 id="view-instances">View Instances</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-instances.png" alt="view instances" title="View Instances"></p>
 <p><a href="#a-note-on-hardware-requirements">A Note on Hardware Requirements</a></p>
 <p>Amazon will provision your server. Now is a good time to grab coffee.</p>
@@ -367,7 +368,27 @@
 $ <span class="token function">source</span> ~/.bashrc
 $ nvm <span class="token function">install</span> 9.2.1
 $ <span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> build-essential
-$ <span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> python</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="install-bcoin">Install Bcoin</h2><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">git</span> clone git://github.com/bcoin-org/bcoin.git
+$ <span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> python</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="create-a-new-user">Create a New User</h2><p>It&#39;s not ideal to run as the root user. While logged in as root:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ addduser <span class="token function">test</span>
+root@igave:~<span class="token comment" spellcheck="true"># adduser test</span>
+Adding user `test<span class="token string">' ...
+Adding new group `test'</span> <span class="token punctuation">(</span>1002<span class="token punctuation">)</span> <span class="token punctuation">..</span>.
+Adding new user `test<span class="token string">' (1001) with group `test'</span> <span class="token punctuation">..</span>.
+Creating home directory `/home/test<span class="token string">' ...
+Copying files from `/etc/skel'</span> <span class="token punctuation">..</span>.
+New password:
+BAD PASSWORD: it does not contain enough DIFFERENT characters
+New password:
+Retype new password:
+passwd: password updated successfully
+Changing the user information <span class="token keyword">for</span> <span class="token function">test</span>
+Enter the new value, or press ENTER <span class="token keyword">for</span> the default
+    Full Name <span class="token punctuation">[</span><span class="token punctuation">]</span>:
+    Room Number <span class="token punctuation">[</span><span class="token punctuation">]</span>:
+    Work Phone <span class="token punctuation">[</span><span class="token punctuation">]</span>:
+    Home Phone <span class="token punctuation">[</span><span class="token punctuation">]</span>:
+    Other <span class="token punctuation">[</span><span class="token punctuation">]</span>:
+Is the information correct? <span class="token punctuation">[</span>Y/n<span class="token punctuation">]</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="install-bcoin">Install Bcoin</h2><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">git</span> clone git://github.com/bcoin-org/bcoin.git
 $ <span class="token function">cd</span> bcoin
 $ npm <span class="token function">install</span>
 $ node docs/Examples/fullnode</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>You should begin to see blocks syncing as soon as the network peers pickup.</p>
