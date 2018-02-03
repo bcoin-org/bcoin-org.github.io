@@ -14,14 +14,21 @@ Running a full node requires your computer always be online and connected to the
 
 ## Digital Ocean
 
-1. Create an account at digitalocean.com
-2. Choose 'Create' -> 'Droplet' from the account dashboard
-![create droplet](https://raw.githubusercontent.com/bcoin-org/bcoin-org.github.io/staging/assets/images/guides/vps-create-droplet.png "Create Droplet")
-3. Choose 'Ubuntu 16.04' for OS Distribution
-4. Choose '4 GB 2 CPU $20/month' for Droplet Size
-5. Add Block Storage, 500GB $50/month.
-6. Choose a data center region.
-7. Add a new ssh key
+### Create an account @digitalocean.com
+### Choose 'Create' -> 'Droplet' from the account dashboard
+
+![create droplet](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-create-droplet.png "Create Droplet")
+### Choose 'Ubuntu 16.04' for OS Distribution
+![choose os](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-choose-os.png "Choose OS")
+
+### Choose '4 GB 2 CPU $20/month' for Droplet Size
+![choose plan](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-choose-plan.png "Choose Plan")
+### Add Block Storage, 500GB $50/month.
+![choose storage](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-block-storage.png "Choose Storage")
+### Choose a data center region.
+![choose datacenter](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-data-center.png "Choose Datacenter")
+### Add a new ssh key
+![add ssh](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-ssh-key.png "SSH Key")
 
 ### A Note on hardware requirements
 These hardware requirements are for a full node. When run in SPV node, you will not need the additional block storage. To run a full node you must maintain a complete history of all Bitcoin transactions. Without the full history the node is unable to validate transactions. If it cannot validate transactions, it cannot validate blocks or mine transactions to blocks.

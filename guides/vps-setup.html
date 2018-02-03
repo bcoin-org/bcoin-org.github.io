@@ -314,16 +314,12 @@
 										<div class="post-content" style="color:#000;">
 					<!-- START OF GUIDE -->
 <h2 class="post-title panel-title" id="full-node-vps-setup">Full Node VPS Setup</h2><ul class="post-meta"><li class="author">By Alex Sherbuck</li></ul><h2 id="introduction">Introduction</h2><p>Running a full node requires your computer always be online and connected to the Bitcoin network. For most users, a VPS is an elegant 24/7 full node solution.</p>
-<h2 id="digital-ocean">Digital Ocean</h2><ol>
-<li>Create an account at digitalocean.com</li>
-<li>Choose &#39;Create&#39; -&gt; &#39;Droplet&#39; from the account dashboard
-<img src="https://raw.githubusercontent.com/bcoin-org/bcoin-org.github.io/staging/assets/images/guides/vps-create-droplet.png" alt="create droplet" title="Create Droplet"></li>
-<li>Choose &#39;Ubuntu 16.04&#39; for OS Distribution</li>
-<li>Choose &#39;4 GB 2 CPU $20/month&#39; for Droplet Size</li>
-<li>Add Block Storage, 500GB $50/month.</li>
-<li>Choose a data center region.</li>
-<li>Add a new ssh key</li>
-</ol>
+<h2 id="digital-ocean">Digital Ocean</h2><h3 id="create-an-account-@digitaloceancom">Create an account @digitalocean.com</h3><h3 id="choose-#39;create&#39;--&gt;-&#39;droplet&#39;-from-the-account-dashboard">Choose &#39;Create&#39; -&gt; &#39;Droplet&#39; from the account dashboard</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-create-droplet.png" alt="create droplet" title="Create Droplet"></p>
+<h3 id="choose-#39;ubuntu-16.04&#39;-for-os-distribution">Choose &#39;Ubuntu 16.04&#39; for OS Distribution</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-choose-os.png" alt="choose os" title="Choose OS"></p>
+<h3 id="choose-#39;4-gb-2-cpu-$20/month&#39;-for-droplet-size">Choose &#39;4 GB 2 CPU $20/month&#39; for Droplet Size</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-choose-plan.png" alt="choose plan" title="Choose Plan"></p>
+<h3 id="add-block-storage-500gb-$50/month.">Add Block Storage, 500GB $50/month.</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-block-storage.png" alt="choose storage" title="Choose Storage"></p>
+<h3 id="choose-a-data-center-region">Choose a data center region.</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-data-center.png" alt="choose datacenter" title="Choose Datacenter"></p>
+<h3 id="add-a-new-ssh-key">Add a new ssh key</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-ssh-key.png" alt="add ssh" title="SSH Key"></p>
 <h3 id="a-note-on-hardware-requirements">A Note on hardware requirements</h3><p>These hardware requirements are for a full node. When run in SPV node, you will not need the additional block storage. To run a full node you must maintain a complete history of all Bitcoin transactions. Without the full history the node is unable to validate transactions. If it cannot validate transactions, it cannot validate blocks or mine transactions to blocks.</p>
 <p>SPV Nodes use something called a bloom filter to maintain a smaller set of records. For example, if your Bitcoin address were <code>1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</code> your SPV node will ask its network peers for all transactions with an address that starts with <code>1A1z</code>. The returned data set will contain extra transactions irrelevant to your wallet. But its storage requirements will be far smaller than a full node. Consequently, SPV Nodes can only verify their own transactions.</p>
 <p>More information on SPV Nodes:</p>
