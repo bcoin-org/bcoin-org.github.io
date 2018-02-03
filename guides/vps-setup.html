@@ -319,7 +319,7 @@
 <h3 id="choose-#39;4-gb-2-cpu-$20/month&#39;-for-droplet-size">Choose &#39;4 GB 2 CPU $20/month&#39; for Droplet Size</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-choose-plan.png" alt="choose plan" title="Choose Plan"></p>
 <h3 id="add-block-storage-500gb-$50/month.">Add Block Storage, 500GB $50/month.</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-block-storage.png" alt="choose storage" title="Choose Storage"></p>
 <h3 id="choose-a-data-center-region">Choose a data center region.</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-data-center.png" alt="choose datacenter" title="Choose Datacenter"></p>
-<h5 id="a-note-on-hardware-requirements">A Note on hardware requirements</h5><p>These hardware requirements are for a full node. When run in SPV node, you will not need the additional block storage. To run a full node you must maintain a complete history of all Bitcoin transactions. Without the full history the node is unable to validate transactions. If it cannot validate transactions, it cannot validate blocks or mine transactions to blocks.</p>
+<h5 id="a-note-on-hardware-requirements">A Note on hardware requirements</h5><p>These hardware requirements are for a full node. When run in SPV mode, you will not need the additional block storage. To run a full node you must maintain a complete history of all Bitcoin transactions. Without the full history the node is unable to validate transactions. If it cannot validate transactions, it cannot validate blocks or mine transactions to blocks.</p>
 <p>SPV Nodes use something called a bloom filter to maintain a smaller set of records. For example, if your Bitcoin address were <code>1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</code> your SPV node will ask its network peers for all transactions with an address that starts with <code>1A1z</code>. The returned data set will contain extra transactions irrelevant to your wallet. But its storage requirements will be far smaller than a full node. Consequently, SPV Nodes can only verify their own transactions.</p>
 <p>More information on SPV Nodes:</p>
 <ul>
@@ -338,19 +338,14 @@
 <li>Choose a hostname for the droplet and click create.</li>
 </ol>
 <p>Digital Ocean will provision your server. Now is a good time to grab coffee.</p>
-<h2 id="amazon-aws">Amazon AWS</h2><ol>
-<li>Create an account at <a href="https://aws.amazon.com">https://aws.amazon.com</a></li>
-<li>Launch a new instance from the console <a href="https://aws.amazon.com/console">https://aws.amazon.com/console</a></li>
-<li>Choose &#39;Ubuntu 16.04&#39; and at least 2CPU 4GiB for hardware.</li>
-<li>Continue to add storage. Add 500GiB.</li>
-</ol>
+<h2 id="amazon-aws">Amazon AWS</h2><h3 id="create-an-account">Create an account</h3><p><a href="https://aws.amazon.com">AWS</a></p>
+<h3 id="launch-a-new-instance-from-the-console">Launch a new instance from the console</h3><p><a href="https://aws.amazon.com/console">Console</a></p>
+<p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-launch-instance.png" alt="launch instance" title="Launch Instance"></p>
+<h3 id="choose-#39;ubuntu-16.04&#39;-and-at-least-2cpu-4gib-for-hardware">Choose &#39;Ubuntu 16.04&#39; and at least 2CPU 4GiB for hardware</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-os.png" alt="choose os" title="Choose OS"></p>
+<h3 id="continue-to-add-storage-add-500gib">Continue to add storage. Add 500GiB</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-storage.png" alt="choose storage" title="Choose Storage"></p>
+<h3 id="review-and-launch">Review and Launch</h3><h3 id="amazon-will-prompt-you-for-an-ssh-keypair-download-a-new-keypair">Amazon will prompt you for an ssh keypair, download a new keypair</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-ssh.png" alt="amazon ssh" title="Amazon SSH"></p>
+<h3 id="accept-acknowledgement-amp;-launch-instances">Accept Acknowledgement &amp; Launch Instances</h3><h3 id="view-instances">View Instances</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-instances.png" alt="view instances" title="View Instances"></p>
 <p><a href="#a-note-on-hardware-requirements">A Note on Hardware Requirements</a></p>
-<ol>
-<li>Review and Launch</li>
-<li>Amazon will prompt you for an ssh keypair, download a new keypair.</li>
-<li>Launch Instances.</li>
-<li>View Instances</li>
-</ol>
 <p>Amazon will provision your server. Now is a good time to grab coffee.</p>
 <h2 id="connecting-to-your-server">Connecting to your server</h2><h4 id="digital-ocean">Digital Ocean</h4><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">ssh</span> Your.Server.Ip.Here</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>E.g.</p>
 <pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">ssh</span> 178.62.124.90</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>On a Linux/Mac if you don&#39;t provide a username it will use the currently logged in user. If you setup ssh keys you will not need to provide a username or password. You can also edit <code>/etc/hosts</code> to add a line like so:</p>

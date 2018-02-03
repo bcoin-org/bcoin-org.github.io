@@ -76,17 +76,21 @@ Digital Ocean will provision your server. Now is a good time to grab coffee.
 
 ## Amazon AWS
 
-### Create an account at https://aws.amazon.com
-### Launch a new instance from the console https://aws.amazon.com/console
-![launc instance](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-launch-instance.png "Launch Instance")
-### Choose 'Ubuntu 16.04' and at least 2CPU 4GiB for hardware.
+### Create an account
+[AWS](https://aws.amazon.com)
+
+### Launch a new instance from the console
+[Console](https://aws.amazon.com/console)
+
+![launch instance](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-launch-instance.png "Launch Instance")
+### Choose 'Ubuntu 16.04' and at least 2CPU 4GiB for hardware
 ![choose os](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-os.png "Choose OS")
-### Continue to add storage. Add 500GiB.
+### Continue to add storage. Add 500GiB
 ![choose storage](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-storage.png "Choose Storage")
 ### Review and Launch
-### Amazon will prompt you for an ssh keypair, download a new keypair.
-![view instance](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-view-instance.png "View Instance")
-### Launch Instances.
+### Amazon will prompt you for an ssh keypair, download a new keypair
+![amazon ssh](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-ssh.png "Amazon SSH")
+### Accept Acknowledgement & Launch Instances
 ### View Instances
 ![view instances](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-instances.png "View Instances")
 
