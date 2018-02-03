@@ -90,6 +90,9 @@ Digital Ocean will provision your server. Now is a good time to grab coffee.
 ### Review and Launch
 ### Amazon will prompt you for an ssh keypair, download a new keypair
 ![amazon ssh](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-ssh.png "Amazon SSH")
+
+Treat this keyfile with the same respect you treat your Bitcoin wallet file. Both are private keys and you will be the only person with a copy of your keyfile. If you lose it, Amazon will not be able to recovery it for you.
+
 ### Accept Acknowledgement & Launch Instances
 ### View Instances
 ![view instances](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-instances.png "View Instances")
@@ -134,7 +137,7 @@ Accept the RSA key, and you will be at the command line
 
 In the same directory as the private key you downloaded,
 
-```
+``` bash
 chmod 400 test.pem
 ssh -i "test.pem" yourname@yourinstance.amazonaws.com
 ```
