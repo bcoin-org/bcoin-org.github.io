@@ -319,8 +319,7 @@
 <h3 id="choose-#39;4-gb-2-cpu-$20/month&#39;-for-droplet-size">Choose &#39;4 GB 2 CPU $20/month&#39; for Droplet Size</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-choose-plan.png" alt="choose plan" title="Choose Plan"></p>
 <h3 id="add-block-storage-500gb-$50/month.">Add Block Storage, 500GB $50/month.</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-block-storage.png" alt="choose storage" title="Choose Storage"></p>
 <h3 id="choose-a-data-center-region">Choose a data center region.</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-data-center.png" alt="choose datacenter" title="Choose Datacenter"></p>
-<h3 id="add-a-new-ssh-key">Add a new ssh key</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-ssh-key.png" alt="add ssh" title="SSH Key"></p>
-<h3 id="a-note-on-hardware-requirements">A Note on hardware requirements</h3><p>These hardware requirements are for a full node. When run in SPV node, you will not need the additional block storage. To run a full node you must maintain a complete history of all Bitcoin transactions. Without the full history the node is unable to validate transactions. If it cannot validate transactions, it cannot validate blocks or mine transactions to blocks.</p>
+<h5 id="a-note-on-hardware-requirements">A Note on hardware requirements</h5><p>These hardware requirements are for a full node. When run in SPV node, you will not need the additional block storage. To run a full node you must maintain a complete history of all Bitcoin transactions. Without the full history the node is unable to validate transactions. If it cannot validate transactions, it cannot validate blocks or mine transactions to blocks.</p>
 <p>SPV Nodes use something called a bloom filter to maintain a smaller set of records. For example, if your Bitcoin address were <code>1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</code> your SPV node will ask its network peers for all transactions with an address that starts with <code>1A1z</code>. The returned data set will contain extra transactions irrelevant to your wallet. But its storage requirements will be far smaller than a full node. Consequently, SPV Nodes can only verify their own transactions.</p>
 <p>More information on SPV Nodes:</p>
 <ul>
@@ -328,17 +327,14 @@
 <li><a href="https://bitcoin.org/en/developer-guide#simplified-payment-verification-spv">Bitcoin.org Developer Guide</a></li>
 <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki">BIP37</a></li>
 </ul>
+<h3 id="add-a-new-ssh-key">Add a new ssh key</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-ssh-key.png" alt="add ssh" title="SSH Key"></p>
 <h3 id="setting-up-ssh">Setting Up SSH</h3><p>If you already have an ssh key you can copy your pubkey here. If you do not then follow these steps:</p>
-<p><code>ssh-keygen -t rsa -C &quot;your_email@example.com&quot;</code></p>
-<p>Accept the defaults.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">ssh-keygen -t rsa -C <span class="token string">"your_email@example.com"</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Accept the defaults.</p>
 <p>On Windows your keys are located:</p>
-<p><code>cd %userprofile%/.ssh</code></p>
-<p>On Linux/Mac:</p>
-<p><code>cd ~/.ssh</code></p>
-<p>Copy the contents of the <code>id_rsa.pub</code> file and paste them into Digital Ocean&#39;s form.</p>
-<p><code>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCsYKEA5LZCDyMF+ZbrPWeVIYso0ZzpIZx9L7R+CGqMPo0mrSlYeeaPbP1btM/Wis4a81EaTM7Y5kkKqZ4XB/LnRWp415XVl5QdtGF2l5tgiy2ootVxEwdrH0lXyGFHEpOwHU6MYdYCd+bgpQwa291Q4bOUJhGxNZ07L/rMtZfWhWL
-+YL+JpSajg/uonu+4YKuFETggGLIuK+piTD9dvjiaThwKtqiCh2dnqdHztRYk+OehJUcof3tFl9kSRUmh9MVI7pDaOxCJWRaU1dsn9YaUwRkIyOwESHqBdCE9ZDU4FzNItRh2dYY4ukGv2iRqZoTrjcB8UGJepI65aINKNvdj email@nomail.com</code></p>
-<ol>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">%userprofile%/.ssh</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>On Linux/Mac:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">cd</span> ~/.ssh</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Copy the contents of the <code>id_rsa.pub</code> file and paste them into Digital Ocean&#39;s form.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCsYKEA5LZCDyMF+ZbrPWeVIYso0ZzpIZx9L7R+CGqMPo0mrSlYeeaPbP1btM/Wis4a81EaTM7Y5kkKqZ4XB/LnRWp415XVl5QdtGF2l5tgiy2ootVxEwdrH0lXyGFHEpOwHU6MYdYCd+bgpQwa291Q4bOUJhGxNZ07L/rMtZfWhWL
++YL+JpSajg/uonu+4YKuFETggGLIuK+piTD9dvjiaThwKtqiCh2dnqdHztRYk+OehJUcof3tFl9kSRUmh9MVI7pDaOxCJWRaU1dsn9YaUwRkIyOwESHqBdCE9ZDU4FzNItRh2dYY4ukGv2iRqZoTrjcB8UGJepI65aINKNvdj email@nomail.com</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><ol>
 <li>Choose a hostname for the droplet and click create.</li>
 </ol>
 <p>Digital Ocean will provision your server. Now is a good time to grab coffee.</p>
@@ -348,8 +344,7 @@
 <li>Choose &#39;Ubuntu 16.04&#39; and at least 2CPU 4GiB for hardware.</li>
 <li>Continue to add storage. Add 500GiB.</li>
 </ol>
-<h3 id="a-note-on-hardware-requirements">A Note on hardware requirements</h3><p>These hardware requirements are for a full node. When run in SPV node, you will not need the additional block storage. To run a full node you must maintain a complete history of all Bitcoin transactions. Without the full history the node is unable to validate transactions. If it cannot validate transactions, it cannot validate blocks or mine transactions to blocks.</p>
-<p>SPV Nodes use something called a bloom filter to maintain a smaller set of records. For example, if your Bitcoin address were <code>1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa</code> your SPV node will ask its network peers for all transactions with an address that starts with <code>1A1z</code>. The returned data set will contain extra transactions irrelevant to your wallet. But its storage requirements will be far smaller than a full node. Consequently, SPV Nodes can only verify their own transactions.</p>
+<p><a href="#a-note-on-hardware-requirements">A Note on Hardware Requirements</a></p>
 <ol>
 <li>Review and Launch</li>
 <li>Amazon will prompt you for an ssh keypair, download a new keypair.</li>
@@ -357,39 +352,30 @@
 <li>View Instances</li>
 </ol>
 <p>Amazon will provision your server. Now is a good time to grab coffee.</p>
-<h2 id="connecting-to-your-server">Connecting to your server</h2><h4 id="digital-ocean">Digital Ocean</h4><p><code>ssh Your.Server.Ip.Here</code></p>
-<p>E.g.</p>
-<p><code>ssh 178.62.124.90</code></p>
+<h2 id="connecting-to-your-server">Connecting to your server</h2><h4 id="digital-ocean">Digital Ocean</h4><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">ssh</span> Your.Server.Ip.Here</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>E.g.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">ssh</span> 178.62.124.90</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>On a Linux/Mac if you don&#39;t provide a username it will use the currently logged in user. If you setup ssh keys you will not need to provide a username or password. You can also edit <code>/etc/hosts</code> to add a line like so:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">178.62.124.90    fullnode</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>And then you can use:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">ssh</span> fullnode</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>to login without a username, password or having to remember the server ip.</p>
 <p>Accept the RSA key, and you will be at the command line</p>
 <h4 id="amazon">Amazon</h4><p>In the same directory as the private key you downloaded,</p>
-<p>```chmod 400 test.pem
-ssh -i &quot;test.pem&quot; yourname@yourinstance.amazonaws.com</p>
-<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">
-E.g.
-
-`ssh -i <span class="token string">"test.pem"</span> ubuntu@ec2-18-219-26-103.us-east-2.compute.amazonaws.com<span class="token variable"><span class="token variable">`</span>
-
-Accept the RSA key, and you will be at the <span class="token function">command</span> line
-
-<span class="token variable">`</span></span>ubuntu@ip-172-31-7-194:~$ `
-
-<span class="token comment" spellcheck="true">## Setting up the environment</span>
-The VPS is setup, from here the intructions will be the same regardless of VPS provider.
-
-1. Install NVM
-2. Install Node
-4. Install build essential
-5. Install python</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>$ curl -o- <a href="https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh">https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh</a> | bash
-$ source ~/.bashrc
-$ nvm install 9.2.1
-$ sudo apt-get install build-essential
-$ sudo apt-get install python</p>
-<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token comment" spellcheck="true">## Install Bcoin</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>$ git clone git://github.com/bcoin-org/bcoin.git
-$ cd bcoin
-$ npm install
-$ node docs/Examples/fullnode
-```</p>
-<p>You should begin to see blocks syncing as soon as the network peers pickup.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">chmod</span> 400 test.pem
+<span class="token function">ssh</span> -i <span class="token string">"test.pem"</span> yourname@yourinstance.amazonaws.com</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>E.g.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">ssh</span> -i <span class="token string">"test.pem"</span> ubuntu@ec2-18-219-26-103.us-east-2.compute.amazonaws.com</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Accept the RSA key, and you will be at the command line</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">ubuntu@ip-172-31-7-194:~$</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="setting-up-the-environment">Setting up the environment</h2><p>The VPS is setup, from here the intructions will be the same regardless of VPS provider.</p>
+<ol>
+<li>Install NVM</li>
+<li>Install Node</li>
+<li>Install build essential</li>
+<li>Install python</li>
+</ol>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh <span class="token operator">|</span> <span class="token function">bash</span>
+$ <span class="token function">source</span> ~/.bashrc
+$ nvm <span class="token function">install</span> 9.2.1
+$ <span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> build-essential
+$ <span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> python</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="install-bcoin">Install Bcoin</h2><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">git</span> clone git://github.com/bcoin-org/bcoin.git
+$ <span class="token function">cd</span> bcoin
+$ npm <span class="token function">install</span>
+$ node docs/Examples/fullnode</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>You should begin to see blocks syncing as soon as the network peers pickup.</p>
 
 
 					<!-- END OF GUIDE -->
