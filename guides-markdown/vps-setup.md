@@ -8,6 +8,16 @@ Alex Sherbuck
 This guide provides installation instructions for a Bcoin full node running on a Digital Ocean of Amazon AWS Virtual Private Server.
 ```
 
+- [Full Node VPS Setup](#full-node-vps-setup)
+  * [Introduction](#introduction)
+  * [Digital Ocean](#digital-ocean)
+  * [Amazon AWS](#amazon-aws)
+  * [Connecting to your server](#connecting-to-your-server)
+  * [Setting up the environment](#setting-up-the-environment)
+  * [Create a New User](#create-a-new-user)
+  * [Install Bcoin](#install-bcoin)
+
+
 ## Introduction
 
 Running a full node requires your computer always be online and connected to the Bitcoin network. For most users, a VPS is an elegant 24/7 full node solution.
@@ -204,13 +214,13 @@ And make the following addition, where `test` is the new user name:
 test   ALL=(ALL:ALL) ALL
 ```
 
-Then remove the `#` in front of `%admin` and `sudo` and add
+Then remove the `#` in front of `%admin` and `sudo` and add the groups to the new user
 ```
 $ usermod -aG admin test
 $ usermod -aG sudo test
 ```
 
-Now to login to the server you will need to tell SSH to use this username
+Now to login to the server you will need to tell SSH to use this username. For Linux/Mac this is automatic if your system username is the same as the username you create.
 
 ```
 $ ssh test@fullnode
@@ -224,14 +234,105 @@ $ sudo su -
 ```
 
 ## Install Bcoin
+```
+$ npm install -g bcoin --production
+```
+
+### Command Line Interaction
+After bcoin installs we're going to store some configuration info and sensitive daat as environmental variables.
 
 ```
-$ git clone git://github.com/bcoin-org/bcoin.git
+$ export BCOIN_API_KEY=hunter2
+$ export BCOIN_NETWORK=main
+$ export BCOIN_URI=http://localhost:8332
+$ bcoin --index-tx --index-address --daemon
+${PID}
+```
+
+Alternatively, you can assign http port and network using command line flags:
+
+```
+$ bcoin --index-tx --index-address --http-port=8332 --network=main
+```
+
+Here, PID is the process ID of bcoin. To stop bcoin you can issue `kill ${PID}` replacing `${PID}` with the number your terminal returns. If you forget the PID you can find it again with `ps -ef | grep bcoin`
+
+You can use the bcoin CLI tool out of the box. To view your node's status:
+
+```
+$ bcoin cli info --api-key=hunter2
+{
+  "version": "v1.0.0-beta.14",
+  "network": "main",
+  "chain": {
+    "height": 124767,
+    "tip": "0000000000003ae2272bb2ad89d11b3b3119536690de1bf3b3180d3e0df91d27",
+    "progress": 0.2604341435491337
+  },
+  "pool": {
+    "host": "2601:c6:c880:3020:1a5e:fff:febd:ff6",
+    "port": 8333,
+    "agent": "/bcoin:v1.0.0-beta.14/",
+    "services": "1001",
+    "outbound": 8,
+    "inbound": 0
+  },
+  "mempool": {
+    "tx": 0,
+    "size": 0
+  },
+  "time": {
+    "uptime": 450,
+    "system": 1517778800,
+    "adjusted": 1517778907,
+    "offset": 107
+  },
+  "memory": {
+    "total": 202,
+    "jsHeap": 35,
+    "jsHeapTotal": 70,
+    "nativeHeap": 131,
+    "external": 8
+  }
+}
+
+```
+
+For a complete list of CLI commands, check the documentation in [Github](https://github.com/bcoin-org/bcoin/blob/d67d089c53ec9a72bf967824e7dfc89d27d5354f/docs/CLI.md). The CLI supports node, wallet and has full RPC functionality.
+
+### Using Bcoin as a library
+
+You can use a tool like [forever](https://github.com/foreverjs/forever) to run your scripts that use bcoin as daemons. A benefit of forever is that it will automatically restart your script if it fails. It can detect infinite looping and ultimately stop the script if necessary.
+
+```
+$ git clone git@github.com:bcoin-org/bcoin.git
 $ cd bcoin
-$ npm install
-$ node docs/Examples/fullnode
+$ forever start docs/Examples/fullnode.js
+warn:    --minUptime not set. Defaulting to: 1000ms
+warn:    --spinSleepTime not set. Your script will exit if it does not stay up for at least 1000ms
+info:    Forever processing file: docs/Examples/fullnode.js
 ```
 
+Check your node with
+
+```
+$ bcoin cli info
+```
+
+Reference the [Command Line Interaction](# Command Line Interaction) for interacting with your bcoin process.
+
+To interact with forever here are a few shortcuts.
+
+```
+$ forever list
+$ forever stopall
+$ forever startall
+$ forever
+```
+
+The `forever` command will print a full list of commands.
 
 
-You should begin to see blocks syncing as soon as the network peers pickup.
+
+
+

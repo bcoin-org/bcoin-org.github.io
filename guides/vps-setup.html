@@ -313,7 +313,19 @@
 									<div class="col-sm-12 panel panel-default">
 										<div class="post-content" style="color:#000;">
 					<!-- START OF GUIDE -->
-<h2 class="post-title panel-title" id="full-node-vps-setup">Full Node VPS Setup</h2><ul class="post-meta"><li class="author">By Alex Sherbuck</li></ul><h2 id="introduction">Introduction</h2><p>Running a full node requires your computer always be online and connected to the Bitcoin network. For most users, a VPS is an elegant 24/7 full node solution.</p>
+<h2 class="post-title panel-title" id="full-node-vps-setup">Full Node VPS Setup</h2><ul class="post-meta"><li class="author">By Alex Sherbuck</li></ul><ul>
+<li><a href="#full-node-vps-setup">Full Node VPS Setup</a><ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#digital-ocean">Digital Ocean</a></li>
+<li><a href="#amazon-aws">Amazon AWS</a></li>
+<li><a href="#connecting-to-your-server">Connecting to your server</a></li>
+<li><a href="#setting-up-the-environment">Setting up the environment</a></li>
+<li><a href="#create-a-new-user">Create a New User</a></li>
+<li><a href="#install-bcoin">Install Bcoin</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="introduction">Introduction</h2><p>Running a full node requires your computer always be online and connected to the Bitcoin network. For most users, a VPS is an elegant 24/7 full node solution.</p>
 <h2 id="digital-ocean">Digital Ocean</h2><h3 id="create-an-account-@digitaloceancom">Create an account @digitalocean.com</h3><h3 id="choose-#39;create&#39;--&gt;-&#39;droplet&#39;-from-the-account-dashboard">Choose &#39;Create&#39; -&gt; &#39;Droplet&#39; from the account dashboard</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-create-droplet.png" alt="create droplet" title="Create Droplet"></p>
 <h3 id="choose-#39;ubuntu-16.04&#39;-for-os-distribution">Choose &#39;Ubuntu 16.04&#39; for OS Distribution</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-choose-os.png" alt="choose os" title="Choose OS"></p>
 <h3 id="choose-#39;4-gb-2-cpu-$20/month&#39;-for-droplet-size">Choose &#39;4 GB 2 CPU $20/month&#39; for Droplet Size</h3><p><img src="https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-choose-plan.png" alt="choose plan" title="Choose Plan"></p>
@@ -388,10 +400,69 @@ Enter the new value, or press ENTER <span class="token keyword">for</span> the d
     Work Phone <span class="token punctuation">[</span><span class="token punctuation">]</span>:
     Home Phone <span class="token punctuation">[</span><span class="token punctuation">]</span>:
     Other <span class="token punctuation">[</span><span class="token punctuation">]</span>:
-Is the information correct? <span class="token punctuation">[</span>Y/n<span class="token punctuation">]</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="install-bcoin">Install Bcoin</h2><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">git</span> clone git://github.com/bcoin-org/bcoin.git
+Is the information correct? <span class="token punctuation">[</span>Y/n<span class="token punctuation">]</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Sometimes you&#39;ll need root access. It&#39;s best to manage that with <code>visudo</code></p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">apt-get</span> <span class="token function">install</span> visudo</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>And make the following addition, where <code>test</code> is the new user name:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">test</span>   ALL<span class="token operator">=</span><span class="token punctuation">(</span>ALL:ALL<span class="token punctuation">)</span> ALL</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Then remove the <code>#</code> in front of <code>%admin</code> and <code>sudo</code> and add the groups to the new user</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">usermod</span> -aG admin <span class="token function">test</span>
+$ <span class="token function">usermod</span> -aG <span class="token function">sudo</span> <span class="token function">test</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Now to login to the server you will need to tell SSH to use this username. For Linux/Mac this is automatic if your system username is the same as the username you create.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">ssh</span> test@fullnode</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Once logged in, you can preface commands with <code>sudo</code> to run them as the root user or change into the root user</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> <span class="token function">htop</span>
+$ <span class="token function">sudo</span> <span class="token function">su</span> -</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="install-bcoin">Install Bcoin</h2><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ npm <span class="token function">install</span> -g bcoin --production</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="command-line-interaction">Command Line Interaction</h3><p>After bcoin installs we&#39;re going to store some configuration info and sensitive daat as environmental variables.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">export</span> BCOIN_API_KEY<span class="token operator">=</span>hunter2
+$ <span class="token function">export</span> BCOIN_NETWORK<span class="token operator">=</span>main
+$ <span class="token function">export</span> BCOIN_URI<span class="token operator">=</span>http://localhost:8332
+$ bcoin --index-tx --index-address --daemon
+<span class="token variable">${PID}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Alternatively, you can assign http port and network using command line flags:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin --index-tx --index-address --http-port<span class="token operator">=</span>8332 --network<span class="token operator">=</span>main</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Here, PID is the process ID of bcoin. To stop bcoin you can issue <code>kill ${PID}</code> replacing <code>${PID}</code> with the number your terminal returns. If you forget the PID you can find it again with <code>ps -ef | grep bcoin</code></p>
+<p>You can use the bcoin CLI tool out of the box. To view your node&#39;s status:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin cli info --api-key<span class="token operator">=</span>hunter2
+<span class="token punctuation">{</span>
+  <span class="token string">"version"</span><span class="token keyword">:</span> <span class="token string">"v1.0.0-beta.14"</span>,
+  <span class="token string">"network"</span><span class="token keyword">:</span> <span class="token string">"main"</span>,
+  <span class="token string">"chain"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"height"</span><span class="token keyword">:</span> 124767,
+    <span class="token string">"tip"</span><span class="token keyword">:</span> <span class="token string">"0000000000003ae2272bb2ad89d11b3b3119536690de1bf3b3180d3e0df91d27"</span>,
+    <span class="token string">"progress"</span><span class="token keyword">:</span> 0.2604341435491337
+  <span class="token punctuation">}</span>,
+  <span class="token string">"pool"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"host"</span><span class="token keyword">:</span> <span class="token string">"2601:c6:c880:3020:1a5e:fff:febd:ff6"</span>,
+    <span class="token string">"port"</span><span class="token keyword">:</span> 8333,
+    <span class="token string">"agent"</span><span class="token keyword">:</span> <span class="token string">"/bcoin:v1.0.0-beta.14/"</span>,
+    <span class="token string">"services"</span><span class="token keyword">:</span> <span class="token string">"1001"</span>,
+    <span class="token string">"outbound"</span><span class="token keyword">:</span> 8,
+    <span class="token string">"inbound"</span><span class="token keyword">:</span> 0
+  <span class="token punctuation">}</span>,
+  <span class="token string">"mempool"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"tx"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"size"</span><span class="token keyword">:</span> 0
+  <span class="token punctuation">}</span>,
+  <span class="token string">"time"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"uptime"</span><span class="token keyword">:</span> 450,
+    <span class="token string">"system"</span><span class="token keyword">:</span> 1517778800,
+    <span class="token string">"adjusted"</span><span class="token keyword">:</span> 1517778907,
+    <span class="token string">"offset"</span><span class="token keyword">:</span> 107
+  <span class="token punctuation">}</span>,
+  <span class="token string">"memory"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"total"</span><span class="token keyword">:</span> 202,
+    <span class="token string">"jsHeap"</span><span class="token keyword">:</span> 35,
+    <span class="token string">"jsHeapTotal"</span><span class="token keyword">:</span> 70,
+    <span class="token string">"nativeHeap"</span><span class="token keyword">:</span> 131,
+    <span class="token string">"external"</span><span class="token keyword">:</span> 8
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>For a complete list of CLI commands, check the documentation in <a href="https://github.com/bcoin-org/bcoin/blob/d67d089c53ec9a72bf967824e7dfc89d27d5354f/docs/CLI.md">Github</a>. The CLI supports node, wallet and has full RPC functionality.</p>
+<h3 id="using-bcoin-as-a-library">Using Bcoin as a library</h3><p>You can use a tool like <a href="https://github.com/foreverjs/forever">forever</a> to run your scripts that use bcoin as daemons. A benefit of forever is that it will automatically restart your script if it fails. It can detect infinite looping and ultimately stop the script if necessary.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">git</span> clone git@github.com:bcoin-org/bcoin.git
 $ <span class="token function">cd</span> bcoin
-$ npm <span class="token function">install</span>
-$ node docs/Examples/fullnode</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>You should begin to see blocks syncing as soon as the network peers pickup.</p>
+$ forever start docs/Examples/fullnode.js
+warn:    --minUptime not set. Defaulting to: 1000ms
+warn:    --spinSleepTime not set. Your script will <span class="token keyword">exit</span> <span class="token keyword">if</span> it does not stay up <span class="token keyword">for</span> at least 1000ms
+info:    Forever processing file: docs/Examples/fullnode.js</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Check your node with</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin cli info</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Reference the <a href="# Command Line Interaction">Command Line Interaction</a> for interacting with your bcoin process.</p>
+<p>To interact with forever here are a few shortcuts.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ forever list
+$ forever stopall
+$ forever startall
+$ forever</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>The <code>forever</code> command will print a full list of commands.</p>
 
 
 					<!-- END OF GUIDE -->
