@@ -8,14 +8,14 @@ Alex Sherbuck
 This guide provides installation instructions for a Bcoin full node running on a Digital Ocean of Amazon AWS Virtual Private Server.
 ```
 
-- [Full Node VPS Setup](#full-node-vps-setup)
-  * [Introduction](#introduction)
-  * [Digital Ocean](#digital-ocean)
-  * [Amazon AWS](#amazon-aws)
-  * [Connecting to your server](#connecting-to-your-server)
-  * [Setting up the environment](#setting-up-the-environment)
-  * [Create a New User](#create-a-new-user)
-  * [Install Bcoin](#install-bcoin)
+
+* [Introduction](#introduction)
+* [Digital Ocean](#digital-ocean)
+* [Amazon AWS](#amazon-aws)
+* [Connecting to your server](#connecting-to-your-server)
+* [Setting up the environment](#setting-up-the-environment)
+* [Create a New User](#create-a-new-user)
+* [Install Bcoin](#install-bcoin)
 
 
 ## Introduction
