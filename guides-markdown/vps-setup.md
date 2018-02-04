@@ -117,13 +117,13 @@ Amazon will provision your server. Now is a good time to grab coffee.
 #### Digital Ocean
 
 ```
-ssh Your.Server.Ip.Here
+ssh username@Your.Server.Ip.Here
 ```
 
 E.g.
 
 ```
-ssh 178.62.124.90
+ssh username@178.62.124.90
 ```
 
 On a Linux/Mac if you don't provide a username it will use the currently logged in user. If you setup ssh keys you will not need to provide a username or password. You can also edit `/etc/hosts` to add a line like so:
