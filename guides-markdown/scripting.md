@@ -38,7 +38,7 @@ input.compile();
 // only Buffers (whereas scripts contain Opcode objects).
 const stack = new Stack();
 input.execute(stack);
-output.execute(stack)bcoin;
+output.execute(stack);
 // Verify the script was successful in its execution:
 assert(stack.length === 1);
 assert(stack.getBool(-1) === true);
