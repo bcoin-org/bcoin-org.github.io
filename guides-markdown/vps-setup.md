@@ -27,16 +27,16 @@ Running a full node requires your computer always be online and connected to the
 ### Create an account @digitalocean.com
 ### Choose 'Create' -> 'Droplet' from the account dashboard
 
-![create droplet](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-create-droplet.png "Create Droplet")
+![create droplet](../assets/images/guides/vps-create-droplet.png "Create Droplet")
 ### Choose 'Ubuntu 16.04' for OS Distribution
-![choose os](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-choose-os.png "Choose OS")
+![choose os](../assets/images/guides/vps-choose-os.png "Choose OS")
 
 ### Choose '4 GB 2 CPU $20/month' for Droplet Size
-![choose plan](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-choose-plan.png "Choose Plan")
+![choose plan](../assets/images/guides/vps-choose-plan.png "Choose Plan")
 ### Add Block Storage, 500GB $50/month.
-![choose storage](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-block-storage.png "Choose Storage")
+![choose storage](../assets/images/guides/vps-block-storage.png "Choose Storage")
 ### Choose a data center region.
-![choose datacenter](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-data-center.png "Choose Datacenter")
+![choose datacenter](../assets/images/guides/vps-data-center.png "Choose Datacenter")
 
 ##### A Note on hardware requirements
 These hardware requirements are for a full node. When run in SPV mode, you will not need the additional block storage. To run a full node you must maintain a complete history of all Bitcoin transactions. Without the full history the node is unable to validate transactions. If it cannot validate transactions, it cannot validate blocks or mine transactions to blocks.
@@ -49,7 +49,7 @@ More information on SPV Nodes:
 + [BIP37](https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki)
 
 ### Add a new ssh key
-![add ssh](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-ssh-key.png "SSH Key")
+![add ssh](../assets/images/guides/vps-ssh-key.png "SSH Key")
 
 ### Setting Up SSH
 If you already have an ssh key you can copy your pubkey here. If you do not then follow these steps:
@@ -92,20 +92,20 @@ Digital Ocean will provision your server. Now is a good time to grab coffee.
 ### Launch a new instance from the console
 [Console](https://aws.amazon.com/console)
 
-![launch instance](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-launch-instance.png "Launch Instance")
+![launch instance](../assets/images/guides/vps-amazon-launch-instance.png "Launch Instance")
 ### Choose 'Ubuntu 16.04' and at least 2CPU 4GiB for hardware
-![choose os](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-os.png "Choose OS")
+![choose os](../assets/images/guides/vps-amazon-os.png "Choose OS")
 ### Continue to add storage. Add 500GiB
-![choose storage](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-storage.png "Choose Storage")
+![choose storage](../assets/images/guides/vps-amazon-storage.png "Choose Storage")
 ### Review and Launch
 ### Amazon will prompt you for an ssh keypair, download a new keypair
-![amazon ssh](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-ssh.png "Amazon SSH")
+![amazon ssh](../assets/images/guides/vps-amazon-ssh.png "Amazon SSH")
 
 Treat this keyfile with the same respect you treat your Bitcoin wallet file. Both are private keys and you will be the only person with a copy of your keyfile. If you lose it, Amazon will not be able to recovery it for you.
 
 ### Accept Acknowledgement & Launch Instances
 ### View Instances
-![view instances](https://raw.githubusercontent.com/tenthirtyone/bcoin-org.github.io/staging/assets/images/guides/vps-amazon-instances.png "View Instances")
+![view instances](../assets/images/guides/vps-amazon-instances.png "View Instances")
 
 [A Note on Hardware Requirements](#a-note-on-hardware-requirements)
 
@@ -257,10 +257,16 @@ $ bcoin --index-tx --index-address --http-port=8332 --network=main
 
 Here, PID is the process ID of bcoin. To stop bcoin you can issue `kill ${PID}` replacing `${PID}` with the number your terminal returns. If you forget the PID you can find it again with `ps -ef | grep bcoin`
 
-You can use the bcoin CLI tool out of the box. To view your node's status:
+You can use the bclient CLI tool out of the box. To view your node's status. First install it with:
 
 ```
-$ bcoin cli info --api-key=hunter2
+npm install -g bclient
+```
+
+Then use it to query your node
+
+```
+$ bclient info --api-key=hunter2
 {
   "version": "v1.0.0-beta.14",
   "network": "main",
@@ -298,7 +304,7 @@ $ bcoin cli info --api-key=hunter2
 
 ```
 
-For a complete list of CLI commands, check the documentation in [Github](https://github.com/bcoin-org/bcoin/blob/d67d089c53ec9a72bf967824e7dfc89d27d5354f/docs/CLI.md). The CLI supports node, wallet and has full RPC functionality.
+For a complete list of CLI commands, check the [API documentation](http://bcoin.io/api-docs/index.html). The CLI supports node, wallet and has full RPC functionality.
 
 ### Using Bcoin as a library
 
@@ -316,7 +322,7 @@ info:    Forever processing file: docs/Examples/fullnode.js
 Check your node with
 
 ```
-$ bcoin cli info
+$ bclient info
 ```
 
 Reference the [Command Line Interaction](# Command Line Interaction) for interacting with your bcoin process.
