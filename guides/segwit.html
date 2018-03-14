@@ -3,10 +3,10 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="description" content="">
-	<meta name="author" content="">
+	<meta name="description" content="What is segwit, how to use segwit with bcoin and what are the updates">
+	<meta name="author" content="Nodar Chkuaselidze">
 
-	<title>bcoin | Extending Bitcoin into Enterprise & Production</title>
+	<title>Bcoin Guide | Segwit and Bcoin</title>
 
 	<!-- Favicons -->
 	<!-- old
@@ -266,12 +266,16 @@
 <h6 class="montserrat text-uppercase bottom-line">Guides</h6>
 <ul class="icons-list">
 <!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="vps-setup.html">Full Node VPS Setup</a></li>
 <li><a href="segwit.html">Segwit and Bcoin</a></li>
 <li><a href="scripting.html">Intro to Scripting</a></li>
 <li><a href="op_return.html">Store Data on the Blockchain</a></li>
-<li><a href="multisig-tx.html">Creating Multi Signature Transactions</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
 <li><a href="generate-address.html">Generate an Address</a></li>
 <li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="beginners.html">Beginners Guide to Getting Started</a></li>
 <!-- /GUIDES-LIST -->
 </ul>
 </div>
@@ -287,7 +291,7 @@
   <!-- TEXT WIDGET -->
   <div class="widget">
     <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
-    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, reach out to us on <a href="../slack-signup.html"> Slack!</a></p>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="../slack-signup.html"> Slack.</a></p>
     <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
   </div>
   <!-- END TEXT WIDGET -->
@@ -468,7 +472,7 @@ the address we sent money to.</p>
   script<span class="token punctuation">:</span> Script<span class="token punctuation">.</span><span class="token function">fromAddress</span><span class="token punctuation">(</span>address<span class="token punctuation">)</span>
 <span class="token punctuation">}</span><span class="token punctuation">;</span>
 
-<span class="token keyword">const</span> coin <span class="token operator">=</span> Coin<span class="token punctuation">.</span><span class="token function">fromOptions</span><span class="token punctuation">(</span>txinfo<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>We use revHex to convert BE to LE (<a href="https://en.wikipedia.org/wiki/Endianness">Endianness</a>).
+<span class="token keyword">const</span> coin <span class="token operator">=</span> Coin<span class="token punctuation">.</span><span class="token function">fromOptions</span><span class="token punctuation">(</span>txinfo<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>We use revHex to convert Big Endian (BE) to Little Endian (LE) (<a href="https://en.wikipedia.org/wiki/Endianness">Endianness</a>).
 Coin is used for working with UTXOs and contains
 information about the previous output. Coin will later be used
 in MTX to fund our transaction.</p>
@@ -560,9 +564,9 @@ we can construct the coin from this Address.</p>
   <span class="token function">assert</span><span class="token punctuation">(</span>redeem<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>redeemScript<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Redeem script for P2WSH is in the witness with its signature.</p>
 <h3 id="p2sh-nested">P2SH Nested</h3><p>Bcoin MTX and KeyRing primitives construct all necessary scripts for us, so the thing
 that changes when moving to nested segwit addresses is the UTXO pubkeyScript.</p>
-<p>Change for spending P2SH inputs using bcoin is small, we&#39;ll need
-to change <code>ring.getAddress()</code> with <code>ring.getNestedAddress()</code> or
-set the <code>ring.nested</code> variable to <code>true</code>, bcoin will handle rest for us.</p>
+<p>To spend P2SH inputs using bcoin, we just need to use <code>ring.getNestedAddress</code>
+instead of <code>ring.getAddress()</code> or set the <code>ring.nested</code> variable to <code>true</code> and bcoin
+can handle it automatically with <code>ring.getAddress()</code>.</p>
 <p>Modified P2WPKH example:</p>
 <pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> address <span class="token operator">=</span> ring<span class="token punctuation">.</span><span class="token function">getNestedAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
