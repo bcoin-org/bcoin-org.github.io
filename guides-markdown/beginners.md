@@ -97,10 +97,12 @@ $ curl http://x:hunter2@localhost:8332/
 ```
 
 Bcoin CLI is the prepackaged tool for hitting both the REST and RPC api.
+Available in npm as `bclient`.
 
 ```bash
-$ bcoin cli info --api-key hunter2
-$ bcoin rpc getblockchaininfo --api-key hunter2
+$ npm install bclient
+$ bcoin-cli info --api-key hunter2
+$ bcoin-cli rpc getblockchaininfo --api-key hunter2
 ```
 
 ## Using Tor/SOCKS

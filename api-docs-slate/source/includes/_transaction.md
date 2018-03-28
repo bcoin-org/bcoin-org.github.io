@@ -23,7 +23,7 @@ curl $url/tx/$txhash
 ```
 
 ```shell--cli
-bcoin cli tx $txhash
+bcoin-cli tx $txhash
 ```
 
 ```javascript
@@ -118,7 +118,7 @@ curl $url/tx/address/$address
 ```
 
 ```shell--cli
-bcoin cli tx $address
+bcoin-cli tx $address
 ```
 
 ```javascript

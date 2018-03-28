@@ -6,7 +6,7 @@ let id, url;
 
 ```shell--vars
 id="primary"
-url="http://localhost:18332"
+url="http://localhost:18334"
 ```
 
 ```shell--curl
@@ -14,7 +14,7 @@ curl $url/wallet/$id/
 ```
 
 ```shell--cli
-bcoin cli wallet get --id=$id
+bwallet-cli get --id=$id
 ```
 
 ```javascript
@@ -80,6 +80,41 @@ Each account can be of a different type. You could have a pubkeyhash account, as
 
 Note that accounts should not be accessed directly from the public API. They do not have locks which can lead to race conditions during writes.
 
+## HTTP Server
+
+The wallet HTTP server listens on it's own port, separate from the node's server.
+Default ports are:
+
+```shell-vars
+main: 8334
+testnet: 18334
+regtest: 48334
+simnet: 18558
+```
+
+This can be changed through configuration options.
+
+## Configuration
+Persistent configuration can be added to `wallet.conf` in your `prefix` directory.
+Same directory has `bcoin.conf` for the node server.
+
+> Example Configuration:
+
+```shell--vars
+network: testnet
+wallet-auth: true
+api-key: hunter2
+http-host: 0.0.0.0
+```
+
+<aside class="notice">
+It is highly recommended to always use `wallet-auth` and to set a unique `api-key`,
+even for local development or local wallets. Without wallet auth other applications
+on your system could theoretically access your wallet through the HTTP server
+without any authentication barriers. Each wallet does have an additional unique auth
+token required for most operations.
+</aside>
+
 ## Wallet Options
 > Wallet options object will look something like this
 
@@ -136,7 +171,7 @@ curl $url/wallet/$id \
 ```
 
 ```shell--cli
-bcoin cli wallet get --network=testnet --token=$token
+bwallet-cli get --network=testnet --token=$token
 ```
 
 ```javascript
@@ -174,7 +209,7 @@ passphrase='bar'
 ```
 
 ```shell--cli
-bcoin cli wallet retoken --id=$id --passphrase=$passphrase
+bwallet-cli retoken --id=$id --passphrase=$passphrase
 ```
 
 ```shell--curl
@@ -227,7 +262,7 @@ curl $url/wallet/$id/
 
 ```shell--cli
 # ID defaults to `primary` if none is passed
-bcoin cli wallet get --id=$id
+bwallet-cli get --id=$id
 ```
 
 ```javascript
@@ -308,7 +343,7 @@ curl $url/wallet/$id/master
 ```
 
 ```shell--cli
-bcoin cli wallet master --id=$id --network=$network
+bwallet-cli master --id=$id --network=$network
 ```
 
 ```javascript
@@ -370,7 +405,7 @@ curl $url/wallet/$id \
 ```shell--cli
 # watchOnly defaults to true if --key flag is set
 
-bcoin cli wallet create $id --witness=$witness --passphrase=$passphrase --watch=$watchOnly --key=$accountKey
+bwallet-cli create $id --witness=$witness --passphrase=$passphrase --watch=$watchOnly --key=$accountKey
 ```
 
 ```javascript
@@ -508,13 +543,13 @@ let id, passphrase, rate, value, address;
 ```shell--vars
 id="foo"
 passphrase="bar"
-rate=1000
-value=.3
+rate=500
+value=1000
 address="moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"
 ```
 
 ```shell--cli
-bcoin cli wallet send --id=$id --value=$value --address=$address ---passphrase=$passphrase
+bwallet-cli send --id=$id --value=$value --address=$address ---passphrase=$passphrase
 ```
 
 ```shell--curl
@@ -614,7 +649,7 @@ depth <br> _int_  | number of confirmation for coins to spend
 ### Output object
 Property | Description
 --------- | -----------
-value <br> _int_ | Value to send in bitcoin
+value <br> _int_ | Value to send in satoshis
 address <br> _string_ | destination address for transaction
 
 ## Create a Transaction
@@ -625,13 +660,13 @@ let id, rate, value, address, passphrase;
 ```shell--vars
 id="foo"
 passphrase="bar"
-rate=100
-value=.3
+rate=500
+value=1000
 address="moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"
 ```
 
 ```shell--cli
-bcoin cli wallet mktx --id=$id --rate=$rate --value=$value --address=$address --passphrase=$passphrase
+bwallet-cli mktx --id=$id --rate=$rate --value=$value --address=$address --passphrase=$passphrase
 ```
 
 ```shell--curl
@@ -731,7 +766,7 @@ depth <br> _int_  | number of confirmation for coins to spend
 ### Output object
 Property | Description
 --------- | -----------
-value <br> _int_ | Value to send in bitcoin
+value <br> _int_ | Value to send in satoshis
 address <br> _string_ | destination address for transaction
 
 
@@ -748,7 +783,7 @@ tx="01000000010d72c6b2582c2b2e625d29dd5ad89209de7e2600ab12a1a8e05813c28b703d2c00
 ```
 
 ```shell--cli
-bcoin cli wallet sign --id=$id --passphrase=$passphrase --tx=$tx
+bwallet-cli sign --id=$id --passphrase=$passphrase --tx=$tx
 ```
 
 ```shell--curl
@@ -837,7 +872,7 @@ age=259200 # 72 hours
 ```
 
 ```shell--cli
-bcoin cli wallet zap --id=$id account=$account age=$age
+bwallet-cli zap --id=$id account=$account age=$age
 ```
 
 ```shell--curl
@@ -892,7 +927,7 @@ timeout=60
 ```
 
 ```shell--cli
-bcoin cli wallet unlock --id=$id $pass $timeout
+bwallet-cli unlock --id=$id $pass $timeout
 ```
 
 ```shell--curl
@@ -937,7 +972,7 @@ id='foo'
 ```
 
 ```shell--cli
-bcoin cli wallet lock --id=$id
+bwallet-cli lock --id=$id
 ```
 
 ```shell--curl
@@ -977,7 +1012,7 @@ key='0215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9'
 ```
 
 ```shell--cli
-bcoin cli wallet import --id=$id $key
+bwallet-cli import --id=$id $key
 ```
 
 ```shell--curl
@@ -1039,7 +1074,7 @@ address='moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA'
 ```
 
 ```shell--cli
-bcoin cli wallet watch --id=$id --account=$account $address
+bwallet-cli watch --id=$id --account=$account $address
 ```
 
 ```shell--curl
@@ -1092,7 +1127,7 @@ curl $url/wallet/$id/block
 ```
 
 ```shell--cli
-bcoin cli wallet blocks --id=$id
+bwallet-cli blocks --id=$id
 ```
 
 ```javascript
@@ -1130,7 +1165,7 @@ height=1179720
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id block $height
+bwallet-cli --id=$id block $height
 ```
 
 ```shell--curl
@@ -1182,7 +1217,7 @@ key="tpubDCUQshhR98hjDDPtefuQdg4Dmpk5mes3TRyUp1Qa4BjxCVytfqmqNWmJ3tUZfqu4qLfEypQ
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id shared add $key
+bwallet-cli --id=$id shared add $key
 ```
 
 ```shell--curl
@@ -1237,7 +1272,7 @@ key="tpubDCUQshhR98hjDDPtefuQdg4Dmpk5mes3TRyUp1Qa4BjxCVytfqmqNWmJ3tUZfqu4qLfEypQ
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id shared remove $key
+bwallet-cli --id=$id shared remove $key
 ```
 
 ```shell--curl
@@ -1288,7 +1323,7 @@ address="n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id key $address
+bwallet-cli --id=$id key $address
 ```
 
 ```shell--curl
@@ -1334,7 +1369,7 @@ Get wallet key by address. Returns wallet information with address and public ke
 Parameters | Description
 -----------| --------------
 id <br> _string_ | id of wallet that holds the address being queried
-address <br> _string> | Base58 encoded address to get corresponding public key for
+address <br> _string_ | Base58 encoded address to get corresponding public key for
 
 ## Get Private Key By Address
 ```javascript
@@ -1347,7 +1382,7 @@ address="n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id dump $address
+bwallet-cli --id=$id dump $address
 ```
 
 ```shell--curl
@@ -1381,7 +1416,7 @@ Get wallet private key (WIF format) by address. Returns just the private key
 Parameters | Description
 -----------| --------------
 id <br> _string_ | id of wallet that holds the address being queried
-address <br> _string> | Base58 encoded address to get corresponding public key for
+address <br> _string_ | Base58 encoded address to get corresponding public key for
 
 
 ## Generate Receiving Address
@@ -1395,7 +1430,7 @@ account="default"
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id address
+bwallet-cli --id=$id address
 ```
 
 ```shell--curl
@@ -1457,7 +1492,7 @@ account="default"
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id change
+bwallet-cli --id=$id change
 ```
 
 ```shell--curl
@@ -1519,7 +1554,7 @@ account="baz"
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id nested --account=$account
+bwallet-cli --id=$id nested --account=$account
 ```
 
 ```shell--curl
@@ -1580,7 +1615,7 @@ account='bar'
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id balance --account=$account
+bwallet-cli --id=$id balance --account=$account
 ```
 
 ```shell--curl
@@ -1636,7 +1671,7 @@ curl $url/wallet/$id/coin
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id coins
+bwallet-cli --id=$id coins
 ```
 
 ```javascript
@@ -1858,7 +1893,7 @@ index=0
 ```shell--cli
 # command is wallet agnostic, same as in vanilla coin command
 
-bcoin cli coin $hash $index
+bcoin-cli coin $hash $index
 ```
 
 ```shell--curl

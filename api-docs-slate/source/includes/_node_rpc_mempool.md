@@ -12,7 +12,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getmempoolinfo
+bcoin-cli rpc getmempoolinfo
 ```
 
 ```javascript
@@ -72,7 +72,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getmempoolancestors $txhash $verbose
+bcoin-cli rpc getmempoolancestors $txhash $verbose
 ```
 
 ```javascript
@@ -152,7 +152,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getmempooldescendants $txhash $verbose
+bcoin-cli rpc getmempooldescendants $txhash $verbose
 ```
 
 ```javascript
@@ -233,7 +233,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getmempoolentry $txhash
+bcoin-cli rpc getmempoolentry $txhash
 ```
 
 ```javascript
@@ -303,7 +303,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getrawmempool $verbose
+bcoin-cli rpc getrawmempool $verbose
 ```
 
 ```javascript
@@ -394,7 +394,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc prioritisetransaction $txhash $priorityDelta $feeDelta
+bcoin-cli rpc prioritisetransaction $txhash $priorityDelta $feeDelta
 ```
 
 ```javascript
@@ -452,7 +452,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc estimatefee $nblocks
+bcoin-cli rpc estimatefee $nblocks
 ```
 
 ```javascript
@@ -505,7 +505,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc estimatepriority $nblocks
+bcoin-cli rpc estimatepriority $nblocks
 ```
 
 ```javascript
@@ -558,7 +558,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc estimatesmartfee $nblocks
+bcoin-cli rpc estimatesmartfee $nblocks
 ```
 
 ```javascript
@@ -614,7 +614,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc estimatesmartpriority $nblocks
+bcoin-cli rpc estimatesmartpriority $nblocks
 ```
 
 ```javascript

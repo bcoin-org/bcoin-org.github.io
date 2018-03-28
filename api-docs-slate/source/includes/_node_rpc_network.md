@@ -13,7 +13,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getconnectioncount
+bcoin-cli rpc getconnectioncount
 ```
 
 ```javascript
@@ -56,7 +56,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc ping
+bcoin-cli rpc ping
 ```
 
 ```javascript
@@ -101,7 +101,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getpeerinfo
+bcoin-cli rpc getpeerinfo
 ```
 
 ```javascript
@@ -183,7 +183,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc addnode $nodeAddr $cmd
+bcoin-cli rpc addnode $nodeAddr $cmd
 ```
 
 ```javascript
@@ -245,7 +245,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc disconnectnode $nodeAddr
+bcoin-cli rpc disconnectnode $nodeAddr
 ```
 
 ```javascript
@@ -298,7 +298,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getaddednodeinfo $nodeAddr
+bcoin-cli rpc getaddednodeinfo $nodeAddr
 ```
 
 ```javascript
@@ -354,7 +354,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getnettotals
+bcoin-cli rpc getnettotals
 ```
 
 ```javascript
@@ -403,7 +403,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getnetworkinfo
+bcoin-cli rpc getnetworkinfo
 ```
 
 ```javascript
@@ -478,7 +478,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc setban $nodeAddr $cmd
+bcoin-cli rpc setban $nodeAddr $cmd
 ```
 
 ```javascript
@@ -530,7 +530,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc listbanned
+bcoin-cli rpc listbanned
 ```
 
 ```javascript
@@ -583,7 +583,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc clearbanned
+bcoin-cli rpc clearbanned
 ```
 
 ```javascript

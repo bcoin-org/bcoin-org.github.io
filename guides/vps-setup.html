@@ -412,7 +412,7 @@ $ bcoin --index-tx --index-address --daemon
 <span class="token variable">${PID}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Alternatively, you can assign http port and network using command line flags:</p>
 <pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin --index-tx --index-address --http-port<span class="token operator">=</span>8332 --network<span class="token operator">=</span>main</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Here, PID is the process ID of bcoin. To stop bcoin you can issue <code>kill ${PID}</code> replacing <code>${PID}</code> with the number your terminal returns. If you forget the PID you can find it again with <code>ps -ef | grep bcoin</code></p>
 <p>You can use the bcoin CLI tool out of the box. To view your node&#39;s status:</p>
-<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin cli info --api-key<span class="token operator">=</span>hunter2
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin-cli info --api-key<span class="token operator">=</span>hunter2
 <span class="token punctuation">{</span>
   <span class="token string">"version"</span><span class="token keyword">:</span> <span class="token string">"v1.0.0-beta.14"</span>,
   <span class="token string">"network"</span><span class="token keyword">:</span> <span class="token string">"main"</span>,
@@ -454,7 +454,7 @@ $ forever start docs/Examples/fullnode.js
 warn:    --minUptime not set. Defaulting to: 1000ms
 warn:    --spinSleepTime not set. Your script will <span class="token keyword">exit</span> <span class="token keyword">if</span> it does not stay up <span class="token keyword">for</span> at least 1000ms
 info:    Forever processing file: docs/Examples/fullnode.js</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Check your node with</p>
-<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin cli info</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Reference the <a href="# Command Line Interaction">Command Line Interaction</a> for interacting with your bcoin process.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ bcoin-cli info</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Reference the <a href="# Command Line Interaction">Command Line Interaction</a> for interacting with your bcoin process.</p>
 <p>To interact with forever here are a few shortcuts.</p>
 <pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ forever list
 $ forever stopall

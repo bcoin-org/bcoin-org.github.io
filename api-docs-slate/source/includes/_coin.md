@@ -28,7 +28,7 @@ curl $url/coin/$hash/$index
 ```
 
 ```shell--cli
-bcoin cli coin $hash $index
+bcoin-cli coin $hash $index
 ```
 
 ```javascript
@@ -92,7 +92,7 @@ curl $url/coin/address/$address
 ```
 
 ```shell--cli
-bcoin cli coin $address
+bcoin-cli coin $address
 ```
 
 ```javascript

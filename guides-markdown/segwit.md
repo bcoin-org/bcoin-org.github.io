@@ -302,7 +302,7 @@ point the transaction can be spent. To validate the correctness of our transacti
 run one final check `assert(spend.verify())`.
 
 `MTX.toRaw()` will return encoded transaction which can be broadcasted with any method.
-e.g. `bcoin cli broadcast RAWTRANSACTION`.
+e.g. `bcoin-cli broadcast RAWTRANSACTION`.
 
 
 ### Spending from P2WSH
