@@ -43,7 +43,11 @@ export BCOIN_API_KEY=yoursecret
 bcoin-cli info
 ```
 
-`bcoin-cli` can be configured with many params:
+Install `bcoin-cli` and `bwallet-cli` command line tools with the `bclient` package.
+Included with `bcoin` by default, but can be installed separately:
+`npm install bclient`
+
+`bcoin-cli` params:
 
 ### General configurations are:
 

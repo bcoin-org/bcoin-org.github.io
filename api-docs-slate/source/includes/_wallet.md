@@ -6,7 +6,7 @@ let id, url;
 
 ```shell--vars
 id="primary"
-url="http://localhost:18332"
+url="http://localhost:18334"
 ```
 
 ```shell--curl
@@ -79,6 +79,41 @@ The wallet database can contain many different wallets, with many different acco
 Each account can be of a different type. You could have a pubkeyhash account, as well as a multisig account, a witness pubkeyhash account, etc.
 
 Note that accounts should not be accessed directly from the public API. They do not have locks which can lead to race conditions during writes.
+
+## HTTP Server
+
+The wallet HTTP server listens on it's own port, separate from the node's server.
+Default ports are:
+
+```shell-vars
+main: 8334
+testnet: 18334
+regtest: 48334
+simnet: 18558
+```
+
+This can be changed through configuration options.
+
+## Configuration
+Persistent configuration can be added to `wallet.conf` in your `prefix` directory.
+Same directory has `bcoin.conf` for the node server.
+
+> Example Configuration:
+
+```shell--vars
+network: testnet
+wallet-auth: true
+api-key: hunter2
+http-host: 0.0.0.0
+```
+
+<aside class="notice">
+It is highly recommended to always use `wallet-auth` and to set a unique `api-key`,
+even for local development or local wallets. Without wallet auth other applications
+on your system could theoretically access your wallet through the HTTP server
+without any authentication barriers. Each wallet does have an additional unique auth
+token required for most operations.
+</aside>
 
 ## Wallet Options
 > Wallet options object will look something like this

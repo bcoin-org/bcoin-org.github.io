@@ -1,11 +1,13 @@
-# Wallet Admin
-The `_admin` namespace exists to differentiate administrative level tasks on the wallet API that you probably don't want to expose to individual wallets.
+# Wallet Admin Commands
 
-`/wallet/_admin/[TARGET_ACTION]`
+Admin commands are simply commands no specific to any particular wallet, and may
+impact all wallets on the system.
 
-<aside class="notice">
-Replace `[TARGET_ACTION]` with one of the available actions listed below
-</aside>
+Additional security is available by specifying `admin-token` in your configuration
+if `wallet-auth` is also enabled. If `admin-token` is specified, add `?token=`
+to all admin requests.
+
+This is highly recommended, especially on production instances.
 
 ## Wallet Rescan
 ```javascript
@@ -17,7 +19,7 @@ height = 50000
 ```
 
 ```shell--curl
-curl $url/wallet/_admin/rescan \
+curl $walleturl/rescan \
   -X POST \
   --data '{"height": '$height'}'
 ```
@@ -47,12 +49,12 @@ const client = new bcoin.http.Client({
 Initiates a blockchain rescan for the walletdb. Wallets will be rolled back to the specified height (transactions above this height will be unconfirmed).
 
 ### Example HTTP Request
-`POST /wallet/_admin/rescan?height=50000`
+`POST /rescan?height=50000`
 
 
 ## Wallet Resend
 ```shell--curl
-curl $url/wallet/_admin/resend \
+curl $walleturl/resend \
 -X POST
 ```
 
@@ -81,7 +83,7 @@ Rebroadcast all pending transactions in all wallets.
 
 ### HTTP Request
 
-`POST /wallet/_admin/resend`
+`POST /resend`
 
 ##Wallet Backup
 ```javascript
@@ -93,7 +95,7 @@ path='/path/to/new/backup'
 ```
 
 ```shell--curl
-curl $url/wallet/_admin/backup?path=/home/user/walletdb-backup.ldb \
+curl $walleturl/backup?path=/home/user/walletdb-backup.ldb \
   -X POST \
 ```
 
@@ -122,12 +124,12 @@ Safely backup the wallet database to specified path (creates a clone of the data
 
 ### HTTP Request
 
-`POST /wallet/_admin/backup?path=/home/user/walletdb-backup.ldb`
+`POST /backup?path=/home/user/walletdb-backup.ldb`
 
 ## List all Wallets
 
 ```shell--curl
-curl $url/wallet/_admin/wallets
+curl $walleturl/wallet
 ```
 
 ```shell--cli
@@ -159,4 +161,4 @@ List all wallet IDs. Returns an array of strings.
 
 ### HTTP Request
 
-`GET /wallet/_admin/wallets`
+`GET /wallet`
