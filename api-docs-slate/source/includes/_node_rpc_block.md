@@ -10,7 +10,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getblockchaininfo
+bcoin-cli rpc getblockchaininfo
 ```
 
 ```javascript
@@ -112,7 +112,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getbestblockhash
+bcoin-cli rpc getbestblockhash
 ```
 
 ```javascript
@@ -155,7 +155,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getbestblockhash
+bcoin-cli rpc getbestblockhash
 ```
 
 ```javascript
@@ -210,7 +210,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getblock $blockhash $verbose $details
+bcoin-cli rpc getblock $blockhash $verbose $details
 ```
 
 ```javascript
@@ -296,7 +296,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getblockbyheight $blockheight $verbose $details
+bcoin-cli rpc getblockbyheight $blockheight $verbose $details
 ```
 
 ```javascript
@@ -380,7 +380,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getblockhash $blockheight
+bcoin-cli rpc getblockhash $blockheight
 ```
 
 ```javascript
@@ -434,7 +434,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getblockheader $blockhash $verbose
+bcoin-cli rpc getblockheader $blockhash $verbose
 ```
 
 ```javascript
@@ -493,7 +493,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getchaintips
+bcoin-cli rpc getchaintips
 ```
 
 ```javascript
@@ -551,7 +551,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getdifficulty
+bcoin-cli rpc getdifficulty
 ```
 
 ```javascript

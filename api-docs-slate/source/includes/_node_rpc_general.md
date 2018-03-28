@@ -8,7 +8,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc stop
+bcoin-cli rpc stop
 ```
 
 ```javascript
@@ -53,7 +53,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getinfo
+bcoin-cli rpc getinfo
 ```
 
 ```javascript
@@ -116,7 +116,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getmemoryinfo
+bcoin-cli rpc getmemoryinfo
 ```
 
 ```javascript
@@ -168,7 +168,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc setloglevel none
+bcoin-cli rpc setloglevel none
 ```
 
 ```javascript
@@ -222,7 +222,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc validateaddress $address
+bcoin-cli rpc validateaddress $address
 ```
 
 ```javascript
@@ -285,7 +285,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc createmultisig $nrequired '[ "'$pubkey0'", "'$pubkey1'", "'$pubkey2'" ]'
+bcoin-cli rpc createmultisig $nrequired '[ "'$pubkey0'", "'$pubkey1'", "'$pubkey2'" ]'
 ```
 
 ```javascript
@@ -343,7 +343,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc createwitnessaddress $script
+bcoin-cli rpc createwitnessaddress $script
 ```
 
 ```javascript
@@ -400,7 +400,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc signmessagewithprivkey $privkey $message
+bcoin-cli rpc signmessagewithprivkey $privkey $message
 ```
 
 ```javascript
@@ -456,7 +456,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc verifymessage $address $signature $message 
+bcoin-cli rpc verifymessage $address $signature $message 
 ```
 
 ```javascript
@@ -509,7 +509,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc setmocktime $timestamp
+bcoin-cli rpc setmocktime $timestamp
 ```
 
 ```javascript

@@ -8,7 +8,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc params...
+bcoin-cli rpc params...
 ```
 
 ```javascript
@@ -41,7 +41,7 @@ This is documentation how to use it with `bcoin`.
 RPC Calls are accepted at:
 `POST /`
 
-*Note: bcoin cli rpc and javascript will return error OR result.*
+*Note: bcoin-cli rpc and javascript will return error OR result.*
 
 
 ### POST Parameters RPC

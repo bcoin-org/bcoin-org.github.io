@@ -13,7 +13,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc pruneblockchain
+bcoin-cli rpc pruneblockchain
 ```
 
 ```javascript
@@ -67,7 +67,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc invalidateblock $blockhash
+bcoin-cli rpc invalidateblock $blockhash
 ```
 
 ```javascript
@@ -119,7 +119,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc reconsiderblock $blockhash
+bcoin-cli rpc reconsiderblock $blockhash
 ```
 
 ```javascript

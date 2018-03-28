@@ -59,7 +59,7 @@ id='test'
 ```
 
 ```shell--cli
-bcoin cli wallet account list --id=$id
+bwallet-cli account list --id=$id
 ```
 
 ```javascript
@@ -108,7 +108,7 @@ curl $url/wallet/$id/account/$account
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id account get $account
+bwallet-cli --id=$id account get $account
 ```
 
 ```javascript
@@ -169,7 +169,7 @@ type='multisig'
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id account create $name --type=$type --key=$accountKey
+bwallet-cli --id=$id account create $name --type=$type --key=$accountKey
 ```
 
 ```shell--curl
@@ -229,4 +229,3 @@ accountKey <br> _string_ | the extended public key for the account. This is igno
 type <br> _string_ | what type of wallet to make it ('multisig', 'pubkeyhash')
 m <br> _int_ | for multisig accounts, what to make `m` in m-of-n
 n <br> _int_ | for multisig accounts, what to make the `n` in m-of-n
-

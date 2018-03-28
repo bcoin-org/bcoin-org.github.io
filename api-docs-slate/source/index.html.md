@@ -53,7 +53,7 @@ curl http://x:[api-key]@127.0.0.1:8332/
 
 ```shell--cli
 export BCOIN_API_KEY=[api-key]
-bcoin cli info
+bcoin-cli info
 ```
 
 ```javascript

@@ -20,30 +20,30 @@ simnet    | 18556
 You can interact with bcoin with REST Api as well as RPC,
 there are couple of ways you can use API.
 
-- `bcoin cli` - has almost all methods described to be used.
-- `javascript` - Clients used by `bcoin cli` can be used directly from javascript
+- `bcoin-cli` - has almost all methods described to be used.
+- `javascript` - Clients used by `bcoin-cli` can be used directly from javascript
 - `curl` - or you can use direct HTTP calls for invoking REST/RPC API calls.
 
 ## Configuring BCOIN CLI
 
 ```shell--visible
 # You can use config file
-bcoin cli --config /full/path/to/bcoin.conf
+bcoin-cli --config /full/path/to/bcoin.conf
 
 # Or with prefix (which will later load bcoin.conf file from the directory)
-bcoin cli --prefix /full/path/to/bcoin/dir
+bcoin-cli --prefix /full/path/to/bcoin/dir
 
 # You can configure it by passing arguments:
-bcoin cli --network=regtest info
-bcoin cli info --network=regtest
+bcoin-cli --network=regtest info
+bcoin-cli info --network=regtest
 
 # Or use ENV variables (Starting with BCOIN_)
 export BCOIN_NETWORK=regtest
 export BCOIN_API_KEY=yoursecret
-bcoin cli info
+bcoin-cli info
 ```
 
-`bcoin cli` can be configured with many params:
+`bcoin-cli` can be configured with many params:
 
 ### General configurations are:
 
@@ -84,7 +84,7 @@ const wallet = new Wallet({
 });
 ```
 
-You can also use api with Javascript Library (used by `bcoin cli`).
+You can also use api with Javascript Library (used by `bcoin-cli`).
 There are two objects: `bcoin.http.Client` for general API and `bcoin.http.Wallet` for wallet API.
 
 `bcoin.http.Client` options:

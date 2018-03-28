@@ -505,7 +505,7 @@ calculate fees based on the passed in rate and send change to the change address
 point the transaction can be spent. To validate the correctness of our transaction (signature), we
 run one final check <code>assert(spend.verify())</code>.</p>
 <p><code>MTX.toRaw()</code> will return encoded transaction which can be broadcasted with any method.
-e.g. <code>bcoin cli broadcast RAWTRANSACTION</code>.</p>
+e.g. <code>bcoin-cli broadcast RAWTRANSACTION</code>.</p>
 <h3 id="spending-from-p2wsh">Spending from P2WSH</h3><p>We first need to generate the original address where we received funds.</p>
 <pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> <span class="token punctuation">[</span>ring<span class="token punctuation">,</span> ring2<span class="token punctuation">]</span> <span class="token operator">=</span> ringUtils<span class="token punctuation">.</span><span class="token function">getRings</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> network<span class="token punctuation">)</span><span class="token punctuation">;</span>
 ring<span class="token punctuation">.</span>witness <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>

@@ -1,5 +1,5 @@
 # Wallet Admin
-The _admin namespace exists to differentiate administrative level tasks on the wallet API that you probably don't want to expose to individual wallets.
+The `_admin` namespace exists to differentiate administrative level tasks on the wallet API that you probably don't want to expose to individual wallets.
 
 `/wallet/_admin/[TARGET_ACTION]`
 
@@ -23,7 +23,7 @@ curl $url/wallet/_admin/rescan \
 ```
 
 ```shell--cli
-bcoin cli rescan $height
+bwallet-cli rescan $height
 ```
 
 ```javascript
@@ -57,7 +57,7 @@ curl $url/wallet/_admin/resend \
 ```
 
 ```shell--cli
-bcoin cli resend
+bwallet-cli resend
 ```
 
 ```javascript
@@ -98,7 +98,7 @@ curl $url/wallet/_admin/backup?path=/home/user/walletdb-backup.ldb \
 ```
 
 ```shell--cli
-bcoin cli backup $path
+bwallet-cli backup $path
 ```
 
 ```javascript
@@ -131,7 +131,7 @@ curl $url/wallet/_admin/wallets
 ```
 
 ```shell--cli
-bcoin cli wallets
+bwallet-cli wallets
 ```
 
 ```javascript

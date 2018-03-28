@@ -23,7 +23,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc gettxout $txhash $index $includemempool
+bcoin-cli rpc gettxout $txhash $index $includemempool
 ```
 
 ```javascript
@@ -85,7 +85,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc gettxoutsetinfo
+bcoin-cli rpc gettxoutsetinfo
 ```
 
 ```javascript
@@ -146,7 +146,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getrawtransaction $txhash $verbose
+bcoin-cli rpc getrawtransaction $txhash $verbose
 ```
 
 ```javascript
@@ -200,7 +200,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc decoderawtransaction $rawtx
+bcoin-cli rpc decoderawtransaction $rawtx
 ```
 
 ```javascript
@@ -312,7 +312,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc decodescript $script
+bcoin-cli rpc decodescript $script
 ```
 
 ```javascript
@@ -370,7 +370,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc sendrawtransaction $rawtx
+bcoin-cli rpc sendrawtransaction $rawtx
 ```
 
 ```javascript
@@ -431,7 +431,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc createrawtransaction \
+bcoin-cli rpc createrawtransaction \
   '[{ "txid": "'$txhash'", "vout": "'$txindex'" }]' \
   '{ "'$address'": "'$amount'", "data": "'$data'" }'
 
@@ -519,7 +519,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc signrawtransaction $rawtx \
+bcoin-cli rpc signrawtransaction $rawtx \
   '[{ "txid": "'$txhash'", "vout": "'$txindex'", "scriptPubKey": "'$scriptPubKey'", "amount": "'$amount'" }]' \
   '[ "'$privkey'" ]'
 ```
@@ -593,7 +593,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc gettxoutproof $txhash
+bcoin-cli rpc gettxoutproof $txhash
 ```
 
 
@@ -648,7 +648,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc verifytxoutproof $proof
+bcoin-cli rpc verifytxoutproof $proof
 ```
 
 

@@ -12,7 +12,7 @@ hash="18d2cf5683d7befe06941f59b7fb4ca0e915dcb9c6aece4ce8966a29e7c576fe"
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id tx $hash
+bwallet-cli --id=$id tx $hash
 ```
 
 ```shell--curl
@@ -118,7 +118,7 @@ id='foo'
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id history
+bwallet-cli --id=$id history
 ```
 
 ```shell--curl
@@ -203,7 +203,7 @@ id='foo'
 ```
 
 ```shell--cli
-bcoin cli wallet --id=$id pending
+bwallet-cli --id=$id pending
 ```
 
 ```shell--curl

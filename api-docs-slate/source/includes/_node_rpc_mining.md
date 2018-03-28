@@ -22,7 +22,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getnetworkhashps $blocks $height
+bcoin-cli rpc getnetworkhashps $blocks $height
 ```
 
 ```javascript
@@ -68,7 +68,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getmininginfo
+bcoin-cli rpc getmininginfo
 ```
 
 ```javascript
@@ -130,7 +130,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getwork
+bcoin-cli rpc getwork
 ```
 
 ```javascript
@@ -180,7 +180,7 @@ curl $url/ \
 ```shell--cli
 # Because there is a request timeout set on CLI http requests
 # without manually adjusting the timeout, this call will timeout before the request is complete
-bcoin cli rpc getworklp
+bcoin-cli rpc getworklp
 ```
 
 ```javascript
@@ -234,7 +234,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getblocktemplate
+bcoin-cli rpc getblocktemplate
 ```
 
 ```javascript
@@ -342,7 +342,7 @@ curl $url/ \
 
 ```shell--cli
 # Block data is old, so it should return error
-bcoin cli rpc submitblock $blockdata
+bcoin-cli rpc submitblock $blockdata
 ```
 
 ```javascript
@@ -390,7 +390,7 @@ curl $url/ \
 
 ```shell--cli
 # Block data is old, so it should return error
-bcoin cli rpc verifyblock $blockdata
+bcoin-cli rpc verifyblock $blockdata
 ```
 
 ```javascript
@@ -441,7 +441,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc setgenerate $mining $proclimit
+bcoin-cli rpc setgenerate $mining $proclimit
 ```
 
 ```javascript
@@ -487,7 +487,7 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin cli rpc getgenerate
+bcoin-cli rpc getgenerate
 ```
 
 ```javascript
@@ -542,7 +542,7 @@ curl $url/ \
 
 ```shell--cli
 # Timeout error
-bcoin cli rpc generate $numblocks
+bcoin-cli rpc generate $numblocks
 ```
 
 ```javascript
@@ -603,7 +603,7 @@ curl $url/ \
 
 ```shell--cli
 # Timeout error
-bcoin cli rpc generatetoaddress $numblocks $address
+bcoin-cli rpc generatetoaddress $numblocks $address
 ```
 
 ```javascript

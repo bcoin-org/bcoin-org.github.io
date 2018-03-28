@@ -1,6 +1,6 @@
 # Node
 
-## JSON-RPC Requests 
+## JSON-RPC Requests
 
 Route for JSON-RPC requests, most of which mimic the bitcoind RPC calls completely.
 
@@ -23,7 +23,7 @@ curl $url/
 ```
 
 ```shell--cli
-bcoin cli info
+bcoin-cli info
 ```
 
 ```javascript
@@ -99,7 +99,7 @@ curl $url/mempool
 ```
 
 ```shell--cli
-bcoin cli mempool
+bcoin-cli mempool
 ```
 
 ```javascript
@@ -154,8 +154,8 @@ curl $url/block/$blockHeight # by height
 ```
 
 ```shell--cli
-bcoin cli block $blockHash # by hash
-bcoin cli block $blockHeight # by height
+bcoin-cli block $blockHash # by hash
+bcoin-cli block $blockHeight # by height
 ```
 
 ```javascript
@@ -255,7 +255,7 @@ curl $url/broadcast \
 ```
 
 ```shell--cli
-bcoin cli broadcast $txhex
+bcoin-cli broadcast $txhex
 ```
 
 ```javascript
@@ -293,4 +293,3 @@ Broadcast a transaction by adding it to the node's mempool. If mempool verificat
 Parameter | Description
 --------- | -----------
 tx | transaction hash
-
