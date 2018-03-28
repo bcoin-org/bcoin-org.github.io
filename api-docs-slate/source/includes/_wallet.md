@@ -543,8 +543,8 @@ let id, passphrase, rate, value, address;
 ```shell--vars
 id="foo"
 passphrase="bar"
-rate=1000
-value=.3
+rate=500
+value=1000
 address="moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"
 ```
 
@@ -649,7 +649,7 @@ depth <br> _int_  | number of confirmation for coins to spend
 ### Output object
 Property | Description
 --------- | -----------
-value <br> _int_ | Value to send in bitcoin
+value <br> _int_ | Value to send in satoshis
 address <br> _string_ | destination address for transaction
 
 ## Create a Transaction
@@ -660,8 +660,8 @@ let id, rate, value, address, passphrase;
 ```shell--vars
 id="foo"
 passphrase="bar"
-rate=100
-value=.3
+rate=500
+value=1000
 address="moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"
 ```
 
@@ -766,7 +766,7 @@ depth <br> _int_  | number of confirmation for coins to spend
 ### Output object
 Property | Description
 --------- | -----------
-value <br> _int_ | Value to send in bitcoin
+value <br> _int_ | Value to send in satoshis
 address <br> _string_ | destination address for transaction
 
 
