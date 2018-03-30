@@ -1240,7 +1240,8 @@ account = 'default';
 
 ```json
 {
-  "success": true
+  "success": true,
+  "addedKey": true
 }
 ```
 
@@ -1249,6 +1250,9 @@ Add a shared xpubkey to wallet. Must be a multisig wallet.
 <aside class="notice">
 Note that since it must be a multisig, the wallet on creation should be set with <code>m</code> and <code>n</code> where <code>n</code> is greater than 1 (since the first key is always that wallet's own xpubkey)
 </aside>
+
+Response will return `addedKey: true` true if key was added on this request. Returns
+`false` if key already added, but will still return `success: true` with status `200`.
 
 ### HTTP Request
 
@@ -1295,11 +1299,15 @@ const account = 'default';
 
 ```json
 {
-  "success": true
+  "success": true,
+  "removedKey": true
 }
 ```
 
 Remove shared xpubkey from wallet if present.
+
+Response will return `removedKey: true` true if key was removed on this request. Returns
+`false` if key already removed, but will still return `success: true` with status `200`.
 
 ### HTTP Request
 
