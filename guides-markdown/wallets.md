@@ -87,8 +87,8 @@ With the [bcoin package](https://www.npmjs.com/package/bcoin) installed, we'll f
 ```javascript
 //import the bcoin module and set it to testnet
 const bcoin = require('bcoin').set('testnet');
-const WalletDB = bcoin.walletdb;
-const WalletKey = bcoin.walletkey;
+const WalletDB = bcoin.WalletDB;
+const WalletKey = bcoin.wallet.WalletKey;
 const KeyRing = bcoin.keyring;
 const Mnemonic = bcoin.hd.Mnemonic;
 const HD = bcoin.hd;

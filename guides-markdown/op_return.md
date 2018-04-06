@@ -20,19 +20,20 @@ with our data:
 
 ```javascript
 const bcoin = require("bcoin");
+const {WalletClient} = require('bclient');
+const network = bcoin.Network.get('regtest');
 
 let id, passphrase, rate, script, output;
 id="primary"
 passphrase="pass"
 rate=5000
-script = bcoin.script.fromNulldata(Buffer.from("with ❤︎ from bcoin"))
-output = bcoin.output.fromScript(script, 0)
+script = bcoin.Script.fromNulldata(Buffer.from("with ❤︎ from bcoin"))
+output = bcoin.Output.fromScript(script, 0)
 
-const httpWallet = bcoin.http.Wallet({
-    id: id,
-    network: 'testnet'
+const wallet = new WalletClient({
+  port: network.walletPort,
+  apiKey: 'foo'
 });
-
 
 const options = {
   rate: rate,
@@ -41,7 +42,7 @@ const options = {
 };
 
 (async () => {
-  const tx = await httpWallet.send(options);
+  const tx = await wallet.send('primary', options);
   console.log(tx);
 })();
 ```
