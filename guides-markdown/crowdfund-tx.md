@@ -34,11 +34,11 @@ Note that we're setting the fundingTarget and amountToFund as constants for simp
 const assert = require('assert');
 const bcoin = require('bcoin');
 
-const MTX = bcoin.mtx;
-const Keyring = bcoin.keyring;
-const Outpoint = bcoin.outpoint;
-const Script = bcoin.script;
-const Coin = bcoin.coin;
+const MTX = bcoin.MTX;
+const Keyring = bcoin.wallet.WalletKey;
+const Outpoint = bcoin.Outpoint;
+const Script = bcoin.Script;
+const Coin = bcoin.Coin;
 const policy = bcoin.protocol.policy
 
 const fundingTarget = 100000000; // 1 BTC

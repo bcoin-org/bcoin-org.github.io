@@ -73,8 +73,8 @@ a multisig address.
 
 const fs = require('fs');
 const bcoin = require('bcoin');
-const KeyRing = bcoin.keyring;
-const Script = bcoin.script;
+const KeyRing = bcoin.wallet.WalletKey;
+const Script = bcoin.Script;
 
 // Network is important when creating addresses
 // and storing private keys, You don't want to accidentally spend
@@ -139,11 +139,11 @@ We are going to send `50 BTC` to `RF1PJ1VkHG6H9dwoE2k19a5aigWcWr6Lsu` on the reg
 const fs = require('fs');
 const assert = require('assert');
 const bcoin = require('bcoin');
-const KeyRing = bcoin.keyring;
-const Script = bcoin.script;
-const MTX = bcoin.mtx;
-const Amount = bcoin.amount;
-const Coin = bcoin.coin;
+const KeyRing = bcoin.wallet.WalletKey;
+const Script = bcoin.Script;
+const MTX = bcoin.MTX;
+const Amount = bcoin.Amount;
+const Coin = bcoin.Coin;
 
 const network = 'regtest';
 
@@ -316,8 +316,8 @@ but it shouldn't matter if these two wallets are on the same node or not.
 'use strict';
 
 const assert = require('assert');
-const bcoin = require('../bcoin');
-const {Client, Wallet} = bcoin.http;
+const bcoin = require('bcoin');
+const {NodeClient, WalletClient} = require('bclient');
 
 const network = 'regtest';
 const m = 2;
@@ -325,9 +325,9 @@ const n = 2;
 
 // Wrapper for skipping errors, when you rerun the script
 // It could have been as simple as
-//  await client.createWallet(options);
+//  await client.createWallet('primary', options);
 const createMultisigWallet = async function createMultisigWallet(client, options, skipExists) {
-  assert(client instanceof Client, 'client should be bcoin.http.Client');
+  assert(client instanceof NodeClient, 'client should be NodeClient');
   assert(options.id, 'You need to provide id in options');
 
   const defaultOpts = {
@@ -340,7 +340,7 @@ const createMultisigWallet = async function createMultisigWallet(client, options
 
   let res;
   try {
-    res = await client.createWallet(defaultOpts);
+    res = await client.createWallet('primary', defaultOpts);
   } catch (e) {
     if (skipExists && e.message === 'WDB: Wallet already exists.') {
       return null;
@@ -356,14 +356,14 @@ const createMultisigWallet = async function createMultisigWallet(client, options
 // It could have been as simple as
 //  await client.addSharedKey(account, xpubkey);
 const addSharedKey = async function addSharedKey(client, account, xpubkey, skipRemoveError) {
-  assert(client instanceof Wallet, 'client should be bcoin.http.Wallet');
+  assert(client instanceof WalletClient, 'client should be WalletClient');
   assert(account, 'should provide account');
   assert(xpubkey, 'should provide xpubkey');
 
   let res;
 
   try {
-    res = await client.addSharedKey(account, xpubkey);
+    res = await client.addSharedKey('primary', account, xpubkey);
   } catch (e) {
     if (e.message === 'Cannot remove key.') {
       return null;
@@ -376,7 +376,7 @@ const addSharedKey = async function addSharedKey(client, account, xpubkey, skipR
 };
 
 (async () => {
-  const client = new Client({ network });
+  const client = new NodeClient({ network });
 
   // Let's create wallets if they don't exist
   await createMultisigWallet(client, { id: 'cosigner1' }, true);
@@ -384,8 +384,8 @@ const addSharedKey = async function addSharedKey(client, account, xpubkey, skipR
 
   // Initialize wallet http clients
   // They will be talking to Node's API
-  const wallet1 = new Wallet({ id: 'cosigner1', network });
-  const wallet2 = new Wallet({ id: 'cosigner2', network });
+  const wallet1 = new WalletClient({ id: 'cosigner1', network });
+  const wallet2 = new WalletClient({ id: 'cosigner2', network });
 
   // This isn't strictly necessary, but you can either create new
   // accounts under wallets and use them
@@ -395,8 +395,8 @@ const addSharedKey = async function addSharedKey(client, account, xpubkey, skipR
   // Both wallets need to exchange XPUBKEYs to each other
   // in order to generate receiving and change addresses.
   // Let's take it from the default account.
-  const wallet1info = await wallet1.getInfo();
-  const wallet2info = await wallet2.getInfo();
+  const wallet1info = await wallet1.getInfo('primary');
+  const wallet2info = await wallet2.getInfo('primary');
 
   // Grab the xpubkey from wallet, we need to share them
   const wallet1xpubkey = wallet1info.account.accountKey;
@@ -411,8 +411,8 @@ const addSharedKey = async function addSharedKey(client, account, xpubkey, skipR
   // (depth) of derivation to geth the same addresses
   // NOTE: Each time you createAddress index(depth) is
   // incremented an new address is generated
-  const address1 = await wallet1.createAddress(wallet1account);
-  const address2 = await wallet2.createAddress(wallet2account);
+  const address1 = await wallet1.createAddress('primary', wallet1account);
+  const address2 = await wallet2.createAddress('primary', wallet2account);
 
   // Address for both shouuld be the same
   // Unless they were run separately. (Or by manually triggering API)
@@ -447,17 +447,17 @@ allocated from coins by bcoin node wallet service.
 ```js
 'use strict';
 
-const bcoin = require('../bcoin');
-const {Client, Wallet} = bcoin.http;
-const Amount = bcoin.amount;
+const bcoin = require('bcoin');
+const {NodeClient, WalletClient} = require('bclient');
+const Amount = bcoin.Amount;
 
 const network = 'regtest';
 const sendTo = 'RBg1TLaNuRpH6UTFzogFXhjqubPYZaqWgs';
 
 (async () => {
-  const client = new Client({ network });
-  const wallet1 = new Wallet({ id: 'cosigner1', network });
-  const wallet2 = new Wallet({ id: 'cosigner2', network });
+  const client = new NodeClient({ network });
+  const wallet1 = new WalletClient({ id: 'cosigner1', network });
+  const wallet2 = new WalletClient({ id: 'cosigner2', network });
 
   // Because we can't sign and spend from account
   // We can't use `spend` as we do with normal transactions
@@ -472,13 +472,13 @@ const sendTo = 'RBg1TLaNuRpH6UTFzogFXhjqubPYZaqWgs';
 
   // This will automatically find coins and fund the transaction (Sign it),
   // also create changeAddress and calculate fee
-  const tx1 = await wallet1.createTX(options);
+  const tx1 = await wallet1.createTX('primary', options);
 
   // Now you can share this raw output
   const raw = tx1.hex;
 
   // Wallet2 will also sign the transaction
-  const tx2 = await wallet2.sign(raw);
+  const tx2 = await wallet2.sign('primary', raw);
 
   // Now we can broadcast this transaction to the network
   const broadcast = await client.broadcast(tx2.hex);

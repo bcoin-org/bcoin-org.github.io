@@ -12,9 +12,9 @@ Scripts are array-like objects with some helper functions.
 ``` js
 const bcoin = require('bcoin');
 const assert = require('assert');
-const Script = bcoin.script;
-const Witness = bcoin.witness;
-const Stack = bcoin.stack;
+const Script = bcoin.Script;
+const Witness = bcoin.Witness;
+const Stack = bcoin.Stack;
 
 const output = new Script();
 output.pushSym('OP_DROP');

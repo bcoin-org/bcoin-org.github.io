@@ -20,10 +20,10 @@ inherit from the TX object, but can also be signed and modified.
 
 const bcoin = require('bcoin');
 const assert = require('assert');
-const Keyring = bcoin.keyring;
-const MTX = bcoin.mtx;
-const Outpoint = bcoin.outpoint;
-const Script = bcoin.script;
+const Keyring = bcoin.wallet.WalletKey;
+const MTX = bcoin.MTX;
+const Outpoint = bcoin.Outpoint;
+const Script = bcoin.Script;
 
 // Create an HD master keypair.
 const master = bcoin.hd.generate();
@@ -100,10 +100,10 @@ Let's try it more realistically:
 
 const bcoin = require('bcoin');
 const assert = require('assert');
-const Keyring = bcoin.keyring;
-const MTX = bcoin.mtx;
-const Outpoint = bcoin.outpoint;
-const Script = bcoin.script;
+const Keyring = bcoin.wallet.WalletKey;
+const MTX = bcoin.MTX;
+const Outpoint = bcoin.Outpoint;
+const Script = bcoin.Script;
 
 const master = bcoin.hd.generate();
 const key = master.derivePath('m/44/0/0/0/0');
