@@ -30,12 +30,17 @@ bwallet-cli rescan $height
 
 ```javascript
 const height = 50000;
-const client = new bcoin.http.Client({
-    network: 'testnet',
+const { WalletClient } = require('bclient');
+const { Network } = require('bcoin');
+const network = Network.get('testnet');
+
+const walletClient = new WalletClient({
+  port: network.walletPort,
+  network: network.type
 });
 
 (async () => {
-  await client.rescan(height);
+  await walletClient.rescan(height);
 })();
 
 ```
@@ -63,12 +68,17 @@ bwallet-cli resend
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
-  network: 'testnet',
+const { WalletClient } = require('bclient');
+const { Network } = require('bcoin');
+const network = Network.get('testnet');
+
+const walletClient = new WalletClient({
+  port: network.walletPort,
+  network: network.type
 });
 
 (async () => {
-  await client.resend();
+  await walletClient.resend();
 })();
 
 ```
@@ -104,12 +114,17 @@ bwallet-cli backup $path
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
-    network: 'testnet',
+const { WalletClient } = require('bclient');
+const { Network } = require('bcoin');
+const network = Network.get('testnet');
+
+const walletClient = new WalletClient({
+  port: network.walletPort,
+  network: network.type
 });
 
 (async () => {
-  await client.backup(path);
+  await walletClient.backup(path);
 })();
 
 ```
@@ -137,12 +152,17 @@ bwallet-cli wallets
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
-    network: 'testnet',
+const { WalletClient } = require('bclient');
+const { Network } = require('bcoin');
+const network = Network.get('testnet');
+
+const walletClient = new WalletClient({
+  port: network.walletPort,
+  network: network.type
 });
 
 (async () => {
-  const wallets = await client.getWallets();
+  const wallets = await walletClient.getWallets();
   console.log(wallets)
 })();
 
