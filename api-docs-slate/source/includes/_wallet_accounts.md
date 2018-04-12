@@ -63,9 +63,10 @@ bwallet-cli account list --id=$id
 ```
 
 ```javascript
-const client = new bcoin.http.Client();
+const wallet = WalletClient.wallet(id);
+
 (async () => {
-  const accountInfo = await client.getAccounts(id);
+  const accountInfo = await wallet.getAccounts();
   console.log(accountInfo);
 })();
 ```
@@ -112,9 +113,9 @@ bwallet-cli --id=$id account get $account
 ```
 
 ```javascript
-const client = new bcoin.http.Client();
+const wallet = WalletClient.wallet(id);
 (async () => {
-  const accountInfo = await client.getAccount(id, account);
+  const accountInfo = await wallet.getAccount(account);
   console.log(accountInfo);
 })();
 ```
@@ -179,11 +180,11 @@ curl $url/wallet/$id/account/$name \
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 const options = {type: type}
 
 (async () => {
-  const account = await httpWallet.createAccount(name, options);
+  const account = await wallet.createAccount(name, options);
   console.log(account);
 })();
 ```
