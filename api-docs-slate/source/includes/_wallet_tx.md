@@ -20,10 +20,10 @@ curl $url/wallet/$id/tx/$hash
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.getTX(hash);
+  const response = await wallet.getTX(hash);
   console.log(response);
 })();
 ```
@@ -126,11 +126,11 @@ curl $url/wallet/$id/tx/history
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 const account = 'default';
 
 (async () => {
-  const response = await httpWallet.getHistory(account);
+  const response = await wallet.getHistory(account);
   console.log(response);
 })();
 ```
@@ -211,10 +211,10 @@ curl $url/wallet/$id/tx/unconfirmed
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.getPending(account);
+  const response = await wallet.getPending(account);
   console.log(response);
 })();
 ```
@@ -252,10 +252,10 @@ curl $url/wallet/$id/tx/range?start=$start
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.getRange(account, {start: start, end: end});
+  const response = await wallet.getRange(account, {start: start, end: end});
   console.log(response);
 })();
 ```
