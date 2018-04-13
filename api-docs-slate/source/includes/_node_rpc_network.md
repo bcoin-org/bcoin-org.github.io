@@ -17,7 +17,8 @@ bcoin-cli rpc getconnectioncount
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -60,7 +61,8 @@ bcoin-cli rpc ping
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -105,7 +107,8 @@ bcoin-cli rpc getpeerinfo
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -187,7 +190,8 @@ bcoin-cli rpc addnode $nodeAddr $cmd
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -249,7 +253,8 @@ bcoin-cli rpc disconnectnode $nodeAddr
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -302,7 +307,8 @@ bcoin-cli rpc getaddednodeinfo $nodeAddr
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -358,7 +364,8 @@ bcoin-cli rpc getnettotals
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -407,7 +414,8 @@ bcoin-cli rpc getnetworkinfo
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -482,7 +490,8 @@ bcoin-cli rpc setban $nodeAddr $cmd
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -534,7 +543,8 @@ bcoin-cli rpc listbanned
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -587,7 +597,8 @@ bcoin-cli rpc clearbanned
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 

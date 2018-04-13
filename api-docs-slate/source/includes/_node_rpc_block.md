@@ -14,7 +14,8 @@ bcoin-cli rpc getblockchaininfo
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -116,7 +117,8 @@ bcoin-cli rpc getbestblockhash
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -159,7 +161,8 @@ bcoin-cli rpc getbestblockhash
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -214,7 +217,8 @@ bcoin-cli rpc getblock $blockhash $verbose $details
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -300,7 +304,8 @@ bcoin-cli rpc getblockbyheight $blockheight $verbose $details
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -384,7 +389,8 @@ bcoin-cli rpc getblockhash $blockheight
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -438,7 +444,8 @@ bcoin-cli rpc getblockheader $blockhash $verbose
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -497,7 +504,8 @@ bcoin-cli rpc getchaintips
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -555,7 +563,8 @@ bcoin-cli rpc getdifficulty
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 

@@ -16,7 +16,8 @@ bcoin-cli rpc getmempoolinfo
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -76,7 +77,8 @@ bcoin-cli rpc getmempoolancestors $txhash $verbose
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -156,7 +158,8 @@ bcoin-cli rpc getmempooldescendants $txhash $verbose
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -237,7 +240,8 @@ bcoin-cli rpc getmempoolentry $txhash
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -307,7 +311,8 @@ bcoin-cli rpc getrawmempool $verbose
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -398,7 +403,8 @@ bcoin-cli rpc prioritisetransaction $txhash $priorityDelta $feeDelta
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -456,7 +462,8 @@ bcoin-cli rpc estimatefee $nblocks
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -509,7 +516,8 @@ bcoin-cli rpc estimatepriority $nblocks
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -562,7 +570,8 @@ bcoin-cli rpc estimatesmartfee $nblocks
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -618,7 +627,8 @@ bcoin-cli rpc estimatesmartpriority $nblocks
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const { NodeClient } = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
