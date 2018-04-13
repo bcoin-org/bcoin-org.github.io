@@ -12,6 +12,7 @@ You can create a client for a specific wallet (and be compatible with the old
 api) with the `wallet` method on `WalletClient` class.
 
 ```shell--curl
+# n/a
 ```
 
 ```shell--cli
@@ -28,7 +29,7 @@ const walletClient = new WalletClient({
   network: network.type
 });
 
-const id = 'primary'; // or 'foo' or whatever
+const id = 'primary'; // or whatever your wallet name is
 const wallet = WalletClient.wallet(id);
 
 ```
