@@ -1,4 +1,39 @@
 # Wallet
+## The Wallet Client
+The best way to interact with the wallet API is with the bwallet-cli in the `bclient`
+[package](https://www.npmjs.com/package/bclient). Installing globally with
+`npm i -g bclient` gives you access to the cli. You can also install locally
+to your project.
+
+Note that when using it in your own program, you will need to explicitly
+pass in a port option. The easiest way to do this is with `bcoin.Network`.
+
+You can create a client for a specific wallet (and be compatible with the old
+api) with the `wallet` method on `WalletClient` class.
+
+```shell--curl
+# n/a
+```
+
+```shell--cli
+npm i -g bclient && bwallet-cli
+```
+
+```javascript
+const {WalletClient} = require('bclient');
+const { Network } = require('bcoin');
+const network = Network.get('testnet');
+
+const walletClient = new WalletClient({
+  port: network.walletPort,
+  network: network.type
+});
+
+const id = 'primary'; // or whatever your wallet name is
+const wallet = WalletClient.wallet(id);
+
+```
+
 ## The WalletDB and Object
 ```javascript
 let id, url;
@@ -18,10 +53,10 @@ bwallet-cli get --id=$id
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const wallet = await httpWallet.getInfo();
+  const wallet = await wallet.getInfo();
   console.log(wallet);
 })();
 ```
@@ -176,14 +211,10 @@ bwallet-cli get --network=testnet --token=$token
 
 ```javascript
 
-const httpWallet = new bcoin.http.Wallet({
-    id: id,
-    token: token,
-    network: 'testnet',
-});
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const wallet = await httpWallet.getInfo();
+  const wallet = await wallet.getInfo();
   console.log(wallet);
 })();
 ```
@@ -268,11 +299,11 @@ bwallet-cli get --id=$id
 ```javascript
 `use strict`
 
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 const id = 'foo';
 
 (async () => {
-  const wallet = await httpWallet.getInfo();
+  const wallet = await wallet.getInfo();
   console.log(wallet);
 })();
 ```
@@ -503,10 +534,10 @@ curl $url/wallet/$id/passphrase \
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.setPassphrase(oldPass, newPass);
+  const response = await wallet.setPassphrase(oldPass, newPass);
   console.log(response);
 });
 ```
@@ -565,14 +596,14 @@ curl $url/wallet/$id/send \
 ```
 
 ```javascript
-const httpWallet = bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 const options = {
   rate: rate,
   outputs: [{ value: value, address: address }]
 };
 
 (async () => {
-  const tx = await httpWallet.send(options);
+  const tx = await wallet.send(options);
   console.log(tx);
 })();
 ```
@@ -682,7 +713,7 @@ curl $url/wallet/$id/create \
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 const outputs = [{ value: value, address: address }]
 const options = {
   passphrase: passphrase,
@@ -691,7 +722,7 @@ const options = {
 };
 
 (async () => {
-  const tx = await httpWallet.createTX(options);
+  const tx = await wallet.createTX(options);
   console.log(tx);
 })();
 ```
@@ -793,10 +824,10 @@ curl $url/wallet/$id/sign \
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 const options = { passphrase: passphrase };
 (async () => {
-  const signedTx = await httpWallet.sign(tx, options);
+  const signedTx = await wallet.sign(tx, options);
   console.log(signedTx);
 })();
 ```
@@ -885,10 +916,10 @@ curl $url/wallet/$id/zap \
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = httpWallet.zap(account, age);
+  const response = wallet.zap(account, age);
   console.log(response);
 })();
 ```
@@ -1084,10 +1115,10 @@ curl $url/wallet/$id/import \
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.importAddress(account, address)
+  const response = await wallet.importAddress(account, address)
 })();
 ```
 
@@ -1131,10 +1162,10 @@ bwallet-cli blocks --id=$id
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const blocks = await httpWallet.getBlocks();
+  const blocks = await wallet.getBlocks();
   console.log(blocks);
 }())
 ```
@@ -1173,10 +1204,10 @@ curl $url/wallet/block/$height
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const blockInfo = await httpWallet.getBlock(height);
+  const blockInfo = await wallet.getBlock(height);
   console.log(blockInfo);
 })
 ```
@@ -1227,11 +1258,11 @@ curl $url/wallet/$id/shared-key \
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 account = 'default';
 
 (async () => {
-  const response = await httpWallet.addSharedKey(account, key);
+  const response = await wallet.addSharedKey(account, key);
   console.log(response);
 })();
 ```
@@ -1286,11 +1317,11 @@ curl $url/wallet/$id/shared-key \
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 const account = 'default';
 
 (async () => {
-  const response = await httpWallet.removeSharedKey(account, key);
+  const response = await wallet.removeSharedKey(account, key);
   console.log(response);
 })();
 ```
@@ -1339,10 +1370,10 @@ curl $url/wallet/$id/key/$address
 ```
 
 ```javascript
-const httpWallet = bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.getKey(address);
+  const response = await wallet.getKey(address);
   console.log(response);
 })();
 ```
@@ -1398,10 +1429,10 @@ curl $url/wallet/$id/wif/$address
 ```
 
 ```javascript
-const httpWallet = bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.getWIF(address);
+  const response = await wallet.getWIF(address);
   console.log(response);
 })();
 ```
@@ -1446,9 +1477,9 @@ curl $url/wallet/$id/address -X POST --data '{"account":"'$account'"}'
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 (async () => {
-  const receiveAddress = await httpWallet.createAddress(account);
+  const receiveAddress = await wallet.createAddress(account);
   console.log(receiveAddress);
 })();
 ```
@@ -1508,9 +1539,9 @@ curl $url/wallet/$id/change -X POST --data '{"account":"'$account'"}'
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 (async () => {
-  const receiveAddress = await httpWallet.createChange(account);
+  const receiveAddress = await wallet.createChange(account);
   console.log(receiveAddress);
 })();
 ```
@@ -1570,10 +1601,10 @@ curl $url/wallet/$id/nested -X POST --data '{"account": "'$account'"}'
 ```
 
 ```javascript
-const httpWallet = bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.createNested(account);
+  const response = await wallet.createNested(account);
   console.log(response);
 })();
 ```
@@ -1631,10 +1662,10 @@ curl $url/wallet/$id/balance?account=$account
 ```
 
 ```javascript
-const httpWallet = bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = httpWallet.getBalance(account);
+  const response = wallet.getBalance(account);
   console.log(response);
 })();
 ```
@@ -1683,10 +1714,10 @@ bwallet-cli --id=$id coins
 ```
 
 ```javascript
-const httpWallet = bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = httpWallet.getCoins();
+  const response = wallet.getCoins();
   console.log(response);
 })();
 ```
@@ -1745,10 +1776,10 @@ curl $url/wallet/$id/locked$hash/$index -X PUT --data '{"passphrase": "'$pasphra
 ```
 
 ```javascript
-const httpWallet = bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.lockCoin(hash, index);
+  const response = await wallet.lockCoin(hash, index);
   console.log(response);
 })();
 ```
@@ -1801,10 +1832,10 @@ curl $url/wallet/$id/locked/$hash/$index -X DELETE --data '{"passphrase": "'$pas
 ```
 
 ```javascript
-const httpWallet = bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.unlockCoin(hash, index);
+  const response = await wallet.unlockCoin(hash, index);
   console.log(response);
 })();
 ```
@@ -1855,10 +1886,10 @@ curl $url/wallet/$id/locked
 ```
 
 ```javascript
-const httpWallet = bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.getLocked();
+  const response = await wallet.getLocked();
   console.log(response);
 })();
 ```
@@ -1909,10 +1940,10 @@ curl $url/wallet/$id/coin/$hash/$index
 ```
 
 ```javascript
-const httpWallet = new bcoin.http.Wallet({ id: id });
+const wallet = WalletClient.wallet(id);
 
 (async () => {
-  const response = await httpWallet.getCoin(hash, index);
+  const response = await wallet.getCoin(hash, index);
   console.log(response);
 })();
 ```

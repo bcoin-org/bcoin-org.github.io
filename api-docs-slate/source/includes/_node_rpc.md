@@ -12,7 +12,8 @@ bcoin-cli rpc params...
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 

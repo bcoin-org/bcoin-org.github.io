@@ -27,7 +27,8 @@ bcoin-cli rpc gettxout $txhash $index $includemempool
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -89,7 +90,8 @@ bcoin-cli rpc gettxoutsetinfo
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -150,7 +152,8 @@ bcoin-cli rpc getrawtransaction $txhash $verbose
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -204,7 +207,8 @@ bcoin-cli rpc decoderawtransaction $rawtx
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -316,7 +320,8 @@ bcoin-cli rpc decodescript $script
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -374,7 +379,8 @@ bcoin-cli rpc sendrawtransaction $rawtx
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -387,7 +393,7 @@ const rpc = new bcoin.http.RPCClient({
 });
 ```
 
-> 
+>
 
 ```json
 "28d65fdaf5334ffd29066d7076f056bb112baa4bb0842f6eaa06171c277b4e8c"
@@ -438,7 +444,8 @@ bcoin-cli rpc createrawtransaction \
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'regtest'
 });
 
@@ -526,7 +533,8 @@ bcoin-cli rpc signrawtransaction $rawtx \
 
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'regtest'
 });
 
@@ -598,7 +606,8 @@ bcoin-cli rpc gettxoutproof $txhash
 
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -653,7 +662,8 @@ bcoin-cli rpc verifytxoutproof $proof
 
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 

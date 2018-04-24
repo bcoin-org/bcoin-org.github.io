@@ -27,7 +27,8 @@ bcoin-cli tx $txhash
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
+const {NodeClient} = require('bclient');
+const client = new NodeClient({
   network: 'testnet'
 });
 
@@ -122,7 +123,8 @@ bcoin-cli tx $address
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
+const {NodeClient} = require('bclient');
+const client = new NodeClient({
   network: 'testnet'
 });
 
@@ -242,7 +244,8 @@ No CLI Option.
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
+const {NodeClient} = require('bclient');
+const client = new NodeClient({
   network: 'testnet'
 });
 

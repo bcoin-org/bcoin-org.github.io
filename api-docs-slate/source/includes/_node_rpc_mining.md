@@ -26,7 +26,8 @@ bcoin-cli rpc getnetworkhashps $blocks $height
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -72,7 +73,8 @@ bcoin-cli rpc getmininginfo
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -134,7 +136,8 @@ bcoin-cli rpc getwork
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -186,7 +189,8 @@ bcoin-cli rpc getworklp
 ```javascript
 // Because there is a request timeout set on CLI http requests
 // without manually adjusting the timeout, this call will timeout before the request is complete
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -238,7 +242,8 @@ bcoin-cli rpc getblocktemplate
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -346,7 +351,8 @@ bcoin-cli rpc submitblock $blockdata
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -394,7 +400,8 @@ bcoin-cli rpc verifyblock $blockdata
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -445,7 +452,8 @@ bcoin-cli rpc setgenerate $mining $proclimit
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -470,7 +478,7 @@ Will start the mining on CPU.
 N. | Name | Default |  Description
 --------- | --------- | --------- | -----------
 1  | mining | 0 | `true` will start mining, `false` will stop.
-2 | proclimit | 0 | 
+2 | proclimit | 0 |
 
 
 
@@ -491,7 +499,8 @@ bcoin-cli rpc getgenerate
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -546,7 +555,8 @@ bcoin-cli rpc generate $numblocks
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -575,7 +585,7 @@ Mines `numblocks` number of blocks.
 N. | Name | Default |  Description
 --------- | --------- | --------- | -----------
 1 | numblocks | 1 | Number of blocks to mine.
-2 | maxtries | 
+2 | maxtries |
 
 
 
@@ -607,7 +617,8 @@ bcoin-cli rpc generatetoaddress $numblocks $address
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 

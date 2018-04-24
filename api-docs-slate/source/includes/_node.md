@@ -27,7 +27,8 @@ bcoin-cli info
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -103,7 +104,8 @@ bcoin-cli mempool
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -159,7 +161,8 @@ bcoin-cli block $blockHeight # by height
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -259,7 +262,8 @@ bcoin-cli broadcast $txhex
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet',
 });
 

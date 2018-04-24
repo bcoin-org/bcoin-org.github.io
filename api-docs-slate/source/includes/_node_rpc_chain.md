@@ -17,7 +17,8 @@ bcoin-cli rpc pruneblockchain
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -71,7 +72,8 @@ bcoin-cli rpc invalidateblock $blockhash
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 
@@ -86,7 +88,7 @@ const rpc = new bcoin.http.RPCClient({
 
 
 Invalidates the block in the chain.
-It will rewind network to blockhash and invalidate it. 
+It will rewind network to blockhash and invalidate it.
 
 It won't accept that block as valid
 *Invalidation will work while running, restarting node will remove invalid block from list.*
@@ -123,7 +125,8 @@ bcoin-cli rpc reconsiderblock $blockhash
 ```
 
 ```javascript
-const rpc = new bcoin.http.RPCClient({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   network: 'testnet'
 });
 

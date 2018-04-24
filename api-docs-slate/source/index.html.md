@@ -57,7 +57,8 @@ bcoin-cli info
 ```
 
 ```javascript
-const client = new bcoin.http.Client({
+const {NodeClient} = require('bclient');
+const rpc = new NodeClient({
   apiKey: [api-key],
   //...
 });
