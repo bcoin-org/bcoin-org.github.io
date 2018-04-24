@@ -20,7 +20,7 @@ npm i -g bclient && bwallet-cli
 ```
 
 ```javascript
-const { WalletClient } = require('bclient');
+const {WalletClient} = require('bclient');
 const { Network } = require('bcoin');
 const network = Network.get('testnet');
 

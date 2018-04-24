@@ -26,7 +26,7 @@ bcoin-cli rpc getnetworkhashps $blocks $height
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -73,7 +73,7 @@ bcoin-cli rpc getmininginfo
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -136,7 +136,7 @@ bcoin-cli rpc getwork
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -189,7 +189,7 @@ bcoin-cli rpc getworklp
 ```javascript
 // Because there is a request timeout set on CLI http requests
 // without manually adjusting the timeout, this call will timeout before the request is complete
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -242,7 +242,7 @@ bcoin-cli rpc getblocktemplate
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -351,7 +351,7 @@ bcoin-cli rpc submitblock $blockdata
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -400,7 +400,7 @@ bcoin-cli rpc verifyblock $blockdata
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -452,7 +452,7 @@ bcoin-cli rpc setgenerate $mining $proclimit
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -499,7 +499,7 @@ bcoin-cli rpc getgenerate
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -555,7 +555,7 @@ bcoin-cli rpc generate $numblocks
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -617,7 +617,7 @@ bcoin-cli rpc generatetoaddress $numblocks $address
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });

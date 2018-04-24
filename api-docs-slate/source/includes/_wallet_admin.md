@@ -30,7 +30,7 @@ bwallet-cli rescan $height
 
 ```javascript
 const height = 50000;
-const { WalletClient } = require('bclient');
+const {WalletClient} = require('bclient');
 const { Network } = require('bcoin');
 const network = Network.get('testnet');
 
@@ -68,7 +68,7 @@ bwallet-cli resend
 ```
 
 ```javascript
-const { WalletClient } = require('bclient');
+const {WalletClient} = require('bclient');
 const { Network } = require('bcoin');
 const network = Network.get('testnet');
 
@@ -114,7 +114,7 @@ bwallet-cli backup $path
 ```
 
 ```javascript
-const { WalletClient } = require('bclient');
+const {WalletClient} = require('bclient');
 const { Network } = require('bcoin');
 const network = Network.get('testnet');
 
@@ -152,7 +152,7 @@ bwallet-cli wallets
 ```
 
 ```javascript
-const { WalletClient } = require('bclient');
+const {WalletClient} = require('bclient');
 const { Network } = require('bcoin');
 const network = Network.get('testnet');
 

@@ -12,7 +12,7 @@ bcoin-cli rpc stop
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -58,7 +58,7 @@ bcoin-cli rpc getinfo
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -122,7 +122,7 @@ bcoin-cli rpc getmemoryinfo
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -175,7 +175,7 @@ bcoin-cli rpc setloglevel none
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -230,7 +230,7 @@ bcoin-cli rpc validateaddress $address
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -294,7 +294,7 @@ bcoin-cli rpc createmultisig $nrequired '[ "'$pubkey0'", "'$pubkey1'", "'$pubkey
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -353,7 +353,7 @@ bcoin-cli rpc createwitnessaddress $script
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -411,7 +411,7 @@ bcoin-cli rpc signmessagewithprivkey $privkey $message
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -468,7 +468,7 @@ bcoin-cli rpc verifymessage $address $signature $message
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -522,7 +522,7 @@ bcoin-cli rpc setmocktime $timestamp
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });

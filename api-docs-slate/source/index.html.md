@@ -57,7 +57,7 @@ bcoin-cli info
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   apiKey: [api-key],
   //...

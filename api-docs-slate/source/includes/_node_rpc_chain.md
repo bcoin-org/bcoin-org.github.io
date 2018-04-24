@@ -17,7 +17,7 @@ bcoin-cli rpc pruneblockchain
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -72,7 +72,7 @@ bcoin-cli rpc invalidateblock $blockhash
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });
@@ -125,7 +125,7 @@ bcoin-cli rpc reconsiderblock $blockhash
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const rpc = new NodeClient({
   network: 'testnet'
 });

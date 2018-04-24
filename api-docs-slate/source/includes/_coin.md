@@ -32,7 +32,7 @@ bcoin-cli coin $hash $index
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const client = new NodeClient({
   network: 'testnet'
 });
@@ -97,7 +97,7 @@ bcoin-cli coin $address
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const client = new NodeClient({
   network: 'testnet'
 });
@@ -167,7 +167,7 @@ No CLI Option.
 ```
 
 ```javascript
-const { NodeClient } = require('bclient');
+const {NodeClient} = require('bclient');
 const client = new NodeClient({
   network: 'testnet'
 });
