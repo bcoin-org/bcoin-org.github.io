@@ -16,3 +16,6 @@ To add a new guide, just a submit a Pull Request with a markdown file added to t
 - If different approaches are possible, these should be elaborated on and if possible demonstrated (e.g. SPV vs. Full Node, WalletDB vs. manual key management)
 - Section at the end for how the example could be expanded on, i.e. ready for production or additional functionality
 - If possible, links to repo with full working code implementation
+
+## Updating API Docs
+Our [API Documentation](http://bcoin.io/api-docs/index.html) runs on the Open Source [Slate Framework](https://github.com/lord/slate). To make an update, fork the repo and make the changes to the appropriate Markdown in the file directory: bcoin-org.github.io/api-docs-slate/source/includes/. When your PR is merged in to staging, the new docs will be built and deployed to the live docs page http://bcoin.io/api-docs/index.html.
