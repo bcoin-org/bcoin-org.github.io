@@ -13,15 +13,20 @@ bcoin-cli rpc params...
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('MethodName', [ ...params ]);
-
-  // RES will return "result" part of the object, not the id or error
-  // error will be thrown.
+  const result = await client.execute('MethodName', [ ...params ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -42,7 +47,13 @@ This is documentation how to use it with `bcoin`.
 RPC Calls are accepted at:
 `POST /`
 
-*Note: bcoin-cli rpc and javascript will return error OR result.*
+*Notes:*
+
+*bcoin-cli rpc and javascript will return error OR result.*
+
+*Javascript result will return the "result" part of the object, not the id or error*
+
+*If a Javascript error is encountered it will be thrown instead of returned in JSON*
 
 
 ### POST Parameters RPC
@@ -50,4 +61,4 @@ Parameter | Description
 --------- | -----------
 method  | Name of the RPC call
 params  | Parameters accepted by method
-id      | Will be returned with the response (Shouldn't be object)
+id      | `int` Will be returned with the response (cURL only)

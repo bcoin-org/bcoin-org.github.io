@@ -1,4 +1,4 @@
-# Coin
+# bcoin - Coins
 Getting coin information via API.
 
 *Coin stands for UTXO*
@@ -33,18 +33,20 @@ bcoin-cli coin $hash $index
 
 ```javascript
 const {NodeClient} = require('bclient');
-const client = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-
-  const coin = await client.getCoin(hash, index);
-
-  console.log(coin);
-
-  await client.close();
+  const result = await client.getCoin(hash, index);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -98,18 +100,20 @@ bcoin-cli coin $address
 
 ```javascript
 const {NodeClient} = require('bclient');
-const client = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-
-  const coins = await client.getCoinsByAddress(address);
-
-  console.log(coins);
-
-  await client.close();
+  const result = await client.getCoinsByAddress(address);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -168,18 +172,20 @@ No CLI Option.
 
 ```javascript
 const {NodeClient} = require('bclient');
-const client = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-
-  const coins = await client.getCoinsByAddresses([address0, address1]);
-
-  console.log(coins);
-
-  await client.close();
+  const result = await client.getCoinsByAddresses([address0, address1]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });

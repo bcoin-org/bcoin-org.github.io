@@ -7,8 +7,8 @@ let id, hash
 ```
 
 ```shell--vars
-id="foo"
-hash="18d2cf5683d7befe06941f59b7fb4ca0e915dcb9c6aece4ce8966a29e7c576fe"
+id="primary"
+hash="0f2a1c65df0ea47c21c916071dd82228451a21c0a695e221bb9d61e96c6a89fd"
 ```
 
 ```shell--cli
@@ -16,15 +16,26 @@ bwallet-cli --id=$id tx $hash
 ```
 
 ```shell--curl
-curl $url/wallet/$id/tx/$hash
+curl $walleturl/$id/tx/$hash
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.getTX(hash);
-  console.log(response);
+  const result = await wallet.getTX(hash);
+  console.log(result);
 })();
 ```
 > Sample Response
@@ -76,8 +87,8 @@ let id, hash, passphrase;
 ```
 
 ```shell--vars
-id="foo"
-hash="2a22606ee555d2c26ec979f0c45cd2dc18c7177056189cb345989749fd58786"
+id="primary"
+hash="0f2a1c65df0ea47c21c916071dd82228451a21c0a695e221bb9d61e96c6a89fd"
 passphrase="bar"
 ```
 
@@ -86,7 +97,7 @@ passphrase="bar"
 ```
 
 ```shell--curl
-curl $url/wallet/$id/tx/$hash \
+curl $walleturl/$id/tx/$hash \
   -X DELETE \
   --data '{"passphrase": "'$passphrase'"}'
 ```
@@ -114,7 +125,7 @@ let id;
 ```
 
 ```shell--vars
-id='foo'
+id='primary'
 ```
 
 ```shell--cli
@@ -122,16 +133,27 @@ bwallet-cli --id=$id history
 ```
 
 ```shell--curl
-curl $url/wallet/$id/tx/history
+curl $walleturl/$id/tx/history
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 const account = 'default';
 
 (async () => {
-  const response = await wallet.getHistory(account);
-  console.log(response);
+  const result = await wallet.getHistory(account);
+  console.log(result);
 })();
 ```
 > Sample Response
@@ -199,7 +221,7 @@ let id;
 ```
 
 ```shell--vars
-id='foo'
+id='primary'
 ```
 
 ```shell--cli
@@ -207,15 +229,26 @@ bwallet-cli --id=$id pending
 ```
 
 ```shell--curl
-curl $url/wallet/$id/tx/unconfirmed
+curl $walleturl/$id/tx/unconfirmed
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.getPending(account);
-  console.log(response);
+  const result = await wallet.getPending();
+  console.log(result);
 })();
 ```
 
@@ -237,8 +270,8 @@ let id, account, start, end;
 ```
 
 ```shell--vars
-id="foo"
-account="foo"
+id="primary"
+account="default"
 start="1506909119"
 end="1506909154"
 ```
@@ -248,15 +281,26 @@ end="1506909154"
 ```
 
 ```shell--curl
-curl $url/wallet/$id/tx/range?start=$start
+curl $walleturl/$id/tx/range?start=$start
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.getRange(account, {start: start, end: end});
-  console.log(response);
+  const result = await wallet.getRange(account, {start: start, end: end});
+  console.log(result);
 })();
 ```
 > Sample Response

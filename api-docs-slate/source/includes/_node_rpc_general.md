@@ -13,14 +13,20 @@ bcoin-cli rpc stop
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('stop');
-
-  console.log(res);
+  const result = await client.execute('stop');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -59,14 +65,20 @@ bcoin-cli rpc getinfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getinfo');
-
-  console.log(res);
+  const result = await client.execute('getinfo');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -123,14 +135,20 @@ bcoin-cli rpc getmemoryinfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getmemoryinfo');
-
-  console.log(res);
+  const result = await client.execute('getmemoryinfo');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -176,14 +194,20 @@ bcoin-cli rpc setloglevel none
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('setloglevel', [ 'none' ]);
-
-  console.log(res);
+  const result = await client.execute('setloglevel', [ 'none' ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -231,14 +255,20 @@ bcoin-cli rpc validateaddress $address
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('validateaddress', [ address ]);
-
-  console.log(res);
+  const result = await client.execute('validateaddress', [ address ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -285,7 +315,7 @@ curl $url/ \
   -X POST \
   --data '{
     "method": "createmultisig",
-    "params": [ "'$nrequired'", [ "'$pubkey0'", "'$pubkey1'", "'$pubkey2'" ] ]
+    "params": [ '$nrequired', [ "'$pubkey0'", "'$pubkey1'", "'$pubkey2'" ] ]
   }'
 ```
 
@@ -295,14 +325,20 @@ bcoin-cli rpc createmultisig $nrequired '[ "'$pubkey0'", "'$pubkey1'", "'$pubkey
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('createmultisig', [ nrequired, [ pubkey0, pubkey1, pubkey2 ] ]);
-
-  console.log(res);
+  const result = await client.execute('createmultisig', [ nrequired, [ pubkey0, pubkey1, pubkey2 ] ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -354,14 +390,20 @@ bcoin-cli rpc createwitnessaddress $script
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('createwitnessaddress', [ script ]);
-
-  console.log(res);
+  const result = await client.execute('createwitnessaddress', [ script ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -412,14 +454,20 @@ bcoin-cli rpc signmessagewithprivkey $privkey $message
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('signmessagewithprivkey', [ privkey, message ]);
-
-  console.log(res);
+  const result = await client.execute('signmessagewithprivkey', [ privkey, message ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -469,14 +517,20 @@ bcoin-cli rpc verifymessage $address $signature $message
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('verifymessage', [ address, signature, message ]);
-
-  console.log(res);
+  const result = await client.execute('verifymessage', [ address, signature, message ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -523,14 +577,20 @@ bcoin-cli rpc setmocktime $timestamp
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('setmocktime', [ timestamp ]);
-
-  console.log(res);
+  const result = await client.execute('setmocktime', [ timestamp ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });

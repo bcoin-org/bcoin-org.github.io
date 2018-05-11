@@ -1,5 +1,13 @@
 # Wallet Admin Commands
 
+```shell--curl
+curl http://x:api-key@127.0.0.1:48334 # will access admin functions for regtest (port 48334) wallets
+
+# examples in these docs will use an environment variable:
+walletadminurl=http://x:api-key@127.0.0.1:48334/
+curl $walletadminurl/<METHOD>
+```
+
 Admin commands are simply commands no specific to any particular wallet, and may
 impact all wallets on the system.
 
@@ -19,7 +27,7 @@ height = 50000
 ```
 
 ```shell--curl
-curl $walleturl/rescan \
+curl $walletadminurl/rescan \
   -X POST \
   --data '{"height": '$height'}'
 ```
@@ -29,18 +37,21 @@ bwallet-cli rescan $height
 ```
 
 ```javascript
-const height = 50000;
 const {WalletClient} = require('bclient');
-const { Network } = require('bcoin');
-const network = Network.get('testnet');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
 
-const walletClient = new WalletClient({
+const walletOptions = {
+  network: network.type,
   port: network.walletPort,
-  network: network.type
-});
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
 
 (async () => {
-  await walletClient.rescan(height);
+  const result = await walletClient.rescan(height);
+  console.log(result);
 })();
 
 ```
@@ -59,7 +70,7 @@ Initiates a blockchain rescan for the walletdb. Wallets will be rolled back to t
 
 ## Wallet Resend
 ```shell--curl
-curl $walleturl/resend \
+curl $walletadminurl/resend \
 -X POST
 ```
 
@@ -69,16 +80,20 @@ bwallet-cli resend
 
 ```javascript
 const {WalletClient} = require('bclient');
-const { Network } = require('bcoin');
-const network = Network.get('testnet');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
 
-const walletClient = new WalletClient({
+const walletOptions = {
+  network: network.type,
   port: network.walletPort,
-  network: network.type
-});
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
 
 (async () => {
-  await walletClient.resend();
+  result = await walletClient.resend();
+  console.log(result);
 })();
 
 ```
@@ -105,8 +120,8 @@ path='/path/to/new/backup'
 ```
 
 ```shell--curl
-curl $walleturl/backup?path=/home/user/walletdb-backup.ldb \
-  -X POST \
+curl $walletadminurl/backup?path=/home/user/walletdb-backup.ldb \
+  -X POST
 ```
 
 ```shell--cli
@@ -115,16 +130,20 @@ bwallet-cli backup $path
 
 ```javascript
 const {WalletClient} = require('bclient');
-const { Network } = require('bcoin');
-const network = Network.get('testnet');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
 
-const walletClient = new WalletClient({
+const walletOptions = {
+  network: network.type,
   port: network.walletPort,
-  network: network.type
-});
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
 
 (async () => {
-  await walletClient.backup(path);
+  const result = await walletClient.backup(path);
+  console.log(result);
 })();
 
 ```
@@ -144,7 +163,7 @@ Safely backup the wallet database to specified path (creates a clone of the data
 ## List all Wallets
 
 ```shell--curl
-curl $walleturl/wallet
+curl $walletadminurl/wallet
 ```
 
 ```shell--cli
@@ -153,17 +172,20 @@ bwallet-cli wallets
 
 ```javascript
 const {WalletClient} = require('bclient');
-const { Network } = require('bcoin');
-const network = Network.get('testnet');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
 
-const walletClient = new WalletClient({
+const walletOptions = {
+  network: network.type,
   port: network.walletPort,
-  network: network.type
-});
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
 
 (async () => {
-  const wallets = await walletClient.getWallets();
-  console.log(wallets)
+  const result = await walletClient.getWallets();
+  console.log(result);
 })();
 
 ```

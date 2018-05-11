@@ -18,14 +18,20 @@ bcoin-cli rpc getconnectioncount
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getconnectioncount');
-
-  console.log(res);
+  const result = await client.execute('getconnectioncount');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -62,14 +68,20 @@ bcoin-cli rpc ping
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('ping');
-
-  console.log(res);
+  const result = await client.execute('ping');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -108,14 +120,20 @@ bcoin-cli rpc getpeerinfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getpeerinfo');
-
-  console.log(res);
+  const result = await client.execute('getpeerinfo');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -191,14 +209,20 @@ bcoin-cli rpc addnode $nodeAddr $cmd
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('addnode', [ nodeAddr, cmd ]);
-
-  console.log(res);
+  const result = await client.execute('addnode', [ nodeAddr, cmd ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -254,14 +278,20 @@ bcoin-cli rpc disconnectnode $nodeAddr
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('disconnectnode', [ nodeAddr ]);
-
-  console.log(res);
+  const result = await client.execute('disconnectnode', [ nodeAddr ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -308,14 +338,20 @@ bcoin-cli rpc getaddednodeinfo $nodeAddr
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getaddednodeinfo', [ nodeAddr ]);
-
-  console.log(res);
+  const result = await client.execute('getaddednodeinfo', [ nodeAddr ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -365,14 +401,20 @@ bcoin-cli rpc getnettotals
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getnettotals');
-
-  console.log(res);
+  const result = await client.execute('getnettotals');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -415,14 +457,20 @@ bcoin-cli rpc getnetworkinfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getnetworkinfo');
-
-  console.log(res);
+  const result = await client.execute('getnetworkinfo');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -491,14 +539,20 @@ bcoin-cli rpc setban $nodeAddr $cmd
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('setban', [ nodeAddr, cmd ]);
-
-  console.log(res);
+  const result = await client.execute('setban', [ nodeAddr, cmd ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -544,14 +598,20 @@ bcoin-cli rpc listbanned
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('listbanned');
-
-  console.log(res);
+  const result = await client.execute('listbanned');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -598,14 +658,20 @@ bcoin-cli rpc clearbanned
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('clearbanned');
-
-  console.log(res);
+  const result = await client.execute('clearbanned');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });

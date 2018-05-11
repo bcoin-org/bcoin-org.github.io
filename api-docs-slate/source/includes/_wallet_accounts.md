@@ -58,16 +58,31 @@ From the [BIP44 Specification](https://github.com/bitcoin/bips/blob/master/bip-0
 id='test'
 ```
 
+```shell--curl
+curl $walleturl/$id/account
+```
+
 ```shell--cli
 bwallet-cli account list --id=$id
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const accountInfo = await wallet.getAccounts();
-  console.log(accountInfo);
+  const result = await wallet.getAccounts();
+  console.log(result);
 })();
 ```
 
@@ -105,7 +120,7 @@ account='default'
 ```
 
 ```shell--curl
-curl $url/wallet/$id/account/$account
+curl $walleturl/$id/account/$account
 ```
 
 ```shell--cli
@@ -113,10 +128,22 @@ bwallet-cli --id=$id account get $account
 ```
 
 ```javascript
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
 const wallet = WalletClient.wallet(id);
+
 (async () => {
-  const accountInfo = await wallet.getAccount(account);
-  console.log(accountInfo);
+  const result = await wallet.getAccount(account);
+  console.log(result);
 })();
 ```
 
@@ -174,18 +201,29 @@ bwallet-cli --id=$id account create $name --type=$type --key=$accountKey
 ```
 
 ```shell--curl
-curl $url/wallet/$id/account/$name \
-    -X PUT
-    --data '{"type": "'$type"}'
+curl $walleturl/$id/account/$name \
+    -X PUT \
+    --data '{"type": "'$type'"}'
 ```
 
 ```javascript
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
 const wallet = WalletClient.wallet(id);
 const options = {type: type}
 
 (async () => {
-  const account = await wallet.createAccount(name, options);
-  console.log(account);
+  const result = await wallet.createAccount(name, options);
+  console.log(result);
 })();
 ```
 

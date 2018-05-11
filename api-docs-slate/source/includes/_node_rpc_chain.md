@@ -18,14 +18,20 @@ bcoin-cli rpc pruneblockchain
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('pruneblockchain');
-
-  console.log(res);
+  const result = await client.execute('pruneblockchain');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -73,14 +79,20 @@ bcoin-cli rpc invalidateblock $blockhash
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('invalidateblock', [ blockhash ]);
-
-  console.log(res);
+  const result = await client.execute('invalidateblock', [ blockhash ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -126,14 +138,20 @@ bcoin-cli rpc reconsiderblock $blockhash
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('reconsiderblock', [ blockhash ]);
-
-  console.log(res);
+  const result = await client.execute('reconsiderblock', [ blockhash ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });

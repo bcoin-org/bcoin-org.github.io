@@ -1,5 +1,7 @@
 # RPC Calls - Mining
 
+*Note: many mining-related RPC calls require `bcoin` to be started with the flag `--coinbase-address` designating a comma-separated list of payout addresses, randomly selected during block creation*
+
 ## getnetworkhashps
 
 ```javascript
@@ -27,14 +29,20 @@ bcoin-cli rpc getnetworkhashps $blocks $height
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getnetworkhashps', [ blocks, height ]);
-
-  console.log(res);
+  const result = await client.execute('getnetworkhashps', [ blocks, height ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -74,14 +82,20 @@ bcoin-cli rpc getmininginfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getmininginfo', []);
-
-  console.log(res);
+  const result = await client.execute('getmininginfo', []);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -137,14 +151,19 @@ bcoin-cli rpc getwork
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
 
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 (async () => {
-  const res = await rpc.execute('getwork');
-
-  console.log(res);
+  const result = await client.execute('getwork');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -190,14 +209,20 @@ bcoin-cli rpc getworklp
 // Because there is a request timeout set on CLI http requests
 // without manually adjusting the timeout, this call will timeout before the request is complete
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getworklp');
-
-  console.log(res);
+  const result = await client.execute('getworklp');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -243,14 +268,20 @@ bcoin-cli rpc getblocktemplate
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblocktemplate');
-
-  console.log(res);
+  const result = await client.execute('getblocktemplate');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -352,15 +383,21 @@ bcoin-cli rpc submitblock $blockdata
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
   // Block data is old, so it should return error
-  const res = await rpc.execute('submitblock', [ blockdata ]);
-
-  console.log(res);
+  const result = await client.execute('submitblock', [ blockdata ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -401,15 +438,21 @@ bcoin-cli rpc verifyblock $blockdata
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
   // Block data is old, so it should return error
-  const res = await rpc.execute('verifyblock', [ blockdata ]);
-
-  console.log(res);
+  const result = await client.execute('verifyblock', [ blockdata ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -453,14 +496,20 @@ bcoin-cli rpc setgenerate $mining $proclimit
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('setgenerate', [ mining, proclimit ]);
-
-  console.log(res);
+  const result = await client.execute('setgenerate', [ mining, proclimit ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -500,14 +549,20 @@ bcoin-cli rpc getgenerate
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getgenerate');
-
-  console.log(res);
+  const result = await client.execute('getgenerate');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -556,15 +611,21 @@ bcoin-cli rpc generate $numblocks
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
   // Timeout error
-  const res = await rpc.execute('generate', [ numblocks ]);
-
-  console.log(res);
+  const result = await client.execute('generate', [ numblocks ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -618,15 +679,21 @@ bcoin-cli rpc generatetoaddress $numblocks $address
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
   // Timeout error
-  const res = await rpc.execute('generatetoaddress', [ numblocks, address ]);
-
-  console.log(res);
+  const result = await client.execute('generatetoaddress', [ numblocks, address ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });

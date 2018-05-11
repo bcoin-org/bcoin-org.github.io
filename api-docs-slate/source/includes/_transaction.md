@@ -1,4 +1,4 @@
-# Transaction
+# bcoin - Transactions
 Getting transaction information via API.
 
 <aside class="info">
@@ -28,18 +28,20 @@ bcoin-cli tx $txhash
 
 ```javascript
 const {NodeClient} = require('bclient');
-const client = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-
-  const tx = await client.getTX(txhash);
-
-  console.log(tx);
-
-  await client.close();
+  const result = await client.getTX(txhash);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -124,18 +126,20 @@ bcoin-cli tx $address
 
 ```javascript
 const {NodeClient} = require('bclient');
-const client = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-
-  const txs = await client.getTXByAddress(address);
-
-  console.log(txs);
-
-  await client.close();
+  const result = await client.getTXByAddress(address);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -245,18 +249,20 @@ No CLI Option.
 
 ```javascript
 const {NodeClient} = require('bclient');
-const client = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-
-  const txs = await client.getTXByAddress([address0, address1]);
-
-  console.log(txs);
-
-  await client.close();
+  const result = await client.getTXByAddresses([address0, address1]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });

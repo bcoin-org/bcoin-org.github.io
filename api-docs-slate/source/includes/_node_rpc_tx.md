@@ -28,14 +28,20 @@ bcoin-cli rpc gettxout $txhash $index $includemempool
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('gettxout', [ txhash, index, includemempool ]);
-
-  console.log(res);
+  const result = await client.execute('gettxout', [ txhash, index, includemempool ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -91,14 +97,20 @@ bcoin-cli rpc gettxoutsetinfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('gettxoutsetinfo');
-
-  console.log(res);
+  const result = await client.execute('gettxoutsetinfo');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -153,14 +165,20 @@ bcoin-cli rpc getrawtransaction $txhash $verbose
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getrawtransaction', [ txhash, verbose ]);
-
-  console.log(res);
+  const result = await client.execute('getrawtransaction', [ txhash, verbose ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -208,14 +226,20 @@ bcoin-cli rpc decoderawtransaction $rawtx
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('decoderawtransaction', [ rawtx ]);
-
-  console.log(res);
+  const result = await client.execute('decoderawtransaction', [ rawtx ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -321,14 +345,20 @@ bcoin-cli rpc decodescript $script
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('decodescript', [ script ]);
-
-  console.log(res);
+  const result = await client.execute('decodescript', [ script ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -380,14 +410,20 @@ bcoin-cli rpc sendrawtransaction $rawtx
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('sendrawtransaction', [ rawtx ]);
-
-  console.log(res);
+  const result = await client.execute('sendrawtransaction', [ rawtx ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -445,20 +481,24 @@ bcoin-cli rpc createrawtransaction \
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'regtest'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
   const sendTo = {
     data: data
   };
-
   sendTo[address] = amount;
-
-  const res = await rpc.execute('createrawtransaction', [ [{ txid: txhash, vout: txindex }], sendTo]);
-
-  console.log(res);
+  const result = await client.execute('createrawtransaction', [ [{ txid: txhash, vout: txindex }], sendTo]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -534,12 +574,19 @@ bcoin-cli rpc signrawtransaction $rawtx \
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'regtest'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('signrawtransaction', [ rawtx,
+  const result = await client.execute('signrawtransaction', [ rawtx,
     [{
       txid: txhash,
       vout: txindex,
@@ -548,8 +595,7 @@ const rpc = new NodeClient({
     }],
     [ privkey ]
   ]);
-
-  console.log(res);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -583,11 +629,11 @@ N. | Name | Default |  Description
 ## gettxoutproof
 
 ```javascript
-let txhash;
+let txidlist;
 ```
 
 ```shell--vars
-txhash='c75f8c12c6d0d1a16d7361b724898968c71de0335993ee589f82fda8ac482bfc';
+txidlist=['c75f8c12c6d0d1a16d7361b724898968c71de0335993ee589f82fda8ac482bfc'];
 ```
 
 ```shell--curl
@@ -596,25 +642,31 @@ curl $url/ \
   -X POST \
   --data '{
     "method": "gettxoutproof",
-    "params": [ "'$txhash'" ]
+    "params": [ "'$txidlist'" ]
   }'
 ```
 
 ```shell--cli
-bcoin-cli rpc gettxoutproof $txhash
+bcoin-cli rpc gettxoutproof $txidlist
 ```
 
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('gettxoutproof', [ txhash ]);
-
-  console.log(res);
+  const result = await client.execute('gettxoutproof', [ txidlist ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -627,7 +679,7 @@ const rpc = new NodeClient({
 ```
 
 Checks if transactions are within block.
-Returns raw block.
+Returns proof of transaction inclusion (raw MerkleBlock).
 
 ### Params
 N. | Name | Default |  Description
@@ -643,7 +695,7 @@ let proof;
 ```
 
 ```shell--vars
-proof='000000208c13da491196839dd019c4ae0564f351502a4951e11b4302454b020000000000f1788fd057d657150b12e5638c7348fb55fdcda4ff4ddb1d1503de3576de6a4cbe22db58f0ec091b918981c50200000001f1788fd057d657150b12e5638c7348fb55fdcda4ff4ddb1d1503de3576de6a4c0100';
+proof='000000209b4b6c5a3b85adfd9f7dd200d5d9cf836c21cabb7da911c5992cef6471d48a4896e260d11df42a9281780760e4956a9a562bd94e127874d677f98b3298b26129fc6bfc5affff7f2003000000010000000196e260d11df42a9281780760e4956a9a562bd94e127874d677f98b3298b261290101';
 ```
 
 ```shell--curl
@@ -663,14 +715,20 @@ bcoin-cli rpc verifytxoutproof $proof
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('verifytxoutproof', [ proof ]);
-
-  console.log(res);
+  const result = await client.execute('verifytxoutproof', [ proof ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -679,12 +737,12 @@ const rpc = new NodeClient({
 > The above command returns JSON "result" like this:
 
 ```json
-[]
+[ '2961b298328bf977d67478124ed92b569a6a95e460077881922af41dd160e296' ]
 ```
 
-Checks the proof for transaction inclusion.
+Checks the proof for transaction inclusion. Returns transaction hash if valid.
 
 ### Params
 N. | Name | Default |  Description
 --------- | --------- | --------- | -----------
-1 | proof | Required | Proof of transaction inclusion.
+1 | proof | Required | Proof of transaction inclusion (raw MerkleBlock).

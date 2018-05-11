@@ -17,14 +17,20 @@ bcoin-cli rpc getmempoolinfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getmempoolinfo');
-
-  console.log(res);
+  const result = await client.execute('getmempoolinfo');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -78,14 +84,20 @@ bcoin-cli rpc getmempoolancestors $txhash $verbose
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getmempoolancestors', [ txhash, verbose ]);
-
-  console.log(res);
+  const result = await client.execute('getmempoolancestors', [ txhash, verbose ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -159,14 +171,20 @@ bcoin-cli rpc getmempooldescendants $txhash $verbose
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getmempooldescendants', [ txhash, verbose ]);
-
-  console.log(res);
+  const result = await client.execute('getmempooldescendants', [ txhash, verbose ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -241,14 +259,20 @@ bcoin-cli rpc getmempoolentry $txhash
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getmempoolentry', [ txhash ]);
-
-  console.log(res);
+  const result = await client.execute('getmempoolentry', [ txhash ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -312,14 +336,20 @@ bcoin-cli rpc getrawmempool $verbose
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getrawmempool', [ verbose ]);
-
-  console.log(res);
+  const result = await client.execute('getrawmempool', [ verbose ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -383,7 +413,7 @@ let txhash, priorityDelta, feeDelta;
 ```
 
 ```shell--vars
-txhash='';
+txhash='64f65eed42541c666bd7f970478414f8d32815ccd6e27226393beb03b998f85b';
 priorityDelta=1000;
 feeDelta=1000;
 ```
@@ -404,14 +434,20 @@ bcoin-cli rpc prioritisetransaction $txhash $priorityDelta $feeDelta
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('prioritisetransaction', [ txhash, priorityDelta, feeDelta ]);
-
-  console.log(res);
+  const result = await client.execute('prioritisetransaction', [ txhash, priorityDelta, feeDelta ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -431,7 +467,7 @@ into accepting Transaction(s) into the block. (even if Priority/Fee doen't quali
 
 N. | Name | Default |  Description
 --------- | --------- | --------- | -----------
-1 | txid | Required | Transaction hash
+1 | txhash | Required | Transaction hash
 2 | priority delta | Required | Virtual priority to add/subtract to the entry
 3 | fee delta | Required | Virtual fee to add/subtract to the entry
 
@@ -463,14 +499,20 @@ bcoin-cli rpc estimatefee $nblocks
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('estimatefee', [ nblocks ]);
-
-  console.log(res);
+  const result = await client.execute('estimatefee', [ nblocks ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -517,14 +559,20 @@ bcoin-cli rpc estimatepriority $nblocks
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('estimatepriority', [ nblocks ]);
-
-  console.log(res);
+  const result = await client.execute('estimatepriority', [ nblocks ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -571,14 +619,20 @@ bcoin-cli rpc estimatesmartfee $nblocks
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('estimatesmartfee', [ nblocks ]);
-
-  console.log(res);
+  const result = await client.execute('estimatesmartfee', [ nblocks ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -628,14 +682,20 @@ bcoin-cli rpc estimatesmartpriority $nblocks
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('estimatesmartpriority', [ nblocks ]);
-
-  console.log(res);
+  const result = await client.execute('estimatesmartpriority', [ nblocks ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });

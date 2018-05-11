@@ -15,14 +15,20 @@ bcoin-cli rpc getblockchaininfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblockchaininfo');
-
-  console.log(res);
+  const result = await client.execute('getblockchaininfo');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -118,14 +124,20 @@ bcoin-cli rpc getbestblockhash
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getbestblockhash');
-
-  console.log(res);
+  const result = await client.execute('getbestblockhash');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -157,19 +169,25 @@ curl $url/ \
 ```
 
 ```shell--cli
-bcoin-cli rpc getbestblockhash
+bcoin-cli rpc getblockcount
 ```
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblockcount');
-
-  console.log(res);
+  const result = await client.execute('getblockcount');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -208,7 +226,7 @@ curl $url/ \
   -X POST \
   --data '{
     "method": "getblock",
-    "params": [ "'$blockhash'", "'$verbose'", "'$details'" ]
+    "params": [ "'$blockhash'", '$verbose', '$details' ]
   }'
 ```
 
@@ -218,14 +236,20 @@ bcoin-cli rpc getblock $blockhash $verbose $details
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblock', [ blockhash, verbose, details ]);
-
-  console.log(res);
+  const result = await client.execute('getblock', [ blockhash, verbose, details ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -295,7 +319,7 @@ curl $url/ \
   -X POST \
   --data '{
     "method": "getblockbyheight",
-    "params": [ "'$blockheight'", "'$verbose'", "'$details'" ]
+    "params": [ '$blockheight', '$verbose', '$details' ]
   }'
 ```
 
@@ -305,14 +329,20 @@ bcoin-cli rpc getblockbyheight $blockheight $verbose $details
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblockbyheight', [ blockheight, verbose, details ]);
-
-  console.log(res);
+  const result = await client.execute('getblockbyheight', [ blockheight, verbose, details ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -380,7 +410,7 @@ curl $url/ \
   -X POST \
   --data '{
     "method": "getblockhash",
-    "params": [ "'$blockheight'" ]
+    "params": [ '$blockheight' ]
   }'
 ```
 
@@ -390,14 +420,20 @@ bcoin-cli rpc getblockhash $blockheight
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblockhash', [ blockheight ]);
-
-  console.log(res);
+  const result = await client.execute('getblockhash', [ blockheight ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -435,7 +471,7 @@ curl $url/ \
   -X POST \
   --data '{
     "method": "getblockheader",
-    "params": [ "'$blockhash'", "'$details'" ]
+    "params": [ "'$blockhash'", '$details' ]
   }'
 ```
 
@@ -445,14 +481,20 @@ bcoin-cli rpc getblockheader $blockhash $verbose
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblockheader', [ blockheight, verbose ]);
-
-  console.log(res);
+  const result = await client.execute('getblockheader', [ blockhash, verbose ]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -505,14 +547,20 @@ bcoin-cli rpc getchaintips
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getchaintips');
-
-  console.log(res);
+  const result = await client.execute('getchaintips');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -564,14 +612,20 @@ bcoin-cli rpc getdifficulty
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getdifficulty');
-
-  console.log(res);
+  const result = await client.execute('getdifficulty');
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
