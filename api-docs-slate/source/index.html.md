@@ -40,43 +40,54 @@ search: true
 
 # Introduction
 
-Welcome to the Bcoin API!
+Welcome to the bcoin API!
 
-The default bcoin HTTP server listens on the standard RPC port (`8332` for main, `18332` for testnet, `48332` for regtest, and `18556` default for simnet). It exposes a REST json api, as well as a JSON-RPC api.
+The default bcoin HTTP server listens on the standard RPC port (`8332` for main, `18332` for testnet, `48332` for regtest, and `18556` default for simnet). It exposes a REST JSON, as well as a JSON-RPC api.
 
 # Authentication
 ## Auth
 
 ```shell--curl
-curl http://x:api-key@127.0.0.1:8332/ # will get info from mainnet (port 8332)
+# port determines network type (48332 for regtest), API key required in URL
+curl http://x:api-key@127.0.0.1:48332/
 
 # examples in these docs will use an environment variable:
-url=http://x:api-key@127.0.0.1:8332/
+url=http://x:api-key@127.0.0.1:48332/
 curl $url
 ```
 
 ```shell--cli
-# store key in an environment variable:
+bcoin-cli --api-key=api-key --network=regtest info
+
+# store API key and network type in environment variables:
 export BCOIN_API_KEY=api-key
+export BCOIN_NETWORK=regtest
 bcoin-cli info
 ```
 
 ```javascript
-const {NodeClient, WalletClient} = require('bclient');
-const client = new NodeClient({
-  apiKey: 'api-key',
-  //...
-});
+const {NodeClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
 
-const wallet = new WalletClient({
-  apiKey: 'api-key',
-  //...
-});
+// network type derived from bcoin object, client object stores API key
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
+
+(async () => {
+  const clientinfo = await client.getInfo();
+  console.log(clientinfo);
+})();
 ```
 
 > Make sure to replace `api-key` with your own key.
 
-Auth is accomplished via HTTP Basic Auth, using your node's API key (passed via --api-key).
+Auth is accomplished via HTTP Basic Auth, using your node's API key.
 
 <aside class="notice">
 You must replace <code>api-key</code> with your personal API key.

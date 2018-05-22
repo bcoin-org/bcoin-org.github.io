@@ -1,14 +1,13 @@
 # RPC Calls - Node
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
-  --data '{ "method": "methodname", "params": [...] "id": "some-id" }'
+  --data '{ "method": "<method>", "params": [...] "id": "some-id" }'
 ```
 
 ```shell--cli
-bcoin-cli rpc params...
+bcoin-cli rpc <method> <params>
 ```
 
 ```javascript
@@ -25,31 +24,31 @@ const clientOptions = {
 const client = new NodeClient(clientOptions);
 
 (async () => {
-  const result = await client.execute('MethodName', [ ...params ]);
+  const result = await client.execute('<method>', [ <params> ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
-> The above command returns JSON structured like this:
-
-> Further examples will only include "result" part.
+> The above cURL command returns JSON structured like this:
 
 ```json
 {"result": resultObject ,"error": errorObject, "id": passedID}
 ```
 
+> Further examples will only include "result" part.
+> CLI and Javascript calls return just the "result" or an error.
 
-Bcoin rpc calls mimic Bitcoin Core's RPC.
-This is documentation how to use it with `bcoin`.
+
+
+
+bcoin RPC calls mimic Bitcoin Core's RPC.
 
 RPC Calls are accepted at:
 `POST /`
 
 *Notes:*
 
-*bcoin-cli rpc and javascript will return error OR result.*
+*bcoin-cli rpc and Javascript will either return an error OR the result.*
 
 *Javascript result will return the "result" part of the object, not the id or error*
 

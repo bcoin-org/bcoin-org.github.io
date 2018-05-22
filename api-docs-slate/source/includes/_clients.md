@@ -3,9 +3,9 @@
 ## Default Listeners
 ```shell--visible
 # With curl you just send HTTP Requests based on further docs
-# Only thing to have in mind is authentication, which is described in "Authentication" section.
+# Only thing to keep in mind is authentication, which is described in the "Authentication" section.
 
-curl http://127.0.0.1:18332/ # will get info from testnet
+curl http://127.0.0.1:48332/ # will get info from regtest
 ```
 
 By default the API server listens on these `localhost` ports:
@@ -17,33 +17,30 @@ testnet   | 18332
 regtest   | 48332
 simnet    | 18556
 
-You can interact with bcoin with REST API as well as RPC,
-there are couple of ways you can use the API:
+You can interact with bcoin with its REST API as well as with RPC.
+There are couple of ways you can use the API:
 
-- `bcoin-cli` - has almost all methods described
+- `bcoin-cli` - methods built specifically into bcoin by its developers
 - `bcoin-cli rpc` - adds functionality that mimics Bitcoin Core RPC
-- `javascript` - methods used by `bcoin-cli` can be used directly from javascript
-- `curl` - you can use direct HTTP calls for invoking REST/RPC API calls
+- `javascript` - methods used by `bcoin-cli` can be accessed directly from javascript
+- `curl` - you can use direct HTTP calls for invoking both REST and RPC API calls
 
-## Configuring BCOIN CLI
+## Configuring bcoin-cli
 
 ```shell--visible
-# You can use config file
-bcoin-cli --config /full/path/to/bcoin.conf
-
 # You can configure it by passing arguments:
 bcoin-cli --network=regtest info
 bcoin-cli info --network=regtest
 
-# Or use ENV variables (Starting with BCOIN_)
+# Or use environment variables (Starting with BCOIN_)
 export BCOIN_NETWORK=regtest
-export BCOIN_API_KEY=yoursecret
+export BCOIN_API_KEY=api-key
 bcoin-cli info
 ```
 
 Install `bcoin-cli` and `bwallet-cli` command line tools with the `bclient` package.
 Included with `bcoin` by default, but can be installed separately:
-`npm install bclient`
+`npm install -g bclient`
 
 `bcoin-cli` params:
 
@@ -51,16 +48,16 @@ Included with `bcoin` by default, but can be installed separately:
 
 Config    | Options                      | Description
 --------- | -----------                  | -----------
-network   | `main`, `testnet`, `regtest` | This will configure which network to load, also where to look for config file
+network   | `main`, `testnet`, `regtest` | This will configure which network to load, also where to look for `bcoin.conf` file
 uri, url  | Base HTTP URI                | This can be used for custom port
-api-key   | secret                       | Secret used by RPC for auth.
+api-key   | _string_                       | Secret used by RPC for authorization
 
 ### Wallet Specific
 
 Config    | Options         | Description
 --------- | -----------     | -----------
-id        | primary, custom | specify which account to use by default
-token     | token str       | Token specific wallet
+id        | _string_ | specify which account to use by default
+token     | _string_       | Token specific wallet
 
 
 ```shell--visible
@@ -81,10 +78,9 @@ api-key: bikeshed
 Some commands might accept additional parameters.
 </aside>
 
-## Using Javascript Client
+## Using Javascript Clients
 
 ```javascript--visible
-// all examples below will assume this initial configuration
 const {NodeClient, WalletClient} = require('bclient');
 const {Network} = require('bcoin');
 const network = Network.get('regtest');
@@ -107,13 +103,13 @@ const wallet = new WalletClient(walletOptions);
 
 You can also use the API with a Javascript library (used by `bcoin-cli`).
 There are two objects: `NodeClient` for general API and `WalletClient` for wallet API.
+`bcoin` also provides an object `Network` and its method `get` which will return the appropriate configuration paramaters for a specified network.
 
 `NodeClient` and `WalletClient` options:
 
 Config    | Type                         | Description
 --------- | -----------                  | -----------
 network   | `main`, `testnet`, `regtest` | Network to use (doesn't lookup configs by itself)
-port      | int                          | bcoin socket port (specific for each network)
-apiKey    | string                       | API secret
+port      | _int_                          | bcoin socket port (specific for each network)
+apiKey    | _string_                       | API secret
 
-`bcoin` also provides an object `Network` and its method `get` which will return the appropriate configuration paramaters for a specified network.
