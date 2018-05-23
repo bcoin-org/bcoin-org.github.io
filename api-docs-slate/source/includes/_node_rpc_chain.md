@@ -3,8 +3,7 @@
 ## pruneblockchain
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "pruneblockchain",
@@ -32,9 +31,7 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('pruneblockchain');
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 Prunes the blockchain, it will keep blocks specified in Network Configurations.
@@ -60,12 +57,11 @@ let blockhash;
 ```
 
 ```shell--vars
-blockhash='0000000000000dca8da883af9515dd90443d59139adbda3f9eeac1d18397fec3';
+blockhash='52d7beaf4c7f392bef2744167c7f4db4bb4113b2635496edcf2d1c94128696aa';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "invalidateblock",
@@ -93,16 +89,14 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('invalidateblock', [ blockhash ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 
 Invalidates the block in the chain.
 It will rewind network to blockhash and invalidate it.
 
-It won't accept that block as valid
+It won't accept that block as valid.
 *Invalidation will work while running, restarting node will remove invalid block from list.*
 
 ### Params
@@ -119,12 +113,10 @@ let blockhash;
 ```
 
 ```shell--vars
-blockhash='0000000000000dca8da883af9515dd90443d59139adbda3f9eeac1d18397fec3';
-```
+blockhash='1896e628f8011b77ea80f4582c29c21b3376183683f587ee863050376add3891'```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "reconsiderblock",

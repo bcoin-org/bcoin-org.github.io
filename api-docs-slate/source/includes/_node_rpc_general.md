@@ -408,7 +408,7 @@ let privkey, message;
 
 ```shell--vars
 privkey='EMyedBwL5mb476uhWZ2wzEsSpu8kZwYgYaw5rGbjJh1kRjXF3M2d';
-message='bcoin is the best!';
+message='hello';
 ```
 
 ```shell--curl
@@ -416,12 +416,12 @@ curl $url \
   -X POST \
   --data '{
     "method": "signmessagewithprivkey",
-    "params": [ "'$privkey'", "$message"]
+    "params": [ "'$privkey'", "'$message'"]
   }'
 ```
 
 ```shell--cli
-bcoin-cli rpc signmessagewithprivkey $privkey "$message"
+bcoin-cli rpc signmessagewithprivkey $privkey $message
 ```
 
 ```javascript
@@ -446,11 +446,12 @@ const client = new NodeClient(clientOptions);
 > The above command returns JSON "result" like this:
 
 ```json
-"MEUCIQD0sx8XrsmIws65xKDm0juHNoEYTefeRWO7fGfotaVn8gIgPV7e3kt88vapJk85PURMz6wag9vduVd3fmRSkeDKzgY="
+"MEUCIQCGLPYuLuSU1XQ7ctRvRzrY4M0dKAxShzEN3fwVoelGvgIgPmQ2RcRpeu0o68YsN42yzykI9VfTPooWHMvsFbIFEkg="
 ```
 
 
-Signs message with private key. Note the use of double-quotes in CLI and cURL methods for messages that might contain spaces.
+Signs message with private key. 
+<aside>Note: Due to behavior of some shells like bash, if your message contains spaces you may need to add additional quotes like this: <code>"'"$message"'"</code></aside>
 
 ### Params
 N. | Name | Default |  Description
@@ -467,8 +468,8 @@ let address, signature, message;
 
 ```shell--vars
 address='RGCudRpNcn299Ja1EaVzgpnPD3YJgfMMiB';
-signature='MEUCIQD0sx8XrsmIws65xKDm0juHNoEYTefeRWO7fGfotaVn8gIgPV7e3kt88vapJk85PURMz6wag9vduVd3fmRSkeDKzgY=';
-message='bcoin is the best!';
+signature='MEUCIQCGLPYuLuSU1XQ7ctRvRzrY4M0dKAxShzEN3fwVoelGvgIgPmQ2RcRpeu0o68YsN42yzykI9VfTPooWHMvsFbIFEkg=';
+message='hello';
 ```
 
 ```shell--curl
@@ -509,7 +510,9 @@ const client = new NodeClient(clientOptions);
 true
 ```
 
-Verify sign
+Verify signature.
+<aside>Note: Due to behavior of some shells like bash, if your message contains spaces you may need to add additional quotes like this: <code>"'"$message"'"</code></aside>
+
 
 ### Params
 N. | Name | Default |  Description

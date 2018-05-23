@@ -3,8 +3,7 @@
 ## getmempoolinfo
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getmempoolinfo"
@@ -31,18 +30,16 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('getmempoolinfo');
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "size": 20,
-  "bytes": 68064,
-  "usage": 68064,
+  "size": 5,
+  "bytes": 14120,
+  "usage": 14120,
   "maxmempool": 100000000,
   "mempoolminfee": 0.00001
 }
@@ -64,17 +61,16 @@ let txhash, verbose;
 ```
 
 ```shell--vars
-txhash='939a3b8485b53a718d89e7e4412473b3762fa1d9bbd555fc8b01e73be0ab1881';
+txhash='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
 verbose=1;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getmempoolancestors",
-    "params": [ "'$txhash'", "'$verbose'" ]
+    "params": [ "'$txhash'", '$verbose' ]
   }'
 ```
 
@@ -98,9 +94,7 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('getmempoolancestors', [ txhash, verbose ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON "result" like this:
@@ -109,21 +103,42 @@ const client = new NodeClient(clientOptions);
 // verbose=1
 [
   {
-    "size": 225,
+    "size": 226,
     "fee": 0.0000454,
     "modifiedfee": 0,
-    "time": 1502891340,
-    "height": 201,
+    "time": 1527103521,
+    "height": 100,
     "startingpriority": 0,
     "currentpriority": 0,
     "descendantcount": 1,
     "descendantsize": 451,
     "descendantfees": 9080,
-    "ancestorcount": 0,
+    "ancestorcount": 2,
     "ancestorsize": 0,
     "ancestorfees": 0,
-    "depends": []
-  }
+    "depends": [
+      "7922c798ea02c3957393bb7c373ba89e0a337d049564aeb64a9fd2b8d4998795"
+    ]
+  },
+  {
+    "size": 225,
+    "fee": 0.0000454,
+    "modifiedfee": 0,
+    "time": 1527103519,
+    "height": 100,
+    "startingpriority": 0,
+    "currentpriority": 0,
+    "descendantcount": 2,
+    "descendantsize": 676,
+    "descendantfees": 13620,
+    "ancestorcount": 1,
+    "ancestorsize": 0,
+    "ancestorfees": 0,
+    "depends": [
+      "d54e576d30f9014ffb06a31b9e36f2f5bb360e8c54980188ee4b09a979e092c2"
+    ]
+  },
+  ...
 ]
 ```
 
@@ -151,17 +166,16 @@ let txhash, verbose;
 ```
 
 ```shell--vars
-txhash='56ab7663c80cb6ffc9f8a4b493d77b2e6f52ae8ff64eefa8899c2065922665c8';
+txhash='7922c798ea02c3957393bb7c373ba89e0a337d049564aeb64a9fd2b8d4998795';
 verbose=1;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getmempooldescendants",
-    "params": [ "'$txhash'", "'$verbose'" ]
+    "params": [ "'$txhash'", '$verbose' ]
   }'
 ```
 
@@ -185,9 +199,7 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('getmempooldescendants', [ txhash, verbose ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON "result" like this:
@@ -199,21 +211,40 @@ const client = new NodeClient(clientOptions);
     "size": 226,
     "fee": 0.0000454,
     "modifiedfee": 0,
-    "time": 1502891378,
-    "height": 201,
+    "time": 1527103521,
+    "height": 100,
     "startingpriority": 0,
     "currentpriority": 0,
-    "descendantcount": 0,
-    "descendantsize": 226,
-    "descendantfees": 4540,
-    "ancestorcount": 1,
+    "descendantcount": 1,
+    "descendantsize": 451,
+    "descendantfees": 9080,
+    "ancestorcount": 2,
     "ancestorsize": 0,
     "ancestorfees": 0,
     "depends": [
-      "56ab7663c80cb6ffc9f8a4b493d77b2e6f52ae8ff64eefa8899c2065922665c8"
+      "7922c798ea02c3957393bb7c373ba89e0a337d049564aeb64a9fd2b8d4998795"
+    ]
+  },
+  {
+    "size": 225,
+    "fee": 0.0000454,
+    "modifiedfee": 0,
+    "time": 1527103523,
+    "height": 100,
+    "startingpriority": 0,
+    "currentpriority": 0,
+    "descendantcount": 0,
+    "descendantsize": 225,
+    "descendantfees": 4540,
+    "ancestorcount": 3,
+    "ancestorsize": 0,
+    "ancestorfees": 0,
+    "depends": [
+      "e66c029a755d326f14cc32f485ea43e705ef59ed4a8061e8f47e681fbdefefea"
     ]
   }
 ]
+[e
 ```
 
 ```json
@@ -240,12 +271,11 @@ let txhash;
 ```
 
 ```shell--vars
-txhash='939a3b8485b53a718d89e7e4412473b3762fa1d9bbd555fc8b01e73be0ab1881';
+txhash='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getmempoolentry",
@@ -273,30 +303,28 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('getmempoolentry', [ txhash ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "size": 226,
+  "size": 225,
   "fee": 0.0000454,
   "modifiedfee": 0,
-  "time": 1502891378,
-  "height": 201,
+  "time": 1527103523,
+  "height": 100,
   "startingpriority": 0,
   "currentpriority": 0,
   "descendantcount": 0,
-  "descendantsize": 226,
+  "descendantsize": 225,
   "descendantfees": 4540,
-  "ancestorcount": 1,
+  "ancestorcount": 3,
   "ancestorsize": 0,
   "ancestorfees": 0,
   "depends": [
-    "56ab7663c80cb6ffc9f8a4b493d77b2e6f52ae8ff64eefa8899c2065922665c8"
+    "e66c029a755d326f14cc32f485ea43e705ef59ed4a8061e8f47e681fbdefefea"
   ]
 }
 ```
@@ -321,12 +349,11 @@ verbose=1;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getrawmempool",
-    "params": [ "'$verbose'" ]
+    "params": [ '$verbose' ]
   }'
 ```
 
@@ -350,49 +377,48 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('getrawmempool', [ verbose ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "56ab7663c80cb6ffc9f8a4b493d77b2e6f52ae8ff64eefa8899c2065922665c8": {
+  "d54e576d30f9014ffb06a31b9e36f2f5bb360e8c54980188ee4b09a979e092c2": {
     "size": 225,
     "fee": 0.0000454,
     "modifiedfee": 0,
-    "time": 1502891340,
-    "height": 201,
-    "startingpriority": 0,
-    "currentpriority": 0,
-    "descendantcount": 1,
-    "descendantsize": 451,
-    "descendantfees": 9080,
+    "time": 1527103516,
+    "height": 100,
+    "startingpriority": 2200000000,
+    "currentpriority": 2200000000,
+    "descendantcount": 3,
+    "descendantsize": 901,
+    "descendantfees": 18160,
     "ancestorcount": 0,
     "ancestorsize": 0,
     "ancestorfees": 0,
     "depends": []
   },
-  "939a3b8485b53a718d89e7e4412473b3762fa1d9bbd555fc8b01e73be0ab1881": {
-    "size": 226,
+  "7922c798ea02c3957393bb7c373ba89e0a337d049564aeb64a9fd2b8d4998795": {
+    "size": 225,
     "fee": 0.0000454,
     "modifiedfee": 0,
-    "time": 1502891378,
-    "height": 201,
+    "time": 1527103519,
+    "height": 100,
     "startingpriority": 0,
     "currentpriority": 0,
-    "descendantcount": 0,
-    "descendantsize": 226,
-    "descendantfees": 4540,
+    "descendantcount": 2,
+    "descendantsize": 676,
+    "descendantfees": 13620,
     "ancestorcount": 1,
     "ancestorsize": 0,
     "ancestorfees": 0,
     "depends": [
-      "56ab7663c80cb6ffc9f8a4b493d77b2e6f52ae8ff64eefa8899c2065922665c8"
+      "d54e576d30f9014ffb06a31b9e36f2f5bb360e8c54980188ee4b09a979e092c2"
     ]
-  }
+  },
+  ...
 }
 ```
 
@@ -413,18 +439,17 @@ let txhash, priorityDelta, feeDelta;
 ```
 
 ```shell--vars
-txhash='64f65eed42541c666bd7f970478414f8d32815ccd6e27226393beb03b998f85b';
+txhash='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
 priorityDelta=1000;
 feeDelta=1000;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "prioritisetransaction",
-    "params": [ "'$txhash'", "'$priorityDelta'", "'$feeDelta'" ]
+    "params": [ "'$txhash'", '$priorityDelta', '$feeDelta' ]
   }'
 ```
 
@@ -448,9 +473,7 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('prioritisetransaction', [ txhash, priorityDelta, feeDelta ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON "result" like this:
@@ -484,12 +507,11 @@ nblocks=10;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "estimatefee",
-    "params": [ "'$nblocks'" ]
+    "params": [ '$nblocks' ]
   }'
 ```
 
@@ -513,9 +535,7 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('estimatefee', [ nblocks ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON "result" like this:
@@ -544,12 +564,11 @@ nblocks=10;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "estimatepriority",
-    "params": [ "'$nblocks'" ]
+    "params": [ '$nblocks' ]
   }'
 ```
 
@@ -573,9 +592,7 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('estimatepriority', [ nblocks ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON "result" like this:
@@ -604,12 +621,11 @@ nblocks=10;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "estimatesmartfee",
-    "params": [ "'$nblocks'" ]
+    "params": [ '$nblocks' ]
   }'
 ```
 
@@ -633,9 +649,7 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('estimatesmartfee', [ nblocks ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON "result" like this:
@@ -667,12 +681,11 @@ nblocks=10;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "estimatesmartpriority",
-    "params": [ "'$nblocks'" ]
+    "params": [ '$nblocks' ]
   }'
 ```
 
@@ -696,9 +709,7 @@ const client = new NodeClient(clientOptions);
 (async () => {
   const result = await client.execute('estimatesmartpriority', [ nblocks ]);
   console.log(result);
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON "result" like this:
