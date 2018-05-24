@@ -3,8 +3,6 @@
 ## Default Listeners
 ```shell--visible
 # With curl you just send HTTP Requests based on further docs
-# Only thing to keep in mind is authentication, which is described in the "Authentication" section.
-
 curl http://127.0.0.1:48332/ # will get info from regtest
 ```
 
@@ -25,6 +23,9 @@ There are couple of ways you can use the API:
 - `javascript` - methods used by `bcoin-cli` can be accessed directly from javascript
 - `curl` - you can use direct HTTP calls for invoking both REST and RPC API calls
 
+Only thing to keep in mind is authentication, which is described in the ["Authentication"](#authentication) section.
+
+
 ## Configuring bcoin-cli
 
 ```shell--visible
@@ -34,7 +35,7 @@ bcoin-cli info --network=regtest
 
 # Or use environment variables (Starting with BCOIN_)
 export BCOIN_NETWORK=regtest
-export BCOIN_API_KEY=api-key
+export BCOIN_API_KEY=$YOUR-API-KEY
 bcoin-cli info
 ```
 
@@ -64,10 +65,12 @@ token     | _string_       | Token specific wallet
 # Example bcoin.conf syntax:
 network: main
 prefix: ~/.bcoin
-api-key: bikeshed
+api-key: <api-key>
 ```
 
-### bcoin.conf file
+### bcoin.conf and wallet.conf files
+
+These files may contain any of the configuration parameters, and will be interpreted by bclient at startup. The node and wallet clients look for their own respective conf files.
 
 [A sample bcoin.conf file is included in the code repository](https://github.com/bcoin-org/bcoin/blob/master/etc/sample.conf)
 
@@ -103,13 +106,14 @@ const wallet = new WalletClient(walletOptions);
 
 You can also use the API with a Javascript library (used by `bcoin-cli`).
 There are two objects: `NodeClient` for general API and `WalletClient` for wallet API.
-`bcoin` also provides an object `Network` and its method `get` which will return the appropriate configuration paramaters for a specified network.
+`bcoin` also provides an object `Network` and its method `get` which will return the default configuration paramaters for a specified network.
+Custom port numbers are also configurable by the user.
 
 `NodeClient` and `WalletClient` options:
 
 Config    | Type                         | Description
 --------- | -----------                  | -----------
-network   | `main`, `testnet`, `regtest` | Network to use (doesn't lookup configs by itself)
+network   | _string_ | Network to use: `main`, `testnet`, `regtest`
 port      | _int_                          | bcoin socket port (specific for each network)
 apiKey    | _string_                       | API secret
 

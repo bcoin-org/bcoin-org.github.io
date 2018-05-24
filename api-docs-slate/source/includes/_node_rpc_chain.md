@@ -113,7 +113,8 @@ let blockhash;
 ```
 
 ```shell--vars
-blockhash='1896e628f8011b77ea80f4582c29c21b3376183683f587ee863050376add3891'```
+blockhash='1896e628f8011b77ea80f4582c29c21b3376183683f587ee863050376add3891'
+```
 
 ```shell--curl
 curl $url \

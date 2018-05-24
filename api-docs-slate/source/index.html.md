@@ -48,7 +48,7 @@ The default bcoin HTTP server listens on the standard RPC port (`8332` for main,
 ## Auth
 
 ```shell--curl
-# port determines network type (48332 for regtest), API key required in URL
+# default regtest port is 48332 (may be reconfigured by user), API key is required in URL
 curl http://x:api-key@127.0.0.1:48332/
 
 # examples in these docs will use an environment variable:

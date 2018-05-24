@@ -54,6 +54,8 @@ RPC Calls are accepted at:
 
 *If a Javascript error is encountered it will be thrown instead of returned in JSON*
 
+*Be sure to check the debug log for error reports as well!*
+
 
 ### POST Parameters RPC
 Parameter | Description

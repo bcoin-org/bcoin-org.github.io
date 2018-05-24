@@ -127,6 +127,11 @@ Each account can be of a different type. You could have a pubkeyhash account, as
 
 Note that accounts should not be accessed directly from the public API. They do not have locks which can lead to race conditions during writes.
 
+### wallet object vs wallet client object
+
+bclient returns a WalletClient object that can perform [admin functions](#wallet-admin-commands) without specifying a wallet, and may be useful when managing multiple wallets. WalletClient can also return a wallet object specified by an <code>id</code>. This object performs functions (and may be authorized by a token) specific to that wallet only.
+
+
 <aside class="warning">
 Accounts within the same wallet are all related by deterministic hierarchy. However, wallets are not related to each other in any way. This means that when a wallet seed is backed up, all of its accounts (and their keys) can be derived from that backup. However, each newly created wallet must be backed up separately.
 </aside>

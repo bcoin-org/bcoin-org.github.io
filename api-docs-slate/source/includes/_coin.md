@@ -7,7 +7,8 @@ Getting coin information via API.
 You need to enable <code>index-address</code> in order to lookup coins by address.<br>
 You can also enable <code>index-tx</code> to lookup transactions by txid.<br>
 Launch the bcoin daemon with these arguments:<br>
-<code>bcoin --daemon --index-address=true --index-tx=true</code>
+<code>bcoin --daemon --index-address=true --index-tx=true</code><br>
+These index arguments cannot be changed once bcoin has been started for the first time, without resyncing the node.
 </aside>
 
 
