@@ -410,6 +410,8 @@ const wallet = walletClient.wallet(id);
 
 > Sample responses:
 
+> BEFORE passphrase is set:
+
 ```json
 {
   "encrypted": false,
@@ -424,7 +426,11 @@ const wallet = walletClient.wallet(id);
     }
   }
 }
+```
 
+> AFTER passphrase is set:
+
+```json
 {
   "encrypted": true,
   "until": 1527121890,
@@ -458,7 +464,7 @@ let id, passphrase, witness, watchOnly, accountKey;
 
 ```shell--vars
 id='newWallet'
-passphrase='bar'
+passphrase='secret456'
 witness=false
 watchOnly=true
 accountKey='rpubKBAoFrCN1HzSEDye7jcQaycA8L7MjFGmJD1uuvUZ21d9srAmAxmB7o1tCZRyXmTRuy5ZDQDV6uxtcxfHAadNFtdK7J6RV9QTcHTCEoY5FtQD'
@@ -506,41 +512,27 @@ const options = {
 
 ```json
 {
-  "network": "testnet",
+  "network": "regtest",
   "wid": 2,
-  "id": "foo",
-  "initialized": true,
-  "watchOnly": false,
+  "id": "newWallet",
+  "watchOnly": true,
   "accountDepth": 1,
-  "token": "d9de1ddc83bf058d14520a203df6ade0dc92a684aebfac57b667705b4cac3916",
+  "token": "21b728d8f9e4d909349cf0c8f1e4e74fd45b180103cb7f1885a197d04012ba08",
   "tokenDepth": 0,
-  "state": {
+  "master": {
+    "encrypted": true,
+    "until": 1527181467,
+    "iv": "53effaf192a346b40b08a52dac0658ce",
+    "algorithm": "pbkdf2",
+    "n": 50000,
+    "r": 0,
+    "p": 0
+  },
+  "balance": {
     "tx": 0,
     "coin": 0,
-    "unconfirmed": "0.0",
-    "confirmed": "0.0"
-  },
-  "master": {
-    "encrypted": false
-  },
-  "account": {
-    "name": "default",
-    "initialized": true,
-    "witness": false,
-    "watchOnly": false,
-    "type": "pubkeyhash",
-    "m": 1,
-    "n": 1,
-    "accountIndex": 0,
-    "receiveDepth": 1,
-    "changeDepth": 1,
-    "nestedDepth": 0,
-    "lookahead": 10,
-    "receiveAddress": "muYkrSDbD8UhyWBMXxXf99EKWn22YqmwyF",
-    "nestedAddress": null,
-    "changeAddress": "mwveV7A6svE5EGGSduZmMKTwcbE775NVFt",
-    "accountKey": "tpubDDh2XgSds1vBbeVgye88gsGQeCityoywRndtyrXcmvWqCgsFUyUKwzeDv8HiJhu9fC8jRAFMqxr4jj8eRTNTycmMao5wmsAScVf4jSMdPYZ",
-    "keys": []
+    "unconfirmed": 0,
+    "confirmed": 0
   }
 }
 ```
@@ -566,9 +558,9 @@ let id, oldPass, newPass;
 ```
 
 ```shell--vars
-id='primary'
-oldPass='oldpass123'
-newPass='newpass123'
+id='newWallet'
+oldPass='secret456'
+newPass='789secret'
 ```
 
 ```shell--cli
@@ -628,7 +620,7 @@ If you have never set a passphrase for this wallet before, you need to omit the 
 
 ```shell--cli
 id="primary"
-passphrase="secret"
+passphrase="secret123"
 rate=0.00000500
 value=0.00001000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
@@ -638,7 +630,7 @@ bwallet-cli send --id=$id --value=$value --address=$address ---passphrase=$passp
 
 ```shell--curl
 id="primary"
-passphrase="secret"
+passphrase="secret123"
 rate=500
 value=1000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
@@ -657,7 +649,7 @@ curl $walleturl/$id/send \
 ```javascript
 let id, passphrase, rate, value, address;
 id="primary"
-passphrase="secret"
+passphrase="secret123"
 rate=500
 value=1000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
@@ -676,6 +668,7 @@ const walletClient = new WalletClient(walletOptions);
 const wallet = walletClient.wallet(id);
 
 const options = {
+  passphrase: passphrase,
   rate: rate,
   outputs: [{ value: value, address: address }]
 };
@@ -690,13 +683,13 @@ const options = {
 
 ```json
 {
-  "hash": "58f2ca60367295ce2ab2824a888de92e58dc8f2509d3b6eece21a9cb69e0a231",
+  "hash": "8fafdf2a6c44fc48dbe01147339a59fa11f2c5a7254d2e6df27ce0a61df29cf7",
   "height": -1,
   "block": null,
   "time": 0,
-  "mtime": 1526583292,
+  "mtime": 1527181979,
   "date": "1970-01-01T00:00:00Z",
-  "mdate": "2018-05-17T18:54:52Z",
+  "mdate": "2018-05-24T17:12:59Z",
   "size": 225,
   "virtualSize": 225,
   "fee": 4540,
@@ -705,7 +698,7 @@ const options = {
   "inputs": [
     {
       "value": 5000000000,
-      "address": "RYcgzWhmsFpVmC1aAq6o4dwks9wer9JhVj",
+      "address": "R9cS4kuYVWHaDJmRGMpwx7zCNjw97Zm5LL",
       "path": {
         "name": "default",
         "account": 0,
@@ -718,25 +711,20 @@ const options = {
     {
       "value": 1000,
       "address": "RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8",
-      "path": {
-        "name": "default",
-        "account": 0,
-        "change": true,
-        "derivation": "m/0'/1/12"
-      }
+      "path": null
     },
     {
       "value": 4999994460,
-      "address": "RCH2bvBg8hJbwYJD6QwRgweESqZrd7Wd5T",
+      "address": "RX3ZPBURVYzjRPR3wYdGepMBa26CGK8VMu",
       "path": {
         "name": "default",
         "account": 0,
         "change": true,
-        "derivation": "m/0'/1/15"
+        "derivation": "m/0'/1/0"
       }
     }
   ],
-  "tx": "01000000013afd97068b8ab2f96da8db7be78af6608d0d81901cf6ba3ddbc2b74a2f1efd04000000006a473044022061fee93c64baa53d4189e3f1f34de1bd5754c496dced8e8cd5c69371529eb08a02200ae6723da6b406bddba2b620543f7421cafb287462fc7211dcd9a04da3c9bd6c0121030cd15f72c485248087a2bbaeb45d25e5891945b5a32c879f849af852b383abfbffffffff02e8030000000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac5cdc052a010000001976a91420e077a298f2cab9fec3911d24979c22b610a33188ac00000000"
+  "tx": "01000000017a2c5144386ed317c1f2ff484e7e11be718721d7ddab15773d0dd6133fb38a14000000006a4730440220710c42d68bd02789c31e7d351a6795c2a9386749e1d8a6aa61d46d5ba345843e022023d83a31e657f043d08d7e86379b818c98d788bb34bfe71ad2d9fa6dcb44b48b0121036b90b9f76925944b238239115f0c12ecee1b7e060e50850b4884aa0e0daea0c4ffffffff02e8030000000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac5cdc052a010000001976a914eebeba5a5b40bb11ca70f48b71bdb2c2b89f0c5c88ac00000000"
 }
 ```
 
@@ -771,20 +759,20 @@ address <br> _string_ | destination address for transaction
 
 ## Create a Transaction
 ```shell--cli
-id="primary"
-passphrase="secret"
+id="multisig1"
+passphrase="multisecret123"
 rate=0.00000500
-value=0.00001000
+value=0.05000000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
 bwallet-cli mktx --id=$id --value=$value --address=$address ---passphrase=$passphrase
 ```
 
 ```shell--curl
-id="primary"
-passphrase="secret"
+id="multisig1"
+passphrase="multisecret123"
 rate=500
-value=1000
+value=5000000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
 curl $walleturl/$id/create \
@@ -800,10 +788,10 @@ curl $walleturl/$id/create \
 
 ```javascript
 let id, passphrase, rate, value, address;
-id="primary"
-passphrase="secret"
+id="multisig1"
+passphrase="multisecret123"
 rate=500
-value=1000
+value=5000000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
 const {WalletClient} = require('bclient');
@@ -819,8 +807,8 @@ const walletOptions = {
 const walletClient = new WalletClient(walletOptions);
 const wallet = walletClient.wallet(id);
 
-
 const options = {
+  passphrase: passphrase,
   rate: rate,
   outputs: [{ value: value, address: address }]
 };
@@ -835,50 +823,50 @@ const options = {
 
 ```json
 {
-  "hash": "69b587535eaebc0808e1939be78a9bf5c1600e6b77ed32c643d4978e85ac7551",
-  "witnessHash": "69b587535eaebc0808e1939be78a9bf5c1600e6b77ed32c643d4978e85ac7551",
-  "fee": 4540,
-  "rate": 20177,
-  "mtime": 1526584604,
+  "hash": "2c550d94e3de0de48d82199442aec45bbc75e253eaf67c953db4265691cc60ec",
+  "witnessHash": "2c550d94e3de0de48d82199442aec45bbc75e253eaf67c953db4265691cc60ec",
+  "fee": 6800,
+  "rate": 25855,
+  "mtime": 1527182869,
   "version": 1,
   "inputs": [
     {
       "prevout": {
-        "hash": "c28f30007ad594bc6a215cd6f5b322c58179c3d487b41a67b1bb83c24c760d02",
+        "hash": "31ebd87739a0e58098d127d76ee80ebfd8b5d923a8fcaf2d0908c16f123043be",
         "index": 0
       },
-      "script": "473044022064e49982ec7e199ca868767a3fa7f5f25c5b574150095b1c865f52d9fa87b4a3022050e2d8ae3feae90271f7be7070b28681fb0fd534a68e7d8e4cd847c31b482f270121030cd15f72c485248087a2bbaeb45d25e5891945b5a32c879f849af852b383abfb",
+      "script": "0000473044022064ac064f8b0e224413cf7e7c3aa2758013dd0cff6b421a273fb6f870894b200f022064da80d0ea08110b1c18817a66b1e576f945f73256407175b0fcc9936644b3320147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652ae",
       "witness": "00",
       "sequence": 4294967295,
       "coin": {
         "version": 1,
-        "height": 80,
-        "value": 5000000000,
-        "script": "76a914fffaeea99177a095323836a015f84aec2a46556988ac",
-        "address": "RYcgzWhmsFpVmC1aAq6o4dwks9wer9JhVj",
-        "coinbase": true
+        "height": -1,
+        "value": 10000000,
+        "script": "a9143ddf94d382bc20b256748e0ab20b040efc07344c87",
+        "address": "GPV5UXtx3Zbb7CGL7k31kykXkbNUxM6hXW",
+        "coinbase": false
       }
     }
   ],
   "outputs": [
     {
-      "value": 1000,
-      "script": "76a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac",
-      "address": "RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+      "value": 4993200,
+      "script": "a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887",
+      "address": "GR8dHeLMn8CPVAztoEjkAxHS6eWSgf6Hcr"
     },
     {
-      "value": 4999994460,
-      "script": "76a914722a922cb2750a503f06c9e14ffd542753d6fd9888ac",
-      "address": "RKgr7Ga8Mf6Jerw6FD6bVMcLHfxZvxBLsk"
+      "value": 5000000,
+      "script": "76a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac",
+      "address": "RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
     }
   ],
   "locktime": 0,
-  "hex": "0100000001020d764cc283bbb1671ab487d4c37981c522b3f5d65c216abc94d57a00308fc2000000006a473044022064e49982ec7e199ca868767a3fa7f5f25c5b574150095b1c865f52d9fa87b4a3022050e2d8ae3feae90271f7be7070b28681fb0fd534a68e7d8e4cd847c31b482f270121030cd15f72c485248087a2bbaeb45d25e5891945b5a32c879f849af852b383abfbffffffff02e8030000000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac5cdc052a010000001976a914722a922cb2750a503f06c9e14ffd542753d6fd9888ac00000000"
+  "hex": "0100000001be4330126fc108092daffca823d9b5d8bf0ee86ed727d19880e5a03977d8eb3100000000920000473044022064ac064f8b0e224413cf7e7c3aa2758013dd0cff6b421a273fb6f870894b200f022064da80d0ea08110b1c18817a66b1e576f945f73256407175b0fcc9936644b3320147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652aeffffffff02b0304c000000000017a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887404b4c00000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac00000000"
 }
 ```
 
 Create and template a transaction (useful for multisig).
-Do not broadcast or add to wallet.
+Does not broadcast or add to wallet.
 
 <aside class="warning">Be careful how you enter values and fee rates!<br>
 <code>value</code> and <code>rate</code> are expressed in satoshis when using cURL or Javascript<br>
@@ -913,9 +901,9 @@ let id, tx, passphrase;
 ```
 
 ```shell--vars
-id="foo"
-passphrase="bar"
-tx="01000000010d72c6b2582c2b2e625d29dd5ad89209de7e2600ab12a1a8e05813c28b703d2c000000006b483045022100af93a8761ad22af858c5bc4e68b5991eac017dcddd933cf125553ec0b83eb8f30220373a4d8ee331ac4c3975718e2a789f873af0520ddbd2db18957cdf488ccd4ee301210215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9ffffffff0280969800000000001976a9143f4f69730dcb175c830b94226ae13f89bef969c488ac80c3c901000000001976a9143f4f69730dcb175c830b94226ae13f89bef969c488ac00000000"
+id="multisig2"
+passphrase="multisecret456"
+tx="0100000001be4330126fc108092daffca823d9b5d8bf0ee86ed727d19880e5a03977d8eb3100000000920000473044022064ac064f8b0e224413cf7e7c3aa2758013dd0cff6b421a273fb6f870894b200f022064da80d0ea08110b1c18817a66b1e576f945f73256407175b0fcc9936644b3320147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652aeffffffff02b0304c000000000017a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887404b4c00000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac00000000"
 ```
 
 ```shell--cli
@@ -954,45 +942,45 @@ const options = { tx: tx, passphrase: passphrase };
 
 ```json
 {
-  "hash": "2a22606ee555d2c26ec979f0c45cd2dc18c7177056189cb345989749fd587868",
-  "witnessHash": "2a22606ee555d2c26ec979f0c45cd2dc18c7177056189cb345989749fd587868",
-  "fee": 10000000,
-  "rate": 44247787,
-  "mtime": 1503683721,
+  "hash": "a355e0fcfb727c8161f3b2e55e0cda40f4614ea38d4834f82460cfdc9941381a",
+  "witnessHash": "a355e0fcfb727c8161f3b2e55e0cda40f4614ea38d4834f82460cfdc9941381a",
+  "fee": 170,
+  "rate": 507,
+  "mtime": 1527183237,
   "version": 1,
   "inputs": [
     {
       "prevout": {
-        "hash": "2c3d708bc21358e0a8a112ab00267ede0992d85add295d622e2b2c58b2c6720d",
+        "hash": "31ebd87739a0e58098d127d76ee80ebfd8b5d923a8fcaf2d0908c16f123043be",
         "index": 0
       },
-      "script": "483045022100af93a8761ad22af858c5bc4e68b5991eac017dcddd933cf125553ec0b83eb8f30220373a4d8ee331ac4c3975718e2a789f873af0520ddbd2db18957cdf488ccd4ee301210215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9",
+      "script": "004730440220764ce5fa17f7d6fc8921a85ddd81e3378e88aae92a02ab8ff72646bb9d2ad3c102203075f1c8f97d48626ed22e86495c28c19386c1adb9160d84ab28fb5c7c65b103014830450221008bbc87270043e0c701cb4ba8bb7b0b8014f7bdac66fb8ae104bfe91e0469983f022003734c66e3c1f40293e90b2327fe509f68ada13c44b69bec364c01763a0699940147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652ae",
       "witness": "00",
       "sequence": 4294967295,
       "coin": {
         "version": 1,
-        "height": 1179720,
-        "value": 50000000,
-        "script": "76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac",
-        "address": "moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA",
+        "height": -1,
+        "value": 10000000,
+        "script": "a9143ddf94d382bc20b256748e0ab20b040efc07344c87",
+        "address": "GPV5UXtx3Zbb7CGL7k31kykXkbNUxM6hXW",
         "coinbase": false
       }
     }
   ],
   "outputs": [
     {
-      "value": 10000000,
-      "script": "76a9143f4f69730dcb175c830b94226ae13f89bef969c488ac",
-      "address": "mmHhzmwiUzorZLYhFH9fhrfFTAHGhx1biN"
+      "value": 4999830,
+      "script": "a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887",
+      "address": "GR8dHeLMn8CPVAztoEjkAxHS6eWSgf6Hcr"
     },
     {
-      "value": 30000000,
-      "script": "76a9143f4f69730dcb175c830b94226ae13f89bef969c488ac",
-      "address": "mmHhzmwiUzorZLYhFH9fhrfFTAHGhx1biN"
+      "value": 5000000,
+      "script": "76a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac",
+      "address": "RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
     }
   ],
   "locktime": 0,
-  "hex": "01000000010d72c6b2582c2b2e625d29dd5ad89209de7e2600ab12a1a8e05813c28b703d2c000000006b483045022100af93a8761ad22af858c5bc4e68b5991eac017dcddd933cf125553ec0b83eb8f30220373a4d8ee331ac4c3975718e2a789f873af0520ddbd2db18957cdf488ccd4ee301210215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9ffffffff0280969800000000001976a9143f4f69730dcb175c830b94226ae13f89bef969c488ac80c3c901000000001976a9143f4f69730dcb175c830b94226ae13f89bef969c488ac00000000"
+  "hex": "0100000001be4330126fc108092daffca823d9b5d8bf0ee86ed727d19880e5a03977d8eb3100000000da004730440220764ce5fa17f7d6fc8921a85ddd81e3378e88aae92a02ab8ff72646bb9d2ad3c102203075f1c8f97d48626ed22e86495c28c19386c1adb9160d84ab28fb5c7c65b103014830450221008bbc87270043e0c701cb4ba8bb7b0b8014f7bdac66fb8ae104bfe91e0469983f022003734c66e3c1f40293e90b2327fe509f68ada13c44b69bec364c01763a0699940147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652aeffffffff02964a4c000000000017a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887404b4c00000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac00000000"
 }
 ```
 
@@ -1010,24 +998,17 @@ passphrase <br> _string_ | passphrase to unlock the wallet
 
 ## Zap Transactions
 
-```javascript
-let id, age, account;
-id="foo"
-account="baz"
-age=259200 // 72 hours
-```
-
 ```shell--cli
-id="foo"
-account="baz"
+id="primary"
+account="default"
 age=259200 # 72 hours
 
 bwallet-cli zap --id=$id --account=$account --age=$age
 ```
 
 ```shell--curl
-id="foo"
-account="baz"
+id="primary"
+account="default"
 age=259200 # 72 hours
 
 curl $walleturl/$id/zap \
@@ -1039,6 +1020,11 @@ curl $walleturl/$id/zap \
 ```
 
 ```javascript
+let id, age, account;
+id="primary"
+account="default"
+age=259200 // 72 hours
+
 const {WalletClient} = require('bclient');
 const {Network} = require('bcoin');
 const network = Network.get('regtest');
@@ -1053,7 +1039,7 @@ const walletClient = new WalletClient(walletOptions);
 const wallet = walletClient.wallet(id);
 
 (async () => {
-  const result = wallet.zap(account, age);
+  const result = await wallet.zap(account, age);
   console.log(result);
 })();
 ```
@@ -1096,7 +1082,7 @@ let id, pass, timeout
 
 ```shell--vars
 id='primary'
-pass='bar'
+pass='secret123'
 timeout=60
 ```
 
@@ -1220,24 +1206,25 @@ let id, account, key;
 
 ```shell--vars
 id='primary'
+watchid='watchonly1'
 account='default'
 pubkey='0215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9'
 privkey='EMdDCvF1ZjsCnimTnTQfjw6x8CQmVidtJxKBegCVzPw3g6yRoDkK'
 ```
 
 ```shell--cli
-bwallet-cli import --id=$id $pubkey
-bwallet-cli import --id=$id $privkey
+bwallet-cli --id=$id --account=$account import $privkey
+bwallet-cli --id=$watchid --account=$account import $pubkey
 ```
 
 ```shell--curl
 curl $walleturl/$id/import \
   -X POST \
-  --data '{"account":"'$account'", "publicKey":"'$pubkey'"}'
-  
-curl $walleturl/$id/import \
-  -X POST \
   --data '{"account":"'$account'", "privateKey":"'$privkey'"}'
+  
+curl $walleturl/$watchid/import \
+  -X POST \
+  --data '{"account":"'$account'", "publicKey":"'$pubkey'"}'
 ```
 
 
@@ -1254,9 +1241,10 @@ const walletOptions = {
 
 const walletClient = new WalletClient(walletOptions);
 const wallet = walletClient.wallet(id);
+const watchwallet = walletClient.wallet(watchid);
 
 (async () => {
-  const result = await wallet.importPublic(account, pubkey);
+  const result = await watchwallet.importPublic(account, pubkey);
   console.log(result);
 })();
 
@@ -1265,12 +1253,12 @@ const wallet = walletClient.wallet(id);
   console.log(result);
 })();
 ```
-> Sample Response
+> Sample Responses
 
 ```json
-{
-  "success": true
-}
+Imported private key.
+
+Imported public key.
 ```
 
 Import a standard WIF key.
@@ -1304,7 +1292,7 @@ let id, account, address;
 ```
 
 ```shell--vars
-id='primary'
+id='watchonly1'
 account='default'
 address='RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC'
 ```
@@ -1367,7 +1355,7 @@ let id;
 ```
 
 ```shell--vars
-id="foo"
+id="primary"
 ```
 
 ```shell--curl
@@ -1419,8 +1407,8 @@ let id, height;
 ```
 
 ```shell--vars
-id="foo"
-height=1179720
+id="primary"
+height=50
 ```
 
 ```shell--cli
@@ -1455,11 +1443,11 @@ const wallet = walletClient.wallet(id);
 
 ```json
 {
-  "hash": "0000000000013cc12ea4b3ff403a3c05d96da695638e468cf26409eca87beb6a",
-  "height": 1179720,
-  "time": 1503359756,
+  "hash": "5a630279111118885f4489471ddf6f7a318b3510e5e17aa73412088d19b8ba78",
+  "height": 50,
+  "time": 1527181141,
   "hashes": [
-    "2c3d708bc21358e0a8a112ab00267ede0992d85add295d622e2b2c58b2c6720d"
+    "4255c0784ae89cfe7ccf878be3a408d8c1f6c665d5df331e27962b4defe3beb8"
   ]
 }
 ```
@@ -1482,9 +1470,9 @@ let id, key, account;
 ```
 
 ```shell--vars
-id="multi-foo"
+id="multisig3"
 account="default"
-key="rpubKBAoFrCN1HzSEDye7jcQaycA8L7MjFGmJD1uuvUZ21d9srAmAxmB7o1tCZRyXmTRuy5ZDQDV6uxtcxfHAadNFtdK7J6RV9QTcHTCEoY5FtQD"
+key="rpubKBBGCWqgVn4RRVpJTDUvTJnFHYiQuoUNy7s6W57U36KJ3r5inJp7iVRJZHvkFjbgfaGVs9fkvcCQS5ZMmc7BYFCrkADgmGKDCsjYK1vGmoFw"
 ```
 
 ```shell--cli
@@ -1552,9 +1540,9 @@ let id, key;
 ```
 
 ```shell--vars
-id="multi-foo"
+id="multisig3"
 account="default"
-key="rpubKBAoFrCN1HzSEDye7jcQaycA8L7MjFGmJD1uuvUZ21d9srAmAxmB7o1tCZRyXmTRuy5ZDQDV6uxtcxfHAadNFtdK7J6RV9QTcHTCEoY5FtQD"
+key="rpubKBBGCWqgVn4RRVpJTDUvTJnFHYiQuoUNy7s6W57U36KJ3r5inJp7iVRJZHvkFjbgfaGVs9fkvcCQS5ZMmc7BYFCrkADgmGKDCsjYK1vGmoFw"
 ```
 
 ```shell--cli
@@ -1599,7 +1587,13 @@ const wallet = walletClient.wallet(id);
 Remove shared xpubkey from wallet if present.
 
 Response will return `removedKey: true` true if key was removed on this request. Returns
-`false` if key already removed, but will still return `success: true` with status `200`.
+`false` if key was already removed, but will still return `success: true` with status `200`.
+
+<aside class="notice">
+Remove Key is only available to a multisig wallet that is not yet "complete" -- as in, 
+<nobr><code>n-1</code></nobr> number of keys have not yet been added to the wallet's own original key. 
+Once a multisig wallet has the right number of keys to create m-of-n addresses, this function will return an error.
+</aside>
 
 ### HTTP Request
 
