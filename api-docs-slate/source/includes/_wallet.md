@@ -6,7 +6,6 @@ npm i -g bclient
 ```
 
 ```javascript
-// all examples below will assume this initial configuration
 const {WalletClient} = require('bclient');
 const {Network} = require('bcoin');
 const network = Network.get('regtest');
@@ -57,7 +56,7 @@ id="primary"
 ```
 
 ```shell--curl
-curl http://x:api-key@127.0.0.1:48334/wallet # will list regtest (port 48334) wallets
+curl http://x:api-key@127.0.0.1:48334/wallet # will list regtest (default port 48334) wallets
 
 # examples in these docs will use an environment variable:
 walleturl=http://x:api-key@127.0.0.1:48334/wallet/
@@ -65,10 +64,13 @@ curl $walleturl/$id
 ```
 
 ```shell--cli
-# like the node client, bwallet-cli follows certain environment variables
+# Like the node client, you can configure it by passing arguments:
+bwallet-cli --network=regtest --id=$id get
+
+# ...or you can use environment variables. The default `id` is `primary`:
 export BCOIN_API_KEY=yoursecret
 export BCOIN_NETWORK=regtest
-bwallet-cli get --id=$id
+bwallet-cli get
 ```
 
 ```javascript
@@ -101,29 +103,33 @@ const wallet = walletClient.wallet(id);
   "id": "primary",
   "watchOnly": false,
   "accountDepth": 1,
-  "token": "66005706841e5a7b59809932a1da8707df477cfbd2ed8d5384c7a0cb560501b6",
+  "token": "17715756779e4a5f7c9b26c48d90a09d276752625430b41b5fcf33cf41aa7615",
   "tokenDepth": 0,
   "master": {
     "encrypted": false
   },
   "balance": {
-    "tx": 204,
-    "coin": 204,
-    "unconfirmed": 875000000000,
-    "confirmed": 875000000000
+    "tx": 5473,
+    "coin": 5472,
+    "unconfirmed": 1504999981750,
+    "confirmed": 1494999998350
   }
 }
 ```
 
-Bcoin maintains a wallet database which contains every wallet. Wallets are not usable without also using a wallet database. For testing, the wallet database can be in-memory, but it must be there. Wallets are uniquely identified by an id and the walletdb is created with a default id of `primary`. (See [Create a Wallet](#create-a-wallet) below for more details.)
+bcoin maintains a wallet database which contains every wallet. Wallets are not usable without also using a wallet database. For testing, the wallet database can be in-memory, but it must be there. Wallets are uniquely identified by an id and the walletdb is created with a default id of `primary`. (See [Create a Wallet](#create-a-wallet) below for more details.)
 
 Wallets in bcoin use bip44. They also originally supported bip45 for multisig, but support was removed to reduce code complexity, and also because bip45 doesn't seem to add any benefit in practice.
 
-The wallet database can contain many different wallets, with many different accounts, with many different addresses for each account. Bcoin should theoretically be able to scale to hundreds of thousands of wallets/accounts/addresses.
+The wallet database can contain many different wallets, with many different accounts, with many different addresses for each account. bcoin should theoretically be able to scale to hundreds of thousands of wallets/accounts/addresses.
 
 Each account can be of a different type. You could have a pubkeyhash account, as well as a multisig account, a witness pubkeyhash account, etc.
 
 Note that accounts should not be accessed directly from the public API. They do not have locks which can lead to race conditions during writes.
+
+<aside class="warning">
+Accounts within the same wallet are all related by deterministic hierarchy. However, wallets are not related to each other in any way. This means that when a wallet seed is backed up, all of its accounts (and their keys) can be derived from that backup. However, each newly created wallet must be backed up separately.
+</aside>
 
 ## Configuration
 Persistent configuration can be added to `wallet.conf` in your `prefix` directory.
@@ -132,29 +138,28 @@ Same directory has `bcoin.conf` for the node server.
 > Example Configuration:
 
 ```shell--vars
-network: testnet
+network: regtest
 wallet-auth: true
-api-key: hunter2
+api-key: api-key
 http-host: 0.0.0.0
 ```
 
 <aside class="notice">
-It is highly recommended to always use `wallet-auth` and to set a unique `api-key`,
-even for local development or local wallets. Without wallet auth other applications
+It is highly recommended to always use <code>wallet-auth</code> and to set a unique <code>api-key</code>,
+even for local development or local wallets. Without <code>wallet-auth: true</code> other applications
 on your system could theoretically access your wallet through the HTTP server
-without any authentication barriers. Each wallet does have an additional unique auth
-token required for most operations.
+without any authentication barriers. <code>wallet-auth: true</code> requires a wallet's token to be submitted with every request.
 </aside>
 
 ## Wallet Options
-> Wallet options object will look something like this
+> Wallet options object will look something like this:
 
 ```json
 {
   "id": "walletId",
   "witness": true,
   "watchOnly": false,
-  "accountKey": "tpubDCk7nRE1aq9MPdLEV1Y5LHdifspWxKDcQWKArMP7axEaZoNZQ2mxPxc1oBxiPahCtUPKAm5TYzf6WWtJ51Yn27Qzf7snxaK36ZASCgEtbPy",
+  "accountKey": "rpubKB4S62xohva5NNbR3a3e84ybBb6E5AszR713RHzUrefCrbmqYuSEhvC2Reehdzz6v9vu6xN3XuMuFEC57esDUu38Af1ZZFgFydot9Zzs4ixT",
   "accountIndex": 1,
   "type": "pubkeyhash"
   "m": 1,
@@ -184,25 +189,23 @@ mnemonic | String | | A mnemonic phrase to use to instantiate an hd private key.
 
 
 ## Wallet Auth
-> The following samples return a wallet object
+> The following samples return a wallet object using a wallet token
 
 ```javascript
 let token, id;
 ```
 
 ```shell--vars
-token='977fbb8d212a1e78c7ce9dfda4ff3d7cc8bcd20c4ccf85d2c9c84bbef6c88b3c'
-id='foo'
+id='primary'
+token='17715756779e4a5f7c9b26c48d90a09d276752625430b41b5fcf33cf41aa7615'
 ```
 
 ```shell--curl
-curl $walleturl/wallet/$id \
-    -H 'Content-Type: application/json' \
-    -d '{ "token": "$token" ... }'
+curl $walleturl/$id?token=$token
 ```
 
 ```shell--cli
-bwallet-cli get --network=testnet --token=$token
+bwallet-cli get --token=$token
 ```
 
 ```javascript
@@ -217,7 +220,7 @@ const walletOptions = {
 }
 
 const walletClient = new WalletClient(walletOptions);
-const wallet = walletClient.wallet(id);
+const wallet = walletClient.wallet(id, token);
 
 (async () => {
   const result = await wallet.getInfo();
@@ -227,22 +230,22 @@ const wallet = walletClient.wallet(id);
 
 Individual wallets have their own api keys, referred to internally as "tokens" (a 32 byte hash - calculated as `HASH256(m/44'->ec-private-key|tokenDepth)`).
 
-A wallet is always created with a corresponding token. When using api endpoints
-for a specific wallet, the token must be sent back in the query string or json
+A wallet is always created with a corresponding token. When using API endpoints
+for a specific wallet, the token must be sent back in the query string or JSON
 body.
 
-e.g. To get information from a wallet that requires a token
-
-`GET /wallet/primary/tx/:hash?token=977fbb8d212a1e78c7ce9dfda4ff3d7cc8bcd20c4ccf85d2c9c84bbef6c88b3c`
+<aside class="warning">
+The examples in this section demonstrate how to use a wallet token for API access, which is recommended. However, for clarity, further examples in these docs will omit the token requirement. 
+</aside>
 
 ## Reset Authentication Token
 ```javascript
-let id, passphrase;
+let id;
 ```
 
 ```shell--vars
-id='foo'
-passphrase='bar'
+id='primary'
+passphrase='secret123'
 ```
 
 ```shell--cli
@@ -251,8 +254,8 @@ bwallet-cli retoken --id=$id --passphrase=$passphrase
 
 ```shell--curl
 curl $walleturl/$id/retoken \
-  -X POST
-  --data '{"passphrase":"'$passphrase'"}"
+  -X POST \
+  --data '{"passphrase":"'$passphrase'"}'
 ```
 
 ```javascript
@@ -286,7 +289,7 @@ const wallet = walletClient.wallet(id);
 Derive a new wallet token, required for access of this particular wallet.
 
 <aside class="warning">
-Note: if you happen to lose the returned token, you will not be able to access the wallet.
+Note: if you happen to lose the returned token, you will not be able to access the wallet (as long as <nobr><code>wallet-auth: true</code></nobr> is still set, as recommended, in <code>wallet.conf</code>
 </aside>
 
 
@@ -304,12 +307,10 @@ id='primary'
 ```
 
 ```shell--curl
-curl $walleturl/$id/
-
+curl $walleturl/$id
 ```
 
 ```shell--cli
-# ID defaults to `primary` if none is passed
 bwallet-cli get --id=$id
 ```
 
@@ -342,16 +343,22 @@ const wallet = walletClient.wallet(id);
   "id": "primary",
   "watchOnly": false,
   "accountDepth": 1,
-  "token": "66005706841e5a7b59809932a1da8707df477cfbd2ed8d5384c7a0cb560501b6",
-  "tokenDepth": 0,
+  "token": "4d9e2a62f67929340b8c600bef0c965370f29cc64afcdeb7aea9cb52906c1d27",
+  "tokenDepth": 13,
   "master": {
-    "encrypted": false
+    "encrypted": true,
+    "until": 0,
+    "iv": "e33424f46674d4010fb0715bb69abc98",
+    "algorithm": "pbkdf2",
+    "n": 50000,
+    "r": 0,
+    "p": 0
   },
   "balance": {
-    "tx": 204,
-    "coin": 204,
-    "unconfirmed": 875000000000,
-    "confirmed": 875000000000
+    "tx": 5473,
+    "coin": 5472,
+    "unconfirmed": 1504999981750,
+    "confirmed": 1494999998350
   }
 }
 ```
@@ -401,7 +408,7 @@ const wallet = walletClient.wallet(id);
 })();
 ```
 
-> Sample response:
+> Sample responses:
 
 ```json
 {
@@ -417,9 +424,23 @@ const wallet = walletClient.wallet(id);
     }
   }
 }
+
+{
+  "encrypted": true,
+  "until": 1527121890,
+  "iv": "e33424f46674d4010fb0715bb69abc98",
+  "ciphertext": "c2bd62d659bc92212de5d9e939d9dc735bd0212d888b1b04a71d319e82e5ddb18008e383130fd0409113264d1cbc0db42d997ccf99510b168c80e2f39f2983382457f031d5aa5ec7a2d61f4fc92c62117e4eed59afa4a17d7cb0aae3ec5fa0d4",
+  "algorithm": "pbkdf2",
+  "n": 50000,
+  "r": 0,
+  "p": 0
+}
 ```
 
-Get wallet master HD key. This is normally censored in the wallet info route. The provided api key must have admin access.
+Get wallet master HD key. This is normally censored in the wallet info route. The provided API key must have admin access.
+<aside class="warning">
+Once a passphrase has been set for a wallet, the API will not reveal the unencrypted master private key or seed phrase. Be sure you back it up right away!
+</aside>
 
 ### HTTP Request
 
@@ -545,7 +566,7 @@ let id, oldPass, newPass;
 ```
 
 ```shell--vars
-id='foo'
+id='primary'
 oldPass='oldpass123'
 newPass='newpass123'
 ```
@@ -554,7 +575,7 @@ newPass='newpass123'
 > No cli command available
 ```
 
-```shell-curl
+```shell--curl
 curl $walleturl/$id/passphrase \
   -X POST \
   --data '{"old":"'$oldPass'", "passphrase":"'$newPass'"}'
@@ -588,6 +609,7 @@ const wallet = walletClient.wallet(id);
 
 Change wallet passphrase. Encrypt if unencrypted.
 
+
 ### HTTP Request
 
 `POST /wallet/:id/passphrase`
@@ -599,8 +621,7 @@ old <br> _string_ | Old passphrase. Pass in empty string if none
 new <br> _string_ | New passphrase
 
 <aside class="notice">
-  Note that the old passphrase is still required even if none was set prior. In this case, an empty string should be passed for the old passphrase.
-  e.g. <code>client.setPassphrase(id,'""', 'newPass')</code>
+If you have never set a passphrase for this wallet before, you need to omit the <code>old</code> argument and just send a new <nobr><code>passphrase</code></nobr>
 </aside>
 
 ## Send a transaction
@@ -1074,7 +1095,7 @@ let id, pass, timeout
 ```
 
 ```shell--vars
-id='foo'
+id='primary'
 pass='bar'
 timeout=60
 ```
@@ -1141,7 +1162,7 @@ let id;
 ```
 
 ```shell--vars
-id='foo'
+id='primary'
 ```
 
 ```shell--cli
@@ -1198,7 +1219,7 @@ let id, account, key;
 ```
 
 ```shell--vars
-id='foo'
+id='primary'
 account='default'
 pubkey='0215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9'
 privkey='EMdDCvF1ZjsCnimTnTQfjw6x8CQmVidtJxKBegCVzPw3g6yRoDkK'
@@ -1283,7 +1304,7 @@ let id, account, address;
 ```
 
 ```shell--vars
-id='foo'
+id='primary'
 account='default'
 address='RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC'
 ```
@@ -1664,8 +1685,8 @@ let id, address;
 ```
 
 ```shell--vars
-id="foo"
-address="RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC"
+id='primary'
+address='RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC'
 ```
 
 ```shell--cli
@@ -1868,7 +1889,7 @@ let id, account;
 
 ```shell--vars
 id="primary"
-account="three"
+account='default'
 ```
 
 ```shell--cli
@@ -1936,8 +1957,8 @@ let id, account;
 ```
 
 ```shell--vars
-id='foo'
-account='bar'
+id='primary'
+account='default'
 ```
 
 ```shell--cli
