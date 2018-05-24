@@ -8,7 +8,7 @@ let id, hash
 
 ```shell--vars
 id="primary"
-hash="0f2a1c65df0ea47c21c916071dd82228451a21c0a695e221bb9d61e96c6a89fd"
+hash="c7dcd8f8923f8cd0d44d0d980ddd4da80f67290ef872aab0f7be5858210712f7"
 ```
 
 ```shell--cli
@@ -42,31 +42,43 @@ const wallet = walletClient.wallet(id);
 
 ```json
 {
-  "wid": 1,
-  "id": "foo",
-  "hash": "18d2cf5683d7befe06941f59b7fb4ca0e915dcb9c6aece4ce8966a29e7c576fe",
-  "height": -1,
-  "block": null,
-  "time": 0,
-  "mtime": 1507077109,
-  "date": "2017-10-04T00:31:49Z",
-  "size": 225,
-  "virtualSize": 225,
-  "fee": 4540,
-  "rate": 20177,
-  "confirmations": 0,
-  "inputs":
-   [ { value: 5000009080,
-       address: "SdCEuxkbdMygcKtL36x2CT8p1vhz56SsbG",
-       path: [Object] } ],
-  "outputs":
-   [ { value: 100000000,
-       address: "SP7K3cSLH66zDisioqPrTC3QSRwP9GPENB",
-       path: null },
-     { value: 4900004540,
-       address: "SSzzdLbBeWBwNTUpbGdD9gBk6Wzk34sT7J",
-       path: [Object] } ],
-  "tx": "010000000148ae6682231f381845f98049c871e9b6bf0a9a7f5c5270354f71079262577977000000006a47304402203359117c409d292700fbacc03e4b540066a6b8ca763f1dd578e8262fe5e74c1b02206c91f816755469cd4a6b110941b51f29e251b86afe246456cf17823ef4fc7f5301210299c1a1049d546a720dd614034ce2802a3f64d64c37b729ae184825f71d0a037affffffff0200e1f505000000001976a91413eab6745a3fcbcf8b4448c130ff8bc37db6e91b88acbc221024010000001976a9143e9958577401fe8d75ed6f162cc6832fcb26094188ac00000000"
+  "hash": "c7dcd8f8923f8cd0d44d0d980ddd4da80f67290ef872aab0f7be5858210712f7",
+  "height": 501,
+  "block": "05b1fa9da2acc862dd8e329bbcd158f240a844951016d9e9cd1a1bf9f61b9ac9",
+  "time": 1527184717,
+  "mtime": 1527184717,
+  "date": "2018-05-24T17:58:37Z",
+  "mdate": "2018-05-24T17:58:37Z",
+  "size": 200,
+  "virtualSize": 173,
+  "fee": 0,
+  "rate": 0,
+  "confirmations": 1,
+  "inputs": [
+    {
+      "value": 0,
+      "address": null,
+      "path": null
+    }
+  ],
+  "outputs": [
+    {
+      "value": 625009040,
+      "address": "RQCqU5msz7DbNGtti6fYQajEGDY2oabsvN",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": false,
+        "derivation": "m/0'/0/1"
+      }
+    },
+    {
+      "value": 0,
+      "address": null,
+      "path": null
+    }
+  ],
+  "tx": "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2002f5010e6d696e65642062792062636f696e04f410f00b080000000000000000ffffffff0290e14025000000001976a914a3b7048d9f72788e1e2e161dc63585322689d01388ac0000000000000000266a24aa21a9ed9dae2d79e9b97a2b1f19bb16dd1c1c633f2fce683fba82eb85248fac3e32f3d90120000000000000000000000000000000000000000000000000000000000000000000000000"
 }
 ```
 Get wallet transaction details.
@@ -88,8 +100,7 @@ let id, hash, passphrase;
 
 ```shell--vars
 id="primary"
-hash="0f2a1c65df0ea47c21c916071dd82228451a21c0a695e221bb9d61e96c6a89fd"
-passphrase="bar"
+hash="a97a9993389ae321b263dffb68ba1312ad0655da83aeca75b2372d5abc70544a"
 ```
 
 ```shell--cli
@@ -98,8 +109,7 @@ passphrase="bar"
 
 ```shell--curl
 curl $walleturl/$id/tx/$hash \
-  -X DELETE \
-  --data '{"passphrase": "'$passphrase'"}'
+  -X DELETE
 ```
 
 ```javascript
@@ -272,8 +282,8 @@ let id, account, start, end;
 ```shell--vars
 id="primary"
 account="default"
-start="1506909119"
-end="1506909154"
+start="1527184612"
+end="1527186612"
 ```
 
 ```shell--cli
@@ -281,7 +291,7 @@ end="1506909154"
 ```
 
 ```shell--curl
-curl $walleturl/$id/tx/range?start=$start
+curl $walleturl/$id/tx/range?start=$start'&'end=$end
 ```
 
 ```javascript
@@ -307,22 +317,44 @@ const wallet = walletClient.wallet(id);
 
 ```json
 [
-  { "wid": 1,
-    "id": "primary",
-    "hash": "80ac63671e7b8635d10d372c4c3bed5615624d9fa28dfd747abf440417d70983",
-    "height": -1,
-    "block": null,
-    "time": 0,
-    "mtime": 1506909119,
-    "date": "2017-10-02T01:51:59Z",
+  {
+    "hash": "c7dcd8f8923f8cd0d44d0d980ddd4da80f67290ef872aab0f7be5858210712f7",
+    "height": 501,
+    "block": "05b1fa9da2acc862dd8e329bbcd158f240a844951016d9e9cd1a1bf9f61b9ac9",
+    "time": 1527184717,
+    "mtime": 1527184717,
+    "date": "2018-05-24T17:58:37Z",
+    "mdate": "2018-05-24T17:58:37Z",
     "size": 200,
     "virtualSize": 173,
     "fee": 0,
     "rate": 0,
-    "confirmations": 0,
-    "inputs": [ [Object] ],
-    "outputs": [ [Object], [Object] ],
-    "tx": "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff20028d010e6d696e65642062792062636f696e045460ad97080000000000000000ffffffff02bc03062a010000001976a914d7ee508e06ece23679ba9ee0a770561ae2ed595688ac0000000000000000266a24aa21a9ed5772988727e8641cf3c7d2bf5a7fee9a5d0e827de0b6bed5658eee8f0821b5200120000000000000000000000000000000000000000000000000000000000000000000000000"
+    "confirmations": 1,
+    "inputs": [
+      {
+        "value": 0,
+        "address": null,
+        "path": null
+      }
+    ],
+    "outputs": [
+      {
+        "value": 625009040,
+        "address": "RQCqU5msz7DbNGtti6fYQajEGDY2oabsvN",
+        "path": {
+          "name": "default",
+          "account": 0,
+          "change": false,
+          "derivation": "m/0'/0/1"
+        }
+      },
+      {
+        "value": 0,
+        "address": null,
+        "path": null
+      }
+    ],
+    "tx": "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2002f5010e6d696e65642062792062636f696e04f410f00b080000000000000000ffffffff0290e14025000000001976a914a3b7048d9f72788e1e2e161dc63585322689d01388ac0000000000000000266a24aa21a9ed9dae2d79e9b97a2b1f19bb16dd1c1c633f2fce683fba82eb85248fac3e32f3d90120000000000000000000000000000000000000000000000000000000000000000000000000"
   },
   ...
 ]

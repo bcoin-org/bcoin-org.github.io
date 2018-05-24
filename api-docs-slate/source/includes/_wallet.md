@@ -1613,7 +1613,7 @@ let id, address;
 
 ```shell--vars
 id="primary"
-address="RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC"
+address="RM4xYH2GrcHmiptfsDEF7Kqqbm2Humjm2E"
 ```
 
 ```shell--cli
@@ -1651,14 +1651,14 @@ const wallet = walletClient.wallet(id);
   "name": "default",
   "account": 0,
   "branch": 0,
-  "index": 5,
+  "index": 2,
   "witness": false,
   "nested": false,
-  "publicKey": "030429c7a7007b9da542c029ea72a21852c2e4dfcce339d626df022068f0149680",
+  "publicKey": "02548e0a23b90505f1b4017f52cf2beeaa399fce7ff2961e29570c6afdfa9bfc5b",
   "script": null,
   "program": null,
   "type": "pubkeyhash",
-  "address": "RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC"
+  "address": "RM4xYH2GrcHmiptfsDEF7Kqqbm2Humjm2E"
 }
 ```
 
@@ -1680,15 +1680,16 @@ let id, address;
 
 ```shell--vars
 id='primary'
-address='RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC'
+passphrase='secret123'
+address='RM4xYH2GrcHmiptfsDEF7Kqqbm2Humjm2E'
 ```
 
 ```shell--cli
-bwallet-cli --id=$id dump $address
+bwallet-cli --id=$id --passphrase=$passphrase dump $address
 ```
 
 ```shell--curl
-curl $walleturl/$id/wif/$address
+curl $walleturl/$id/wif/$address?passphrase=$passphrase
 ```
 
 ```javascript
@@ -1706,7 +1707,7 @@ const walletClient = new WalletClient(walletOptions);
 const wallet = walletClient.wallet(id);
 
 (async () => {
-  const result = await wallet.getWIF(address);
+  const result = await wallet.getWIF(address, passphrase);
   console.log(result);
 })();
 ```
@@ -1715,9 +1716,8 @@ const wallet = walletClient.wallet(id);
 
 ```json
 {
-  "privateKey": "EM84sJqdS8sLxWUjktgZpwT4D5uab96t1AnSvXcXJNkNQ4bWDoVe"
+  "privateKey": "EPAcwFM5E6CS1sGCv3PDeJ68nXSfUZwViZ8HyrP9T8GcGSF14EsK"
 }
-
 ```
 
 Get wallet private key (WIF format) by address. Returns just the private key
@@ -1738,7 +1738,7 @@ let id, account;
 ```
 
 ```shell--vars
-id="foo"
+id="primary"
 account="default"
 ```
 
@@ -1810,7 +1810,7 @@ let id, account;
 ```
 
 ```shell--vars
-id="foo"
+id="primary"
 account="default"
 ```
 
@@ -1882,7 +1882,7 @@ let id, account;
 ```
 
 ```shell--vars
-id="primary"
+id="witness1"
 account='default'
 ```
 
@@ -1918,17 +1918,17 @@ const wallet = walletClient.wallet(id);
 
 ```json
 {
-  "name": "three",
-  "account": 2,
+  "name": "default",
+  "account": 0,
   "branch": 2,
   "index": 1,
   "witness": true,
   "nested": true,
-  "publicKey": "03d1542630e1b10f2608d92336096dcbd7fd85d7ab1c281bcd66b1da7180a349f4",
+  "publicKey": "02d10d018aad643382a77f6f6305bd209879ae450f9d3fdbcc406a666a20b40332",
   "script": null,
-  "program": "00146a915a88d6bf9dd093eb07dd28ef8f8f625b8e5d",
+  "program": "001421457f563883db273f4cefd519882dfefcb6ba82",
   "type": "scripthash",
-  "address": "GV5opTvhE38Ky513918DkyTWZH1ha8Myur"
+  "address": "GX9yN5m5dUcSqfmNgkfQ7XJAHdyvbTHLhU"
 }
 ```
 
@@ -2015,7 +2015,7 @@ let id;
 ```
 
 ```shell--vars
-id="foo"
+id="primary"
 ```
 
 ```shell--curl
@@ -2052,24 +2052,25 @@ const wallet = walletClient.wallet(id);
 [
   {
     "version": 1,
-    "height": 1180963,
-    "value": 1000,
-    "script": "76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac",
-    "address": "moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA",
+    "height": -1,
+    "value": 4999998887,
+    "script": "76a914a2133747754faf7fbacc31bf0f74808f8409c4b388ac",
+    "address": "RQ4AZjpaoyXhEk3mjcWYR74YR8XhxoXGzV",
     "coinbase": false,
-    "hash": "bf49aaf50dfa229b99e83d29cae2515487b05cccb88cd111fb2ac738dac1058a",
-    "index": 0
+    "hash": "7c7de4c48744b09b69bd36ffdb354199407321e305c0a4bd366a6168e0ff7244",
+    "index": 1
   },
   {
     "version": 1,
-    "height": 1180963,
-    "value": 1000,
-    "script": "76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac",
-    "address": "moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA",
+    "height": -1,
+    "value": 4999998887,
+    "script": "76a9149433dbda44a1f23396a1bd231443b0d29eb8cf2888ac",
+    "address": "RNnpD7tGaTpqEuTfBaqrtAqDK1927FLkW2",
     "coinbase": false,
-    "hash": "efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae",
-    "index": 0
-  }
+    "hash": "a97a9993389ae321b263dffb68ba1312ad0655da83aeca75b2372d5abc70544a",
+    "index": 1
+  },
+  ...
 ]
 ```
 List all wallet coins available.
@@ -2081,13 +2082,12 @@ List all wallet coins available.
 ## Lock Coin/Outpoints
 
 ```javascript
-let id, passphrase, hash, index;
+let id, hash, index;
 ```
 
 ```shell--vars
-id="foo"
-passphrase="bar"
-hash="dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f"
+id="primary"
+hash="52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1"
 index="0"
 ```
 
@@ -2096,7 +2096,7 @@ index="0"
 ```
 
 ```shell--curl
-curl $walleturl/$id/locked/$hash/$index -X PUT --data '{"passphrase": "'$pasphrase'"}'
+curl $walleturl/$id/locked/$hash/$index -X PUT
 ```
 
 ```javascript
@@ -2152,9 +2152,8 @@ let id, passphrase, hash, index;
 ```
 
 ```shell--vars
-id="foo"
-passphrase="bar"
-hash="dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f"
+id="primary"
+hash="52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1"
 index="0"
 ```
 
@@ -2163,7 +2162,7 @@ index="0"
 ```
 
 ```shell--curl
-curl $walleturl/$id/locked/$hash/$index -X DELETE --data '{"passphrase": "'$pasphrase'"}'
+curl $walleturl/$id/locked/$hash/$index -X DELETE
 ```
 
 ```javascript
@@ -2220,7 +2219,7 @@ let id;
 ```
 
 ```shell--vars
-id="foo"
+id="primary"
 ```
 
 ```shell--cli
@@ -2256,8 +2255,8 @@ const wallet = walletClient.wallet(id);
 ```json
 [
   {
-    "hash":"dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f",
-    "index":0
+    "hash": "52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1",
+    "index": 0
   }
 ]
 ```
@@ -2281,9 +2280,9 @@ let id, hash, index;
 ```
 
 ```shell--vars
-id="foo"
-hash="efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae"
-index=0
+id="primary"
+hash="52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1"
+index="0"
 ```
 
 ```shell--cli
@@ -2321,12 +2320,12 @@ const wallet = walletClient.wallet(id);
 ```json
 {
   "version": 1,
-  "height": 1180963,
-  "value": 1000,
-  "script": "76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac",
-  "address": "moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA",
-  "coinbase": false,
-  "hash": "efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae",
+  "height": 104,
+  "value": 5000000000,
+  "script": "76a91403a394378a680558ea205b604b182566381e116e88ac",
+  "address": "R9cS4kuYVWHaDJmRGMpwx7zCNjw97Zm5LL",
+  "coinbase": true,
+  "hash": "52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1",
   "index": 0
 }
 ```

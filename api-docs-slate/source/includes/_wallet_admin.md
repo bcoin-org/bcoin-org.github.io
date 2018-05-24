@@ -23,7 +23,7 @@ let height;
 ```
 
 ```shell--vars
-height = 50000
+height=50
 ```
 
 ```shell--curl
@@ -65,7 +65,7 @@ const walletClient = new WalletClient(walletOptions);
 Initiates a blockchain rescan for the walletdb. Wallets will be rolled back to the specified height (transactions above this height will be unconfirmed).
 
 ### Example HTTP Request
-`POST /rescan?height=50000`
+`POST /rescan?height=50`
 
 
 ## Wallet Resend
@@ -95,7 +95,6 @@ const walletClient = new WalletClient(walletOptions);
   result = await walletClient.resend();
   console.log(result);
 })();
-
 ```
 
 > Response Body:
@@ -116,11 +115,11 @@ let path;
 ```
 
 ```shell--vars
-path='/path/to/new/backup'
+path='/home/user/walletdb-backup.ldb'
 ```
 
 ```shell--curl
-curl $walletadminurl/backup?path=/home/user/walletdb-backup.ldb \
+curl $walletadminurl/backup?path=$path \
   -X POST
 ```
 
@@ -145,7 +144,6 @@ const walletClient = new WalletClient(walletOptions);
   const result = await walletClient.backup(path);
   console.log(result);
 })();
-
 ```
 
 > Response Body:
@@ -187,7 +185,6 @@ const walletClient = new WalletClient(walletOptions);
   const result = await walletClient.getWallets();
   console.log(result);
 })();
-
 ```
 
 > Sample Response Body:
@@ -195,7 +192,12 @@ const walletClient = new WalletClient(walletOptions);
 ```json
 [
   "primary",
-  "test"
+  "newWallet",
+  "multisig1",
+  "multisig2",
+  "watchonly1",
+  "multisig3",
+  "witness1"
 ]
 ```
 
