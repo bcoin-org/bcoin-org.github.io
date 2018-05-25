@@ -1,10 +1,14 @@
-# Coin
+# bcoin - Coins
 Getting coin information via API.
 
 *Coin stands for UTXO*
 
 <aside class="info">
-You need to enable <code>index-address</code> in order to lookup coins by address(es).
+You need to enable <code>index-address</code> in order to lookup coins by address.<br>
+You can also enable <code>index-tx</code> to lookup transactions by txid.<br>
+Launch the bcoin daemon with these arguments:<br>
+<code>bcoin --daemon --index-address=true --index-tx=true</code><br>
+These index arguments cannot be changed once bcoin has been started for the first time, without resyncing the node.
 </aside>
 
 
@@ -19,7 +23,7 @@ let hash, index;
 ```
 
 ```shell--vars
-hash='c13039f53247f9ca14206da079bcf738d91bc60e251ac9ebaba9ea9a862d9092';
+hash='53faa103e8217e1520f5149a4e8c84aeb58e55bdab11164a95e69a8ca50f8fcc';
 index=0;
 ```
 
@@ -33,21 +37,21 @@ bcoin-cli coin $hash $index
 
 ```javascript
 const {NodeClient} = require('bclient');
-const client = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-
-  const coin = await client.getCoin(hash, index);
-
-  console.log(coin);
-
-  await client.close();
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.getCoin(hash, index);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON structured like this:
@@ -55,17 +59,18 @@ const client = new NodeClient({
 ```json
 {
   "version": 1,
-  "height": 100019,
-  "value": 144709200,
-  "script": "76a9148fc80aadf127f6f92b6ed33404b110f851c8eca188ac",
-  "address": "mtdCZdNYny2U7met3umk47SoA7HMZGfsa2",
+  "height": -1,
+  "value": 30000000,
+  "script": "76a91400ba915c3d18907b79e6cfcd8b9fdf69edc7a7db88ac",
+  "address": "R9M3aUWCcKoiqDPusJvqNkAbjffLgCqYip",
   "coinbase": false,
-  "hash": "c13039f53247f9ca14206da079bcf738d91bc60e251ac9ebaba9ea9a862d9092",
+  "hash": "53faa103e8217e1520f5149a4e8c84aeb58e55bdab11164a95e69a8ca50f8fcc",
   "index": 0
 }
 ```
 
-Get coin by outpoint (hash and index). Returns coin in bcoin coin json format.
+Get coin by outpoint (hash and index). Returns coin in bcoin coin JSON format.
+`value` is always expressed in satoshis.
 
 ### HTTP Request
 `GET /coin/:hash/:index`
@@ -85,7 +90,7 @@ let address;
 ```
 
 ```shell--vars
-address='n3BmXQPa1dKi3zEyCdCGNHTuE5GLdmw1Tr';
+address='R9M3aUWCcKoiqDPusJvqNkAbjffLgCqYip';
 ```
 
 ```shell--curl
@@ -98,21 +103,21 @@ bcoin-cli coin $address
 
 ```javascript
 const {NodeClient} = require('bclient');
-const client = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-
-  const coins = await client.getCoinsByAddress(address);
-
-  console.log(coins);
-
-  await client.close();
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.getCoinsByAddress(address);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON structured like this:
@@ -121,13 +126,25 @@ const client = new NodeClient({
 [
   {
     "version": 1,
-    "height": 502,
-    "value": 275391,
-    "script": "76a914edb1dfaf6e0b39449da811275386edf2eb54baba88ac",
-    "address": "n3BmXQPa1dKi3zEyCdCGNHTuE5GLdmw1Tr",
+    "height": -1,
+    "value": 10000000,
+    "script": "76a91400ba915c3d18907b79e6cfcd8b9fdf69edc7a7db88ac",
+    "address": "R9M3aUWCcKoiqDPusJvqNkAbjffLgCqYip",
     "coinbase": false,
-    "hash": "86150a141ebe5903a5d31e701698a01d598b81f099ea7577dad73033eab02ef9",
-    "index": 1
+    "hash": "2ef8051e6c38e136ba4d195c048e78f9077751758db710475fa532b9d9489324",
+    "index": 0
+  },
+  ...
+  ...
+  {
+    "version": 1,
+    "height": -1,
+    "value": 50000000,
+    "script": "76a91400ba915c3d18907b79e6cfcd8b9fdf69edc7a7db88ac",
+    "address": "R9M3aUWCcKoiqDPusJvqNkAbjffLgCqYip",
+    "coinbase": false,
+    "hash": "b3c71dd8959ea97d41324779604b210ae881cdaa5d5abfcbfb3502a0e75c1283",
+    "index": 0
   }
 ]
 ```
@@ -151,8 +168,8 @@ let address0, address1;
 ```
 
 ```shell--vars
-address0='n3BmXQPa1dKi3zEyCdCGNHTuE5GLdmw1Tr';
-address1='mwLHWwWPDwtCBZA7Ltg9QSzKK5icdCU5rb';
+address0='RQKEexR9ZufYP6AKbwhzdv8iuiMFDh4sNZ';
+address1='RHpAA3ZmmmWF6FW8qSfaEvh1jR1nUmVYnj';
 ```
 
 ```shell--curl
@@ -168,18 +185,20 @@ No CLI Option.
 
 ```javascript
 const {NodeClient} = require('bclient');
-const client = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-
-  const coins = await client.getCoinsByAddresses([address0, address1]);
-
-  console.log(coins);
-
-  await client.close();
+  const result = await client.getCoinsByAddresses([address0, address1]);
+  console.log(result);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -191,29 +210,29 @@ const client = new NodeClient({
 [
   {
     "version": 1,
-    "height": 502,
-    "value": 275391,
-    "script": "76a914edb1dfaf6e0b39449da811275386edf2eb54baba88ac",
-    "address": "n3BmXQPa1dKi3zEyCdCGNHTuE5GLdmw1Tr",
+    "height": -1,
+    "value": 87654321,
+    "script": "76a914a4ecde9642f8070241451c5851431be9b658a7fe88ac",
+    "address": "RQKEexR9ZufYP6AKbwhzdv8iuiMFDh4sNZ",
     "coinbase": false,
-    "hash": "86150a141ebe5903a5d31e701698a01d598b81f099ea7577dad73033eab02ef9",
-    "index": 1
+    "hash": "4c7846a8ff8415945e96937dea27bdb3144c15d793648d725602784826052586",
+    "index": 0
   },
   {
     "version": 1,
-    "height": 500,
-    "value": 1095497,
-    "script": "76a914ad7d7b9ac5260ad13fa55e06143283f5b36495f788ac",
-    "address": "mwLHWwWPDwtCBZA7Ltg9QSzKK5icdCU5rb",
+    "height": -1,
+    "value": 12345678,
+    "script": "76a9145d9c4bf7f9934668c054f1b1a5589632ddc2b5b088ac",
+    "address": "RHpAA3ZmmmWF6FW8qSfaEvh1jR1nUmVYnj",
     "coinbase": false,
-    "hash": "4692772a73ea834c836915089acf97f2c790380a2b8fd32f82729da72545d8c5",
+    "hash": "c87c13635f6004a802676a7f93bf90a4b27b433cf26db0c41a656f377406f3e3",
     "index": 0
   }
 ]
+
 ```
 
-Get coins by addresses,
-returns array of coin objects.
+Get coins by addresses, returns array of coin objects.
 
 ### HTTP Request
 `POST /coin/address`

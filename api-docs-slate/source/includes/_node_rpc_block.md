@@ -3,8 +3,7 @@
 ## getblockchaininfo
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{ "method": "getblockchaininfo" }'
 ```
@@ -15,67 +14,71 @@ bcoin-cli rpc getblockchaininfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblockchaininfo');
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getblockchaininfo');
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "chain": "test",
-  "blocks": 1178402,
-  "headers": 1178402,
-  "bestblockhash": "0000000000000dd897f549915ba7099b6d4f86f4512801d617a7c0c655827d08",
-  "difficulty": 1048576,
-  "mediantime": 1502814951,
-  "verificationprogress": 1,
-  "chainwork": "00000000000000000000000000000000000000000000002976ca78529498e335",
+  "chain": "regtest",
+  "blocks": 98,
+  "headers": 98,
+  "bestblockhash": "498d003ecfc60ee829cdc3640dc305583057d88e2c38a7d57dbe0f92aa2bb512",
+  "difficulty": 4.6565423739069247e-10,
+  "mediantime": 1527028558,
+  "verificationprogress": 0.9997162305340502,
+  "chainwork": "00000000000000000000000000000000000000000000000000000000000000c6",
   "pruned": false,
   "softforks": [
     {
       "id": "bip34",
       "version": 2,
       "reject": {
-        "status": true
+        "status": false
       }
     },
     {
       "id": "bip66",
       "version": 3,
       "reject": {
-        "status": true
+        "status": false
       }
     },
     {
       "id": "bip65",
       "version": 4,
       "reject": {
-        "status": true
+        "status": false
       }
     }
   ],
   "bip9_softforks": {
     "csv": {
-      "status": "active",
+      "status": "defined",
       "bit": 0,
-      "startTime": 1456790400,
-      "timeout": 1493596800
+      "startTime": 0,
+      "timeout": 4294967295
     },
     "segwit": {
-      "status": "active",
+      "status": "defined",
       "bit": 1,
-      "startTime": 1462060800,
-      "timeout": 1493596800
+      "startTime": 0,
+      "timeout": 4294967295
     },
     "segsignal": {
       "status": "defined",
@@ -84,10 +87,10 @@ const rpc = new NodeClient({
       "timeout": 4294967295
     },
     "testdummy": {
-      "status": "failed",
+      "status": "defined",
       "bit": 28,
-      "startTime": 1199145601,
-      "timeout": 1230767999
+      "startTime": 0,
+      "timeout": 4294967295
     }
   },
   "pruneheight": null
@@ -106,8 +109,7 @@ None. |
 ## getbestblockhash
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{ "method": "getbestblockhash" }'
 ```
@@ -118,23 +120,27 @@ bcoin-cli rpc getbestblockhash
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getbestblockhash');
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getbestblockhash');
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
-"0000000000000225f8332239fe00b74c65f916ff71dde5dee33b72ddd3b0e237"
+"498d003ecfc60ee829cdc3640dc305583057d88e2c38a7d57dbe0f92aa2bb512"
 ```
 
 Returns Block Hash of the tip.
@@ -150,35 +156,38 @@ None. |
 
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{ "method": "getblockcount" }'
 ```
 
 ```shell--cli
-bcoin-cli rpc getbestblockhash
+bcoin-cli rpc getblockcount
 ```
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblockcount');
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getblockcount');
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
-1178418
+98
 ```
 
 Returns block count.
@@ -197,18 +206,17 @@ let blockhash, details, verbose;
 ```
 
 ```shell--vars
-blockhash='00000000e0290b7c66227c7499692aac5437860ee912424bf8eea3a3883a4e37';
+blockhash='498d003ecfc60ee829cdc3640dc305583057d88e2c38a7d57dbe0f92aa2bb512';
 verbose=1;
 details=0;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getblock",
-    "params": [ "'$blockhash'", "'$verbose'", "'$details'" ]
+    "params": [ "'$blockhash'", '$verbose', '$details' ]
   }'
 ```
 
@@ -218,51 +226,47 @@ bcoin-cli rpc getblock $blockhash $verbose $details
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblock', [ blockhash, verbose, details ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getblock', [ blockhash, verbose, details ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "hash": "00000000e0290b7c66227c7499692aac5437860ee912424bf8eea3a3883a4e37",
-  "confirmations": 1177921,
-  "strippedsize": 2499,
-  "size": 2499,
-  "weight": 9996,
-  "height": 502,
-  "version": 1,
-  "versionHex": "00000001",
-  "merkleroot": "4f7a9087973b891fc86cc59fd9c2cb696f7a813360d3553626dc6c38909f9571",
-  "coinbase": "3337346bde777ade327922b5deef5fb7f88e98cecb22",
+  "hash": "498d003ecfc60ee829cdc3640dc305583057d88e2c38a7d57dbe0f92aa2bb512",
+  "confirmations": 1,
+  "strippedsize": 197,
+  "size": 197,
+  "weight": 788,
+  "height": 98,
+  "version": 536870912,
+  "versionHex": "20000000",
+  "merkleroot": "674527b1b1b8604677a0b9e3f7a62fd733af9eba254d9f98748d3d0afdf35602",
+  "coinbase": "01620e6d696e65642062792062636f696e046d2df7a0080000000000000000",
   "tx": [
-    "2a69b021fc6cbd61260767302781c85fb0873acf18980ea6187fc868e4a3e3f9",
-    "c61f2ef26bb08dcf1e16db4fece56ac92a3acac24e4dac90315e5c0ad6af67e6",
-    "ed8c8213cc2d214ad2f293caae99e26e2c59d158f3eda5d9c1292e0961e20e76",
-    "21da008d1fddc1a067d2d6cd9bb6e78acb5bdc9560252c17cfd59c331dd5c2cf",
-    "90cc439e0a03109c33c966d92ccd18b0509ef678458d85a097397ee9bfbd54c0",
-    "1d67f7466fd711f8106fb437cb6a59b7ccd14cd6069edc132627a9fb01d4f09c",
-    "402450f5b4cd794d4198f940977bf4291ce25a7ff8b157adf71c07ed065db380",
-    "0173a5d24d393127d5e6fc043ff1a00dafc6a2777143cb98a803a0b6e8cd02c7",
-    "86150a141ebe5903a5d31e701698a01d598b81f099ea7577dad73033eab02ef9"
+    "674527b1b1b8604677a0b9e3f7a62fd733af9eba254d9f98748d3d0afdf35602"
   ],
-  "time": 1296746959,
-  "mediantime": 1296746728,
-  "bits": 486604799,
-  "difficulty": 1,
-  "chainwork": "000000000000000000000000000000000000000000000000000001f701f701f7",
-  "previousblockhash": "00000000c7f50b6dfac8b8a59e11b7e62f07fdef20597089b9c5d64ebfe6d682",
-  "nextblockhash": "00000000f797111d0f67d7f08346757948e7c469f14cddbd1c3d0217306bf003"
+  "time": 1527028559,
+  "mediantime": 1527028558,
+  "bits": 545259519,
+  "difficulty": 4.6565423739069247e-10,
+  "chainwork": "00000000000000000000000000000000000000000000000000000000000000c6",
+  "previousblockhash": "267bec5755cb8362828351a1bedb0de8c8ab37a58627070a79b7aa48d09c7276",
+  "nextblockhash": null
 }
 ```
 
@@ -284,18 +288,17 @@ let blockhash, details, verbose;
 ```
 
 ```shell--vars
-blockheight=502;
+blockheight=50;
 verbose=1;
 details=0;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getblockbyheight",
-    "params": [ "'$blockheight'", "'$verbose'", "'$details'" ]
+    "params": [ '$blockheight', '$verbose', '$details' ]
   }'
 ```
 
@@ -305,51 +308,47 @@ bcoin-cli rpc getblockbyheight $blockheight $verbose $details
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblockbyheight', [ blockheight, verbose, details ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getblockbyheight', [ blockheight, verbose, details ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "hash": "00000000e0290b7c66227c7499692aac5437860ee912424bf8eea3a3883a4e37",
-  "confirmations": 1177921,
-  "strippedsize": 2499,
-  "size": 2499,
-  "weight": 9996,
-  "height": 502,
-  "version": 1,
-  "versionHex": "00000001",
-  "merkleroot": "4f7a9087973b891fc86cc59fd9c2cb696f7a813360d3553626dc6c38909f9571",
-  "coinbase": "3337346bde777ade327922b5deef5fb7f88e98cecb22",
+  "hash": "51726259de9560e1924f3cb554ad16e889b6170eb4d01d01f5a4ca8a81d1e318",
+  "confirmations": 49,
+  "strippedsize": 197,
+  "size": 197,
+  "weight": 788,
+  "height": 50,
+  "version": 536870912,
+  "versionHex": "20000000",
+  "merkleroot": "8e2d404a039a7a3e1768b161aa23546aab0444b73905bdd3d68b3d6f1769e8c0",
+  "coinbase": "01320e6d696e65642062792062636f696e04a829b925080000000000000000",
   "tx": [
-    "2a69b021fc6cbd61260767302781c85fb0873acf18980ea6187fc868e4a3e3f9",
-    "c61f2ef26bb08dcf1e16db4fece56ac92a3acac24e4dac90315e5c0ad6af67e6",
-    "ed8c8213cc2d214ad2f293caae99e26e2c59d158f3eda5d9c1292e0961e20e76",
-    "21da008d1fddc1a067d2d6cd9bb6e78acb5bdc9560252c17cfd59c331dd5c2cf",
-    "90cc439e0a03109c33c966d92ccd18b0509ef678458d85a097397ee9bfbd54c0",
-    "1d67f7466fd711f8106fb437cb6a59b7ccd14cd6069edc132627a9fb01d4f09c",
-    "402450f5b4cd794d4198f940977bf4291ce25a7ff8b157adf71c07ed065db380",
-    "0173a5d24d393127d5e6fc043ff1a00dafc6a2777143cb98a803a0b6e8cd02c7",
-    "86150a141ebe5903a5d31e701698a01d598b81f099ea7577dad73033eab02ef9"
+    "8e2d404a039a7a3e1768b161aa23546aab0444b73905bdd3d68b3d6f1769e8c0"
   ],
-  "time": 1296746959,
-  "mediantime": 1296746728,
-  "bits": 486604799,
-  "difficulty": 1,
-  "chainwork": "000000000000000000000000000000000000000000000000000001f701f701f7",
-  "previousblockhash": "00000000c7f50b6dfac8b8a59e11b7e62f07fdef20597089b9c5d64ebfe6d682",
-  "nextblockhash": "00000000f797111d0f67d7f08346757948e7c469f14cddbd1c3d0217306bf003"
+  "time": 1527028551,
+  "mediantime": 1527028550,
+  "bits": 545259519,
+  "difficulty": 4.6565423739069247e-10,
+  "chainwork": "0000000000000000000000000000000000000000000000000000000000000066",
+  "previousblockhash": "69eef02e5b7e2558f96a7e9ecb47dbbc4dd9fb1aa46cc22f36d8e7ee1edde33d",
+  "nextblockhash": "7f734e621cc3e08834063b9482aa89e0bcaf29e7812b83494f3891c7955958fb"
 }
 ```
 
@@ -371,16 +370,15 @@ let blockheight;
 ```
 
 ```shell--vars
-blockheight=502;
+blockheight=50;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getblockhash",
-    "params": [ "'$blockheight'" ]
+    "params": [ '$blockheight' ]
   }'
 ```
 
@@ -390,26 +388,30 @@ bcoin-cli rpc getblockhash $blockheight
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblockhash', [ blockheight ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getblockhash', [ blockheight ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
-"00000000e0290b7c66227c7499692aac5437860ee912424bf8eea3a3883a4e37"
+"51726259de9560e1924f3cb554ad16e889b6170eb4d01d01f5a4ca8a81d1e318"
 ```
 
-Returns block's hash by height.
+Returns block's hash given its height.
 
 ### Params
 N. | Name | Default |  Description
@@ -425,17 +427,16 @@ let blockhash, verbose;
 ```
 
 ```shell--vars
-blockhash='00000000e0290b7c66227c7499692aac5437860ee912424bf8eea3a3883a4e37';
+blockhash='51726259de9560e1924f3cb554ad16e889b6170eb4d01d01f5a4ca8a81d1e318';
 verbose=1;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getblockheader",
-    "params": [ "'$blockhash'", "'$details'" ]
+    "params": [ "'$blockhash'", '$details' ]
   }'
 ```
 
@@ -445,40 +446,44 @@ bcoin-cli rpc getblockheader $blockhash $verbose
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getblockheader', [ blockheight, verbose ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getblockheader', [ blockhash, verbose ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "hash": "00000000e0290b7c66227c7499692aac5437860ee912424bf8eea3a3883a4e37",
-  "confirmations": 1177934,
-  "height": 502,
-  "version": 1,
-  "versionHex": "00000001",
-  "merkleroot": "4f7a9087973b891fc86cc59fd9c2cb696f7a813360d3553626dc6c38909f9571",
-  "time": 1296746959,
-  "mediantime": 1296746728,
-  "bits": 486604799,
-  "difficulty": 1,
-  "chainwork": "000000000000000000000000000000000000000000000000000001f701f701f7",
-  "previousblockhash": "00000000c7f50b6dfac8b8a59e11b7e62f07fdef20597089b9c5d64ebfe6d682",
-  "nextblockhash": "00000000f797111d0f67d7f08346757948e7c469f14cddbd1c3d0217306bf003"
+  "hash": "51726259de9560e1924f3cb554ad16e889b6170eb4d01d01f5a4ca8a81d1e318",
+  "confirmations": 49,
+  "height": 50,
+  "version": 536870912,
+  "versionHex": "20000000",
+  "merkleroot": "8e2d404a039a7a3e1768b161aa23546aab0444b73905bdd3d68b3d6f1769e8c0",
+  "time": 1527028551,
+  "mediantime": 1527028550,
+  "bits": 545259519,
+  "difficulty": 4.6565423739069247e-10,
+  "chainwork": "0000000000000000000000000000000000000000000000000000000000000066",
+  "previousblockhash": "69eef02e5b7e2558f96a7e9ecb47dbbc4dd9fb1aa46cc22f36d8e7ee1edde33d",
+  "nextblockhash": "7f734e621cc3e08834063b9482aa89e0bcaf29e7812b83494f3891c7955958fb"
 }
 ```
 
-Returns block's header by hash.
+Returns a block's header given its hash.
 
 ### Params
 N. | Name | Default |  Description
@@ -491,8 +496,7 @@ N. | Name | Default |  Description
 ## getchaintips
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getchaintips"
@@ -505,17 +509,21 @@ bcoin-cli rpc getchaintips
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getchaintips');
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getchaintips');
+  console.log(result);
+})();
 ```
 
 Returns chaintips.
@@ -525,17 +533,11 @@ Returns chaintips.
 ```json
 [
   {
-    "height": 1159071,
-    "hash": "0000000000043bc8896351bf4fbb9fadfa596566e6d88078a2364252346e0d2a",
-    "branchlen": 1,
-    "status": "valid-headers"
-  },
-  {
-    "height": 1158313,
-    "hash": "0000000000011e8328cf0382888e07f207e178e967f896794d600e39c962362e",
-    "branchlen": 1,
-    "status": "valid-headers"
-  },
+    "height": 98,
+    "hash": "498d003ecfc60ee829cdc3640dc305583057d88e2c38a7d57dbe0f92aa2bb512",
+    "branchlen": 0,
+    "status": "active"
+  }
   ...
 ]
 ```
@@ -550,8 +552,7 @@ None. |
 ## getdifficulty
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getdifficulty"
@@ -564,17 +565,21 @@ bcoin-cli rpc getdifficulty
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getdifficulty');
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getdifficulty');
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:

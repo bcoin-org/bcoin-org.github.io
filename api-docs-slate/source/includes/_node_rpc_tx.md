@@ -7,18 +7,17 @@ let txhash, index, includemempool;
 ```
 
 ```shell--vars
-txhash='28d65fdaf5334ffd29066d7076f056bb112baa4bb0842f6eaa06171c277b4e8c';
+txhash='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
 index=0;
 includemempool=1;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "gettxout",
-    "params": [ "'$txhash'", "'$index'", "'$includemempool'" ]
+    "params": [ "'$txhash'", '$index', '$includemempool' ]
   }'
 ```
 
@@ -28,33 +27,37 @@ bcoin-cli rpc gettxout $txhash $index $includemempool
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('gettxout', [ txhash, index, includemempool ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('gettxout', [ txhash, index, includemempool ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "bestblock": "00000000000004f0fbf1b2290e8255bbd468640d747fd9d44a16e77d9e129a55",
-  "confirmations": 1,
-  "value": 1.01,
+  "bestblock": "0e11d85b2081b84e131ba6692371737e6bb2aa7bc6d16e92954ffb1f9ad762e5",
+  "confirmations": 0,
+  "value": 0.4,
   "scriptPubKey": {
-    "asm": "OP_HASH160 6a58967510cfd7e04987b245f73dbf62e8d3fdf8 OP_EQUAL",
-    "hex": "a9146a58967510cfd7e04987b245f73dbf62e8d3fdf887",
-    "type": "SCRIPTHASH",
+    "asm": "OP_DUP OP_HASH160 fe7e0711287688b33b9a5c239336c4700db34e63 OP_EQUALVERIFY OP_CHECKSIG",
+    "hex": "76a914fe7e0711287688b33b9a5c239336c4700db34e6388ac",
+    "type": "PUBKEYHASH",
     "reqSigs": 1,
     "addresses": [
-      "2N2wXjoQbEQTKQuqYdkpHMp7rPpnpumYYqe"
+      "RYUpgnvLvfi5T7q3hGSVvFrUy14kt61FC1"
     ]
   },
   "version": 1,
@@ -76,8 +79,7 @@ N. | Name | Default |  Description
 ## gettxoutsetinfo
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "gettxoutsetinfo",
@@ -91,30 +93,34 @@ bcoin-cli rpc gettxoutsetinfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('gettxoutsetinfo');
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('gettxoutsetinfo');
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "height": 1178729,
-  "bestblock": "00000000000004f0fbf1b2290e8255bbd468640d747fd9d44a16e77d9e129a55",
-  "transactions": 14827318,
-  "txouts": 17644185,
+  "height": 100,
+  "bestblock": "0e11d85b2081b84e131ba6692371737e6bb2aa7bc6d16e92954ffb1f9ad762e5",
+  "transactions": 101,
+  "txouts": 100,
   "bytes_serialized": 0,
   "hash_serialized": 0,
-  "total_amount": 20544080.67292757
+  "total_amount": 5000
 }
 ```
 
@@ -130,20 +136,20 @@ None. |
 ## getrawtransaction
 
 ```javascript
-let txhash, verbose=0;
+let txhash, verbose;
 ```
 
 ```shell--vars
-txhash='28d65fdaf5334ffd29066d7076f056bb112baa4bb0842f6eaa06171c277b4e8c';
+txhash='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
+verbose=0;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "getrawtransaction",
-    "params": [ "'$txhash'", "'$verbose'" ]
+    "params": [ "'$txhash'", '$verbose' ]
   }'
 ```
 
@@ -153,23 +159,27 @@ bcoin-cli rpc getrawtransaction $txhash $verbose
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getrawtransaction', [ txhash, verbose ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getrawtransaction', [ txhash, verbose ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
-"0100000002500310ff36beb6c3608230534ef995f7751b6f948aeea8d21d5cc9dd5023a2c4010000006b483045022100e7c71d397b687f9f30e6003ceedc4c50436fdb2329b7a8a36c9c6759077969d30220059f24e917260d3e601c77079d03c9e73d04fd85f625eaebfd14a1ff695a72230121020bc134c91f4ff068f3a970616fad577f949406c18849321a2f6d4df96fc56c77feffffffeffed95ded4f227fc6717f224e85e50348ce0198303a5418f157ade42828a1e3000000006b483045022100f0bde463404db0983e0f221bfa1b13edf1063a78e869295c9457864b122a622b02207d9d5df76ecac6289784201e9a918acb34510c2d65144bf8e4753a3413024e320121022565ed0ff8f79ecf11e8f33b9fbba5606dbc0618813acd74603f9466e88fb8a8feffffff02402305060000000017a9146a58967510cfd7e04987b245f73dbf62e8d3fdf8871e194f00000000001976a914132b05f47f2b1b56f26a78d3962e3acd0735f12d88ac00000000"
+"0100000001eaefefbd1f687ef4e861804aed59ef05e743ea85f432cc146f325d759a026ce6010000006a4730440220718954e28983c875858b5a0094df4607ce2e7c6e9ffea47f3876792b01755c1202205e2adc7c32ff64aaef6d26045f96181e8741e560b6f3a8ef2f4ffd2892add656012103142355370728640592109c3d2bf5592020a6b9226303c8bc98ab2ebcadf057abffffffff02005a6202000000001976a914fe7e0711287688b33b9a5c239336c4700db34e6388ac10ca0f24010000001976a914af92ad98c7f77559f96430dfef2a6805b87b24f888ac00000000"
 ```
 
 Returns raw transaction
@@ -189,12 +199,11 @@ let rawtx;
 ```
 
 ```shell--vars
-rawtx='0100000002500310ff36beb6c3608230534ef995f7751b6f948aeea8d21d5cc9dd5023a2c4010000006b483045022100e7c71d397b687f9f30e6003ceedc4c50436fdb2329b7a8a36c9c6759077969d30220059f24e917260d3e601c77079d03c9e73d04fd85f625eaebfd14a1ff695a72230121020bc134c91f4ff068f3a970616fad577f949406c18849321a2f6d4df96fc56c77feffffffeffed95ded4f227fc6717f224e85e50348ce0198303a5418f157ade42828a1e3000000006b483045022100f0bde463404db0983e0f221bfa1b13edf1063a78e869295c9457864b122a622b02207d9d5df76ecac6289784201e9a918acb34510c2d65144bf8e4753a3413024e320121022565ed0ff8f79ecf11e8f33b9fbba5606dbc0618813acd74603f9466e88fb8a8feffffff02402305060000000017a9146a58967510cfd7e04987b245f73dbf62e8d3fdf8871e194f00000000001976a914132b05f47f2b1b56f26a78d3962e3acd0735f12d88ac00000000';
+rawtx='0100000001eaefefbd1f687ef4e861804aed59ef05e743ea85f432cc146f325d759a026ce6010000006a4730440220718954e28983c875858b5a0094df4607ce2e7c6e9ffea47f3876792b01755c1202205e2adc7c32ff64aaef6d26045f96181e8741e560b6f3a8ef2f4ffd2892add656012103142355370728640592109c3d2bf5592020a6b9226303c8bc98ab2ebcadf057abffffffff02005a6202000000001976a914fe7e0711287688b33b9a5c239336c4700db34e6388ac10ca0f24010000001976a914af92ad98c7f77559f96430dfef2a6805b87b24f888ac00000000';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "decoderawtransaction",
@@ -208,73 +217,68 @@ bcoin-cli rpc decoderawtransaction $rawtx
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('decoderawtransaction', [ rawtx ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('decoderawtransaction', [ rawtx ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "txid": "28d65fdaf5334ffd29066d7076f056bb112baa4bb0842f6eaa06171c277b4e8c",
-  "hash": "28d65fdaf5334ffd29066d7076f056bb112baa4bb0842f6eaa06171c277b4e8c",
-  "size": 372,
-  "vsize": 372,
+  "txid": "0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8",
+  "hash": "0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8",
+  "size": 225,
+  "vsize": 225,
   "version": 1,
   "locktime": 0,
   "vin": [
     {
-      "txid": "c4a22350ddc95c1dd2a8ee8a946f1b75f795f94e53308260c3b6be36ff100350",
+      "txid": "e66c029a755d326f14cc32f485ea43e705ef59ed4a8061e8f47e681fbdefefea",
       "scriptSig": {
-        "asm": "3045022100e7c71d397b687f9f30e6003ceedc4c50436fdb2329b7a8a36c9c6759077969d30220059f24e917260d3e601c77079d03c9e73d04fd85f625eaebfd14a1ff695a722301 020bc134c91f4ff068f3a970616fad577f949406c18849321a2f6d4df96fc56c77",
-        "hex": "483045022100e7c71d397b687f9f30e6003ceedc4c50436fdb2329b7a8a36c9c6759077969d30220059f24e917260d3e601c77079d03c9e73d04fd85f625eaebfd14a1ff695a72230121020bc134c91f4ff068f3a970616fad577f949406c18849321a2f6d4df96fc56c77"
+        "asm": "30440220718954e28983c875858b5a0094df4607ce2e7c6e9ffea47f3876792b01755c1202205e2adc7c32ff64aaef6d26045f96181e8741e560b6f3a8ef2f4ffd2892add65601 03142355370728640592109c3d2bf5592020a6b9226303c8bc98ab2ebcadf057ab",
+        "hex": "4730440220718954e28983c875858b5a0094df4607ce2e7c6e9ffea47f3876792b01755c1202205e2adc7c32ff64aaef6d26045f96181e8741e560b6f3a8ef2f4ffd2892add656012103142355370728640592109c3d2bf5592020a6b9226303c8bc98ab2ebcadf057ab"
       },
-      "sequence": 4294967294,
+      "sequence": 4294967295,
       "vout": 1
-    },
-    {
-      "txid": "e3a12828e4ad57f118543a309801ce4803e5854e227f71c67f224fed5dd9feef",
-      "scriptSig": {
-        "asm": "3045022100f0bde463404db0983e0f221bfa1b13edf1063a78e869295c9457864b122a622b02207d9d5df76ecac6289784201e9a918acb34510c2d65144bf8e4753a3413024e3201 022565ed0ff8f79ecf11e8f33b9fbba5606dbc0618813acd74603f9466e88fb8a8",
-        "hex": "483045022100f0bde463404db0983e0f221bfa1b13edf1063a78e869295c9457864b122a622b02207d9d5df76ecac6289784201e9a918acb34510c2d65144bf8e4753a3413024e320121022565ed0ff8f79ecf11e8f33b9fbba5606dbc0618813acd74603f9466e88fb8a8"
-      },
-      "sequence": 4294967294,
-      "vout": 0
     }
   ],
   "vout": [
     {
-      "value": 1.01,
+      "value": 0.4,
       "n": 0,
       "scriptPubKey": {
-        "asm": "OP_HASH160 6a58967510cfd7e04987b245f73dbf62e8d3fdf8 OP_EQUAL",
-        "hex": "a9146a58967510cfd7e04987b245f73dbf62e8d3fdf887",
-        "type": "SCRIPTHASH",
+        "asm": "OP_DUP OP_HASH160 fe7e0711287688b33b9a5c239336c4700db34e63 OP_EQUALVERIFY OP_CHECKSIG",
+        "hex": "76a914fe7e0711287688b33b9a5c239336c4700db34e6388ac",
+        "type": "PUBKEYHASH",
         "reqSigs": 1,
         "addresses": [
-          "2N2wXjoQbEQTKQuqYdkpHMp7rPpnpumYYqe"
+          "RYUpgnvLvfi5T7q3hGSVvFrUy14kt61FC1"
         ]
       }
     },
     {
-      "value": 0.05183774,
+      "value": 48.9998184,
       "n": 1,
       "scriptPubKey": {
-        "asm": "OP_DUP OP_HASH160 132b05f47f2b1b56f26a78d3962e3acd0735f12d OP_EQUALVERIFY OP_CHECKSIG",
-        "hex": "76a914132b05f47f2b1b56f26a78d3962e3acd0735f12d88ac",
+        "asm": "OP_DUP OP_HASH160 af92ad98c7f77559f96430dfef2a6805b87b24f8 OP_EQUALVERIFY OP_CHECKSIG",
+        "hex": "76a914af92ad98c7f77559f96430dfef2a6805b87b24f888ac",
         "type": "PUBKEYHASH",
         "reqSigs": 1,
         "addresses": [
-          "mhGJg1PJg8hVPX9A6zg4q389YFisSzQW6d"
+          "RRHY3TejXvTh6B1V5auViS9jVUcNxAUcrj"
         ]
       }
     }
@@ -302,12 +306,11 @@ let script;
 ```
 
 ```shell--vars
-script='483045022100f0bde463404db0983e0f221bfa1b13edf1063a78e869295c9457864b122a622b02207d9d5df76ecac6289784201e9a918acb34510c2d65144bf8e4753a3413024e320121022565ed0ff8f79ecf11e8f33b9fbba5606dbc0618813acd74603f9466e88fb8a8';
+script='76a914af92ad98c7f77559f96430dfef2a6805b87b24f888ac';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "decodescript",
@@ -321,28 +324,34 @@ bcoin-cli rpc decodescript $script
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('decodescript', [ script ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('decodescript', [ script ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "asm": "3045022100f0bde463404db0983e0f221bfa1b13edf1063a78e869295c9457864b122a622b02207d9d5df76ecac6289784201e9a918acb34510c2d65144bf8e4753a3413024e3201 022565ed0ff8f79ecf11e8f33b9fbba5606dbc0618813acd74603f9466e88fb8a8",
-  "type": "NONSTANDARD",
+  "asm": "OP_DUP OP_HASH160 af92ad98c7f77559f96430dfef2a6805b87b24f8 OP_EQUALVERIFY OP_CHECKSIG",
+  "type": "PUBKEYHASH",
   "reqSigs": 1,
-  "addresses": [],
-  "p2sh": "2MyVRHsEpec67MkPLGr4NR2bT1ZFuzFGUoB"
+  "addresses": [
+    "RRHY3TejXvTh6B1V5auViS9jVUcNxAUcrj"
+  ],
+  "p2sh": "GYtKY86R5JdPqDGEa3meuhE1tz3f7M45uD"
 }
 ```
 
@@ -361,12 +370,11 @@ let rawtx;
 ```
 
 ```shell--vars
-rawtx='0100000002500310ff36beb6c3608230534ef995f7751b6f948aeea8d21d5cc9dd5023a2c4010000006b483045022100e7c71d397b687f9f30e6003ceedc4c50436fdb2329b7a8a36c9c6759077969d30220059f24e917260d3e601c77079d03c9e73d04fd85f625eaebfd14a1ff695a72230121020bc134c91f4ff068f3a970616fad577f949406c18849321a2f6d4df96fc56c77feffffffeffed95ded4f227fc6717f224e85e50348ce0198303a5418f157ade42828a1e3000000006b483045022100f0bde463404db0983e0f221bfa1b13edf1063a78e869295c9457864b122a622b02207d9d5df76ecac6289784201e9a918acb34510c2d65144bf8e4753a3413024e320121022565ed0ff8f79ecf11e8f33b9fbba5606dbc0618813acd74603f9466e88fb8a8feffffff02402305060000000017a9146a58967510cfd7e04987b245f73dbf62e8d3fdf8871e194f00000000001976a914132b05f47f2b1b56f26a78d3962e3acd0735f12d88ac00000000';
+rawtx='0100000001eaefefbd1f687ef4e861804aed59ef05e743ea85f432cc146f325d759a026ce6010000006a4730440220718954e28983c875858b5a0094df4607ce2e7c6e9ffea47f3876792b01755c1202205e2adc7c32ff64aaef6d26045f96181e8741e560b6f3a8ef2f4ffd2892add656012103142355370728640592109c3d2bf5592020a6b9226303c8bc98ab2ebcadf057abffffffff02005a6202000000001976a914fe7e0711287688b33b9a5c239336c4700db34e6388ac10ca0f24010000001976a914af92ad98c7f77559f96430dfef2a6805b87b24f888ac00000000';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "sendrawtransaction",
@@ -380,23 +388,27 @@ bcoin-cli rpc sendrawtransaction $rawtx
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('sendrawtransaction', [ rawtx ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('sendrawtransaction', [ rawtx ]);
+  console.log(result);
+})();
 ```
 
 >
 
 ```json
-"28d65fdaf5334ffd29066d7076f056bb112baa4bb0842f6eaa06171c277b4e8c"
+"0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8"
 ```
 
 Sends raw transaction without verification
@@ -415,64 +427,67 @@ let txhash, txindex, amount, address, data;
 ```
 
 ```shell--vars
-txhash='d1e1b6a8ff8c4d2ade2113a5dd250637e5f99667d36dcae9b70139516cb7052f';
+txhash='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
 txindex=1;
-amount=1;
-
+amount=48.99900000;
 address='RStiqGLWA3aSMrWDyJvur4287GQ81AtLh1';
 data='';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "createrawtransaction",
     "params": [
-      [{ "txid": "'$txhash'", "vout": "'$txindex'" }],
-      { "'$address'": "'$amount'", "data": "'$data'" }
+      [{ "txid": "'$txhash'", "vout": '$txindex' }],
+      { "'$address'": '$amount', "data": "'$data'" }
     ]
   }'
 ```
 
 ```shell--cli
 bcoin-cli rpc createrawtransaction \
-  '[{ "txid": "'$txhash'", "vout": "'$txindex'" }]' \
-  '{ "'$address'": "'$amount'", "data": "'$data'" }'
-
+  '[{ "txid": "'$txhash'", "vout": '$txindex' }]' \
+  '{ "'$address'": '$amount', "data": "'$data'" }'
 ```
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'regtest'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
   const sendTo = {
     data: data
   };
-
   sendTo[address] = amount;
-
-  const res = await rpc.execute('createrawtransaction', [ [{ txid: txhash, vout: txindex }], sendTo]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('createrawtransaction', [ [{ txid: txhash, vout: txindex }], sendTo]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
-"01000000012f05b76c513901b7e9ca6dd36796f9e5370625dda51321de2a4d8cffa8b6e1d10100000000ffffffff0200e1f505000000001976a914c1325e8fb60bd71d23532c39b4c9e743a2cc764988ac0000000000000000026a0000000000"
+"0100000001e8d187daf94405848c2446bde3689be4ebc93dd103748e388b7c7655660d690e0100000000ffffffff02608a0e24010000001976a914c1325e8fb60bd71d23532c39b4c9e743a2cc764988ac0000000000000000026a0000000000"
 ```
 
 <aside class="info">
 Note: Transaction in example doesn't specify change output,
 you can do it by specifying another <code>address: amount</code> pair.
+</aside>
+
+<aside class="warning">
+Amounts are expressed in FULL BITCOINS (not satoshis) in all three interface methods.
 </aside>
 
 Creates raw, unsigned transaction without any formal verification.
@@ -485,8 +500,8 @@ N. | Name | Default |  Description
 1.2 | vout | | Transaction Outpoint Index
 1.3 | sequence | | Sequence number for input
 2 | sendto | Required | List of addresses with amounts that we are sending to.
-2.1 | address | 0 | `address: amount` key pairs
-2.2 | data | nullData | Data output
+2.1 | address | 0 | `address: amount` key pairs (_string_: _float_)
+2.2 | data | nullData | Data output (added as `OP_RETURN`)
 3 | locktime | | earliest time a transaction can be added
 
 
@@ -497,18 +512,16 @@ let rawtx, txhash, txindex, scriptPubKey, amount, privkey;
 ```
 
 ```shell--vars
-rawtx='01000000012f05b76c513901b7e9ca6dd36796f9e5370625dda51321de2a4d8cffa8b6e1d10100000000ffffffff020000000000000000026a0000e1f505000000001976a914c1325e8fb60bd71d23532c39b4c9e743a2cc764988ac00000000';
-txhash='d1e1b6a8ff8c4d2ade2113a5dd250637e5f99667d36dcae9b70139516cb7052f';
+rawtx='0100000001e8d187daf94405848c2446bde3689be4ebc93dd103748e388b7c7655660d690e0100000000ffffffff02608a0e24010000001976a914c1325e8fb60bd71d23532c39b4c9e743a2cc764988ac0000000000000000026a0000000000';
+txhash='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
 txindex=1;
-scriptPubKey='76a9146efd5e2fda72ae2e37f8fb8cde83fbc8025fc96e88ac';
-amount=1;
-
-privkey='ET4VkeCoHmtKtoWJKco5PBSaVkqsVwqSbsqhneqN4Uo5yaTMxRmV';
+scriptPubKey='76a914af92ad98c7f77559f96430dfef2a6805b87b24f888ac';
+amount=48.99900000;
+privkey='ELvsQiH9X1kgmbzD1j4ESAJnN47whh8qZHVF8B9DpSpecKQDcfX6';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "signrawtransaction",
@@ -516,9 +529,9 @@ curl $url/ \
       "'$rawtx'",
       [{
         "txid": "'$txhash'",
-        "vout": "'$txindex'",
+        "vout": '$txindex',
         "scriptPubKey": "'$scriptPubKey'",
-        "amount": "'$amount'"
+        "amount": '$amount'
       }],
       [ "'$privkey'" ]
     ]
@@ -527,19 +540,26 @@ curl $url/ \
 
 ```shell--cli
 bcoin-cli rpc signrawtransaction $rawtx \
-  '[{ "txid": "'$txhash'", "vout": "'$txindex'", "scriptPubKey": "'$scriptPubKey'", "amount": "'$amount'" }]' \
+  '[{ "txid": "'$txhash'", "vout": '$txindex', "scriptPubKey": "'$scriptPubKey'", "amount": '$amount' }]' \
   '[ "'$privkey'" ]'
 ```
 
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'regtest'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('signrawtransaction', [ rawtx,
+  const result = await client.execute('signrawtransaction', [ rawtx,
     [{
       txid: txhash,
       vout: txindex,
@@ -548,18 +568,15 @@ const rpc = new NodeClient({
     }],
     [ privkey ]
   ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "hex": "01000000012f05b76c513901b7e9ca6dd36796f9e5370625dda51321de2a4d8cffa8b6e1d1010000006b48304502210094252b4db106def63264668717c5ad66e2804c5e1b390c6240e82515fb0c12690220708430b14ceb0a15308e665de21cb3eb9e6cd9e4571e110fbfddf65ef702cd990121035ef2bf6d09a343c4c0be6fb5b489b217c00f477a9878b60ca3ceca4c2b052c3cffffffff020000000000000000026a0000e1f505000000001976a914c1325e8fb60bd71d23532c39b4c9e743a2cc764988ac00000000",
+  "hex": "0100000001e8d187daf94405848c2446bde3689be4ebc93dd103748e388b7c7655660d690e010000006a47304402205088870d469e5a878c54186e971cdc59d4e0c74f1c88709f584590ba76a9b97002202b4810a122fc4977e5a77c80dc68d4ffa73d22dbf385e46241dda6bddfd7993901210284a937f256393b3ba686556e90bd000706600bdbee4169abd092f392689307d2ffffffff02608a0e24010000001976a914c1325e8fb60bd71d23532c39b4c9e743a2cc764988ac0000000000000000026a0000000000",
   "complete": true
 }
 ```
@@ -583,51 +600,55 @@ N. | Name | Default |  Description
 ## gettxoutproof
 
 ```javascript
-let txhash;
+let txid0, txid1;
 ```
 
 ```shell--vars
-txhash='c75f8c12c6d0d1a16d7361b724898968c71de0335993ee589f82fda8ac482bfc';
+txid0='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
+txid1='e66c029a755d326f14cc32f485ea43e705ef59ed4a8061e8f47e681fbdefefea';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "gettxoutproof",
-    "params": [ "'$txhash'" ]
+    "params": [ ["'$txid0'", "'$txid1'"] ]
   }'
 ```
 
 ```shell--cli
-bcoin-cli rpc gettxoutproof $txhash
+bcoin-cli rpc gettxoutproof '[ "'$txid0'", "'$txid1'" ]'
 ```
 
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('gettxoutproof', [ txhash ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('gettxoutproof', [ [ txid0, txid1 ] ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
-"000000208c13da491196839dd019c4ae0564f351502a4951e11b4302454b020000000000f1788fd057d657150b12e5638c7348fb55fdcda4ff4ddb1d1503de3576de6a4cbe22db58f0ec091b918981c50200000001f1788fd057d657150b12e5638c7348fb55fdcda4ff4ddb1d1503de3576de6a4c0100"
+"00000020e562d79a1ffb4f95926ed1c67baab26b7e73712369a61b134eb881205bd8110ef08c63626ea13ca11fddad4f2c0a2b67354efdcd50f769b73330af205dcdd054cbd3055bffff7f20010000000500000004ae4be9cd199b09f605119820680eb23462746e98fbc2b0c635643f00b34c3cd8958799d4b8d29f4ab6ae6495047d330a9ea83b377cbb937395c302ea98c72279eaefefbd1f687ef4e861804aed59ef05e743ea85f432cc146f325d759a026ce6e8d187daf94405848c2446bde3689be4ebc93dd103748e388b7c7655660d690e02eb01"
 ```
 
 Checks if transactions are within block.
-Returns raw block.
+Returns proof of transaction inclusion (raw MerkleBlock).
 
 ### Params
 N. | Name | Default |  Description
@@ -643,12 +664,11 @@ let proof;
 ```
 
 ```shell--vars
-proof='000000208c13da491196839dd019c4ae0564f351502a4951e11b4302454b020000000000f1788fd057d657150b12e5638c7348fb55fdcda4ff4ddb1d1503de3576de6a4cbe22db58f0ec091b918981c50200000001f1788fd057d657150b12e5638c7348fb55fdcda4ff4ddb1d1503de3576de6a4c0100';
+proof='00000020e562d79a1ffb4f95926ed1c67baab26b7e73712369a61b134eb881205bd8110ef08c63626ea13ca11fddad4f2c0a2b67354efdcd50f769b73330af205dcdd054cbd3055bffff7f20010000000500000004ae4be9cd199b09f605119820680eb23462746e98fbc2b0c635643f00b34c3cd8958799d4b8d29f4ab6ae6495047d330a9ea83b377cbb937395c302ea98c72279eaefefbd1f687ef4e861804aed59ef05e743ea85f432cc146f325d759a026ce6e8d187daf94405848c2446bde3689be4ebc93dd103748e388b7c7655660d690e02eb01';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "verifytxoutproof",
@@ -663,28 +683,34 @@ bcoin-cli rpc verifytxoutproof $proof
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('verifytxoutproof', [ proof ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('verifytxoutproof', [ proof ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
-[]
-```
+[
+  "e66c029a755d326f14cc32f485ea43e705ef59ed4a8061e8f47e681fbdefefea",
+  "0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8"
+]```
 
-Checks the proof for transaction inclusion.
+Checks the proof for transaction inclusion. Returns transaction hash if valid.
 
 ### Params
 N. | Name | Default |  Description
 --------- | --------- | --------- | -----------
-1 | proof | Required | Proof of transaction inclusion.
+1 | proof | Required | Proof of transaction inclusion (raw MerkleBlock).

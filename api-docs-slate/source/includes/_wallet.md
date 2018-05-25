@@ -1,5 +1,28 @@
 # Wallet
 ## The Wallet Client
+
+```shell--cli
+npm i -g bclient
+```
+
+```javascript
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+
+const id = 'primary'; // or whatever your wallet name is
+
+const wallet = walletClient.wallet(id);
+```
+
 The best way to interact with the wallet API is with the bwallet-cli in the `bclient`
 [package](https://www.npmjs.com/package/bclient). Installing globally with
 `npm i -g bclient` gives you access to the cli. You can also install locally
@@ -11,53 +34,62 @@ pass in a port option. The easiest way to do this is with `bcoin.Network`.
 You can create a client for a specific wallet (and be compatible with the old
 api) with the `wallet` method on `WalletClient` class.
 
-```shell--curl
-# n/a
-```
+The wallet HTTP server listens on it's own port, separate from the node's server.
+By default the wallet server listens on these `localhost` ports:
 
-```shell--cli
-npm i -g bclient && bwallet-cli
-```
 
-```javascript
-const {WalletClient} = require('bclient');
-const { Network } = require('bcoin');
-const network = Network.get('testnet');
+Network   | API Port
+--------- | -----------
+main      | 8334
+testnet   | 18334
+regtest   | 48334
+simnet    | 18558
 
-const walletClient = new WalletClient({
-  port: network.walletPort,
-  network: network.type
-});
-
-const id = 'primary'; // or whatever your wallet name is
-const wallet = WalletClient.wallet(id);
-
-```
 
 ## The WalletDB and Object
 ```javascript
-let id, url;
+let id;
 ```
 
 ```shell--vars
 id="primary"
-url="http://localhost:18334"
 ```
 
 ```shell--curl
-curl $url/wallet/$id/
+curl http://x:api-key@127.0.0.1:48334/wallet # will list regtest (default port 48334) wallets
+
+# examples in these docs will use an environment variable:
+walleturl=http://x:api-key@127.0.0.1:48334/wallet/
+curl $walleturl/$id
 ```
 
 ```shell--cli
-bwallet-cli get --id=$id
+# Like the node client, you can configure it by passing arguments:
+bwallet-cli --network=regtest --id=$id get
+
+# ...or you can use environment variables. The default `id` is `primary`:
+export BCOIN_API_KEY=yoursecret
+export BCOIN_NETWORK=regtest
+bwallet-cli get
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const wallet = await wallet.getInfo();
-  console.log(wallet);
+  const result = await wallet.getInfo();
+  console.log(result);
 })();
 ```
 
@@ -66,68 +98,43 @@ const wallet = WalletClient.wallet(id);
 
 ```json
 {
-  "network": "testnet",
-  "wid": 1,
+  "network": "regtest",
+  "wid": 0,
   "id": "primary",
-  "initialized": true,
   "watchOnly": false,
   "accountDepth": 1,
-  "token": "977fbb8d212a1e78c7ce9dfda4ff3d7cc8bcd20c4ccf85d2c9c84bbef6c88b3c",
+  "token": "17715756779e4a5f7c9b26c48d90a09d276752625430b41b5fcf33cf41aa7615",
   "tokenDepth": 0,
-  "state": {
-    "tx": 0,
-    "coin": 0,
-    "unconfirmed": 0,
-    "confirmed": 0
-  },
   "master": {
     "encrypted": false
   },
-  "account": {
-    "name": "default",
-    "initialized": true,
-    "witness": false,
-    "watchOnly": false,
-    "type": "pubkeyhash",
-    "m": 1,
-    "n": 1,
-    "accountIndex": 0,
-    "receiveDepth": 1,
-    "changeDepth": 1,
-    "nestedDepth": 0,
-    "lookahead": 10,
-    "receiveAddress": "mwfDKs919Br8tNFamk6RhRpfaa6cYQ5fMN",
-    "nestedAddress": null,
-    "changeAddress": "msG6V75J6XNt5mCqBhjgC4MjDH8ivEEMs9",
-    "accountKey": "tpubDDRH1rj7ut9ZjcGakR9VGgXU8zYSZypLtMr7Aq6CZaBVBrCaMEHPzye6ZZbUpS8YmroLfVp2pPmCdaKtRdCuTCK2HXzwqWX3bMRj3viPMZo",
-    "keys": []
+  "balance": {
+    "tx": 5473,
+    "coin": 5472,
+    "unconfirmed": 1504999981750,
+    "confirmed": 1494999998350
   }
 }
 ```
 
-Bcoin maintains a wallet database which contains every wallet. Wallets are not usable without also using a wallet database. For testing, the wallet database can be in-memory, but it must be there. Wallets are uniquely identified by an id and the walletdb is created with a default id of `primary`. (See [Create a Wallet](#create-a-wallet) below for more details.)
+bcoin maintains a wallet database which contains every wallet. Wallets are not usable without also using a wallet database. For testing, the wallet database can be in-memory, but it must be there. Wallets are uniquely identified by an id and the walletdb is created with a default id of `primary`. (See [Create a Wallet](#create-a-wallet) below for more details.)
 
 Wallets in bcoin use bip44. They also originally supported bip45 for multisig, but support was removed to reduce code complexity, and also because bip45 doesn't seem to add any benefit in practice.
 
-The wallet database can contain many different wallets, with many different accounts, with many different addresses for each account. Bcoin should theoretically be able to scale to hundreds of thousands of wallets/accounts/addresses.
+The wallet database can contain many different wallets, with many different accounts, with many different addresses for each account. bcoin should theoretically be able to scale to hundreds of thousands of wallets/accounts/addresses.
 
 Each account can be of a different type. You could have a pubkeyhash account, as well as a multisig account, a witness pubkeyhash account, etc.
 
 Note that accounts should not be accessed directly from the public API. They do not have locks which can lead to race conditions during writes.
 
-## HTTP Server
+### wallet object vs wallet client object
 
-The wallet HTTP server listens on it's own port, separate from the node's server.
-Default ports are:
+bclient returns a WalletClient object that can perform [admin functions](#wallet-admin-commands) without specifying a wallet, and may be useful when managing multiple wallets. WalletClient can also return a wallet object specified by an <code>id</code>. This object performs functions (and may be authorized by a token) specific to that wallet only.
 
-```shell-vars
-main: 8334
-testnet: 18334
-regtest: 48334
-simnet: 18558
-```
 
-This can be changed through configuration options.
+<aside class="warning">
+Accounts within the same wallet are all related by deterministic hierarchy. However, wallets are not related to each other in any way. This means that when a wallet seed is backed up, all of its accounts (and their keys) can be derived from that backup. However, each newly created wallet must be backed up separately.
+</aside>
 
 ## Configuration
 Persistent configuration can be added to `wallet.conf` in your `prefix` directory.
@@ -136,29 +143,28 @@ Same directory has `bcoin.conf` for the node server.
 > Example Configuration:
 
 ```shell--vars
-network: testnet
+network: regtest
 wallet-auth: true
-api-key: hunter2
+api-key: api-key
 http-host: 0.0.0.0
 ```
 
 <aside class="notice">
-It is highly recommended to always use `wallet-auth` and to set a unique `api-key`,
-even for local development or local wallets. Without wallet auth other applications
+It is highly recommended to always use <code>wallet-auth</code> and to set a unique <code>api-key</code>,
+even for local development or local wallets. Without <code>wallet-auth: true</code> other applications
 on your system could theoretically access your wallet through the HTTP server
-without any authentication barriers. Each wallet does have an additional unique auth
-token required for most operations.
+without any authentication barriers. <code>wallet-auth: true</code> requires a wallet's token to be submitted with every request.
 </aside>
 
 ## Wallet Options
-> Wallet options object will look something like this
+> Wallet options object will look something like this:
 
 ```json
 {
   "id": "walletId",
   "witness": true,
   "watchOnly": false,
-  "accountKey": "tpubDCk7nRE1aq9MPdLEV1Y5LHdifspWxKDcQWKArMP7axEaZoNZQ2mxPxc1oBxiPahCtUPKAm5TYzf6WWtJ51Yn27Qzf7snxaK36ZASCgEtbPy",
+  "accountKey": "rpubKB4S62xohva5NNbR3a3e84ybBb6E5AszR713RHzUrefCrbmqYuSEhvC2Reehdzz6v9vu6xN3XuMuFEC57esDUu38Af1ZZFgFydot9Zzs4ixT",
   "accountIndex": 1,
   "type": "pubkeyhash"
   "m": 1,
@@ -188,55 +194,63 @@ mnemonic | String | | A mnemonic phrase to use to instantiate an hd private key.
 
 
 ## Wallet Auth
-> The following samples return a wallet object
+> The following samples return a wallet object using a wallet token
 
 ```javascript
 let token, id;
 ```
 
 ```shell--vars
-token='977fbb8d212a1e78c7ce9dfda4ff3d7cc8bcd20c4ccf85d2c9c84bbef6c88b3c'
-id='foo'
+id='primary'
+token='17715756779e4a5f7c9b26c48d90a09d276752625430b41b5fcf33cf41aa7615'
 ```
 
 ```shell--curl
-curl $url/wallet/$id \
-    -H 'Content-Type: application/json' \
-    -d '{ "token": "$token" ... }'
+curl $walleturl/$id?token=$token
 ```
 
 ```shell--cli
-bwallet-cli get --network=testnet --token=$token
+bwallet-cli get --token=$token
 ```
 
 ```javascript
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
 
-const wallet = WalletClient.wallet(id);
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id, token);
 
 (async () => {
-  const wallet = await wallet.getInfo();
-  console.log(wallet);
+  const result = await wallet.getInfo();
+  console.log(result);
 })();
 ```
 
 Individual wallets have their own api keys, referred to internally as "tokens" (a 32 byte hash - calculated as `HASH256(m/44'->ec-private-key|tokenDepth)`).
 
-A wallet is always created with a corresponding token. When using api endpoints
-for a specific wallet, the token must be sent back in the query string or json
+A wallet is always created with a corresponding token. When using API endpoints
+for a specific wallet, the token must be sent back in the query string or JSON
 body.
 
-e.g. To get information from a wallet that requires a token
-
-`GET /wallet/primary/tx/:hash?token=977fbb8d212a1e78c7ce9dfda4ff3d7cc8bcd20c4ccf85d2c9c84bbef6c88b3c`
+<aside class="warning">
+The examples in this section demonstrate how to use a wallet token for API access, which is recommended. However, for clarity, further examples in these docs will omit the token requirement. 
+</aside>
 
 ## Reset Authentication Token
 ```javascript
-let id, passphrase;
+let id;
 ```
 
 ```shell--vars
-id='foo'
-passphrase='bar'
+id='primary'
+passphrase='secret123'
 ```
 
 ```shell--cli
@@ -244,17 +258,28 @@ bwallet-cli retoken --id=$id --passphrase=$passphrase
 ```
 
 ```shell--curl
-curl $url/wallet/$id/retoken \
-  -X POST
-  --data '{"passphrase":"'$passphrase'"}"
+curl $walleturl/$id/retoken \
+  -X POST \
+  --data '{"passphrase":"'$passphrase'"}'
 ```
 
 ```javascript
-const wallet = new bcoin.http.Wallet({ id: id });
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const token = await wallet.retoken(passphrase);
-  console.log(token);
+  const result = await wallet.retoken(passphrase);
+  console.log(result);
 })();
 ```
 
@@ -269,7 +294,7 @@ const wallet = new bcoin.http.Wallet({ id: id });
 Derive a new wallet token, required for access of this particular wallet.
 
 <aside class="warning">
-Note: if you happen to lose the returned token, you will not be able to access the wallet.
+Note: if you happen to lose the returned token, you will not be able to access the wallet (as long as <nobr><code>wallet-auth: true</code></nobr> is still set, as recommended, in <code>wallet.conf</code>
 </aside>
 
 
@@ -283,28 +308,34 @@ let id;
 ```
 
 ```shell--vars
-id='foo'
+id='primary'
 ```
 
 ```shell--curl
-curl $url/wallet/$id/
-
+curl $walleturl/$id
 ```
 
 ```shell--cli
-# ID defaults to `primary` if none is passed
 bwallet-cli get --id=$id
 ```
 
 ```javascript
-`use strict`
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
 
-const wallet = WalletClient.wallet(id);
-const id = 'foo';
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const wallet = await wallet.getInfo();
-  console.log(wallet);
+  const result = await wallet.getInfo();
+  console.log(result);
 })();
 ```
 
@@ -312,41 +343,27 @@ const id = 'foo';
 
 ```json
 {
-  "network": "testnet",
-  "wid": 1,
-  "id": "foo",
-  "initialized": true,
+  "network": "regtest",
+  "wid": 0,
+  "id": "primary",
   "watchOnly": false,
   "accountDepth": 1,
-  "token": "2d04e217877f15ba920d02c24c6c18f4d39df92f3ae851bec37f0ade063244b2",
-  "tokenDepth": 0,
-  "state": {
-    "tx": 177,
-    "coin": 177,
-    "unconfirmed": "8150.0",
-    "confirmed": "8150.0"
-  },
+  "token": "4d9e2a62f67929340b8c600bef0c965370f29cc64afcdeb7aea9cb52906c1d27",
+  "tokenDepth": 13,
   "master": {
-    "encrypted": false
+    "encrypted": true,
+    "until": 0,
+    "iv": "e33424f46674d4010fb0715bb69abc98",
+    "algorithm": "pbkdf2",
+    "n": 50000,
+    "r": 0,
+    "p": 0
   },
-  "account": {
-    "name": "default",
-    "initialized": true,
-    "witness": false,
-    "watchOnly": false,
-    "type": "pubkeyhash",
-    "m": 1,
-    "n": 1,
-    "accountIndex": 0,
-    "receiveDepth": 8,
-    "changeDepth": 1,
-    "nestedDepth": 0,
-    "lookahead": 10,
-    "receiveAddress": "mu5Puppq4Es3mibRskMwoGjoZujHCFRwGS",
-    "nestedAddress": null,
-    "changeAddress": "n3nFYgQR2mrLwC3X66xHNsx4UqhS3rkSnY",
-    "accountKey": "tpubDC5u44zLNUVo2gPVdqCbtX644PKccH5VZB3nqUgeCiwKoi6BQZGtr5d6hhougcD6PqjszsbR3xHrQ5k8yTbUt64aSthWuNdGi7zSwfGVuxc",
-    "keys": []
+  "balance": {
+    "tx": 5473,
+    "coin": 5472,
+    "unconfirmed": 1504999981750,
+    "confirmed": 1494999998350
   }
 }
 ```
@@ -362,31 +379,43 @@ id <br> _string_ | named id of the wallet whose info you would like to retrieve
 
 ## Get Master HD Key
 ```javascript
-let id, network;
+let id;
 ```
 ```shell--vars
-id='foo'
-network='testnet'
+id='primary'
 ```
 
 ```shell--curl
-curl $url/wallet/$id/master
+curl $walleturl/$id/master
 ```
 
 ```shell--cli
-bwallet-cli master --id=$id --network=$network
+bwallet-cli master --id=$id
 ```
 
 ```javascript
-const wallet = new bcoin.http.Wallet({ id: id,  network: network});
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const master = await wallet.getMaster();
-  console.log(master);
+  const result = await wallet.getMaster();
+  console.log(result);
 })();
 ```
 
-> Sample response:
+> Sample responses:
+
+> BEFORE passphrase is set:
 
 ```json
 {
@@ -404,7 +433,25 @@ const wallet = new bcoin.http.Wallet({ id: id,  network: network});
 }
 ```
 
-Get wallet master HD key. This is normally censored in the wallet info route. The provided api key must have admin access.
+> AFTER passphrase is set:
+
+```json
+{
+  "encrypted": true,
+  "until": 1527121890,
+  "iv": "e33424f46674d4010fb0715bb69abc98",
+  "ciphertext": "c2bd62d659bc92212de5d9e939d9dc735bd0212d888b1b04a71d319e82e5ddb18008e383130fd0409113264d1cbc0db42d997ccf99510b168c80e2f39f2983382457f031d5aa5ec7a2d61f4fc92c62117e4eed59afa4a17d7cb0aae3ec5fa0d4",
+  "algorithm": "pbkdf2",
+  "n": 50000,
+  "r": 0,
+  "p": 0
+}
+```
+
+Get wallet master HD key. This is normally censored in the wallet info route. The provided API key must have admin access.
+<aside class="warning">
+Once a passphrase has been set for a wallet, the API will not reveal the unencrypted master private key or seed phrase. Be sure you back it up right away!
+</aside>
 
 ### HTTP Request
 
@@ -417,40 +464,52 @@ id <br> _string_ | named id of the wallet whose info you would like to retrieve
 ## Create A Wallet
 
 ```javascript
-let id, passphrase, witness, accountKey;
+let id, passphrase, witness, watchOnly, accountKey;
 ```
 
 ```shell--vars
-id='foo'
-passphrase='bar'
-witness='false'
-accountKey='tpubDDh2XgSds1vBbeVgye88gsGQeCityoywRndtyrXcmvWqCgsFUyUKwzeDv8HiJhu9fC8jRAFMqxr4jj8eRTNTycmMao5wmsAScVf4jSMdPYZ'
+id='newWallet'
+passphrase='secret456'
+witness=false
+watchOnly=true
+accountKey='rpubKBAoFrCN1HzSEDye7jcQaycA8L7MjFGmJD1uuvUZ21d9srAmAxmB7o1tCZRyXmTRuy5ZDQDV6uxtcxfHAadNFtdK7J6RV9QTcHTCEoY5FtQD'
 ```
 
 ```shell--curl
-curl $url/wallet/$id \
+curl $walleturl/$id \
   -X PUT \
-  --data '{"witness":'$witness', "passphrase":"'$passphrase'", "watchOnly": "true", "accountKey":"'$accountKey'"}'
+  --data '{"witness":'$witness', "passphrase":"'$passphrase'", "watchOnly": '$watchOnly', "accountKey":"'$accountKey'"}'
 ```
 
 ```shell--cli
 # watchOnly defaults to true if --key flag is set
 
-bwallet-cli create $id --witness=$witness --passphrase=$passphrase --watch=$watchOnly --key=$accountKey
+bwallet-cli mkwallet $id --witness=$witness --passphrase=$passphrase --watch=$watchOnly --key=$accountKey
 ```
 
 ```javascript
-const client = new bcoin.http.Client();
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+
 const options = {
-  id: id,
   passphrase: passphrase,
   witness: witness,
-  watchOnly: true,
+  watchOnly: watchOnly,
   accountKey: accountKey
 };
 
 (async() => {
-  const newWallet = await client.createWallet(options)
+  const result = await walletClient.createWallet(id, options);
+  console.log(result);
 })();
 ```
 
@@ -458,41 +517,27 @@ const options = {
 
 ```json
 {
-  "network": "testnet",
+  "network": "regtest",
   "wid": 2,
-  "id": "foo",
-  "initialized": true,
-  "watchOnly": false,
+  "id": "newWallet",
+  "watchOnly": true,
   "accountDepth": 1,
-  "token": "d9de1ddc83bf058d14520a203df6ade0dc92a684aebfac57b667705b4cac3916",
+  "token": "21b728d8f9e4d909349cf0c8f1e4e74fd45b180103cb7f1885a197d04012ba08",
   "tokenDepth": 0,
-  "state": {
+  "master": {
+    "encrypted": true,
+    "until": 1527181467,
+    "iv": "53effaf192a346b40b08a52dac0658ce",
+    "algorithm": "pbkdf2",
+    "n": 50000,
+    "r": 0,
+    "p": 0
+  },
+  "balance": {
     "tx": 0,
     "coin": 0,
-    "unconfirmed": "0.0",
-    "confirmed": "0.0"
-  },
-  "master": {
-    "encrypted": false
-  },
-  "account": {
-    "name": "default",
-    "initialized": true,
-    "witness": false,
-    "watchOnly": false,
-    "type": "pubkeyhash",
-    "m": 1,
-    "n": 1,
-    "accountIndex": 0,
-    "receiveDepth": 1,
-    "changeDepth": 1,
-    "nestedDepth": 0,
-    "lookahead": 10,
-    "receiveAddress": "muYkrSDbD8UhyWBMXxXf99EKWn22YqmwyF",
-    "nestedAddress": null,
-    "changeAddress": "mwveV7A6svE5EGGSduZmMKTwcbE775NVFt",
-    "accountKey": "tpubDDh2XgSds1vBbeVgye88gsGQeCityoywRndtyrXcmvWqCgsFUyUKwzeDv8HiJhu9fC8jRAFMqxr4jj8eRTNTycmMao5wmsAScVf4jSMdPYZ",
-    "keys": []
+    "unconfirmed": 0,
+    "confirmed": 0
   }
 }
 ```
@@ -518,28 +563,39 @@ let id, oldPass, newPass;
 ```
 
 ```shell--vars
-id='foo'
-oldPass='oldpass123'
-newPass='newpass123'
+id='newWallet'
+oldPass='secret456'
+newPass='789secret'
 ```
 
 ```shell--cli
 > No cli command available
 ```
 
-```shell-curl
-curl $url/wallet/$id/passphrase \
-  -X POST
-  --data '{"old":"'$oldPass'", "new":"'$newPass'"}'
+```shell--curl
+curl $walleturl/$id/passphrase \
+  -X POST \
+  --data '{"old":"'$oldPass'", "passphrase":"'$newPass'"}'
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.setPassphrase(oldPass, newPass);
-  console.log(response);
-});
+  const result = await wallet.setPassphrase(oldPass, newPass);
+  console.log(result);
+})();
 ```
 
 > Sample Response:
@@ -549,6 +605,7 @@ const wallet = WalletClient.wallet(id);
 ```
 
 Change wallet passphrase. Encrypt if unencrypted.
+
 
 ### HTTP Request
 
@@ -561,30 +618,29 @@ old <br> _string_ | Old passphrase. Pass in empty string if none
 new <br> _string_ | New passphrase
 
 <aside class="notice">
-  Note that the old passphrase is still required even if none was set prior. In this case, an empty string should be passed for the old passphrase.
-  e.g. <code>client.setPassphrase(id,'""', 'newPass')</code>
+If you have never set a passphrase for this wallet before, you need to omit the <code>old</code> argument and just send a new <nobr><code>passphrase</code></nobr>
 </aside>
 
 ## Send a transaction
 
-```javascript
-let id, passphrase, rate, value, address;
-```
-
-```shell--vars
-id="foo"
-passphrase="bar"
-rate=500
-value=1000
-address="moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"
-```
-
 ```shell--cli
+id="primary"
+passphrase="secret123"
+rate=0.00000500
+value=0.00001000
+address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+
 bwallet-cli send --id=$id --value=$value --address=$address ---passphrase=$passphrase
 ```
 
 ```shell--curl
-curl $url/wallet/$id/send \
+id="primary"
+passphrase="secret123"
+rate=500
+value=1000
+address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+
+curl $walleturl/$id/send \
   -X POST \
   --data '{
     "passphrase":"'$passphrase'",
@@ -596,15 +652,35 @@ curl $url/wallet/$id/send \
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+let id, passphrase, rate, value, address;
+id="primary"
+passphrase="secret123"
+rate=500
+value=1000
+address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+
 const options = {
+  passphrase: passphrase,
   rate: rate,
   outputs: [{ value: value, address: address }]
 };
 
 (async () => {
-  const tx = await wallet.send(options);
-  console.log(tx);
+  const result = await wallet.send(options);
+  console.log(result);
 })();
 ```
 
@@ -612,50 +688,58 @@ const options = {
 
 ```json
 {
-  "wid": 13,
-  "id": "foo",
-  "hash": "c2da22cafcd076ea3db74bb2e3cf50f030e5240aa5daf4f778fb4954a866b41c",
+  "hash": "8fafdf2a6c44fc48dbe01147339a59fa11f2c5a7254d2e6df27ce0a61df29cf7",
   "height": -1,
   "block": null,
   "time": 0,
-  "mtime": 1503364758,
-  "date": "2017-08-22T01:19:18Z",
+  "mtime": 1527181979,
+  "date": "1970-01-01T00:00:00Z",
+  "mdate": "2018-05-24T17:12:59Z",
   "size": 225,
   "virtualSize": 225,
-  "fee": 22,
-  "rate": 1000,
+  "fee": 4540,
+  "rate": 20177,
   "confirmations": 0,
   "inputs": [
     {
-      "value": 59991393,
-      "address": "mgChJ3wXDqRns7Y6UhjXCyxeuZZJoQNj7c",
+      "value": 5000000000,
+      "address": "R9cS4kuYVWHaDJmRGMpwx7zCNjw97Zm5LL",
       "path": {
         "name": "default",
         "account": 0,
-        "change": true,
-        "derivation": "m/0'/1/5"
+        "change": false,
+        "derivation": "m/0'/0/0"
       }
     }
   ],
   "outputs": [
     {
-      "value": 10000000,
-      "script": "76a9143f4f69730dcb175c830b94226ae13f89bef969c488ac",
-      "address": "mmHhzmwiUzorZLYhFH9fhrfFTAHGhx1biN"
+      "value": 1000,
+      "address": "RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8",
+      "path": null
     },
     {
-      "value": 30000000,
-      "script": "76a9143f4f69730dcb175c830b94226ae13f89bef969c488ac",
-      "address": "mmHhzmwiUzorZLYhFH9fhrfFTAHGhx1biN"
+      "value": 4999994460,
+      "address": "RX3ZPBURVYzjRPR3wYdGepMBa26CGK8VMu",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": true,
+        "derivation": "m/0'/1/0"
+      }
     }
-
   ],
-  "tx": "01000000015a9b8fa3fb300a29e9cde6464f49882228862b8e333792fea35ad15536383417010000006a47304402202df28a6fe24dc26b016acee539e137b9502009f57ae6988d468d203e770339f202203b6ab4cc020493061db2d405b2799af2b872d3395f5798616fc51e59f304d5cd0121028986f0724eb55b66bba72985212b95a2c5487631e411dc9cc5348a4531928129ffffffff02e8030000000000001976a9144462dc0989942e38474616dc104e46486c5744ee88ac63619303000000001976a9149affd314659d5ce9fa815fde4e82c879d1ea41d188ac00000000"
+  "tx": "01000000017a2c5144386ed317c1f2ff484e7e11be718721d7ddab15773d0dd6133fb38a14000000006a4730440220710c42d68bd02789c31e7d351a6795c2a9386749e1d8a6aa61d46d5ba345843e022023d83a31e657f043d08d7e86379b818c98d788bb34bfe71ad2d9fa6dcb44b48b0121036b90b9f76925944b238239115f0c12ecee1b7e060e50850b4884aa0e0daea0c4ffffffff02e8030000000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac5cdc052a010000001976a914eebeba5a5b40bb11ca70f48b71bdb2c2b89f0c5c88ac00000000"
 }
-
 ```
 
 Create, sign, and send a transaction.
+
+<aside class="warning">Be careful how you enter values and fee rates!<br>
+<code>value</code> and <code>rate</code> are expressed in satoshis when using cURL or Javascript<br>
+<code>value</code> and <code>rate</code> are expressed in WHOLE BITCOINS when using CLI<br>
+Watch carefully how values are entered in the examples, all examples send the same amount when executed
+</aside>
 
 ### HTTP Request
 
@@ -675,37 +759,32 @@ subtractFee <br> _bool_ | whether to subtract fee from outputs (evenly)
 subtractIndex <br> _int_ | subtract only from specified output index
 selection <br> _enum_ - `all`, `random`, `age`, `value`| How to select coins
 depth <br> _int_  | number of confirmation for coins to spend
-
-
-### Output object
-Property | Description
---------- | -----------
-value <br> _int_ | Value to send in satoshis
+value <br> _int_ (or _float_) | Value to send in satoshis (or whole BTC, see warning above)
 address <br> _string_ | destination address for transaction
 
 ## Create a Transaction
-```javascript
-let id, rate, value, address, passphrase;
-```
-
-```shell--vars
-id="foo"
-passphrase="bar"
-rate=500
-value=1000
-address="moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"
-```
-
 ```shell--cli
-bwallet-cli mktx --id=$id --rate=$rate --value=$value --address=$address --passphrase=$passphrase
+id="multisig1"
+passphrase="multisecret123"
+rate=0.00000500
+value=0.05000000
+address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+
+bwallet-cli mktx --id=$id --value=$value --address=$address ---passphrase=$passphrase
 ```
 
 ```shell--curl
-curl $url/wallet/$id/create \
+id="multisig1"
+passphrase="multisecret123"
+rate=500
+value=5000000
+address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+
+curl $walleturl/$id/create \
   -X POST \
   --data '{
-    "rate":"'$rate'",
-    "passphrase": "'$passphrase'"
+    "passphrase":"'$passphrase'",
+    "rate":'$rate',
     "outputs":[
       {"address":"'$address'", "value":'$value'}
     ]
@@ -713,17 +792,35 @@ curl $url/wallet/$id/create \
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
-const outputs = [{ value: value, address: address }]
+let id, passphrase, rate, value, address;
+id="multisig1"
+passphrase="multisecret123"
+rate=500
+value=5000000
+address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+
 const options = {
   passphrase: passphrase,
-  outputs: outputs,
   rate: rate,
+  outputs: [{ value: value, address: address }]
 };
 
 (async () => {
-  const tx = await wallet.createTX(options);
-  console.log(tx);
+  const result = await wallet.createTX(options);
+  console.log(result);
 })();
 ```
 
@@ -731,50 +828,56 @@ const options = {
 
 ```json
 {
-  "hash": "0799a1d3ebfd108d2578a60e1b685350d42e1ef4d5cd326f99b8bf794c81ed17",
-  "witnessHash": "0799a1d3ebfd108d2578a60e1b685350d42e1ef4d5cd326f99b8bf794c81ed17",
-  "fee": "0.0000454",
-  "rate": "0.00020088",
-  "mtime": 1486686322,
+  "hash": "2c550d94e3de0de48d82199442aec45bbc75e253eaf67c953db4265691cc60ec",
+  "witnessHash": "2c550d94e3de0de48d82199442aec45bbc75e253eaf67c953db4265691cc60ec",
+  "fee": 6800,
+  "rate": 25855,
+  "mtime": 1527182869,
   "version": 1,
-  "flag": 1,
   "inputs": [
     {
       "prevout": {
-        "hash": "6dd8dfa9b425a4126061a1032bc6ff6e208b75ee09d0aac089d105dcf972465a",
+        "hash": "31ebd87739a0e58098d127d76ee80ebfd8b5d923a8fcaf2d0908c16f123043be",
         "index": 0
       },
-      "script": "483045022100e7f1d57e47cd8a28b7c27e015b291f3fd43a6eb0c051a4b65d8697b5133c29f5022020cada0f62a32aecd473f606780b2aef3fd9cbd44cfd5e9e3d9fe6eee32912df012102272dae7ff2302597cb785fd95529da6c07e32946e65ead419291258aa7b17871",
+      "script": "0000473044022064ac064f8b0e224413cf7e7c3aa2758013dd0cff6b421a273fb6f870894b200f022064da80d0ea08110b1c18817a66b1e576f945f73256407175b0fcc9936644b3320147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652ae",
       "witness": "00",
       "sequence": 4294967295,
       "coin": {
         "version": 1,
-        "height": 2,
-        "value": "50.0",
-        "script": "76a9149621fb4fc6e2e48538f56928f79bef968bf17ac888ac",
-        "address": "muCnMvAoUFZXzuao4oy3vQJFcUntax53wE",
-        "coinbase": true
+        "height": -1,
+        "value": 10000000,
+        "script": "a9143ddf94d382bc20b256748e0ab20b040efc07344c87",
+        "address": "GPV5UXtx3Zbb7CGL7k31kykXkbNUxM6hXW",
+        "coinbase": false
       }
     }
   ],
   "outputs": [
     {
-      "value": 10000000,
-      "script": "76a9143f4f69730dcb175c830b94226ae13f89bef969c488ac",
-      "address": "mmHhzmwiUzorZLYhFH9fhrfFTAHGhx1biN"
+      "value": 4993200,
+      "script": "a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887",
+      "address": "GR8dHeLMn8CPVAztoEjkAxHS6eWSgf6Hcr"
     },
     {
-      "value": 30000000,
-      "script": "76a9143f4f69730dcb175c830b94226ae13f89bef969c488ac",
-      "address": "moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA"
+      "value": 5000000,
+      "script": "76a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac",
+      "address": "RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
     }
   ],
-  "locktime": 0
+  "locktime": 0,
+  "hex": "0100000001be4330126fc108092daffca823d9b5d8bf0ee86ed727d19880e5a03977d8eb3100000000920000473044022064ac064f8b0e224413cf7e7c3aa2758013dd0cff6b421a273fb6f870894b200f022064da80d0ea08110b1c18817a66b1e576f945f73256407175b0fcc9936644b3320147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652aeffffffff02b0304c000000000017a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887404b4c00000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac00000000"
 }
 ```
 
 Create and template a transaction (useful for multisig).
-Do not broadcast or add to wallet.
+Does not broadcast or add to wallet.
+
+<aside class="warning">Be careful how you enter values and fee rates!<br>
+<code>value</code> and <code>rate</code> are expressed in satoshis when using cURL or Javascript<br>
+<code>value</code> and <code>rate</code> are expressed in WHOLE BITCOINS when using CLI<br>
+Watch carefully how values are entered in the examples, all examples send the same amount when executed
+</aside>
 
 ### HTTP Request
 
@@ -792,12 +895,7 @@ subtractFee <br> _bool_ | whether to subtract fee from outputs (evenly)
 subtractIndex <br> _int_ | subtract only from specified output index
 selection <br> _enum_ - `all`, `random`, `age`, `value`| How to select coins
 depth <br> _int_  | number of confirmation for coins to spend
-
-
-### Output object
-Property | Description
---------- | -----------
-value <br> _int_ | Value to send in satoshis
+value <br> _int_ (or _float_) | Value to send in satoshis (or whole BTC, see warning above)
 address <br> _string_ | destination address for transaction
 
 
@@ -808,9 +906,9 @@ let id, tx, passphrase;
 ```
 
 ```shell--vars
-id="foo"
-passphrase="bar"
-tx="01000000010d72c6b2582c2b2e625d29dd5ad89209de7e2600ab12a1a8e05813c28b703d2c000000006b483045022100af93a8761ad22af858c5bc4e68b5991eac017dcddd933cf125553ec0b83eb8f30220373a4d8ee331ac4c3975718e2a789f873af0520ddbd2db18957cdf488ccd4ee301210215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9ffffffff0280969800000000001976a9143f4f69730dcb175c830b94226ae13f89bef969c488ac80c3c901000000001976a9143f4f69730dcb175c830b94226ae13f89bef969c488ac00000000"
+id="multisig2"
+passphrase="multisecret456"
+tx="0100000001be4330126fc108092daffca823d9b5d8bf0ee86ed727d19880e5a03977d8eb3100000000920000473044022064ac064f8b0e224413cf7e7c3aa2758013dd0cff6b421a273fb6f870894b200f022064da80d0ea08110b1c18817a66b1e576f945f73256407175b0fcc9936644b3320147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652aeffffffff02b0304c000000000017a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887404b4c00000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac00000000"
 ```
 
 ```shell--cli
@@ -818,17 +916,30 @@ bwallet-cli sign --id=$id --passphrase=$passphrase --tx=$tx
 ```
 
 ```shell--curl
-curl $url/wallet/$id/sign \
+curl $walleturl/$id/sign \
   -X POST \
   --data '{"tx": "'$tx'", "passphrase":"'$passphrase'"}'
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
-const options = { passphrase: passphrase };
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+
+const options = { tx: tx, passphrase: passphrase };
+
 (async () => {
-  const signedTx = await wallet.sign(tx, options);
-  console.log(signedTx);
+  const result = await wallet.sign(options);
+  console.log(result);
 })();
 ```
 
@@ -836,45 +947,45 @@ const options = { passphrase: passphrase };
 
 ```json
 {
-  "hash": "2a22606ee555d2c26ec979f0c45cd2dc18c7177056189cb345989749fd587868",
-  "witnessHash": "2a22606ee555d2c26ec979f0c45cd2dc18c7177056189cb345989749fd587868",
-  "fee": 10000000,
-  "rate": 44247787,
-  "mtime": 1503683721,
+  "hash": "a355e0fcfb727c8161f3b2e55e0cda40f4614ea38d4834f82460cfdc9941381a",
+  "witnessHash": "a355e0fcfb727c8161f3b2e55e0cda40f4614ea38d4834f82460cfdc9941381a",
+  "fee": 170,
+  "rate": 507,
+  "mtime": 1527183237,
   "version": 1,
   "inputs": [
     {
       "prevout": {
-        "hash": "2c3d708bc21358e0a8a112ab00267ede0992d85add295d622e2b2c58b2c6720d",
+        "hash": "31ebd87739a0e58098d127d76ee80ebfd8b5d923a8fcaf2d0908c16f123043be",
         "index": 0
       },
-      "script": "483045022100af93a8761ad22af858c5bc4e68b5991eac017dcddd933cf125553ec0b83eb8f30220373a4d8ee331ac4c3975718e2a789f873af0520ddbd2db18957cdf488ccd4ee301210215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9",
+      "script": "004730440220764ce5fa17f7d6fc8921a85ddd81e3378e88aae92a02ab8ff72646bb9d2ad3c102203075f1c8f97d48626ed22e86495c28c19386c1adb9160d84ab28fb5c7c65b103014830450221008bbc87270043e0c701cb4ba8bb7b0b8014f7bdac66fb8ae104bfe91e0469983f022003734c66e3c1f40293e90b2327fe509f68ada13c44b69bec364c01763a0699940147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652ae",
       "witness": "00",
       "sequence": 4294967295,
       "coin": {
         "version": 1,
-        "height": 1179720,
-        "value": 50000000,
-        "script": "76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac",
-        "address": "moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA",
+        "height": -1,
+        "value": 10000000,
+        "script": "a9143ddf94d382bc20b256748e0ab20b040efc07344c87",
+        "address": "GPV5UXtx3Zbb7CGL7k31kykXkbNUxM6hXW",
         "coinbase": false
       }
     }
   ],
   "outputs": [
     {
-      "value": 10000000,
-      "script": "76a9143f4f69730dcb175c830b94226ae13f89bef969c488ac",
-      "address": "mmHhzmwiUzorZLYhFH9fhrfFTAHGhx1biN"
+      "value": 4999830,
+      "script": "a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887",
+      "address": "GR8dHeLMn8CPVAztoEjkAxHS6eWSgf6Hcr"
     },
     {
-      "value": 30000000,
-      "script": "76a9143f4f69730dcb175c830b94226ae13f89bef969c488ac",
-      "address": "mmHhzmwiUzorZLYhFH9fhrfFTAHGhx1biN"
+      "value": 5000000,
+      "script": "76a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac",
+      "address": "RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
     }
   ],
   "locktime": 0,
-  "hex": "01000000010d72c6b2582c2b2e625d29dd5ad89209de7e2600ab12a1a8e05813c28b703d2c000000006b483045022100af93a8761ad22af858c5bc4e68b5991eac017dcddd933cf125553ec0b83eb8f30220373a4d8ee331ac4c3975718e2a789f873af0520ddbd2db18957cdf488ccd4ee301210215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9ffffffff0280969800000000001976a9143f4f69730dcb175c830b94226ae13f89bef969c488ac80c3c901000000001976a9143f4f69730dcb175c830b94226ae13f89bef969c488ac00000000"
+  "hex": "0100000001be4330126fc108092daffca823d9b5d8bf0ee86ed727d19880e5a03977d8eb3100000000da004730440220764ce5fa17f7d6fc8921a85ddd81e3378e88aae92a02ab8ff72646bb9d2ad3c102203075f1c8f97d48626ed22e86495c28c19386c1adb9160d84ab28fb5c7c65b103014830450221008bbc87270043e0c701cb4ba8bb7b0b8014f7bdac66fb8ae104bfe91e0469983f022003734c66e3c1f40293e90b2327fe509f68ada13c44b69bec364c01763a0699940147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652aeffffffff02964a4c000000000017a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887404b4c00000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac00000000"
 }
 ```
 
@@ -892,42 +1003,65 @@ passphrase <br> _string_ | passphrase to unlock the wallet
 
 ## Zap Transactions
 
-```javascript
-let id, age, account;
-```
-
-```shell--vars
-id="foo"
-account="baz"
-age=259200 # 72 hours
-```
-
 ```shell--cli
-bwallet-cli zap --id=$id account=$account age=$age
+id="primary"
+account="default"
+age=259200 # 72 hours
+
+bwallet-cli zap --id=$id --account=$account --age=$age
 ```
 
 ```shell--curl
-curl $url/wallet/$id/zap \
+id="primary"
+account="default"
+age=259200 # 72 hours
+
+curl $walleturl/$id/zap \
   -X POST \
   --data '{
-            "account": "'$account'",
-            "age": "'$age'"
-          }'
+    "account": "'$account'",
+    "age": '$age'
+  }'
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+let id, age, account;
+id="primary"
+account="default"
+age=259200 // 72 hours
+
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = wallet.zap(account, age);
-  console.log(response);
+  const result = await wallet.zap(account, age);
+  console.log(result);
 })();
 ```
 
 > Sample Response
 
+```shell--cli
+Zapped!
+```
 
-```json
+```shell--curl
+{
+  "success": true
+}
+```
+
+```javascript
 {
   "success": true
 }
@@ -952,8 +1086,8 @@ let id, pass, timeout
 ```
 
 ```shell--vars
-id='foo'
-pass='bar',
+id='primary'
+pass='secret123'
 timeout=60
 ```
 
@@ -962,23 +1096,43 @@ bwallet-cli unlock --id=$id $pass $timeout
 ```
 
 ```shell--curl
-curl $url/wallet/$id/unlock \
-  -X POST
-  --data '{"passphrase":'$pass', "timeout": '$timeout'}'
+curl $walleturl/$id/unlock \
+  -X POST \
+  --data '{"passphrase":"'$pass'", "timeout": '$timeout'}'
 ```
 
 ```javascript
-const client = new bcoin.http.Client();
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+
 (async () => {
-  const response = await client.unlock(id, pass, timeout);
-  console.log(response);
+  const result = await wallet.unlock(pass, timeout);
+  console.log(result);
 })();
 ```
 > Sample Response
 
-```json
+```shell--cli
 {"success": true}
 ```
+
+```javascript
+{"success": true}
+```
+```shell--curl
+Unlocked.
+```
+
 
 Derive the AES key from passphrase and hold it in memory for a specified number of seconds. Note: During this time, account creation and signing of transactions will not require a passphrase.
 
@@ -999,7 +1153,7 @@ let id;
 ```
 
 ```shell--vars
-id='foo'
+id='primary'
 ```
 
 ```shell--cli
@@ -1007,21 +1161,40 @@ bwallet-cli lock --id=$id
 ```
 
 ```shell--curl
-curl $url/wallet/$id/lock \
+curl $walleturl/$id/lock \
   -X POST
 ```
 
 ```javascript
-const client = new bcoin.http.Client();
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+
 (async () => {
-  const response = await client.lock(id);
-  console.log(response);
+  const result = await wallet.lock(id);
+  console.log(result);
 })();
 ```
 > Sample Response
 
-```json
+```shell--cli
 {"success": true}
+```
+
+```javascript
+{"success": true}
+```
+```shell--curl
+Locked.
 ```
 
 If unlock was called, zero the derived AES key and revert to normal behavior.
@@ -1037,35 +1210,60 @@ let id, account, key;
 ```
 
 ```shell--vars
-id='foo'
-account='test-account'
-key='0215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9'
+id='primary'
+watchid='watchonly1'
+account='default'
+pubkey='0215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9'
+privkey='EMdDCvF1ZjsCnimTnTQfjw6x8CQmVidtJxKBegCVzPw3g6yRoDkK'
 ```
 
 ```shell--cli
-bwallet-cli import --id=$id $key
+bwallet-cli --id=$id --account=$account import $privkey
+bwallet-cli --id=$watchid --account=$account import $pubkey
 ```
 
 ```shell--curl
-curl $url/wallet/$id/import \
+curl $walleturl/$id/import \
   -X POST \
-  --data '{"account":"'$account'", "privateKey":"'$key'"}'
+  --data '{"account":"'$account'", "privateKey":"'$privkey'"}'
+  
+curl $walleturl/$watchid/import \
+  -X POST \
+  --data '{"account":"'$account'", "publicKey":"'$pubkey'"}'
 ```
 
 
 ```javascript
-const wallet = new bcoin.http.Wallet({ id: id });
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+const watchwallet = walletClient.wallet(watchid);
+
 (async () => {
-  const response = await wallet.importPrivate(account, key);
-  console.log(response);
+  const result = await watchwallet.importPublic(account, pubkey);
+  console.log(result);
+})();
+
+(async () => {
+  const result = await wallet.importPrivate(account, privkey);
+  console.log(result);
 })();
 ```
-> Sample Response
+> Sample Responses
 
 ```json
-{
-  "success": true
-}
+Imported private key.
+
+Imported public key.
 ```
 
 Import a standard WIF key.
@@ -1099,9 +1297,9 @@ let id, account, address;
 ```
 
 ```shell--vars
-id='foo'
-account='bar'
-address='moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA'
+id='watchonly1'
+account='default'
+address='RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC'
 ```
 
 ```shell--cli
@@ -1109,16 +1307,28 @@ bwallet-cli watch --id=$id --account=$account $address
 ```
 
 ```shell--curl
-curl $url/wallet/$id/import \
+curl $walleturl/$id/import \
   -X POST \
   --data '{"account":"'$account'", "address":"'$address'"}'
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.importAddress(account, address)
+  const result = await wallet.importAddress(account, address);
+  console.log(result);
 })();
 ```
 
@@ -1150,11 +1360,11 @@ let id;
 ```
 
 ```shell--vars
-id="foo"
+id="primary"
 ```
 
 ```shell--curl
-curl $url/wallet/$id/block
+curl $walleturl/$id/block
 ```
 
 ```shell--cli
@@ -1162,12 +1372,23 @@ bwallet-cli blocks --id=$id
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const blocks = await wallet.getBlocks();
-  console.log(blocks);
-}())
+  const result = await wallet.getBlocks();
+  console.log(result);
+})();
 ```
 > Sample Response
 
@@ -1191,8 +1412,8 @@ let id, height;
 ```
 
 ```shell--vars
-id="foo"
-height=1179720
+id="primary"
+height=50
 ```
 
 ```shell--cli
@@ -1200,27 +1421,38 @@ bwallet-cli --id=$id block $height
 ```
 
 ```shell--curl
-curl $url/wallet/block/$height
+curl $walleturl/$id/block/$height
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const blockInfo = await wallet.getBlock(height);
-  console.log(blockInfo);
-})
+  const result = await wallet.getBlock(height);
+  console.log(result);
+})();
 ```
 
 > Sample response:
 
 ```json
 {
-  "hash": "0000000000013cc12ea4b3ff403a3c05d96da695638e468cf26409eca87beb6a",
-  "height": 1179720,
-  "time": 1503359756,
+  "hash": "5a630279111118885f4489471ddf6f7a318b3510e5e17aa73412088d19b8ba78",
+  "height": 50,
+  "time": 1527181141,
   "hashes": [
-    "2c3d708bc21358e0a8a112ab00267ede0992d85add295d622e2b2c58b2c6720d"
+    "4255c0784ae89cfe7ccf878be3a408d8c1f6c665d5df331e27962b4defe3beb8"
   ]
 }
 ```
@@ -1243,27 +1475,38 @@ let id, key, account;
 ```
 
 ```shell--vars
-id="multi-foo"
-key="tpubDCUQshhR98hjDDPtefuQdg4Dmpk5mes3TRyUp1Qa4BjxCVytfqmqNWmJ3tUZfqu4qLfEypQhNcpMF3yhZJ8h8hcahnxCzrqWmV5qVHHTqGM"
+id="multisig3"
+account="default"
+key="rpubKBBGCWqgVn4RRVpJTDUvTJnFHYiQuoUNy7s6W57U36KJ3r5inJp7iVRJZHvkFjbgfaGVs9fkvcCQS5ZMmc7BYFCrkADgmGKDCsjYK1vGmoFw"
 ```
 
 ```shell--cli
-bwallet-cli --id=$id shared add $key
+bwallet-cli --id=$id --account=$account shared add $key
 ```
 
 ```shell--curl
-curl $url/wallet/$id/shared-key \
-  -X PUT
-  --data '{"accountKey": $key}'
+curl $walleturl/$id/shared-key \
+  -X PUT \
+  --data '{"accountKey": "'$key'", "account": "'$account'"}'
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
-account = 'default';
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.addSharedKey(account, key);
-  console.log(response);
+  const result = await wallet.addSharedKey(account, key);
+  console.log(result);
 })();
 ```
 
@@ -1279,7 +1522,7 @@ account = 'default';
 Add a shared xpubkey to wallet. Must be a multisig wallet.
 
 <aside class="notice">
-Note that since it must be a multisig, the wallet on creation should be set with <code>m</code> and <code>n</code> where <code>n</code> is greater than 1 (since the first key is always that wallet's own xpubkey)
+Note that since it must be a multisig, the wallet on creation should be set with <code>m</code> and <code>n</code> where <code>n</code> is greater than 1 (since the first key is always that wallet's own xpubkey). Creating new addresses from this account will not be possible until <code>n</code> number of xpubkeys are added to the account.
 </aside>
 
 Response will return `addedKey: true` true if key was added on this request. Returns
@@ -1302,27 +1545,38 @@ let id, key;
 ```
 
 ```shell--vars
-id="multi-foo"
-key="tpubDCUQshhR98hjDDPtefuQdg4Dmpk5mes3TRyUp1Qa4BjxCVytfqmqNWmJ3tUZfqu4qLfEypQhNcpMF3yhZJ8h8hcahnxCzrqWmV5qVHHTqGM"
+id="multisig3"
+account="default"
+key="rpubKBBGCWqgVn4RRVpJTDUvTJnFHYiQuoUNy7s6W57U36KJ3r5inJp7iVRJZHvkFjbgfaGVs9fkvcCQS5ZMmc7BYFCrkADgmGKDCsjYK1vGmoFw"
 ```
 
 ```shell--cli
-bwallet-cli --id=$id shared remove $key
+bwallet-cli --id=$id --account=$account shared remove $key
 ```
 
 ```shell--curl
-curl $url/wallet/$id/shared-key \
-  -X DELETE
-  --data '{"accountKey": "'$key'"}'
+curl $walleturl/$id/shared-key \
+  -X DELETE \
+  --data '{"accountKey": "'$key'", "account": "'$account'"}'
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
-const account = 'default';
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.removeSharedKey(account, key);
-  console.log(response);
+  const result = await wallet.removeSharedKey(account, key);
+  console.log(result);
 })();
 ```
 
@@ -1338,7 +1592,13 @@ const account = 'default';
 Remove shared xpubkey from wallet if present.
 
 Response will return `removedKey: true` true if key was removed on this request. Returns
-`false` if key already removed, but will still return `success: true` with status `200`.
+`false` if key was already removed, but will still return `success: true` with status `200`.
+
+<aside class="notice">
+Remove Key is only available to a multisig wallet that is not yet "complete" -- as in, 
+<nobr><code>n-1</code></nobr> number of keys have not yet been added to the wallet's own original key. 
+Once a multisig wallet has the right number of keys to create m-of-n addresses, this function will return an error.
+</aside>
 
 ### HTTP Request
 
@@ -1357,8 +1617,8 @@ let id, address;
 ```
 
 ```shell--vars
-id="foo"
-address="n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"
+id="primary"
+address="RM4xYH2GrcHmiptfsDEF7Kqqbm2Humjm2E"
 ```
 
 ```shell--cli
@@ -1366,15 +1626,26 @@ bwallet-cli --id=$id key $address
 ```
 
 ```shell--curl
-curl $url/wallet/$id/key/$address
+curl $walleturl/$id/key/$address
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.getKey(address);
-  console.log(response);
+  const result = await wallet.getKey(address);
+  console.log(result);
 })();
 ```
 
@@ -1382,20 +1653,17 @@ const wallet = WalletClient.wallet(id);
 
 ```json
 {
-  "network": "testnet",
-  "wid": 8,
-  "id": "foo",
   "name": "default",
   "account": 0,
   "branch": 0,
-  "index": 7,
+  "index": 2,
   "witness": false,
   "nested": false,
-  "publicKey": "032b110a0f83d45c1010cf03adea64b440d83a1a3726f7c2d5e94db1d6509b3ac6",
+  "publicKey": "02548e0a23b90505f1b4017f52cf2beeaa399fce7ff2961e29570c6afdfa9bfc5b",
   "script": null,
   "program": null,
   "type": "pubkeyhash",
-  "address": "n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"
+  "address": "RM4xYH2GrcHmiptfsDEF7Kqqbm2Humjm2E"
 }
 ```
 
@@ -1416,24 +1684,36 @@ let id, address;
 ```
 
 ```shell--vars
-id="foo"
-address="n1EDbjFaKFwz2XwWPueDUac4XZsQg8d1p2"
+id='primary'
+passphrase='secret123'
+address='RM4xYH2GrcHmiptfsDEF7Kqqbm2Humjm2E'
 ```
 
 ```shell--cli
-bwallet-cli --id=$id dump $address
+bwallet-cli --id=$id --passphrase=$passphrase dump $address
 ```
 
 ```shell--curl
-curl $url/wallet/$id/wif/$address
+curl $walleturl/$id/wif/$address?passphrase=$passphrase
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.getWIF(address);
-  console.log(response);
+  const result = await wallet.getWIF(address, passphrase);
+  console.log(result);
 })();
 ```
 
@@ -1441,9 +1721,8 @@ const wallet = WalletClient.wallet(id);
 
 ```json
 {
-  "privateKey": "cTMUJ7WeFsoQ6dLGR9xdLZeNQafcU88bbibR9TV3W2HheRntYa53"
+  "privateKey": "EPAcwFM5E6CS1sGCv3PDeJ68nXSfUZwViZ8HyrP9T8GcGSF14EsK"
 }
-
 ```
 
 Get wallet private key (WIF format) by address. Returns just the private key
@@ -1464,23 +1743,35 @@ let id, account;
 ```
 
 ```shell--vars
-id="foo"
+id="primary"
 account="default"
 ```
 
 ```shell--cli
-bwallet-cli --id=$id address
+bwallet-cli --id=$id --account=$account address
 ```
 
 ```shell--curl
-curl $url/wallet/$id/address -X POST --data '{"account":"'$account'"}'
+curl $walleturl/$id/address -X POST --data '{"account":"'$account'"}'
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+
 (async () => {
-  const receiveAddress = await wallet.createAddress(account);
-  console.log(receiveAddress);
+  const result = await wallet.createAddress(account);
+  console.log(result);
 })();
 ```
 
@@ -1488,21 +1779,19 @@ const wallet = WalletClient.wallet(id);
 
 ```json
 {
-  "network": "testnet",
-  "wid": 1,
-  "id": "foo",
   "name": "default",
   "account": 0,
   "branch": 0,
-  "index": 9,
+  "index": 5,
   "witness": false,
   "nested": false,
-  "publicKey": "02801d9457837ed50e9538ee1806b6598e12a3c259fdc9258bbd32934f22cb1f80",
+  "publicKey": "030429c7a7007b9da542c029ea72a21852c2e4dfcce339d626df022068f0149680",
   "script": null,
   "program": null,
   "type": "pubkeyhash",
-  "address": "mwX8J1CDGUqeQcJPnjNBG4s97vhQsJG7Eq"
+  "address": "RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC"
 }
+
 ```
 
 Derive new receiving address for account.
@@ -1526,23 +1815,35 @@ let id, account;
 ```
 
 ```shell--vars
-id="foo"
+id="primary"
 account="default"
 ```
 
 ```shell--cli
-bwallet-cli --id=$id change
+bwallet-cli --id=$id --account=$account change
 ```
 
 ```shell--curl
-curl $url/wallet/$id/change -X POST --data '{"account":"'$account'"}'
+curl $walleturl/$id/change -X POST --data '{"account":"'$account'"}'
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+
 (async () => {
-  const receiveAddress = await wallet.createChange(account);
-  console.log(receiveAddress);
+  const result = await wallet.createChange(account);
+  console.log(result);
 })();
 ```
 
@@ -1550,21 +1851,19 @@ const wallet = WalletClient.wallet(id);
 
 ```json
 {
-  "network": "testnet",
-  "wid": 8,
-  "id": "foo",
   "name": "default",
   "account": 0,
   "branch": 1,
-  "index": 7,
+  "index": 27,
   "witness": false,
   "nested": false,
-  "publicKey": "022f5afafcc8c35dbbbe52842d58dc18d739f2dea85021ea1e9183031032f9fa1c",
+  "publicKey": "02fb03c9c45cbc6436c7c009391bc1410f86da9f6548675e7521856d3b372dfb42",
   "script": null,
   "program": null,
   "type": "pubkeyhash",
-  "address": "mgdArtHtCsxvcjzxRTMfk5ZyBcnsTgNKTT"
+  "address": "R9oeK9hgbBEYjmUffYyvPfh7eMw7q4v4XY"
 }
+[ec
 ```
 Derive new change address for account.
 
@@ -1588,8 +1887,8 @@ let id, account;
 ```
 
 ```shell--vars
-id="foo"
-account="baz"
+id="witness1"
+account='default'
 ```
 
 ```shell--cli
@@ -1597,15 +1896,26 @@ bwallet-cli --id=$id nested --account=$account
 ```
 
 ```shell--curl
-curl $url/wallet/$id/nested -X POST --data '{"account": "'$account'"}'
+curl $walleturl/$id/nested -X POST --data '{"account": "'$account'"}'
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.createNested(account);
-  console.log(response);
+  const result = await wallet.createNested(account);
+  console.log(result);
 })();
 ```
 
@@ -1613,20 +1923,17 @@ const wallet = WalletClient.wallet(id);
 
 ```json
 {
-  "network": "testnet",
-  "wid": 31,
-  "id": "foo",
-  "name": "baz",
+  "name": "default",
   "account": 0,
   "branch": 2,
-  "index": 2,
+  "index": 1,
   "witness": true,
   "nested": true,
-  "publicKey": "02a7a12fa67a7f0dc0bb2ae2c45d80c9b6248c004ef8b3f8da3f6feaf623f60939",
+  "publicKey": "02d10d018aad643382a77f6f6305bd209879ae450f9d3fdbcc406a666a20b40332",
   "script": null,
-  "program": "0014be20ad0c7ad43d1bb9f922f15cd7ba63b7fee290",
+  "program": "001421457f563883db273f4cefd519882dfefcb6ba82",
   "type": "scripthash",
-  "address": "2NBzYG49AiNJjUr7NA1r4eee8jUpacb3Eo2"
+  "address": "GX9yN5m5dUcSqfmNgkfQ7XJAHdyvbTHLhU"
 }
 ```
 
@@ -1649,8 +1956,8 @@ let id, account;
 ```
 
 ```shell--vars
-id='foo'
-account='bar'
+id='primary'
+account='default'
 ```
 
 ```shell--cli
@@ -1658,15 +1965,26 @@ bwallet-cli --id=$id balance --account=$account
 ```
 
 ```shell--curl
-curl $url/wallet/$id/balance?account=$account
+curl $walleturl/$id/balance?account=$account
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = wallet.getBalance(account);
-  console.log(response);
+  const result = await wallet.getBalance(account);
+  console.log(result);
 })();
 ```
 
@@ -1674,15 +1992,15 @@ const wallet = WalletClient.wallet(id);
 
 ```json
 {
-  "wid": 1,
-  "id": "foo",
-  "account": 1,
-  "unconfirmed": "8149.9999546",
-  "confirmed": "8150.0"
+  "account": 0,
+  "tx": 307,
+  "coin": 287,
+  "unconfirmed": 1122500000000,
+  "confirmed": 1122500000000
 }
 ```
 
-Get wallet or account balance. If no account option is passed, the call defaults to wallet balance (with account index of `-1`)
+Get wallet or account balance. If no account option is passed, the call defaults to wallet balance (with account index of <nobr>`-1`</nobr>). Balance values for `unconfimred` and `confirmed` are expressed in satoshis.
 
 ### HTTP Request
 
@@ -1702,11 +2020,11 @@ let id;
 ```
 
 ```shell--vars
-id="foo"
+id="primary"
 ```
 
 ```shell--curl
-curl $url/wallet/$id/coin
+curl $walleturl/$id/coin
 ```
 
 ```shell--cli
@@ -1714,11 +2032,22 @@ bwallet-cli --id=$id coins
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = wallet.getCoins();
-  console.log(response);
+  const result = await wallet.getCoins();
+  console.log(result);
 })();
 ```
 
@@ -1728,24 +2057,25 @@ const wallet = WalletClient.wallet(id);
 [
   {
     "version": 1,
-    "height": 1180963,
-    "value": 1000,
-    "script": "76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac",
-    "address": "moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA",
+    "height": -1,
+    "value": 4999998887,
+    "script": "76a914a2133747754faf7fbacc31bf0f74808f8409c4b388ac",
+    "address": "RQ4AZjpaoyXhEk3mjcWYR74YR8XhxoXGzV",
     "coinbase": false,
-    "hash": "bf49aaf50dfa229b99e83d29cae2515487b05cccb88cd111fb2ac738dac1058a",
-    "index": 0
+    "hash": "7c7de4c48744b09b69bd36ffdb354199407321e305c0a4bd366a6168e0ff7244",
+    "index": 1
   },
   {
     "version": 1,
-    "height": 1180963,
-    "value": 1000,
-    "script": "76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac",
-    "address": "moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA",
+    "height": -1,
+    "value": 4999998887,
+    "script": "76a9149433dbda44a1f23396a1bd231443b0d29eb8cf2888ac",
+    "address": "RNnpD7tGaTpqEuTfBaqrtAqDK1927FLkW2",
     "coinbase": false,
-    "hash": "efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae",
-    "index": 0
-  }
+    "hash": "a97a9993389ae321b263dffb68ba1312ad0655da83aeca75b2372d5abc70544a",
+    "index": 1
+  },
+  ...
 ]
 ```
 List all wallet coins available.
@@ -1757,13 +2087,12 @@ List all wallet coins available.
 ## Lock Coin/Outpoints
 
 ```javascript
-let id, passphrase, hash, index;
+let id, hash, index;
 ```
 
 ```shell--vars
-id="foo"
-passphrase="bar"
-hash="dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f"
+id="primary"
+hash="52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1"
 index="0"
 ```
 
@@ -1772,15 +2101,26 @@ index="0"
 ```
 
 ```shell--curl
-curl $url/wallet/$id/locked$hash/$index -X PUT --data '{"passphrase": "'$pasphrase'"}'
+curl $walleturl/$id/locked/$hash/$index -X PUT
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.lockCoin(hash, index);
-  console.log(response);
+  const result = await wallet.lockCoin(hash, index);
+  console.log(result);
 })();
 ```
 
@@ -1817,9 +2157,8 @@ let id, passphrase, hash, index;
 ```
 
 ```shell--vars
-id="foo"
-passphrase="bar"
-hash="dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f"
+id="primary"
+hash="52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1"
 index="0"
 ```
 
@@ -1828,15 +2167,26 @@ index="0"
 ```
 
 ```shell--curl
-curl $url/wallet/$id/locked/$hash/$index -X DELETE --data '{"passphrase": "'$pasphrase'"}'
+curl $walleturl/$id/locked/$hash/$index -X DELETE
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.unlockCoin(hash, index);
-  console.log(response);
+  const result = await wallet.unlockCoin(hash, index);
+  console.log(result);
 })();
 ```
 
@@ -1874,7 +2224,7 @@ let id;
 ```
 
 ```shell--vars
-id="foo"
+id="primary"
 ```
 
 ```shell--cli
@@ -1882,15 +2232,26 @@ id="foo"
 ```
 
 ```shell--curl
-curl $url/wallet/$id/locked
+curl $walleturl/$id/locked
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.getLocked();
-  console.log(response);
+  const result = await wallet.getLocked();
+  console.log(result);
 })();
 ```
 
@@ -1899,8 +2260,8 @@ const wallet = WalletClient.wallet(id);
 ```json
 [
   {
-    "hash":"dd1a110edcdcbb3110a1cbe0a545e4b0a7813ffa5e77df691478205191dad66f",
-    "index":0
+    "hash": "52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1",
+    "index": 0
   }
 ]
 ```
@@ -1924,9 +2285,9 @@ let id, hash, index;
 ```
 
 ```shell--vars
-id="foo"
-hash="efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae"
-index=0
+id="primary"
+hash="52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1"
+index="0"
 ```
 
 ```shell--cli
@@ -1936,15 +2297,26 @@ bcoin-cli coin $hash $index
 ```
 
 ```shell--curl
-curl $url/wallet/$id/coin/$hash/$index
+curl $walleturl/$id/coin/$hash/$index
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const response = await wallet.getCoin(hash, index);
-  console.log(response);
+  const result = await wallet.getCoin(hash, index);
+  console.log(result);
 })();
 ```
 
@@ -1953,12 +2325,12 @@ const wallet = WalletClient.wallet(id);
 ```json
 {
   "version": 1,
-  "height": 1180963,
-  "value": 1000,
-  "script": "76a9145730f139d833e3af30ccfb7c4e253ff4bab5de9888ac",
-  "address": "moTyiK7aExe2v3hFJ9BCsYooTziX15PGuA",
-  "coinbase": false,
-  "hash": "efbaa2681576e0c2a9ee8e0bdaddd889e95e9631b94467b57552e5bc7048c2ae",
+  "height": 104,
+  "value": 5000000000,
+  "script": "76a91403a394378a680558ea205b604b182566381e116e88ac",
+  "address": "R9cS4kuYVWHaDJmRGMpwx7zCNjw97Zm5LL",
+  "coinbase": true,
+  "hash": "52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1",
   "index": 0
 }
 ```

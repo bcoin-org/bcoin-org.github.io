@@ -13,17 +13,21 @@ bcoin-cli rpc stop
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('stop');
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('stop');
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
@@ -44,13 +48,9 @@ None. |
 ## getinfo
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
-  --data '{
-    "method": "getinfo",
-    "params": []
-  }'
+  --data '{ "method": "getinfo" }'
 ```
 
 ```shell--cli
@@ -59,32 +59,36 @@ bcoin-cli rpc getinfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getinfo');
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getinfo');
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "version": "v1.0.0-beta.14",
+  "version": "v1.0.0-pre",
   "protocolversion": 70015,
   "walletversion": 0,
   "balance": 0,
-  "blocks": 1178980,
+  "blocks": 205,
   "timeoffset": 0,
-  "connections": 8,
+  "connections": 3,
   "proxy": "",
-  "difficulty": 1048576,
+  "difficulty": 4.6565423739069247e-10,
   "testnet": true,
   "keypoololdest": 0,
   "keypoolsize": 0,
@@ -108,13 +112,9 @@ None. |
 ## getmemoryinfo
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
-  --data '{
-    "method": "getmemoryinfo",
-    "params": []
-  }'
+  --data '{ "method": "getmemoryinfo" }'
 ```
 
 ```shell--cli
@@ -123,28 +123,32 @@ bcoin-cli rpc getmemoryinfo
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('getmemoryinfo');
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('getmemoryinfo');
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "total": 99,
-  "jsHeap": 19,
-  "jsHeapTotal": 29,
-  "nativeHeap": 69,
-  "external": 10
+  "total": 72,
+  "jsHeap": 14,
+  "jsHeapTotal": 17,
+  "nativeHeap": 54,
+  "external": 12
 }
 ```
 
@@ -161,8 +165,7 @@ None. |
 ## setloglevel
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "setloglevel",
@@ -176,17 +179,21 @@ bcoin-cli rpc setloglevel none
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('setloglevel', [ 'none' ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('setloglevel', [ 'none' ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
@@ -212,12 +219,11 @@ let address;
 ```
 
 ```shell--vars
-address='n34pHHSqsXJQwq9FXUsrfhmTghrVtN74yo';
+address='RQKEexR9ZufYP6AKbwhzdv8iuiMFDh4sNZ';
 ```
 
 ```shell--curl
 curl $url/ \
-  -H 'Content-Type: application/json' \
   -X POST \
   --data '{
     "method": "validateaddress",
@@ -231,17 +237,21 @@ bcoin-cli rpc validateaddress $address
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('validateaddress', [ address ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('validateaddress', [ address ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
@@ -249,8 +259,8 @@ const rpc = new NodeClient({
 ```json
 {
   "isvalid": true,
-  "address": "n34pHHSqsXJQwq9FXUsrfhmTghrVtN74yo",
-  "scriptPubKey": "76a914ec61435a3c8f0efee2ffafb8ddb4e1440d2db8d988ac",
+  "address": "RQKEexR9ZufYP6AKbwhzdv8iuiMFDh4sNZ",
+  "scriptPubKey": "76a914a4ecde9642f8070241451c5851431be9b658a7fe88ac",
   "ismine": false,
   "iswatchonly": false
 }
@@ -274,18 +284,17 @@ let nrequired, pubkey0, pubkey1, pubkey2;
 
 ```shell--vars
 nrequired=2;
-pubkey0='02b3280e779a7c849f9d6460e926097fe4b0f6280fa6fd038ce8e1236a4688c358';
-pubkey1='021f1dbc575db95a44e016fe6ecf00231109e7799d9b1e007dbe8814017cf0d65c';
-pubkey2='0315613667e3ebe065c0b8d86ae0443d97de56545bdf38c99a6ee584f300206d9a';
+pubkey0='02e3d6bb36b0261628101ee67abd89d678522dc1199912512f814e70803652f395';
+pubkey1='03d7ded41bb871936bf4d411371b25d706c572f28ef8d2613b45392e9f9c4348a5';
+pubkey2='034bc2280e68d3bdd0ef0664e0ad2949a467344d8e59e435fe2d9be81e39f70f76';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "createmultisig",
-    "params": [ "'$nrequired'", [ "'$pubkey0'", "'$pubkey1'", "'$pubkey2'" ] ]
+    "params": [ '$nrequired', [ "'$pubkey0'", "'$pubkey1'", "'$pubkey2'" ] ]
   }'
 ```
 
@@ -295,27 +304,30 @@ bcoin-cli rpc createmultisig $nrequired '[ "'$pubkey0'", "'$pubkey1'", "'$pubkey
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('createmultisig', [ nrequired, [ pubkey0, pubkey1, pubkey2 ] ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('createmultisig', [ nrequired, [ pubkey0, pubkey1, pubkey2 ] ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "address": "2MzY9R5P1Wfy9aNdqyoH63K1EQZF7APuZ4S",
-  "redeemScript": "5221021f1dbc575db95a44e016fe6ecf00231109e7799d9b1e007dbe8814017cf0d65c2102b3280e779a7c849f9d6460e926097fe4b0f6280fa6fd038ce8e1236a4688c358210315613667e3ebe065c0b8d86ae0443d97de56545bdf38c99a6ee584f300206d9a53ae"
+  "address": "GfNqJAAyrCLr2bVHxn8wjMMYMh1EBPzUNk",
+  "redeemScript": "522102e3d6bb36b0261628101ee67abd89d678522dc1199912512f814e70803652f39521034bc2280e68d3bdd0ef0664e0ad2949a467344d8e59e435fe2d9be81e39f70f762103d7ded41bb871936bf4d411371b25d706c572f28ef8d2613b45392e9f9c4348a553ae"
 }
-
 ```
 
 create multisig address
@@ -339,8 +351,7 @@ script='5221021f1dbc575db95a44e016fe6ecf00231109e7799d9b1e007dbe8814017cf0d65c21
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "createwitnessaddress",
@@ -354,24 +365,28 @@ bcoin-cli rpc createwitnessaddress $script
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('createwitnessaddress', [ script ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('createwitnessaddress', [ script ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
 {
-  "address": "tb1qlfgqame3n0dt2ldjl2m9qjg6n2vut26jw3ezm25hqx9ez4m9wp5q567kg2",
+  "address": "rb1qlfgqame3n0dt2ldjl2m9qjg6n2vut26jw3ezm25hqx9ez4m9wp5qjres8a",
   "witnessScript": "0020fa500eef319bdab57db2fab650491a9a99c5ab5274722daa97018b9157657068"
 }
 ```
@@ -392,13 +407,12 @@ let privkey, message;
 ```
 
 ```shell--vars
-privkey='EL4QU6ViZvT4RuCTCivw2uBnvBPSamP5jMtH31gGQLbEEcmNCHVz';
+privkey='EMyedBwL5mb476uhWZ2wzEsSpu8kZwYgYaw5rGbjJh1kRjXF3M2d';
 message='hello';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "signmessagewithprivkey",
@@ -412,27 +426,32 @@ bcoin-cli rpc signmessagewithprivkey $privkey $message
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('signmessagewithprivkey', [ privkey, message ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('signmessagewithprivkey', [ privkey, message ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
 
 ```json
-"MEQCIAwF9NPMo5KBRsCWTBJ2r69/h7CfDl+RQfxxwAbNp1WJAiAiubiK5rg9MugiU7EHpwbJLc3b356LAedob0ePI40Wmg=="
+"MEUCIQCGLPYuLuSU1XQ7ctRvRzrY4M0dKAxShzEN3fwVoelGvgIgPmQ2RcRpeu0o68YsN42yzykI9VfTPooWHMvsFbIFEkg="
 ```
 
 
-Signs message with private key.
+Signs message with private key. 
+<aside>Note: Due to behavior of some shells like bash, if your message contains spaces you may need to add additional quotes like this: <code>"'"$message"'"</code></aside>
 
 ### Params
 N. | Name | Default |  Description
@@ -448,38 +467,41 @@ let address, signature, message;
 ```
 
 ```shell--vars
-address='R9LTC6Sp6Zwk71qUrm81sEdsppFNiDM6mF';
-signature='MEQCIAwF9NPMo5KBRsCWTBJ2r69/h7CfDl+RQfxxwAbNp1WJAiAiubiK5rg9MugiU7EHpwbJLc3b356LAedob0ePI40Wmg==';
+address='RGCudRpNcn299Ja1EaVzgpnPD3YJgfMMiB';
+signature='MEUCIQCGLPYuLuSU1XQ7ctRvRzrY4M0dKAxShzEN3fwVoelGvgIgPmQ2RcRpeu0o68YsN42yzykI9VfTPooWHMvsFbIFEkg=';
 message='hello';
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "verifymessage",
-    "params": [ "'$address'", "'$signature'", "'$message'" ]
+    "params": [ "'$address'", "'$signature'", "$message" ]
   }'
 ```
 
 ```shell--cli
-bcoin-cli rpc verifymessage $address $signature $message
+bcoin-cli rpc verifymessage $address $signature "$message"
 ```
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('verifymessage', [ address, signature, message ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('verifymessage', [ address, signature, message ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:
@@ -488,7 +510,9 @@ const rpc = new NodeClient({
 true
 ```
 
-Verify sign
+Verify signature.
+<aside>Note: Due to behavior of some shells like bash, if your message contains spaces you may need to add additional quotes like this: <code>"'"$message"'"</code></aside>
+
 
 ### Params
 N. | Name | Default |  Description
@@ -508,8 +532,7 @@ timestamp=1503058155;
 ```
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
   --data '{
     "method": "setmocktime",
@@ -523,17 +546,21 @@ bcoin-cli rpc setmocktime $timestamp
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('setmocktime', [ timestamp ]);
-
-  console.log(res);
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('setmocktime', [ timestamp ]);
+  console.log(result);
+})();
 ```
 
 > The above command returns JSON "result" like this:

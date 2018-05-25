@@ -1,48 +1,60 @@
 # RPC Calls - Node
 
 ```shell--curl
-curl $url/ \
-  -H 'Content-Type: application/json' \
+curl $url \
   -X POST \
-  --data '{ "method": "methodname", "params": [...] "id": "some-id" }'
+  --data '{ "method": "<method>", "params": [...] "id": "some-id" }'
 ```
 
 ```shell--cli
-bcoin-cli rpc params...
+bcoin-cli rpc <method> <params>
 ```
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  const res = await rpc.execute('MethodName', [ ...params ]);
-
-  // RES will return "result" part of the object, not the id or error
-  // error will be thrown.
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const result = await client.execute('<method>', [ <params> ]);
+  console.log(result);
+})();
 ```
 
-> The above command returns JSON structured like this:
-
-> Further examples will only include "result" part.
+> The above cURL command returns JSON structured like this:
 
 ```json
 {"result": resultObject ,"error": errorObject, "id": passedID}
 ```
 
+> Further examples will only include "result" part.
+> CLI and Javascript calls return just the "result" or an error.
 
-Bcoin rpc calls mimic Bitcoin Core's RPC.
-This is documentation how to use it with `bcoin`.
+
+
+
+bcoin RPC calls mimic Bitcoin Core's RPC.
 
 RPC Calls are accepted at:
 `POST /`
 
-*Note: bcoin-cli rpc and javascript will return error OR result.*
+*Notes:*
+
+*bcoin-cli rpc and Javascript will either return an error OR the result.*
+
+*Javascript result will return the "result" part of the object, not the id or error*
+
+*If a Javascript error is encountered it will be thrown instead of returned in JSON*
+
+*Be sure to check the debug log for error reports as well!*
 
 
 ### POST Parameters RPC
@@ -50,4 +62,4 @@ Parameter | Description
 --------- | -----------
 method  | Name of the RPC call
 params  | Parameters accepted by method
-id      | Will be returned with the response (Shouldn't be object)
+id      | `int` Will be returned with the response (cURL only)

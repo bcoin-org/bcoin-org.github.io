@@ -1,20 +1,25 @@
-# Node
+# bcoin - Node
 
-## JSON-RPC Requests
+## bcoin client requests
 
-Route for JSON-RPC requests, most of which mimic the bitcoind RPC calls completely.
+Complete list of commands:
 
-```shell--curl
-curl $url \
-  -H 'Content-Type: application/json' \
-  -X POST \
-  --data '{ "method": "getblockchaininfo", "params": [] }'
-```
+Command     				|cURL method	| Description
+----------------------------|---------------|------------
+`/`							| `GET`			| get info
+`/coin/address/:address`	| `GET`			| UTXO by address
+`/coin/:hash/:index`		| `GET`			| UTXO by txid
+`/coin/address`				| `POST`		| Bulk read UTXOs
+`/tx/:hash`					| `GET`			| TX by hash
+`/tx/address/:address`		| `GET`			| TX by address
+`/tx/address`				| `POST`		| Bulk read TXs
+`/block/:block`				| `GET`			| Block by hash or height
+`/mempool`					| `GET`			| Mempool snapshot
+`/broadcast`				| `POST`		| Broadcast TX
+`/fee`						| `GET`			| Estimate fee
+`/reset`					| `POST`		| Reset chain to specific height
 
-### HTTP Request
-`POST /`
 
-More about RPC Requests in RPC Docs.
 
 ## Get server info
 
@@ -28,57 +33,58 @@ bcoin-cli info
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-  const info = await client.getInfo();
-
-  console.log(info);
-
-  await client.close();
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const clientinfo = await client.getInfo();
+  console.log(clientinfo);
+})();
 ```
 
 > The above command returns JSON structured like this:
 
 ```json
 {
-  "version": "v1.0.0-beta.14",
-  "network": "testnet",
+  "version": "v1.0.0-pre",
+  "network": "regtest",
   "chain": {
-    "height": 1157058,
-    "tip": "00000000000002ac70408966be53a1e01e7e014a3d4f1f275201c751de7d6e77",
+    "height": 205,
+    "tip": "38d4ff72bca6737d958e1456be90443c0e09186349f28b952564118ace222331",
     "progress": 1
   },
   "pool": {
-    "host": "203.0.113.114",
-    "port": 18333,
-    "agent": "/bcoin:v1.0.0-beta.14/",
+    "host": "18.188.224.12",
+    "port": 48444,
+    "agent": "/bcoin:v1.0.0-pre/",
     "services": "1001",
-    "outbound": 8,
-    "inbound": 0
+    "outbound": 1,
+    "inbound": 1
   },
   "mempool": {
-    "tx": 39,
-    "size": 121512
+    "tx": 0,
+    "size": 0
   },
   "time": {
-    "uptime": 7403,
-    "system": 1502381034,
-    "adjusted": 1502381035,
-    "offset": 1
+    "uptime": 1744,
+    "system": 1527028546,
+    "adjusted": 1527028546,
+    "offset": 0
   },
   "memory": {
-    "total": 87,
-    "jsHeap": 23,
-    "jsHeapTotal": 30,
-    "nativeHeap": 56,
-    "external": 8
+    "total": 90,
+    "jsHeap": 19,
+    "jsHeapTotal": 26,
+    "nativeHeap": 64,
+    "external": 9
   }
 }
 ```
@@ -105,17 +111,20 @@ bcoin-cli mempool
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-  const mempoolTxs = await client.getMempool();
-
-  console.log(mempoolTxs);
-
-  await client.close();
+  const mempool = await client.getMempool();
+  console.log(mempool);
 })().catch((err) => {
   console.error(err.stack);
 });
@@ -125,8 +134,11 @@ const rpc = new NodeClient({
 
 ```json
 [
-  "9fee8350a3cc2f5bfa9d90f008af0bbc22d84aa5b1242da2f3479935f597c9ed",
-  "d3bd772f3b369e2e04b9b928e40dddded5ee1448b9d1ee0b6a13e6c2ae283f6a",
+  "2ef8051e6c38e136ba4d195c048e78f9077751758db710475fa532b9d9489324",
+  "bc3308b61959664b71ac7fb8e9ee17d13476b5a32926f512882851b7631884f9",
+  "53faa103e8217e1520f5149a4e8c84aeb58e55bdab11164a95e69a8ca50f8fcc",
+  "fff647849be7408faedda377eea6c37718ab39d656af8926e0b4b74453624f32",
+  "b3c71dd8959ea97d41324779604b210ae881cdaa5d5abfcbfb3502a0e75c1283",
   ...
 ]
 ```
@@ -146,8 +158,8 @@ let blockHash, blockHeight;
 ```
 
 ```shell--vars
-blockHash='00000000cabd2d0245add40f335bab18d3e837eccf868b64aabbbbac74fb21e0';
-blockHeight='1500';
+blockHash='4003e57eb1c60f3d1b774d8a281353c35cd30dca0d76b751c8dd862da11c41de';
+blockHeight='94';
 ```
 
 ```shell--curl
@@ -162,53 +174,54 @@ bcoin-cli block $blockHeight # by height
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet'
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-  const blockByHash = await client.getBlock(blockHash);
   const blockByHeight = await client.getBlock(blockHeight);
-
-  console.log(blockByHash, blockByHeight);
-
-  await client.close();
-})().catch((err) => {
-  console.error(err.stack);
-});
+  const blockByHash = await client.getBlock(blockHash);
+  console.log("By height: \n", blockByHeight);
+  console.log("By hash: \n", blockByHash);
+})();
 ```
 
 > The above command returns JSON structured like this:
 
 ```json
 {
-  "hash": "00000000cabd2d0245add40f335bab18d3e837eccf868b64aabbbbac74fb21e0",
-  "height": 1500,
-  "version": 1,
-  "confirmations": 1192251,
-  "prevBlock": "00000000f651e7fe6d9a4845dcf40f5642216e59054453a4368a73a7295f9f3d",
-  "merkleRoot": "e3e4590784a828967e6d9319eca2915c1860a63167449f9605e649a0aafe6d0a",
-  "time": 1337966228,
-  "bits": 486604799,
-  "nonce": 2671491584,
+  "hash": "4003e57eb1c60f3d1b774d8a281353c35cd30dca0d76b751c8dd862da11c41de",
+  "height": 94,
+  "depth": 112,
+  "version": 536870912,
+  "prevBlock": "353cbab0d0ae1583ceb6bd88d90f44a7bb2cb2aec824eac688dbf1832e648962",
+  "merkleRoot": "b23e398ccf2fe2dcf81c6e7b4cc3c710a79c78bf7e8a63dd819acf83952f960f",
+  "time": 1527028558,
+  "bits": 545259519,
+  "nonce": 4,
   "txs": [
     {
-      "hash": "e3e4590784a828967e6d9319eca2915c1860a63167449f9605e649a0aafe6d0a",
-      "witnessHash": "e3e4590784a828967e6d9319eca2915c1860a63167449f9605e649a0aafe6d0a",
+      "hash": "b23e398ccf2fe2dcf81c6e7b4cc3c710a79c78bf7e8a63dd819acf83952f960f",
+      "witnessHash": "b23e398ccf2fe2dcf81c6e7b4cc3c710a79c78bf7e8a63dd819acf83952f960f",
       "fee": 0,
       "rate": 0,
-      "mtime": 1502382669,
+      "mtime": 1527028763,
       "index": 0,
       "version": 1,
-      "flag": 1,
       "inputs": [
         {
           "prevout": {
             "hash": "0000000000000000000000000000000000000000000000000000000000000000",
             "index": 4294967295
           },
-          "script": "0494bebf4f0108172f503253482f49636549726f6e2d51432d6d696e65722f",
+          "script": "015e0e6d696e65642062792062636f696e04899fe44e080000000000000000",
           "witness": "00",
           "sequence": 4294967295,
           "address": null
@@ -217,11 +230,12 @@ const rpc = new NodeClient({
       "outputs": [
         {
           "value": 5000000000,
-          "script": "21032fd2666c8d5ffae0147acc0b9628160652679663397e911170ebaf1e26358abfac",
-          "address": "mtohBeScUtM2ndcmmpSV8o2jcvmknp1Mpy"
+          "script": "76a91420a060fec9a7dfac723c521e168876909aa37ce588ac",
+          "address": "RCFhpyWXkz5GxskL96q4KtceRXuAMnWUQo"
         }
       ],
-      "locktime": 0
+      "locktime": 0,
+      "hex": "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff1f015e0e6d696e65642062792062636f696e04899fe44e080000000000000000ffffffff0100f2052a010000001976a91420a060fec9a7dfac723c521e168876909aa37ce588ac00000000"
     }
   ]
 }
@@ -247,7 +261,7 @@ let tx;
 ```
 
 ```shell--vars
-tx='0100000001ff2a3afc3a8133a3bfeedd391bc3cff39d47fe4e3caee492a93f92edff76b9d4000000006a47304402204cc6a35cb3d3d976cb10e3c98df66aba29b5efc7b5ecdbc0f4ed949aa64235f20220512fce2d63739012094f12c3a9402919b32149c32d4d71a3448d4695ae8e3dc601210325c9abd8916d6e5ba0b3c501a70c0186f3bf6e4567922b9d83ae205d1d9e9affffffffff0244cff505000000001976a91423f5580d600bcfe5b99d9fe737530fd8b32492a088ac00111024010000001976a91473f3ecd665da93701358bd957393b8085c1aa2d988ac00000000';
+tx='010000000106b014e37704109fefe2c5c9f4227d68840c3497fc89a9832db8504df039a6c7000000006a47304402207dc8173fbd7d23c3950aaf91b1bc78c0ed9bf910d47a977b24a8478a91b28e69022024860f942a16bc67ec54884e338b5b87f4a9518a80f9402564061a3649019319012103cb25dc2929ea58675113e60f4c08d084904189ab44a9a142179684c6cdd8d46affffffff0280c3c901000000001976a91400ba915c3d18907b79e6cfcd8b9fdf69edc7a7db88acc41c3c28010000001976a91437f306a0154e1f0de4e54d6cf9d46e07722b722688ac00000000';
 ```
 
 ```shell--curl
@@ -258,26 +272,26 @@ curl $url/broadcast \
 ```
 
 ```shell--cli
-bcoin-cli broadcast $txhex
+bcoin-cli broadcast $tx
 ```
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  network: 'testnet',
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
 
 (async () => {
-  await client.open();
-
   const result = await client.broadcast(tx);
-
   console.log(result);
-
-  await client.close();
-})().catch((err) => {
-  console.error(err.stack);
-});
+})();
 ```
 
 > The above command returns JSON structured like this:

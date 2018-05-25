@@ -3,71 +3,77 @@
 > An account object looks like this:
 
 ```json
-  {
-    "wid": 1,
-    "id": "test",
-    "name": "default",
-    "initialized": true,
-    "witness": false,
-    "watchOnly": false,
-    "type": "pubkeyhash",
-    "m": 1,
-    "n": 1,
-    "accountIndex": 0,
-    "receiveDepth": 8,
-    "changeDepth": 1,
-    "nestedDepth": 0,
-    "lookahead": 10,
-    "receiveAddress": "mu5Puppq4Es3mibRskMwoGjoZujHCFRwGS",
-    "nestedAddress": null,
-    "changeAddress": "n3nFYgQR2mrLwC3X66xHNsx4UqhS3rkSnY",
-    "accountKey": "tpubDC5u44zLNUVo2gPVdqCbtX644PKccH5VZB3nqUgeCiwKoi6BQZGtr5d6hhougcD6PqjszsbR3xHrQ5k8yTbUt64aSthWuNdGi7zSwfGVuxc",
-    "keys": []
+{
+  "name": "default",
+  "initialized": true,
+  "witness": false,
+  "watchOnly": false,
+  "type": "pubkeyhash",
+  "m": 1,
+  "n": 1,
+  "accountIndex": 0,
+  "receiveDepth": 6,
+  "changeDepth": 9,
+  "nestedDepth": 0,
+  "lookahead": 10,
+  "receiveAddress": "RLY9z6PCB3fggt36mnfA75jESRtvkALKX5",
+  "changeAddress": "RPSppa2YUzTK5jWWZ7k74NfMEJtnNKn4vs",
+  "nestedAddress": null,
+  "accountKey": "rpubKBBuJXusEYaDdxTwH1nPYRXQnd3XgLAFfNYxVhjrtvLAkDAXaps1nURZVmWuFsXK8RBXiDQu7grCBv6fRtQxgPH3FkKe4UQV7F2sfNBK47sA",
+  "keys": [],
+  "balance": {
+    "tx": 505,
+    "coin": 501,
+    "unconfirmed": 1339989996774,
+    "confirmed": 1339989999000
   }
-
+}
 ```
 Represents a BIP44 Account belonging to a Wallet.
 Note that this object does not enforce locks. Any method that does a write is internal API only and will lead to race conditions if used elsewhere.
 
 From the [BIP44 Specification](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki):
 
-<p>
-    <code>
-        This level splits the key space into independent user identities, so the wallet never mixes the coins across different accounts.
-    </code>
-</p>
-<p>
-    <code>
-        Users can use these accounts to organize the funds in the same fashion as bank accounts; for donation purposes (where all addresses are considered public), for saving purposes, for common expenses etc.
-    </code>
- </p>
- <p>
-    <code>
-        Accounts are numbered from index 0 in sequentially increasing manner. This number is used as child index in BIP32 derivation.
-    </code>
-</p>
-<p>
-    <code>
-        Hardened derivation is used at this level.
-    </code>
-</p>
+        *This level splits the key space into independent user identities, so the wallet never mixes the coins across different accounts.*
+        *Users can use these accounts to organize the funds in the same fashion as bank accounts; for donation purposes (where all addresses are considered public), for saving purposes, for common expenses etc.*
+        *Accounts are numbered from index 0 in sequentially increasing manner. This number is used as child index in BIP32 derivation.*
+        *Hardened derivation is used at this level.*
+
+<aside class="warning">
+Accounts within the same wallet are all related by deterministic hierarchy. However, wallets are not related to each other in any way. This means that when a wallet seed is backed up, all of its accounts (and their keys) can be derived from that backup. However, each newly created wallet must be backed up separately.
+</aside>
 
 ## Get Wallet Account List
 
 ```shell--vars
-id='test'
+id='primary'
+```
+
+```shell--curl
+curl $walleturl/$id/account
 ```
 
 ```shell--cli
-bwallet-cli account list --id=$id
+bwallet-cli account --id=$id list
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
 
 (async () => {
-  const accountInfo = await wallet.getAccounts();
-  console.log(accountInfo);
+  const result = await wallet.getAccounts();
+  console.log(result);
 })();
 ```
 
@@ -100,12 +106,12 @@ let id, account;
 ```
 
 ```shell--vars
-id='test'
+id='primary'
 account='default'
 ```
 
 ```shell--curl
-curl $url/wallet/$id/account/$account
+curl $walleturl/$id/account/$account
 ```
 
 ```shell--cli
@@ -113,10 +119,22 @@ bwallet-cli --id=$id account get $account
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+
 (async () => {
-  const accountInfo = await wallet.getAccount(account);
-  console.log(accountInfo);
+  const result = await wallet.getAccount(account);
+  console.log(result);
 })();
 ```
 
@@ -124,8 +142,6 @@ const wallet = WalletClient.wallet(id);
 
 ```json
 {
-  "wid": 1,
-  "id": "test",
   "name": "default",
   "initialized": true,
   "witness": false,
@@ -134,15 +150,21 @@ const wallet = WalletClient.wallet(id);
   "m": 1,
   "n": 1,
   "accountIndex": 0,
-  "receiveDepth": 8,
-  "changeDepth": 1,
+  "receiveDepth": 6,
+  "changeDepth": 9,
   "nestedDepth": 0,
   "lookahead": 10,
-  "receiveAddress": "mu5Puppq4Es3mibRskMwoGjoZujHCFRwGS",
+  "receiveAddress": "RLY9z6PCB3fggt36mnfA75jESRtvkALKX5",
+  "changeAddress": "RPSppa2YUzTK5jWWZ7k74NfMEJtnNKn4vs",
   "nestedAddress": null,
-  "changeAddress": "n3nFYgQR2mrLwC3X66xHNsx4UqhS3rkSnY",
-  "accountKey": "tpubDC5u44zLNUVo2gPVdqCbtX644PKccH5VZB3nqUgeCiwKoi6BQZGtr5d6hhougcD6PqjszsbR3xHrQ5k8yTbUt64aSthWuNdGi7zSwfGVuxc",
-  "keys": []
+  "accountKey": "rpubKBBuJXusEYaDdxTwH1nPYRXQnd3XgLAFfNYxVhjrtvLAkDAXaps1nURZVmWuFsXK8RBXiDQu7grCBv6fRtQxgPH3FkKe4UQV7F2sfNBK47sA",
+  "keys": [],
+  "balance": {
+    "tx": 505,
+    "coin": 501,
+    "unconfirmed": 1339989996774,
+    "confirmed": 1339989999000
+  }
 }
 ```
 
@@ -160,32 +182,44 @@ account <br> _string_ | id of account you would to retrieve information for
 ## Create new wallet account
 
 ```javascript
-let id, name, type;
+let id, passphrase, name, type;
 ```
 
 ```shell--vars
-id='test'
+id='primary'
+passphrase='secret123'
 name='menace'
 type='multisig'
 ```
 
 ```shell--cli
-bwallet-cli --id=$id account create $name --type=$type --key=$accountKey
+bwallet-cli --id=$id account create --name=$name --type=$type --passphrase=$passphrase 
 ```
 
 ```shell--curl
-curl $url/wallet/$id/account/$name \
-    -X PUT
-    --data '{"type": "'$type"}'
+curl $walleturl/$id/account/$name \
+    -X PUT \
+    --data '{"type": "'$type'", "passphrase": "'$passphrase'"}'
 ```
 
 ```javascript
-const wallet = WalletClient.wallet(id);
-const options = {type: type}
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id);
+const options = {name: name, type: type, passphrase: passphrase}
 
 (async () => {
-  const account = await wallet.createAccount(name, options);
-  console.log(account);
+  const result = await wallet.createAccount(name, options);
+  console.log(result);
 })();
 ```
 
@@ -193,8 +227,6 @@ const options = {type: type}
 
 ```json
 {
-  "wid": 1,
-  "id": "test",
   "name": "menace",
   "initialized": true,
   "witness": false,
@@ -207,11 +239,17 @@ const options = {type: type}
   "changeDepth": 1,
   "nestedDepth": 0,
   "lookahead": 10,
-  "receiveAddress": "mg7b3H3ZCHx3fwvUf8gaRHwcgsL7WdJQXv",
+  "receiveAddress": "GWzk797i4UCw9iG5uSj9DPQWsgt8nGWDA2",
+  "changeAddress": "GbqDrwBWDfKGgYuu4VvJGEjCpwxS5TiBdM",
   "nestedAddress": null,
-  "changeAddress": "mkYtQFpxDcqutMJtyzKNFPnn97zhft56wH",
-  "accountKey": "tpubDC5u44zLNUVo55dtQsJRsbQgeNfrp8ctxVEdDqDQtR7ES9XG5h1SGhkv2HCuKA2RZysaFzkuy5bgxF9egvG5BJgapWwbYMU4BJ1SeSj916G",
-  "keys": []
+  "accountKey": "rpubKBBuJXusEYaDe2o6iEVjceYB4r7rGhfQGsHRynZ1pbaNvNB5eyo4GvvT3e6dfttpt6x5tomFjbooFj6vBjwpXMwJZcoFWr8LcmbW3BABQoxJ",
+  "keys": [],
+  "balance": {
+    "tx": 0,
+    "coin": 0,
+    "unconfirmed": 0,
+    "confirmed": 0
+  }
 }
 ```
 

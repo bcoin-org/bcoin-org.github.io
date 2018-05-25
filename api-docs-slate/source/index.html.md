@@ -18,6 +18,8 @@ toc_footers:
 includes:
   - clients
   - node
+  - coin
+  - transaction
   - node_rpc
   - node_rpc_general
   - node_rpc_chain
@@ -26,10 +28,8 @@ includes:
   - node_rpc_tx
   - node_rpc_mining
   - node_rpc_network
-  - coin
-  - transaction
-  - wallet_admin
   - wallet
+  - wallet_admin
   - wallet_tx
   - wallet_accounts
   - wallet_events
@@ -40,41 +40,57 @@ search: true
 
 # Introduction
 
-Welcome to the Bcoin API!
+Welcome to the bcoin API!
 
-The default bcoin HTTP server listens on the standard RPC port (`8332` for main, `18332` for testnet, `48332` for regtest, and `18556` default for simnet). It exposes a REST json api, as well as a JSON-RPC api.
+The default bcoin HTTP server listens on the standard RPC port (`8332` for main, `18332` for testnet, `48332` for regtest, and `18556` default for simnet). It exposes a REST JSON, as well as a JSON-RPC api.
 
 # Authentication
 ## Auth
 
 ```shell--curl
-curl http://x:[api-key]@127.0.0.1:8332/
+# default regtest port is 48332 (may be reconfigured by user), API key is required in URL
+curl http://x:api-key@127.0.0.1:48332/
+
+# examples in these docs will use an environment variable:
+url=http://x:api-key@127.0.0.1:48332/
+curl $url
 ```
 
 ```shell--cli
-export BCOIN_API_KEY=[api-key]
+bcoin-cli --api-key=api-key --network=regtest info
+
+# store API key and network type in environment variables:
+export BCOIN_API_KEY=api-key
+export BCOIN_NETWORK=regtest
 bcoin-cli info
 ```
 
 ```javascript
 const {NodeClient} = require('bclient');
-const rpc = new NodeClient({
-  apiKey: [api-key],
-  //...
-});
-// Or wallet
-const wallet = new bcoin.http.Wallet({
-  apiKey: [api-key],
-  //...
-});
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+// network type derived from bcoin object, client object stores API key
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
+
+(async () => {
+  const clientinfo = await client.getInfo();
+  console.log(clientinfo);
+})();
 ```
 
-> Make sure to replace `[api-key]` with your own key.
+> Make sure to replace `api-key` with your own key.
 
-Auth is accomplished via HTTP Basic Auth, using your node's API key (passed via --api-key).
+Auth is accomplished via HTTP Basic Auth, using your node's API key.
 
 <aside class="notice">
-You must replace <code>[api-key]</code> with your personal API key.
+You must replace <code>api-key</code> with your personal API key.
 </aside>
 
 <aside class="warning">
