@@ -59,6 +59,8 @@ This guide will be broken into two parts. First we will walk through
 creating and redeeming a mock transaction with no real coins. Next we will do the
 same thing on a live regtest network using the bcoin wallet and API.
 
+(If you want to see the full code, checkout the repo [here](https://github.com/bucko13/cltv))
+
 ## The Guide - Mock Transaction
 Before moving on to the transaction there is some setup that will be useful
 for both approaches. Note that this guide assumes use with Segwit transactions so
