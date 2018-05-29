@@ -200,7 +200,6 @@ keyring2.witness = true;
 // 2) Get hash and save it to keyring
 const pkh = keyring.getKeyHash();
 const script = createScript(locktime, pkh);
-script.compile();
 keyring.script = script;
 
 // 3) Create the address
@@ -223,6 +222,9 @@ cb.addOutput(lockingAddr, lockingValue);
 
 // Convert the coinbase output to a Coin object
 // In reality you might get these coins from a wallet.
+// `fromTX` will take an output from a previous
+// tx and turn it into a coin object
+// (the second param is the index of the target UTXO)
 const coin = Coin.fromTX(cb, 0, -1);
 
 // 5) Setup the redeeming transaction
@@ -326,6 +328,8 @@ function signInput(mtx, index, coin, ring) {
   );
 
   witness = input.witness;
+  // version is for the signing to indicate signature hash version
+  // 0=legacy, 1=segwit
   version = 1;
 
   const stack = witness.toStack();
@@ -479,8 +483,12 @@ async function lockAndRedeemCLTV(walletId) {
       fs.writeFileSync(txInfoPath, JSON.stringify(txInfo, null, 2));
 
       // mine one block to get tx on chain
-      // make sure you're doing this on regtest or simnet and not testnet or mainnet
-      // you can also use bPanel and the @bpanel/simple-mining plugin to do this instead
+      // make sure you're doing this on regtest or simnet and
+      // not testnet or mainnet
+      // this method won't work if you don't have a
+      // coinbase address set on your miner
+      // you can also use bPanel and the @bpanel/simple-mining
+      // plugin to do this instead
       const minedBlock = await nodeClient.execute('generate', [1]);
       console.log('Block mined', minedBlock);
     } else {
