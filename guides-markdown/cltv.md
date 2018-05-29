@@ -30,11 +30,15 @@ ownership over that output (Check out this guide, [Intro To Scripting](http://bc
 to see how to write and redeem this simple script in bcoin, and [this section](https://github.com/bitcoinbook/bitcoinbook/blob/develop/ch06.asciidoc#a-simple-script) in Mastering Bitcoin for a helpful walkthrough).
 
 In the vast majority of Bitcoin and other cryptocurrency transactions,
-you prove ownership by signing a transaction input with the private key (basically a password that is stored in your wallet) that corresponds to the address that the source output was sent to. I.e. The UTXO is locked by the requirement that some signature
-must match a public key or public key hash that is on the execution stack.
+you prove ownership by signing a transaction input with the private key
+(basically a password that is stored in your wallet) that corresponds to
+the address that the source output was sent to. I.e. The UTXO is locked
+by the requirement that some signaturemust match a public key or public key
+hash that is on the execution stack.
 
 An output that is locked with CLTV works more or less the same way but adds another
-condition that before the signature is even accepted, a certain amount of time must have passed.
+condition that before the signature is even accepted, a certain amount of
+time must have passed.
 
 In pseudo-code, the script will look like this:
 
@@ -110,17 +114,21 @@ Unix Epoch timestamp (seconds since Jan-1-1970) if above 500 million (
  * @param {Buffer} public key hash
  * @returns {Script}
 **/
-function createScript(locktime='100', publicKeyHash) {
+function createScript(locktime, publicKeyHash) {
   let pkh;
   if (typeof publicKeyHash === 'string')
     pkh = Buffer.from(publicKeyHash);
   else pkh = publicKeyHash;
   assert(Buffer.isBuffer(pkh), 'publicKey must be a Buffer');
+  assert(
+    locktime,
+    'Must pass in a locktime argument, either block height or UNIX epoch time'
+  );
 
   const script = new Script();
   // lock the transactions until
   // the locktime has been reached
-  script.pushNum(ScriptNum.fromString(locktime, 10));
+  script.pushNum(ScriptNum.fromString(locktime.toString(), 10));
   // check the locktime
   script.pushSym('CHECKLOCKTIMEVERIFY');
   // if verifies, drop time from the stack
@@ -189,6 +197,9 @@ another address, and the correct locktime
 // to get value in satoshis all you need is `amountToFund.toValue()`;
 const amountToFund = Amount.fromBTC('.5');
 
+// flags are for script and transaction verification
+const flags = Script.flags.STANDARD_VERIFY_FLAGS;
+
 // 1) Setup keyrings
 const keyring = KeyRing.generate(true);
 const keyring2 = KeyRing.generate(true);
@@ -218,7 +229,7 @@ cb.addInput({
 // Send 50,000 satoshis to our locking address.
 // this will lock up the funds to whoever can solve
 // the CLTV script
-cb.addOutput(lockingAddr, lockingValue);
+cb.addOutput(lockingAddr, amountToFund.toValue());
 
 // Convert the coinbase output to a Coin object
 // In reality you might get these coins from a wallet.
