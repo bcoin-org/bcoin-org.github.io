@@ -44,6 +44,13 @@ Welcome to the bcoin API!
 
 The default bcoin HTTP server listens on the standard RPC port (`8332` for main, `18332` for testnet, `48332` for regtest, and `18556` default for simnet). It exposes a REST JSON, as well as a JSON-RPC api.
 
+<aside class="notice">
+These docs have been updated to latest version of bcoin and bclient as of May 30 2018 (bcoin version <code>v1.0.0-pre</code>).
+Version v1.0.0 of bcoin introduced breaking changes from all previous versions (v.0.15.0 and earlier).
+As of this writing the bcoin npm repository has not yet been updated, so it is recommended to install from the latest master branch on github. 
+Installation instructions are available there: <a href="https://github.com/bcoin-org/bcoin">https://github.com/bcoin-org/bcoin</a>
+</aside>
+
 # Authentication
 ## Auth
 
