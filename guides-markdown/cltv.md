@@ -620,16 +620,16 @@ scripts and contracts. Here are some ideas of other things you can build with CL
 Aka HTLCs. These are a key part of enabling trustless payment channels in the Lightning Network and
 have the time locked script we built here at its base.
 
-- **Kill Switch Transaction**- You can create an application that uses CLTVs to enforce the condition,
+- **Kill Switch Transaction**- You can create an application that uses CLTVs to enforce the condition
 where if some action isn't taken every 6 months (such as pressing a button or sending an email),
-a transaction will send all your funds to multisig address controlled by your estate. You can use a version
-of an HTLC to either redeem the tx with your own key or redeemable by the multisig accounts after the time
+a transaction will send all your funds to a multisig address controlled by your estate. You can use a version
+of an HTLC to either redeem the tx with your own key or redeem with the multisig account after the time
 period. When you take the action, it redeems with your key.
 
-- **Authorization Levels by Time Lock**- This is idea comes from the [Advanced Scripting
+- **Authorization Levels by Time Lock**- This idea comes from the [Advanced Scripting
 chapter](https://twitter.com/Bcoin/status/1000098072490262528) in Mastering Bitcoin. The rules of the
 transaction would follow this basic structure: "[T]hree partners make decisions based on a majority rule,
 so two of the three must agree. However, in the case of a problem with their keys, they want their lawyer
 to be able to recover the funds with one of the three partner signatures. Finally, if all partners are
 unavailable or incapacitated for a while, they want the lawyer to be able to manage the account directly."
-You can see why they're called "Smart Contracts"!
+You can see why they're called Smart **Contracts**!
