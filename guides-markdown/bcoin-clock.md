@@ -284,6 +284,100 @@ $ bwallet-cli --account=default address
 }
 ```
 
+You can stop the node with the command `bcoin-cli rpc stop`.
+
+## Using the bcoin JavaScript object
+
+In addition to starting and controlling a bcoin node from the command line, you can also create a node as an object in a Javascript program. This will give us more granular control of the options, and especially the event behavior around blocks and transactions. Just to get started, create a new file called `spv_clock.js` and start it off with this script. It is a simpler version of [the actual script that gets run](https://github.com/bcoin-org/bcoin/blob/master/bin/spvnode) by the `bcoin --spv --daemon` command. Run the script with command `node spv_clock.js >/dev/null &` to run the bcoin spv node as a background process, like a daemon. Once it's running, you can interact it with it from the command line the same way we did before. Play around with it a bit and then `bcoin-cli rpc stop` so we can start getting fancy!
+
+```javascript
+// Get the SPV node object from the globally-installed bcoin package
+const {SPVNode} = require('bcoin');
+
+// Configure the node for mainnet, write logs, use the database on disk, etc
+const node = new SPVNode({
+  network: 'main',
+  config: true,
+  argv: true,
+  env: true,
+  logFile: true,
+  logConsole: true,
+  logLevel: 'debug',
+  db: 'leveldb',
+  memory: false,
+  persistent: true,
+  workers: true,
+  listen: true,
+  loader: require
+});
+
+(async () => {
+
+  // Validate the prefix directory (probably ~/.bcoin)
+  await node.ensure();
+  // Open the node and all its child objects, wait for the database to load
+  await node.open();
+  // Connect to the network
+  await node.connect();
+
+  // TODO: add cool stuff here in the next step! (*)
+
+  // Start the blockchain sync
+  node.startSync();
+  
+})().catch((err) => {
+  console.error(err.stack);
+  process.exit(1);
+});
+```
+
+### Respond to events
+
+The line marked `(*)` above is where we can ask bcoin to react to certain "events" like a new block being added to the tip of the blockchain, or a transaction being received that affects our own wallet. For our purposes, we want bcoin to store a JSON file with the last 20 block headers, so we can display them on the clock! First let's add a function (at the very top of the file) that maintains a JSON file on disk with a maximum of 20 block headers, in the form of a JSON array:
+
+```javascript
+const fs = require('fs');
+const headersFile = '/home/pi/blockHeaders.json';
+
+function addToFile(element, file){
+	// Load the existing JSON file from disk. Ignore errors (file might not exist yet)
+	var headersArray = [];
+	try {
+		headersArray = JSON.parse(fs.readFileSync(file, 'ascii'));
+	} catch(e) {}
+	
+	// Add our new blockHeader object to the end of the array
+	headersArray.push(blockHeader);
+	
+	// Prune it if it's too long
+	if (headersArray.length > 20)
+		headersArray.shift();
+	
+	// Write the headers array back to disk
+	fs.writeFile(file, JSON.stringify(element), function(err){
+		if(err)
+			console.log(err);
+	});
+}
+```
+
+Then we can tell bcoin to call the above function whenever a new block arrives. This code will go right where the `(*)` line is in our script:
+
+```javascript
+  // write block event to file
+  node.on('block', async (block) => {
+  	addToFile(block, headersFile);
+  });
+
+```
+
+
+
+
+
+
+
+
 ## Enter: python
 
 Congratulations! If you made it this far, you have a working Bitcoin light client in the palm of your hand, ready to send and receive money. The rest of this guide will focus on interacting with the bcoin node and wallet servers via cURL requests in python. We use python mainly because its easy to interact with the command line and also because the extra hardware we add later is driven by libraries written in python.
