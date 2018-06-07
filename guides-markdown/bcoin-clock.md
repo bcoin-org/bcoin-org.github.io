@@ -1,15 +1,15 @@
-# Run bcoin on a Raspberry Pi Zero W and make your own Bitcoin Clock!
+# Make your own Bcoin Block Clock!
 ```post-author
 Matthew Zipkin
 ```
 
 ```post-description
-Learn how to install bcoin on a brand-new Raspberry Pi Zero W. Create scripts to interact with bcoin in SPV mode and then add some hardware to make your own Bitcoin Clock and Piggy Bank!
+Learn how to install bcoin on a brand-new Raspberry Pi Zero W, or other linux system. Create scripts to interact with bcoin in SPV mode and then output a fun, network status display and interface. In Part II, we'll add some external hardware to make your own stand-alone Bcoin Block Clock and Piggy Bank!
 ```
 
 ## Introduction
 
-The goal of this guide is to run a bcoin node and interact with the Bitcoin network using minimal resources, as quickly as possible. Once bcoin is running we will add a visual interface and then connect some extra hardware to make it really fun. Although bcoin is capable of running a full archival node and even mining blocks, for this guide we will keep bcoin in [SPV mode.](https://en.bitcoin.it/wiki/Scalability#Simplified_payment_verification) This means we can run the program on a tiny [Raspberry Pi Zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/) using a tiny SD card.
+The goal of this guide is to run a bcoin node and interact with the Bitcoin network using minimal resources, as quickly as possible. Once bcoin is running we will add a visual interface and then connect some extra hardware to make it really fun. Although bcoin is capable of running a full archival node and even mining blocks, for this guide we will keep bcoin in [SPV mode.](https://en.bitcoin.it/wiki/Scalability#Simplified_payment_verification) This means we can run the program on a tiny [Raspberry Pi Zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/) using a tiny SD card. This guide was written specifically for (any) Raspberry Pi but can also be easily ported to most other Linux systems.
 
 ## Set up the Raspberry Pi
 
@@ -17,20 +17,20 @@ Get yourself a [Raspberry Pi Zero W](https://purse.io/search/raspberry%20pi%20ze
 
 ### Prepare the MicroSD card using your desktop computer
 
-Before you plug in the Pi for the first time, you need to install the OS on the MicroSD card and get a few settings ready for the Pi before it boots up for the first time.
+Before you plug in the Pi for the first time, you need to install the OS on the MicroSD card and get a few settings ready for the Pi before it boots up. These operations will need to take place on a desktop computer, but almost any will do.
 
 [Download the latest version of Raspbian Lite](https://www.raspberrypi.org/downloads/raspbian/) (which is the "headless" version, we don't need the GUI!)
 
 [UnZip the downloaded file and copy the disk image to the MicroSD card.](https://www.raspberrypi.org/documentation/installation/installing-images/README.md)
 
-Mount the MicroSD card with its new disk image on your computer again if it didn't mount automatically. We need to add two files to the `/boot` volume:
+Mount the MicroSD card with its new disk image on your computer again if it didn't mount automatically. We need to add two files to the `boot` volume:
 
-* [Enable SSH](https://www.raspberrypi.org/documentation/remote-access/ssh/README.md) by just saving a file to `/boot` called `ssh`, with no file extension. The file doesn't need to have any content (a blank text file is fine).
+* [Enable SSH](https://www.raspberrypi.org/documentation/remote-access/ssh/README.md) by just saving a file to `boot` called `ssh`, with no file extension. The file doesn't need to have any content (a blank text file is fine).
 
-* [Add your local WiFi information](https://www.raspberrypi.org/blog/another-update-raspbian/) by saving a file to `/boot` called `wpa_supplicant.conf`. You will add the following lines to this file -- be sure to include the correct WiFi network name and password!
+* [Add your local WiFi information](https://www.raspberrypi.org/blog/another-update-raspbian/) by saving a file to `boot` called `wpa_supplicant.conf`. You will add the following lines to this file -- be sure to include the correct WiFi network name and password!
 
 ```bash
-# add these lines to a new file /boot/wpa_supplicant.conf
+# add these lines to a new file boot/wpa_supplicant.conf
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 network={
 	ssid="<YOUR NETWORK NAME>"
@@ -41,7 +41,7 @@ network={
 
 ### Boot up the Raspberry Pi, connect via SSH, and finish conifguration
 
-Eject the MicroSD card from your desktop computer and put it in the Raspberry Pi. Power it on!
+Unmount and eject the MicroSD card from your desktop computer and put it in the Raspberry Pi. Power it on!
 
 After a few minutes, open a terminal on your dektop computer and [find the Pi on your network.](https://www.raspberrypi.org/documentation/remote-access/ip-address.md)
 
@@ -51,13 +51,13 @@ ssh pi@raspberrypi.local
 
 *The default password for all Raspberry Pis is `raspberry` :-)*
 
-Upgrade the OS and utilities 
+Now we are connected to, and executing commands on, the Raspberry Pi. Upgrade the OS and utilities.
 
 ```bash
 sudo apt-get update && sudo apt-get upgrade
 ```
 
-Configure options
+Configure options.
 
 ```bash
 sudo raspi-config
@@ -65,7 +65,7 @@ sudo raspi-config
 
 * Password: Change the password!
 
-* Network: Change the hostname to `bpi` or anything else you like
+* Network: Change the hostname to `bclock` or anything else you like
 
 * Boot: Set the Pi to boot directly to the "text console" with user pi logged in
 
@@ -79,63 +79,63 @@ sudo raspi-config
 
 After the Pi has had a minute or so to reboot, connect to it again via SSH. Don't forget we changed the hostname and password in the last step!
 
-```shell
-ssh pi@bpi.local
+```bash
+ssh pi@bclock.local
 ```
 
 ### Install nodejs
 
-Double check your processor type (Raspberry Pi Zero W is built around an ARMv6)
+Double check your processor type (Raspberry Pi Zero W is built around an ARMv6).
 
-```shell
+```bash
 uname -a # Linux bpi 4.14.34+ #1110 Mon Apr 16 14:51:42 BST 2018 armv6l GNU/Linux
 ```
 
 [Get the latest nodejs for 32-bit ARMv6](https://nodejs.org/en/download/).
 
-```shell
+```bash
 cd ~
 wget https://nodejs.org/dist/v8.11.2/node-v8.11.2-linux-armv6l.tar.xz
 ```
 
-Unpack the archive
+Unpack the archive.
 
-```shell
+```bash
 tar -xvf node-v8.11.2-linux-armv6l.tar.xz
 ```
 
-Add node and installed packages to PATH now and for all future sessions
+Add node and installed packages to PATH now and for all future sessions.
 
-```shell
+```bash
 echo 'export PATH=$PATH:/home/pi/node-v8.11.2-linux-armv6l/bin' >> ~/.bashrc
 export PATH=$PATH:/home/pi/node-v8.11.2-linux-armv6l/bin
 ```
 
 Update npm, using npm!
 
-```shell
+```bash
 npm install -g npm
 ```
 
-Check versions
+Check versions.
 
-```shell
+```bash
 node --version # v8.11.2 at time of writing
 npm --version  # 6.1.0 at time of writing
 ```
 
-Update node path (to global modules) for now and for all future sessions
+Update node path (to global modules) for now and for all future sessions.
 
-```shell
+```bash
 echo "export NODE_PATH=`npm root --quiet -g`" >> ~/.bashrc
 export NODE_PATH=`npm root --quiet -g`
 ```
 
-Install bcoin from GitHub master
+Install bcoin from GitHub master.
 
 * You'll need to install `git` first, then download the bcoin repository
 
-```shell
+```bash
 sudo apt-get install git
 cd ~
 git clone https://github.com/bcoin-org/bcoin
@@ -143,35 +143,35 @@ cd bcoin
 npm install -g
 ```
 
-Install bclient
+Install bclient.
 
-```shell
+```bash
 npm install -g bclient
 ```
 
 ### Test it out!
 
-Launch the bcoin daemon in the background and start it syncing to the main network
+Launch the bcoin daemon in the background and start it syncing to the main network.
 
-```shell
+```bash
 bcoin --daemon --spv
 ```
 
-Watch the bcoin log, make sure it looks healthy (ctrl+c to stop and return to prompt)
+Watch the bcoin log, make sure it looks healthy (ctrl+c to stop printout and return to prompt).
 
-```shell
+```bash
 tail -F ~/.bcoin/debug.log
 ```
 
-Test the bclient installation by requesting node info from bcoin
+Test the bclient installation by requesting node info from bcoin.
 
-```shell
+```bash
 bcoin-cli info
 ```
 
-After a few minutes of loading, your output should resemble the printout below. You can repeat the command to watch bcoin sync with the network, until `progress` reaches `1`. This won't take as much time as a full node would need but it could be a while. You can learn more about the command-line API clients `bcoin-cli` and `bwallet-cli` at [http://bcoin.io/api-docs.](http://bcoin.io/api-docs/?shell--cli#introduction)
+After a few minutes of loading, your output should resemble the printout below. You can repeat the `info` command to watch bcoin sync with the network, until `progress` reaches `1`. This won't take as much time as a full node would need but it could be a while. You can learn more about the command-line API clients `bcoin-cli` and `bwallet-cli` at [http://bcoin.io/api-docs.](http://bcoin.io/api-docs/?shell--cli#introduction)
 
-```shell
+```bash
 {
   "version": "v1.0.0-pre",
   "network": "main",
@@ -212,7 +212,7 @@ After a few minutes of loading, your output should resemble the printout below. 
 
 When bcoin is run for the first time, it will create a new wallet for you, labelled `primary`. That wallet will start off with one account labelled `default`. Display the secret key and mnemonic backup phrase for your wallet. Write down your seed phrase right now! You won't see it in plaintext again.
 
-```shell
+```bash
 bwallet-cli master
 
 # example output
@@ -232,13 +232,13 @@ bwallet-cli master
 
 Encrypt the wallet with the following command. This method can only be executed with cURL. Be sure to use a good password.
 
-```shell
+```bash
 curl http://127.0.0.1:8334/wallet/primary/passphrase -X POST --data '{"passphrase":"<YOUR GREAT PASSWORD>"}'
 ```
 
-Anytime you need an address to send bitcoin to you can use the command line
+Anytime you need an address to send bitcoin to you can use the command line.
 
-```shell
+```bash
 # get account details including the most recently generated address
 $ bwallet-cli account get default
 {
@@ -288,7 +288,9 @@ You can stop the node with the command `bcoin-cli rpc stop`.
 
 ## Using the bcoin JavaScript object
 
-In addition to starting and controlling a bcoin node from the command line, you can also create a node as an object in a Javascript program. This will give us more granular control of the options, and especially the event behavior around blocks and transactions. Just to get started, create a new file called `spv_clock.js` and start it off with this script. It is a simpler version of [the actual script that gets run](https://github.com/bcoin-org/bcoin/blob/master/bin/spvnode) by the `bcoin --spv --daemon` command. Run the script with command `node spv_clock.js >/dev/null &` to run the bcoin spv node as a background process, like a daemon. Once it's running, you can interact it with it from the command line the same way we did before. Play around with it a bit and then `bcoin-cli rpc stop` so we can start getting fancy!
+*The complete scripts used in this tutorial are available at [https://github.com/pinheadmz/bcoin-clock](https://github.com/pinheadmz/bcoin-clock)*
+
+In addition to starting and controlling a bcoin node from the command line, you can also create a node as an object in a Javascript program. This will give us more granular control of the options, and allow us to catch events for blocks and transactions. Just to get started, create a new file called `spv_clock.js` and start it off with the script below. It is a simpler version of [the actual script that gets run](https://github.com/bcoin-org/bcoin/blob/master/bin/spvnode) by the `bcoin --spv --daemon` command. Run your script with the command `node spv_clock.js >/dev/null &` to run the bcoin spv node as a background process, or daemon. Once it's running, you can interact it with it from the command line the same way we did before. Play around with it a bit and then execute `bcoin-cli rpc stop` so we can start getting fancy!
 
 ```javascript
 // Get the SPV node object from the globally-installed bcoin package
@@ -333,30 +335,31 @@ const node = new SPVNode({
 
 ### Respond to events
 
-The line marked `(*)` above is where we can ask bcoin to react to certain "events" like a new block being added to the tip of the blockchain, or a transaction being received that affects our own wallet. For our purposes, we want bcoin to store a JSON file with the last 20 block headers, so we can display them on the clock! First let's add a function (at the very top of the file) that maintains a JSON file on disk with a maximum of 20 block headers, in the form of a JSON array:
+The line marked `(*)` above is where we can ask bcoin to react to certain "events" like a new block being added to the tip of the blockchain, or a transaction being received that affects our own wallet. For our purposes, we want bcoin to write a JSON file for each new block, so we can display the block details on the clock! First let's add a function (at the very top of the file) that writes these files, labeled by the block's height. We only need to keep 20 or so of the most recent blocks, so we'll allow the script to prune the directory as well. On a Raspberry Pi, the script below will create the directory at `/home/pi/blocks` (or `~/blocks`),
 
 ```javascript
+// allow the script to access the file system on disk
 const fs = require('fs');
-const headersFile = '/home/pi/blockHeaders.json';
+const os = require('os');
+const maxFiles = 20;
 
-function addToFile(element, file){
-	// Load the existing JSON file from disk. Ignore errors (file might not exist yet)
-	var headersArray = [];
-	try {
-		headersArray = JSON.parse(fs.readFileSync(file, 'ascii'));
-	} catch(e) {}
-	
-	// Add our new blockHeader object to the end of the array
-	headersArray.push(blockHeader);
-	
-	// Prune it if it's too long
-	if (headersArray.length > 20)
-		headersArray.shift();
-	
-	// Write the headers array back to disk
-	fs.writeFile(file, JSON.stringify(element), function(err){
-		if(err)
-			console.log(err);
+// create the a directory for block headers if it doesn't exist already
+const blocksDir = os.homedir() + '/blocks/';
+if (!fs.existsSync(blocksDir)){
+    fs.mkdirSync(blocksDir);
+}
+
+// Write a JSON object to disk
+function writeFile(index, element, dir){
+	fs.writeFile(dir + index, JSON.stringify(element), function(err){
+		if(!err){
+			// delete files older than 20 blocks if it exists
+			try {
+				fs.unlinkSync(dir + (index-maxFiles));
+			} catch(err) {
+				console.log(err);
+			}
+		}
 	});
 }
 ```
@@ -364,46 +367,71 @@ function addToFile(element, file){
 Then we can tell bcoin to call the above function whenever a new block arrives. This code will go right where the `(*)` line is in our script:
 
 ```javascript
-  // write block event to file
+  // write new block details to file
   node.on('block', async (block) => {
-  	addToFile(block, headersFile);
-  });
+  	// most of the block's details are returned by the 'block' event but we need to get its height from the blockchain database
+  	headers = await node.chain.getEntryByHash(block.hash('hex'));
+  	blockHeight = headers.height;
 
+	// simplify the block data structure to a string
+  	blockJSON = block.toJSON();
+
+	// index it by height (orphaned blocks will therefore be replaced by new block at same height)
+  	writeFile(blockHeight, blockJSON, blocksDir);
+  });
 ```
 
+If you run the script now with `node spv_clock.js >/dev/null &` you should start to see JSON files filling up the `blocks` directory. Next we will create our visualizer that reads these files! If you `cat` one of them you can see what kind of data is emitted by the 'block' event. In SPV mode, the node only downloads the block headers and a little bit of extra metadata from the network. If this block had contained a transaction relevant to our wallet, there would be additional data to prove our transaction was included in that block.
 
+```bash
+$ cat ~/blocks/526358
+{
+	"hash":"00000000000000000009392f74e26fce58359267a64aa9aa86708062a2296492",
+	"version":536870912,
+	"prevBlock":"0000000000000000001d437becc92a9cdf38af11105bf6370c6cde001bc0a2ec",
+	"merkleRoot":"bbbb711d2910205c8c2b444572e79ec5812705203103afc5f82980cb505550e1",
+	"time":1528332683,
+	"bits":389609537,
+	"nonce":3638200179,
+	"totalTX":1199,
+	"hashes":[
+		"bbbb711d2910205c8c2b444572e79ec5812705203103afc5f82980cb505550e1"
+	],
+	"flags":"00"
+}
+```
 
+## Enter: Python
 
+Congratulations! If you made it this far, you have a working Bitcoin light client in the palm of your hand, ready to send and receive money. You've modified it to record details about each new block in a file on disk. The rest of this guide will focus on interacting with the those block files, as well as the bcoin node and wallet servers via cURL requests in python. We use Python 2.7 because it is already installed on Raspbian, easy to interact with the command line, and because the extra hardware we add later is driven by libraries written in python.
 
+*Reminder: The finished script is available at [https://github.com/pinheadmz/bcoin-clock](https://github.com/pinheadmz/bcoin-clock)*
 
+First install some dependencies:
 
-
-## Enter: python
-
-Congratulations! If you made it this far, you have a working Bitcoin light client in the palm of your hand, ready to send and receive money. The rest of this guide will focus on interacting with the bcoin node and wallet servers via cURL requests in python. We use python mainly because its easy to interact with the command line and also because the extra hardware we add later is driven by libraries written in python.
-
-First install some dependencies
-
-```shell
+```bash
 sudo apt-get install python-pip python-pil python-requests
 sudo pip install pyqrcode
 ```
 
-Create a new python file `bpi.py` and start with this script. We'll use the `curses` module to draw the output to the terminal and scan for keystrokes. API calls will be handled by `requests`. Run the script with the command `python bpi.py`. You can quit the program at any time by just typing `Q`. 
+Create a new python file `gui_clock.py` and start with the code below. Make sure bcoin is already running with the `spv_clock.js` script, and then run your new python script with the command `python gui_clock.py`. If all goes well you should see a long JSON output, followed by a Bitcoin address and QR code, right in the terminal!
 
 ```python
 import requests
-import curses
 import pyqrcode
-import atexit
-import time
-import sys
+import json
 
-### default endpoints for mainnet, not using any API key
+### default API endpoints, not using any authentication key
+# testnet
+#nodeurl = "http://127.0.0.1:18332/"
+#wallurl = "http://127.0.0.1:18334/wallet/primary/"
+# main
 nodeurl = "http://127.0.0.1:8332/"
 wallurl = "http://127.0.0.1:8334/wallet/primary/"
 
-### set up some functions to get data from bcoin
+### set up some functions to get data from bcoin node & wallet servers
+### these functions are equivalent to using cURL from the command line
+### the Python requests package makes this super easy for us
 def getInfo():
 	return requests.get(nodeurl).json()
 
@@ -413,90 +441,70 @@ def getAddress():
 
 def getBalance():
 	return requests.get(wallurl + 'balance?account=default').json()
-
-### start the curses text-based terminal interface
-# refresh rate in seconds
-REFRESH = 1
-stdscr = curses.initscr()
-curses.noecho()
-curses.cbreak()
-curses.halfdelay(REFRESH * 10) # blocking value is x 0.1 seconds
-# store window dimensions
-MAXYX = stdscr.getmaxyx()
-
-# automatically cleanup curses settings on exit
-def cleanup():
-	curses.nocbreak()
-	curses.echo()
-	curses.endwin()
 	
-	print "bye!"
-atexit.register(cleanup)
+### Output!
+print json.dumps(getInfo(), indent=1)
+print json.dumps(getBalance(), indent=1)
 
-# stash cursor in the bottom right corner
-def hideCursor():
-	stdscr.addstr(MAXYX[0]-1, MAXYX[1]-1, "")
-
-# check for keyboard input -- also serves as the pause between REFRESH cycles
-def checkKeyIn():
-	keyNum = stdscr.getch()
-	if keyNum == -1:
-		return False
-	else:
-		key = chr(keyNum)
-
-	if key in ("q", "Q"):
-		sys.exit()
-	if key in ("d", "D"):
-		displayAddr()
-
-### display address and QR code
-def displayAddr():
-	addr = getAddress()['address']
-	code = pyqrcode.create(addr, 'M', version=3)
-	stdscr.erase()
-	stdscr.addstr(0, 0, addr)
-	stdscr.addstr(2, 0, code.text())
-	hideCursor()
-	stdscr.refresh()
-	time.sleep(5)
-	
-### print the text info display
-def printInfo():
-	# get data from servers
-	info =  getInfo()
-	balance = getBalance()
-
-	progress = info['chain']['progress']
-	latestHeight = info['chain']['height']
-	latestHash = info['chain']['tip']
-	confbal = balance['confirmed']
-	unconfbal = balance['unconfirmed']
-
-	stdscr.erase()
-	stdscr.addstr(0, 0, "Progress: " + str(int(progress*100000000)/1000000.0) + "%")
-	stdscr.addstr(1, 0, "Height: " + str(latestHeight))
-	stdscr.addstr(2, 0, "Hash: " + str(latestHash))
-	stdscr.addstr(3, 0, "Confirmed balance: " + str(confbal))
-	stdscr.addstr(4, 0, "Unconfirmed balance: " + str(unconfbal))
-
-	stdscr.addstr(5, 0, "DEBUG: " + str(time.time()))
-
-
-	# print menu on bottom
-	menu = "[Q]uit   [D]eposit"
-	stdscr.addstr(MAXYX[0]-1, 0, menu)
-	stdscr.refresh()
-
-# loop!
-while True:
-	printInfo()
-	hideCursor()
-	checkKeyIn()
+# display address and QR code
+addr = getAddress()['address']
+code = pyqrcode.create(addr, 'M', version=3).terminal(quiet_zone=1)
+print addr
+print code
 ```
 
+<img src="https://raw.githubusercontent.com/pinheadmz/bcoin-clock/master/InfoAndQRcode.png">
 
 
+So we can talk to bcoin from Python! Awesome. The next step is to read those `blocks` files that are being output by our SPV-node Javascript program. What we'll do is scan the `blocks` directory and import all the JSON files there into an global object of the 20 most recent blocks, indexed by block height (which should be the file name). You can just add this blob of code to the end of your Python script for now, we can clean it up later :-)
+
+```python
+import os, sys
+
+### read the JSON files from disk and keep the last 20 in memory
+# should be the same directory used in the Javascript program (~/blocks on Raspberry Pi)
+BLOCKS_DIR = os.path.expanduser('~') + '/blocks/'
+# global variable to store all the block details
+BLOCKS = {}
+# generic function to load any directory of JSON files into any object passed in
+def readFiles(dict, dir):
+        files = [files for (dirpath, dirnames, files) in os.walk(dir)][0]
+        for index in files:
+                try:
+                        with open (dir + index) as file:
+                                dict[int(index)] = json.load(file)
+                except:
+                        pass
+                sortedDictKeys = sorted(dict)
+                if len(sortedDictKeys) > 20:
+                        del dict[sortedDictKeys[0]]
+
+# run the above function one time to load up the BLOCKS object
+readFiles(BLOCKS, BLOCKS_DIR)
+# Output!
+print json.dumps(BLOCKS, indent=1)
+```
+
+In addition to the node info, address and QR code we got in the last step, this time you should also get a list of 20 blocks and their metadata. We've almost got everything ready for the clock display under the hood! The last bit of internal calculation is to derive the progress of the [difficulty adjustment interval](https://en.bitcoin.it/wiki/Difficulty), and the [block subsidy halving interval.](https://en.bitcoin.it/wiki/Controlled_supply). Since we can get the block height from `getInfo()` it's easy to calculate where we are in each cycle:
+
+```python
+### calculate cycle progress as % and countdown integer given current blockchain height
+def getDiff(height):
+	return {"percent": (height % 2016 / 2016.0) * 100, "countdown": 2016 - (height % 2016)}
+def getHalf(height):
+	return {"percent": (height % 210000 / 210000.0 ) * 100, "countdown": 210000 - (height % 210000)}
+
+info = getInfo()
+height=info['chain']['height']
+print json.dumps(getDiff(height), indent=1)
+print json.dumps(getHalf(height), indent=1)
+```
+
+## Finishing the GUI
+
+
+
+<img src="https://raw.githubusercontent.com/pinheadmz/bcoin-clock/master/BcoinClockGUI.png">
 
 
 
