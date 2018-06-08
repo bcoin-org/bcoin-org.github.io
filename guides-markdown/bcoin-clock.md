@@ -9,7 +9,7 @@ Learn how to install bcoin on a brand-new Raspberry Pi Zero W, or other linux sy
 
 ## Introduction
 
-The goal of this guide is to run a bcoin node and interact with the Bitcoin network using minimal resources, as quickly as possible. Once bcoin is running we will add a visual interface and then connect some extra hardware to make it really fun. Although bcoin is capable of running a full archival node and even mining blocks, for this guide we will keep bcoin in [SPV mode.](https://en.bitcoin.it/wiki/Scalability#Simplified_payment_verification) This means we can run the program on a tiny [Raspberry Pi Zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/) using a tiny SD card. This guide was written specifically for (any) Raspberry Pi but can also be easily ported to most other Linux systems.
+The goal of this guide is to run a bcoin node and interact with the Bitcoin network using minimal resources, as quickly as possible. Once bcoin is running we will add a visual interface and then connect some extra hardware to make it really fun. Although bcoin is capable of running a full archival node and even mining blocks, for this guide we will keep bcoin in [SPV mode.](https://en.bitcoin.it/wiki/Scalability#Simplified_payment_verification) This means we can run the program on a tiny [Raspberry Pi Zero W](https://www.raspberrypi.org/products/raspberry-pi-zero-w/) using a MicroSD card. This guide was written specifically for (any) Raspberry Pi but can also be easily ported to most other Linux systems.
 
 ## Set up the Raspberry Pi
 
@@ -502,10 +502,59 @@ print json.dumps(getHalf(height), indent=1)
 
 ## Finishing the GUI
 
+What we have built so far is a system that:
 
+1. Launches an SPV Bitcoin node
+
+2. Records metadata about every new block in a file
+
+3. Monitors the status of the node and the blockchain
+
+4. Retrieves Bitcoin addresses on demand from the wallet and generates QR codes
+
+All that remains to package up this structure with a fun graphical interface that refreshes its own status every second *(tick, tick, tick!)*. The final Python script is [available on Github](https://github.com/pinheadmz/bcoin-clock) and you can read through it to see how I added the `curses` Python library to draw ASCII-art to the terminal screen. I added a series of conditional statements to draw the graphics differently depending on the terminal window size. `curses` also allows us to wait for single-key commands from the user and react quickly. I've set up a little menu at the bottom of the screen where a user can zoom the timeline in or out, and also request a deposit address and QR code. You can clone this repository and run the ASCII-art GUI on your own machine with the same methods used in this guide.
 
 <img src="https://raw.githubusercontent.com/pinheadmz/bcoin-clock/master/BcoinClockGUI.png">
 
 
+## Next steps
 
+What else can we do with this structure? What else can you add on your own? Since we are generating receiving addresses, maybe there should be some kind of send function, [using the node API and another cURL request from Python.](http://bcoin.io/api-docs/?shell--curl#send-a-transaction) You could also use the same QR code functionality to [display the private key for an address you have deposited to](http://bcoin.io/api-docs/?shell--curl#get-private-key-by-address), allowing the user to sweep that key with a mobile phone wallet.
 
+Also notice when a wallet-related transaction gets confirmed in a block, the details we get for that block include a [Merkle Proof](https://en.bitcoin.it/wiki/Protocol_documentation#Merkle_Trees). This is expressed in a series of hashes and flags that describe the structure of the Merkle Tree our transaction is in.
+
+```bash
+{
+"hash":"0000000000000030563c98f2a19f726c24d6f3ab69295d6161b5e8b99766e9a1",
+"version":536870912,
+"prevBlock":"00000000000000488d4c972efa9535fb3e3137b109571a5790a3aa284cbd427a",
+"merkleRoot":"14f4d13857ea54be5724e3284fddd200f1dce5d6dcb859a9e79c6c8ea45fc200",
+"time":1528410807,
+"bits":425389056,
+"nonce":2023619469,
+"totalTX":72,
+"hashes":[
+	"ea0c37e986eb55c3ff9b0abead1eb567cd6d252e4a2a956430598194b62c060c",
+	"fee24064527576237da1ae8a835722596dc573cce1fa29b64b2af2d284c97fbb",
+	"7100255726502d117c6d8a118243753f3f38e2f4b43844e09598d66d31e50e2b",
+	"8f0d27afb0ae40427c0e900ba8843093e7a5b2b619227e9ec8f7108d4d6d12da",
+	"22a0ab5395bef2050f270ebd8a33fb6794bce5e46d6f75289a17b0fecfaf65c3",
+	"14c90c01fcc64ff892b1b599039ee6634e712736f37a284944944ee61a3292ea",
+	"f9821e9ef769035f8fb845a89ce08106db8bff5c7e9f8997e2765ccdf4da3c37",
+	"46e8991fd4c979cfbfa2dbc2a479eb29a16f1e3f4127168c0253dd671586f4e9",
+	"4bf208da979cc9eb4b0a6fe7e6ca6ac9baf9660120b0dedc8ae8725456f6528a",
+	"cbdb8da8ec97c50d7d5434f12bdb26b44dce9f4ea90aea69e870288d2e5c35ac"
+	],
+"flags":"773d00"
+}
+```
+
+...maybe the GUI should indicate somehow which blocks confirm our own transactions?
+
+## Extra credit
+
+You don't have to keep this program in the SSH terminal -- if you've been working on a Raspberry Pi it'd be quite easy to attach a [small HDMI display](https://purse.io/search/5%22%20HDMI%20raspberry%20pi) and [tiny wireless keyboard](https://purse.io/search/mini%20usb%20keyboard%20wireless) to make yourself a stand alone clock. Install it in an old picture frame! Hang it on your wall and send us a photo! :-)
+
+The Bcoin Block Clock that I made took the interface one step further: LEDs! I used a [NeoPixel ring](https://learn.adafruit.com/neopixels-on-raspberry-pi) to display the blocks over the past hour, using LED color to illustrate block version or size. A second, inner NeoPixel ring [indicates the progress of the difficulty adjustment period.](https://twitter.com/MatthewZipkin/status/885318444387680256) I added a [small OLED display](https://learn.adafruit.com/ssd1306-oled-displays-with-raspberry-pi-and-beaglebone-black) for the blockchain readout. The python libraries for these add-ons are open source and will integrate easily into your project.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/rSh_Gh1O_YM" frameborder="0" allow="encrypted-media" allowfullscreen></iframe>
