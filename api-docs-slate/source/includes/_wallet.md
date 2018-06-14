@@ -240,7 +240,7 @@ for a specific wallet, the token must be sent back in the query string or JSON
 body.
 
 <aside class="warning">
-The examples in this section demonstrate how to use a wallet token for API access, which is recommended. However, for clarity, further examples in these docs will omit the token requirement. 
+The examples in this section demonstrate how to use a wallet token for API access, which is recommended. However, for clarity, further examples in these docs will omit the token requirement.
 </aside>
 
 ## Reset Authentication Token
@@ -754,6 +754,7 @@ passphrase <br> _string_ | passphrase to unlock the account
 smart <br> _bool_  | whether or not to choose smart coins, will also used unconfirmed transactions
 blocks <br> _int_ | number of blocks to use for fee estimation.
 rate <br> _int_ | the rate for transaction fees. Denominated in satoshis per kb
+sort <br> _bool_ | Sort outputs and inputs according BIP69
 maxFee <br> _int_ |  maximum fee you're willing to pay
 subtractFee <br> _bool_ | whether to subtract fee from outputs (evenly)
 subtractIndex <br> _int_ | subtract only from specified output index
@@ -1226,7 +1227,7 @@ bwallet-cli --id=$watchid --account=$account import $pubkey
 curl $walleturl/$id/import \
   -X POST \
   --data '{"account":"'$account'", "privateKey":"'$privkey'"}'
-  
+
 curl $walleturl/$watchid/import \
   -X POST \
   --data '{"account":"'$account'", "publicKey":"'$pubkey'"}'
@@ -1595,8 +1596,8 @@ Response will return `removedKey: true` true if key was removed on this request.
 `false` if key was already removed, but will still return `success: true` with status `200`.
 
 <aside class="notice">
-Remove Key is only available to a multisig wallet that is not yet "complete" -- as in, 
-<nobr><code>n-1</code></nobr> number of keys have not yet been added to the wallet's own original key. 
+Remove Key is only available to a multisig wallet that is not yet "complete" -- as in,
+<nobr><code>n-1</code></nobr> number of keys have not yet been added to the wallet's own original key.
 Once a multisig wallet has the right number of keys to create m-of-n addresses, this function will return an error.
 </aside>
 
