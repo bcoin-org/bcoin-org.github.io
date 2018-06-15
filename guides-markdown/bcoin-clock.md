@@ -32,9 +32,11 @@ These operations will need to take place on a desktop computer, but almost any w
 
 Mount the MicroSD card with its new disk image on your computer again if it didn't mount automatically. We need to add two files to the `boot` volume:
 
-* [Enable SSH](https://www.raspberrypi.org/documentation/remote-access/ssh/README.md) by just saving a file to `boot` called `ssh`, with no file extension. The file doesn't need to have any content (a blank text file is fine).
+* [Enable SSH](https://www.raspberrypi.org/documentation/remote-access/ssh/README.md) by just saving a file to `boot` called `ssh`, with no file extension.
+The file doesn't need to have any content (a blank text file is fine).
 
-* [Add your local WiFi information](https://www.raspberrypi.org/blog/another-update-raspbian/) by saving a file to `boot` called `wpa_supplicant.conf`. You will add the following lines to this file -- be sure to include the correct WiFi network name and password!
+* [Add your local WiFi information](https://www.raspberrypi.org/blog/another-update-raspbian/) by saving a file to `boot` called `wpa_supplicant.conf`.
+You will add the following lines to this file -- be sure to include the correct WiFi network name and password!
 
 ```bash
 # add these lines to a new file boot/wpa_supplicant.conf
@@ -352,7 +354,8 @@ const node = new SPVNode({
 
 ### Respond to events
 
-The line marked `(*)` above is where we can ask bcoin to react to certain "events" like a new block being added to the tip of the blockchain, or a transaction being received that affects our own wallet.
+The line marked `(*)` above is where we can ask bcoin to react to certain "events" like a new block being added to the tip of the blockchain,
+or a transaction being received that affects our own wallet.
 For our purposes, we want bcoin to write a JSON file for each new block, so we can display the block details on the clock!
 First let's add a function (at the very top of the file) that writes these files, labeled by the block's height.
 We only need to keep 20 or so of the most recent blocks, so we'll allow the script to prune the directory as well.
@@ -487,6 +490,8 @@ print code
 
 <img src="https://raw.githubusercontent.com/pinheadmz/bcoin-clock/master/InfoAndQRcode.png">
 
+### Get block history and details
+
 So we can talk to bcoin from Python! Awesome. The next step is to read those `blocks` files that are being output by our SPV-node Javascript program.
 What we'll do is scan the `blocks` directory and import all the JSON files there into an global object of the 20 most recent blocks, indexed by block height (which should be the file name).
 You can just add this blob of code to the end of your Python script for now, we can clean it up later :-)
@@ -537,6 +542,90 @@ print json.dumps(getDiff(height), indent=1)
 print json.dumps(getHalf(height), indent=1)
 ```
 
+### Transaction notifications
+
+In the same way that we record `block` events from the SPV node script, we can also catch incoming transactions to the wallet, 
+and save those details to a file for the clock script to read. Back to that `(*)` section of the node script, let's add another event listener.
+We'll need to start by adding the wallet database to our node object.
+
+```javascript
+// add wallet database
+const walletdb = node.require('walletdb').wdb;
+const wallet = await walletdb.primary;
+
+// write new transaction details to file named by tx hash
+node.on('tx', async (tx) => {
+  // get readable format for transaction message
+  txJSON = tx.inspect();
+  // discover which outputs of this tx belong to our wallet
+  let details = []
+  for (const output of txJSON.outputs) {
+    // encode the public key hash into the right address format for this network
+    let outputJSON = output.getJSON('main');
+    if (await wallet.hasAddress(outputJSON.address))
+      details.push(outputJSON);
+  }
+  // add "my output" list to return object
+  txJSON.details = details;
+  fs.writeFile(txDir + txJSON.hash, JSON.stringify(txJSON), function(err){});
+});
+```
+
+The JSON recorded for an incoming transaction looks like this:
+
+```bash
+{
+   "hash":"357d1862850e4370134b1937ba4caff5674f46457b3e1a1750f8c2e7d1fc78bb",
+   "witnessHash":"357d1862850e4370134b1937ba4caff5674f46457b3e1a1750f8c2e7d1fc78bb",
+   "size":225,
+   ...
+   "inputs":[
+      ...
+   ],
+   "outputs":[
+      {
+         "value":123450,
+         "script":"76a914e84da987245b8ea2688ed35bbeecef8da1afc05588ac",
+         "address":"n2hG6dA6KepqpV7Z6aCQQMnbPiABy4dzMj"
+      },
+      {
+         "value":77676380,
+         "script":"76a914487af102bab462d6ee75e06dda1026cae4f9a8f488ac",
+         "address":"mn8CDzDkKo7JtF31c4HEqT9sSxZpi4W9YM"
+      }
+   ],
+   "locktime":0,
+   "details":[
+      {
+         "value":123450,
+         "script":"76a914e84da987245b8ea2688ed35bbeecef8da1afc05588ac",
+         "address":"n2hG6dA6KepqpV7Z6aCQQMnbPiABy4dzMj"
+      }
+   ]
+}
+```
+
+Notice that even though the transaction has 2 outputs, only one was recorded in the `details` array. That's the only output we really "received" (that we can actually spend).
+In the python clock script, we'll add a function that checks for transaction files and calculates the total amount recieved.
+
+```python
+TXS_DIR = os.path.expanduser('~') + '/txs/'
+# check for new txs
+def checkTXs():
+  txs = {}
+  try:
+    readFiles(txs, TXS_DIR)
+  except:
+    return False
+  for hash, tx in txs.items():
+    total = 0
+    for detail in tx['details']:
+      amt = detail['value'] / 100000000.0
+      total += amt
+    # remove tx file so we only notify once
+    os.remove(TXS_DIR + hash)
+```
+
 ## Finishing the GUI
 
 What we have built so far is a system that:
@@ -545,29 +634,73 @@ What we have built so far is a system that:
 
 2. Records metadata about every new block in a file
 
-3. Monitors the status of the node and the blockchain
+3. Records incoming transaction details in a file
 
-4. Retrieves Bitcoin addresses on demand from the wallet and generates QR codes
+4. Monitors the status of the node and the blockchain
+
+5. Retrieves Bitcoin addresses on demand from the wallet and generates QR codes
 
 All that remains to package up this structure with a fun graphical interface that refreshes its own status every second *(tick, tick, tick!)*.
-The final Python script is [available on Github](https://github.com/pinheadmz/bcoin-clock) and you can read through it to see how I added the `curses` Python library to draw ASCII-art to the terminal screen.
-I added a series of conditional statements to draw the graphics differently depending on the terminal window size.
-`curses` also allows us to wait for single-key commands from the user and react quickly.
-I've set up a little menu at the bottom of the screen where a user can zoom the timeline in or out, and also request a deposit address and QR code.
-You can clone this repository and run the ASCII-art GUI on your own machine with the same methods used in this guide.
+The final Python script is [available on Github](https://github.com/pinheadmz/bcoin-clock)
+and you can read through it to see how I added the `curses` Python library to draw ASCII-art to the terminal screen.
+`curses` is a great tool for terminal applications because you can write text anywhere on the screen with (x,y) coordinates, and it can also
+capture single keystrokes from the user and respond immediately inside of an infinite loop.
+
+To draw the block history to the screen, we need to first decide how much time the width of the screen represents.
+Then, using the current time and the timestamps of all the blocks in our memory, figure out which blocks are within
+our timeline and where they are in that timeline. `curses` will tell us the size of the screen in rows and columns.
+
+```python
+# initialize curses
+import curses
+stdscr = curses.initscr()
+# store window dimensions
+MAXYX = stdscr.getmaxyx()
+
+### draw the recent blockchain
+WINDOW = 30 * 60 # total seconds across width of screen (thirty minutes)
+def drawBlockchain():
+  # calculate how much time is represented by each column on the screen
+  secondsPerCol = WINDOW/MAXYX[1]
+  # draw an axis across the screen like this: [-----------]
+  stdscr.addstr(0, 0, "[" + "-" * (MAXYX[1]-2) + "]")
+  # get the current unix timestamp
+  now = int(time.time())
+  # iterate through our array of blocks and draw them
+  for index, block in BLOCKS.items():
+    # how old is this block in seconds?
+    secondsAgo = now - block['time']
+    # is this block even in our displayed timeline?
+    if secondsAgo < WINDOW:
+      # calcualte the left-to-right position of the block in the timeline
+      col = MAXYX[1] - (secondsAgo / secondsPerCol) - 9
+      if col > 0:
+        # draw the block details
+        stdscr.addstr(0, col, "|")
+        stdscr.addstr(1, col, "#" + str(index))
+        stdscr.addstr(2, col, "Hash:")
+        for i in range(8):
+          stdscr.addstr(3+i, col+1, block['hash'][i*8:i*8+8])
+        stdscr.addstr(11, col, "TXs:")
+        stdscr.addstr(12, col+1, str("{:,}".format(block['totalTX'])))
+        stdscr.addstr(13, col, "Age:")
+        stdscr.addstr(14, col+1, str(secondsAgo/60) + ":" + str(secondsAgo%60).zfill(2))
+```
+
+I've set up a little menu at the bottom of the screen where a user can zoom the timeline in or out.
+When `curses` catches a user pressing either `-` or `+`, the `WINDOW` parameter is increased or decreased.
 
 <img src="https://raw.githubusercontent.com/pinheadmz/bcoin-clock/master/BcoinClockGUI.png">
-
 
 ## Next steps
 
 What else can we do with this structure?
-What else can you add on your own? Since we are generating receiving addresses, maybe there should be some kind of send function,
+What else can you add on your own? Since we are receiving transactions, maybe there should be some kind of send function,
 [using the node API and another cURL request from Python.](http://bcoin.io/api-docs/?shell--curl#send-a-transaction)
 You could also use the same QR code functionality to [display the private key for an address you have deposited to](http://bcoin.io/api-docs/?shell--curl#get-private-key-by-address),
 allowing the user to sweep that key with a mobile phone wallet.
 
-Also notice when a wallet-related transaction gets confirmed in a block, the details we get for that block include a [Merkle Proof](https://en.bitcoin.it/wiki/Protocol_documentation#Merkle_Trees).
+Notice when a wallet-related transaction gets confirmed in a block, the details we get for that block include a [Merkle Proof](https://en.bitcoin.it/wiki/Protocol_documentation#Merkle_Trees).
 This is expressed in a series of hashes and flags that describe the structure of the Merkle Tree our transaction is in.
 
 ```bash
@@ -598,10 +731,11 @@ This is expressed in a series of hashes and flags that describe the structure of
 
 ...maybe the GUI should indicate somehow which blocks confirm our own transactions?
 
+We have been running bcoin in SPV mode so far, but what if we ran a full bcoin node? We could display the size of the mempool as 
+transactions get broadcast across the network and consumed by blocks. The number of transactions in the mempool and its total size in bytes are available
+from the `getInfo()` function we wrote.
+
 ## Extra credit
-
-
-// TODO: FULL NODE / MEMPOOL
 
 You don't have to keep this program in the SSH terminal -- if you've been working on a Raspberry Pi it'd be quite easy to attach a [small HDMI display](https://purse.io/search/5%22%20HDMI%20raspberry%20pi)
 and [tiny wireless keyboard](https://purse.io/search/mini%20usb%20keyboard%20wireless) to make yourself a stand alone clock.
