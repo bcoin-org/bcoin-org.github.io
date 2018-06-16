@@ -312,6 +312,8 @@ Once it's running, you can interact it with it from the command line the same wa
 Play around with it a bit and then execute `bcoin-cli rpc stop` so we can start getting fancy!
 
 ```javascript
+// spv_clock.js
+
 // Get the SPV node object from the globally-installed bcoin package
 const {SPVNode} = require('bcoin');
 
@@ -362,6 +364,8 @@ We only need to keep 20 or so of the most recent blocks, so we'll allow the scri
 On a Raspberry Pi, the script below will create the directory at `/home/pi/blocks` (or `~/blocks`),
 
 ```javascript
+// spv_clock.js
+
 // allow the script to access the file system on disk
 const fs = require('fs');
 const os = require('os');
@@ -391,6 +395,8 @@ function writeFile(index, element, dir){
 Then we can tell bcoin to call the above function whenever a new block arrives. This code will go right where the `(*)` line is in our script:
 
 ```javascript
+// spv_clock.js
+
   // write new block details to file
   node.on('block', async (block) => {
   	// most of the block's details are returned by the 'block' event but we need to get its height from the blockchain database
@@ -450,6 +456,8 @@ If all goes well you should see a long JSON output, followed by a Bitcoin addres
 That magic trick is performed by [PyQRCode](https://pythonhosted.org/PyQRCode/rendering.html) which has several methods for returning a QR code.
 
 ```python
+# gui_clock.py
+
 import requests
 import pyqrcode
 import json
@@ -497,6 +505,8 @@ What we'll do is scan the `blocks` directory and import all the JSON files there
 You can just add this blob of code to the end of your Python script for now, we can clean it up later :-)
 
 ```python
+# gui_clock.py
+
 import os, sys
 
 ### read the JSON files from disk and keep the last 20 in memory
@@ -530,6 +540,8 @@ nd the [block subsidy halving interval.](https://en.bitcoin.it/wiki/Controlled_s
 Since we can get the block height from `getInfo()` it's easy to calculate where we are in each cycle:
 
 ```python
+# gui_clock.py
+
 ### calculate cycle progress as % and countdown integer given current blockchain height
 def getDiff(height):
 	return {"percent": (height % 2016 / 2016.0) * 100, "countdown": 2016 - (height % 2016)}
@@ -539,7 +551,7 @@ def getHalf(height):
 info = getInfo()
 height=info['chain']['height']
 print json.dumps(getDiff(height), indent=1)
-print json.dumps(getHalf(height), indent=1)
+print json.dumps(getHalf(height), indent=1)`
 ```
 
 ### Transaction notifications
@@ -549,6 +561,8 @@ and save those details to a file for the clock script to read. Back to that `(*)
 We'll need to start by adding the wallet database to our node object.
 
 ```javascript
+// spv_clock.js
+
 // add wallet database
 const walletdb = node.require('walletdb').wdb;
 const wallet = await walletdb.primary;
@@ -609,6 +623,8 @@ Notice that even though the transaction has 2 outputs, only one was recorded in 
 In the python clock script, we'll add a function that checks for transaction files and calculates the total amount recieved.
 
 ```python
+# gui_clock.py
+
 TXS_DIR = os.path.expanduser('~') + '/txs/'
 # check for new txs
 def checkTXs():
@@ -651,6 +667,8 @@ Then, using the current time and the timestamps of all the blocks in our memory,
 our timeline and where they are in that timeline. `curses` will tell us the size of the screen in rows and columns.
 
 ```python
+# gui_clock.py
+
 # initialize curses
 import curses
 stdscr = curses.initscr()
