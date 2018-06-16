@@ -1,0 +1,6 @@
+#!/bin/bash
+
+./build
+git add --all
+git commit -a -m 'update docs.'
+git push origin master

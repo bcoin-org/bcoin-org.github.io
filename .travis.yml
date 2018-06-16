@@ -1,0 +1,21 @@
+language: node_js
+node_js:
+  - stable
+before_install:
+  - rvm get stable
+  - rvm use ruby --install --default
+before_script:
+  - npm run clear-guides
+  - npm run convert-markdown -- --all
+script:
+  - sh ./build-api.sh
+deploy:
+  provider: pages
+  skip_cleanup: true
+  file: ./*
+  local_dir: .
+  github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+  target_branch: master
+  on:
+    branch: staging
+    repo: bcoin-org/bcoin-org.github.io

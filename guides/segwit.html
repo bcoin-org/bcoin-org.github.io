@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="What is segwit, how to use segwit with bcoin and what are the updates">
+	<meta name="author" content="Nodar Chkuaselidze">
+
+	<title>Bcoin Guide | Segwit and Bcoin</title>
+
+	<!-- Favicons -->
+	<!-- old
+	<link rel="shortcut icon" href="../assets/images/bcoin-ico.png">-->
+
+	<!-- generated from http://www.favicon-generator.org/ -->
+	<link rel="apple-touch-icon" sizes="57x57" href="../assets/images/apple-icon-57x57.png">
+	<link rel="apple-touch-icon" sizes="60x60" href="../assets/images/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="../assets/images/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="76x76" href="../assets/images/apple-icon-76x76.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="../assets/images/apple-icon-114x114.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="../assets/images/apple-icon-120x120.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="../assets/images/apple-icon-144x144.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="../assets/images/apple-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="../assets/images/apple-icon-180x180.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="../assets/images/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="../assets/images/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="../assets/images/favicon-16x16.png">
+	<link rel="manifest" href="../assets/images/manifest.json">
+	<meta name="msapplication-TileColor" content="#ffffff">
+	<meta name="msapplication-TileImage" content="../assets/images/ms-icon-144x144.png">
+	<meta name="theme-color" content="#ffffff">
+
+	<!-- Web Fonts -->
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400italic,400,600,700' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Montserrat:700' rel='stylesheet' type='text/css'>
+
+	<!-- Bootstrap core CSS -->
+	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+	<!-- Code Snippet CSS -->
+	<link href="../assets/css/prism.css" rel="stylesheet">
+
+	<link href="../assets/css/custom.css" rel="stylesheet">
+
+	<!-- Icon Fonts -->
+	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
+	<link href="../assets/css/simple-line-icons.css" rel="stylesheet">
+
+	<!-- Plugins -->
+	<link href="../assets/css/magnific-popup.css" rel="stylesheet">
+	<link href="../assets/css/owl.carousel.css" rel="stylesheet">
+	<link href="../assets/css/flexslider.css" rel="stylesheet">
+	<link href="../assets/css/animate.min.css" rel="stylesheet">
+
+	<!-- Template core CSS -->
+	<link href="../assets/css/vertical.min.css" rel="stylesheet">
+	<link href="../assets/css/template.css" rel="stylesheet">
+
+	<!-- Google Analytics Tracking -->
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+        ga('create', 'UA-96446060-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+</head>
+<body>
+
+	<!-- PRELOADER -->
+	<div class="page-loader">
+		<div class="img-loader">Loading...
+			<!-- Bcoin logo in SVG -->
+			<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+				viewBox="0 0 200 56" style="enable-background:new 0 0 200 56;" xml:space="preserve">
+			<g id="XMLID_108_">
+				<g id="XMLID_123_">
+					<path id="XMLID_124_" d="M8.4,51.8H3.2V4.2h5.2v19.2h0.8c1.2-2,2.8-3.6,4.8-4.7c2-1.1,4.3-1.6,6.7-1.6c2,0,4,0.4,5.8,1.2
+						c1.8,0.8,3.4,1.9,4.8,3.3c1.4,1.5,2.5,3.2,3.3,5.4s1.2,4.6,1.2,7.3v1.4c0,2.8-0.4,5.2-1.2,7.4c-0.8,2.1-1.9,3.9-3.3,5.4
+						c-1.4,1.5-3,2.6-4.9,3.3s-3.8,1.1-5.9,1.1c-1.1,0-2.2-0.1-3.3-0.4c-1.1-0.3-2.2-0.6-3.2-1.2c-1-0.5-1.9-1.2-2.8-1.9
+						c-0.8-0.7-1.6-1.6-2.1-2.7H8.4V51.8z M19.4,47.7c1.6,0,3.1-0.3,4.4-0.9c1.3-0.6,2.5-1.4,3.5-2.4c1-1,1.8-2.3,2.3-3.8
+						c0.6-1.5,0.8-3.2,0.8-5v-1.4c0-1.8-0.3-3.5-0.8-4.9c-0.6-1.5-1.3-2.7-2.3-3.8c-1-1.1-2.2-1.9-3.5-2.5c-1.4-0.6-2.8-0.9-4.4-0.9
+						c-1.6,0-3,0.3-4.3,0.9c-1.3,0.6-2.5,1.5-3.5,2.6c-1,1.1-1.8,2.4-2.4,3.9c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1
+						c0.6,1.5,1.4,2.8,2.4,3.9s2.2,1.9,3.5,2.5C16.4,47.4,17.9,47.7,19.4,47.7z"/>
+				</g>
+				<g id="XMLID_120_">
+					<path id="XMLID_121_" d="M76.1,39.8c-0.4,1.9-1,3.6-1.8,5.2c-0.9,1.6-2,3-3.3,4.1s-2.9,2.1-4.7,2.7c-1.8,0.6-3.8,1-5.9,1
+						c-2.3,0-4.5-0.4-6.6-1.2c-2.1-0.8-3.9-1.9-5.4-3.4c-1.6-1.5-2.8-3.3-3.7-5.4c-0.9-2.1-1.4-4.6-1.4-7.4v-0.8c0-2.7,0.5-5.2,1.4-7.4
+						c0.9-2.2,2.1-4,3.7-5.5c1.6-1.5,3.4-2.7,5.4-3.5c2.1-0.8,4.3-1.2,6.6-1.2c2.1,0,4,0.3,5.8,1c1.8,0.6,3.3,1.5,4.7,2.7
+						c1.4,1.2,2.5,2.5,3.3,4.1c0.9,1.6,1.5,3.3,1.8,5.2l-5.2,1.2c-0.1-1.2-0.5-2.3-1-3.4c-0.5-1.1-1.2-2.1-2.1-2.9
+						c-0.9-0.8-1.9-1.5-3.2-2c-1.2-0.5-2.7-0.7-4.3-0.7c-1.6,0-3.1,0.3-4.5,0.9c-1.4,0.6-2.6,1.5-3.7,2.6c-1.1,1.1-1.9,2.4-2.5,4
+						c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1c0.6,1.5,1.4,2.8,2.5,3.8c1.1,1,2.3,1.8,3.7,2.4c1.4,0.6,3,0.9,4.6,0.9
+						s3.1-0.3,4.3-0.8c1.2-0.5,2.3-1.2,3.1-2c0.9-0.8,1.6-1.8,2.1-2.9c0.5-1.1,0.9-2.2,1-3.4L76.1,39.8z"/>
+				</g>
+				<g id="XMLID_116_">
+					<path id="XMLID_117_" d="M117.2,35.4c0,2.8-0.5,5.3-1.4,7.5c-0.9,2.2-2.1,4-3.6,5.4c-1.5,1.5-3.3,2.6-5.3,3.4
+						c-2,0.8-4.1,1.2-6.3,1.2c-2.2,0-4.3-0.4-6.3-1.2c-2-0.8-3.8-1.9-5.3-3.4c-1.5-1.5-2.7-3.3-3.6-5.4c-0.9-2.2-1.4-4.6-1.4-7.5v-0.8
+						c0-2.8,0.5-5.2,1.4-7.4c0.9-2.2,2.1-4,3.7-5.5c1.5-1.5,3.3-2.6,5.3-3.4c2-0.8,4.1-1.2,6.3-1.2c2.2,0,4.3,0.4,6.3,1.2
+						c2,0.8,3.8,1.9,5.3,3.4c1.5,1.5,2.8,3.3,3.7,5.5c0.9,2.2,1.4,4.6,1.4,7.4V35.4z M100.6,47.7c1.6,0,3.1-0.3,4.4-0.9
+						c1.4-0.6,2.5-1.4,3.6-2.5c1-1.1,1.8-2.4,2.4-3.9c0.6-1.5,0.9-3.2,0.9-5.1v-0.8c0-1.8-0.3-3.5-0.9-5c-0.6-1.5-1.4-2.8-2.4-3.9
+						c-1-1.1-2.2-1.9-3.6-2.6c-1.4-0.6-2.8-0.9-4.4-0.9c-1.6,0-3,0.3-4.4,0.9c-1.4,0.6-2.6,1.5-3.6,2.6c-1,1.1-1.8,2.4-2.4,3.9
+						c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1c0.6,1.5,1.4,2.8,2.4,3.9c1,1.1,2.2,1.9,3.6,2.5C97.5,47.5,99,47.7,100.6,47.7z
+						"/>
+				</g>
+				<g id="XMLID_112_">
+					<path id="XMLID_113_" d="M127.6,46.9h11.6V23h-10.4v-4.9h15.6v28.9h10.8v4.9h-27.6V46.9z M137.1,8c0-1.3,0.5-2.4,1.4-3.4
+						c0.9-0.9,2-1.4,3.3-1.4c1.3,0,2.4,0.5,3.3,1.4c0.9,0.9,1.4,2.1,1.4,3.4c0,1.3-0.5,2.4-1.4,3.4c-0.9,0.9-2,1.4-3.3,1.4
+						c-1.3,0-2.4-0.5-3.3-1.4C137.5,10.4,137.1,9.3,137.1,8z"/>
+				</g>
+				<g id="XMLID_109_">
+					<path id="XMLID_110_" d="M172.8,51.8h-5.2V18.1h5.2v5.7h0.8c2-4.4,5.6-6.7,10.7-6.7c3.8,0,6.9,1.2,9.1,3.6
+						c2.3,2.4,3.4,6.1,3.4,10.9v20.2h-5.2V32.8c0-3.5-0.8-6.2-2.3-8c-1.6-1.8-3.7-2.7-6.3-2.7c-3.2,0-5.6,1.1-7.4,3.3s-2.7,5.1-2.7,8.8
+						V51.8z"/>
+				</g>
+			</g>
+			</svg>
+
+
+		</div>
+	</div>
+	<!-- END PRELOADER -->
+
+	<!-- HEADER -->
+	<header class="header js-stick">
+			<div class="container">
+				<!-- YOUR LOGO HERE -->
+				<div class="inner-header">
+					<a class="inner-brand" href="../index.html">
+						<img class="brand-light" src="../assets/images/logo-light.png" width="100" alt="">
+						<img class="brand-dark" src="../assets/images/logo-dark.png" width="100" alt="">
+					</a>
+				</div>
+
+				<!-- OPEN MOBILE MENU -->
+				<div class="main-nav-toggle">
+					<div class="nav-icon-toggle" data-toggle="collapse" data-target="#custom-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</div>
+				</div>
+
+				<!-- WIDGETS MENU -->
+				<div class="inner-header pull-right hide-me">
+					<div class="menu-extras clearfix">
+
+						<!-- SLACK LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="../slack-signup.html" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Slack!">
+									<img src="../assets/images/slack_icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<!-- STACK EXCHANGE LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://bitcoin.stackexchange.com/questions/tagged/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Questions! Checkout Stack Exchange.">
+									<img src="../assets/images/stack-exchange-icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<!-- GITHUB STUFF -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://github.com/bcoin-org/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Visit bcoin on GitHub to see the code!">
+									<img src="../assets/images/github_icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<div class="menu-item">
+                            <div class="ghbuttons">
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin" data-icon="octicon-star" data-count-href="/bcoin-org/bcoin/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star bcoin-org/bcoin on GitHub">Star</a>
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin/fork" data-icon="octicon-repo-forked" data-count-href="/bcoin-org/bcoin/network" data-show-count="true" data-count-aria-label="# forks on GitHub" aria-label="Fork bcoin-org/bcoin on GitHub">Fork</a>
+                            </div>
+                        </div>
+
+
+
+
+					</div>
+				</div>
+
+				<!-- MAIN MENU -->
+				<nav id="custom-collapse" class="main-nav collapse clearfix">
+					<ul class="inner-nav pull-right">
+
+						<!-- HOME -->
+						<li><a href="../index.html">Home</a></li>
+						<!-- END HOME -->
+
+						<!-- FEATURES -->
+						<li><a href="../index.html#features">What is Bcoin</a></li>
+						<!-- END FEATURES -->
+
+						<!-- GUIDES -->
+						<li><a href="../guides.html">Guides</a></li>
+						<!-- GUIDES -->
+
+						<!-- API REFERENCE - newer, how to interact once you're setup -->
+						<li><a href="../api-docs/index.html">API Docs</a></li>
+						<!-- END API -->
+
+						<!-- FULL DOCS - older, full reference
+						<li><a href="http://bcoin.io/docs/index.html">Docs</a></li> -->
+						<!-- END DOCS -->
+
+						<!-- DIVIDER
+						<li><a>&nbsp;</a></li>
+
+						<li><a href="#">All Demos</a></li>-->
+
+					</ul>
+				</nav>
+
+			</div>
+		</header>
+	<!-- END HEADER -->
+
+	<!-- WRAPPER -->
+	<div class="wrapper">
+
+		<!-- PAGE TITLE -->
+		<section class="module-sm bg-white-dark" data-background="../assets/images/bg-header.jpg">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12 text-center">
+
+						<h2 class="montserrat text-uppercase m-b-10"><span class="text-highlight-black" style="line-height: 1.5;">&nbsp;Guides &nbsp;and &nbsp;Videos&nbsp;</span></h2>
+
+					</div>
+				</div>
+
+			</div>
+		</section>
+		<!-- END PAGE TITLE -->
+
+		<!-- GUIDES/TUTORIALS -->
+		<section class="module" style="padding-top:70px !important;">
+			<div class="container">
+
+				<div class="row">
+
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Install</h6>
+<ul class="icons-list">
+<!-- INSTALL-LIST -->
+<li><a href="install-windows.html">Install on Windows (Video)</a></li>
+<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
+<li><a href="install-linux.html">Install on Linux (Video)</a></li>
+<!-- /INSTALL-LIST -->
+</ul>
+<br>
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="vps-setup.html">Full Node VPS Setup</a></li>
+<li><a href="segwit.html">Segwit and Bcoin</a></li>
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="cltv.html">Time Locked Bitcoin Transactions w/ CLTV</a></li>
+<li><a href="building-plugins.html">Buidling Awesome bcoin Plugins</a></li>
+<li><a href="beginners.html">Beginners Guide to Getting Started</a></li>
+<li><a href="bcoin-clock.html">Make your own Bcoin Block Clock!</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="http://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="../slack-signup.html"> Slack.</a></p>
+    <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
+					<!-- END SIDEBAR -->
+					<!-- START OF ARTICLE CONTAINER -->
+					<div class="col-sm-9 blog-content post-thumbnail">
+						<!-- POST IMAGE -->
+						<article class="post format-image">
+							<div class="row">
+								<!--<div class="col-sm-5">
+									<div class="post-preview">
+										<a href="#"><img src="../assets/images/guides/get-started.png" alt=""></a>
+									</div>
+								</div>-->
+
+								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
+								<div class="panel-group">
+									<div class="col-sm-12 panel panel-default">
+										<div class="post-content" style="color:#000;">
+					<!-- START OF GUIDE -->
+<h2 class="post-title panel-title" id="segwit-and-bcoin">Segwit and Bcoin</h2><ul class="post-meta"><li class="author">By Nodar Chkuaselidze</li></ul><p>Following guide will introduce you to Segwit, its changes and how to fully employ all these changes with bcoin.</p>
+<h2 id="what-is-segwit-and-what-does-it-solve">What is Segwit and What Does it Solve?</h2><p>Segwit was first proposed as a <a href="https://en.bitcoin.it/wiki/Transaction_Malleability">TX malleability</a> fix. Miners and Full nodes in charge
+of relaying or including transaction in blocks could change transaction hash and broadcast a modified version
+without invalidating the transaction. This prevented sidechains and some applications
+to be built on top of bitcoin blockchain (Lightning Network).
+For a full list of malleability sources see <a href="https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#motivation">BIP62 (Withdrawn)</a>.<br>Segwit solves this by removing validating sigScripts (also known as &quot;witnesses&quot;) from the transaction and constructing another merkle tree
+for these scripts. The witnesses are also not counted towards from block size calculations as they
+aren&#39;t broadcasted with the block, leaving space for more transactions with the same
+block size limit (which needs a hard fork to implement). In order to make this update a soft fork, and thus safer to deploy, instead of adding the merkle root into the
+block, it&#39;s included in coinbase transaction.<br>Another benefit it brings is future possible soft forks for Script updates.<br>For backwards compatibility, you can nest witness programs in <a href="https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki">P2SH</a>. This allows old, unupdated nodes to still see a Segwit transaction as a valid (but ANYONECANSPEND) transaction ensuring it will get propogated in the network.</p>
+<blockquote>
+<p>Witness - this structure contains data required to check transaction validity but not required to determine transaction effects. In particular, scripts and signatures are moved into this new structure.<br>BIP141</p>
+</blockquote>
+<h2 id="witness-programs">Witness Programs</h2><p>You can check details in <a href="https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki">Segwit BIP</a>, we&#39;ll cover them as we go for our examples.
+In segwit addresses/scriptPubKeys, the first byte is the <code>version byte</code>, which will be used
+for extending scripts with new functionalities. Currently version <code>0</code> is used and supports
+<code>P2WPKH</code> (Pay To Witness Public Key Hash) and <code>P2WSH</code> (Pay To Witness Script Hash) transactions. After <code>OP_0</code> version byte, we expect a hash with a size
+of <code>20</code> in the case of <code>P2WPKH</code> transactions or <code>32</code> in the case of <code>P2WSH</code> transactions.<br>scriptPubKeys:</p>
+<ul>
+<li><code>P2WPKH</code> scriptPubkey is <code>OP_0 0x14 {20-byte-hash}</code>, where <code>OP_0</code> is the <em>version byte</em>
+<em>0x14</em> is the size of the data, and the <code>{20-byte-hash}</code> is HASH160(PubKey).</li>
+<li><code>P2WSH</code> scriptPubkey is <code>OP_0 0x20 {32-byte-hash}</code>, where <code>OP_0</code> is the <em>version byte</em>
+<em>0x20</em> is the size of the data, and the <code>{32-byte-hash}</code> is md5(script).
+Note: These witness programs aren&#39;t executed right away, they are stacks and are used
+to construct the scripts for verification.</li>
+</ul>
+<p>When nesting witness programs inside <em>P2SH</em>, you will take the witness program (stack) and hash it, as you would
+have done with normal scripts.</p>
+<p>Native Segwit programs also come with a new address format <a href="https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki">bech32</a>, so <code>P2WPKH</code> and <code>P2WSH</code> scripts
+will always use <code>bech32</code> addresses. Bech32 addresses support error checking and are comprised of 4 parts:
+<code>human-readable-part(hrp)</code>, <code>version number</code>, <code>data</code> and <code>checksum</code>. HRP is used for indicating the network:
+<code>bc</code> for <code>mainnet</code> and <code>tb</code> for the <code>testnet</code> separated by <code>1</code> followed by data and the checksum. </p>
+<h2 id="code">Code</h2><p>You can see the full code used in the examples below in a separate <a href="https://github.com/nodar-chkuaselidze/bcoin-segwit-guide">repo</a>.</p>
+<p>You will notice, that the bcoin API doesn&#39;t change much between different transaction types. Also
+most of the ring management is the same so we&#39;ll discuss them first.
+<em>Note: We&#39;ll be using <code>regtest</code> network for our code.</em></p>
+<h3 id="common-parts">Common Parts</h3><p>The most important part in our examples will be <code>KeyRing</code>s. They store and manage keys and also provide
+every method needed to handle scripts and signatures. That&#39;s why we&#39;ve separated <code>keyring</code> into a separate
+utils folder which will cache the <code>privateKey</code>s in a folder <code>keys/</code>. We only expose <code>.getRings</code> method,
+which will generate or return from cache <code>N</code> number of keys.<br>After importing we always set <code>ring.witness = true</code>, because by default it&#39;s false. This
+will tell <code>KeyRing</code> to construct P2WPKH addresses instead of P2PKH and vice versa. </p>
+<p><em>Note: Segwit only uses Compressed public keys.</em></p>
+<p>The code for this, which should precede all of the following examples, looks like:</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> network <span class="token operator">=</span> <span class="token string">'regtest'</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> ring <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>keyring<span class="token punctuation">.</span><span class="token function">generate</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">,</span> network<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ring<span class="token punctuation">.</span>witness <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="creating-segwit-addresses">Creating Segwit Addresses</h2><h3 id="create-p2wpkh-address">Create P2WPKH Address</h3><p>Getting <code>P2WPKH</code> Address is as simple as <code>ring.getAddress();</code>. Let&#39;s see it
+in action.<br>The code below will print the bech32 address and check if bech32 address data
+is Pubkeyhash.</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">let</span> address <span class="token operator">=</span> ring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// Will print bech32 address</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Address from ring:'</span><span class="token punctuation">,</span> address<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// Grab the pubkeyhash from ring.</span>
+<span class="token keyword">const</span> pubkeyhash <span class="token operator">=</span> ring<span class="token punctuation">.</span><span class="token function">getKeyHash</span><span class="token punctuation">(</span><span class="token string">'hex'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// Here we can inspect generated bech32 address</span>
+<span class="token comment" spellcheck="true">// and see that pubkeyhash is included there.</span>
+<span class="token keyword">const</span> decodedAddress <span class="token operator">=</span> bech32<span class="token punctuation">.</span><span class="token function">decode</span><span class="token punctuation">(</span>address<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token function">assert</span><span class="token punctuation">(</span>decodedAddress<span class="token punctuation">.</span>hrp <span class="token operator">===</span> <span class="token string">'rb'</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// rb for regtest</span>
+<span class="token function">assert</span><span class="token punctuation">(</span>decodedAddress<span class="token punctuation">.</span>version <span class="token operator">===</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// Segwit program version</span>
+<span class="token function">assert</span><span class="token punctuation">(</span>decodedAddress<span class="token punctuation">.</span>hash<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token string">'hex'</span><span class="token punctuation">)</span> <span class="token operator">===</span> pubkeyhash<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// 20 byte Pubkeyhash</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>We could also assemble this code manually using <code>Script</code>.</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">let</span> p2wpkhScript <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Script</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+p2wpkhScript<span class="token punctuation">.</span><span class="token function">pushOp</span><span class="token punctuation">(</span>opcodes<span class="token punctuation">.</span>OP_0<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// Push Segwit Version</span>
+p2wpkhScript<span class="token punctuation">.</span><span class="token function">pushData</span><span class="token punctuation">(</span>ring<span class="token punctuation">.</span><span class="token function">getKeyHash</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// Push Pubkeyhash</span>
+p2wpkhScript<span class="token punctuation">.</span><span class="token function">compile</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// Encode the script internally</span>
+
+address <span class="token operator">=</span> p2wpkhScript<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Address from script:'</span><span class="token punctuation">,</span> address<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span>network<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Here you can see inner workings of the P2WPKH script, but obviously it&#39;s not convenient.</p>
+<p>The equvalent script can be generated with helper function too.</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js">p2wpkhScript <span class="token operator">=</span> Script<span class="token punctuation">.</span><span class="token function">fromProgram</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> ring<span class="token punctuation">.</span><span class="token function">getKeyHash</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+address <span class="token operator">=</span> p2wpkhScript<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Address from Script/Program:'</span><span class="token punctuation">,</span> address<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span>network<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>We won&#39;t cover manual scripts in the next examples, but the process is similar
+and can be created using the same API.</p>
+<h3 id="create-p2wsh-address">Create P2WSH Address</h3><p>In this code example, we&#39;ll create a Multisig/P2WSH address. This process
+is similar to the <a href="http://bcoin.io/guides/multisig-tx.html">multisig</a>, the only difference is the output address we&#39;ll get.</p>
+<p>We&#39;ll need two public keys, so we grab two rings from the cache</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> <span class="token punctuation">[</span>ring<span class="token punctuation">,</span> ring2<span class="token punctuation">]</span> <span class="token operator">=</span> ringUtils<span class="token punctuation">.</span><span class="token function">getRings</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> network<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+ring<span class="token punctuation">.</span>witness <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+ring2<span class="token punctuation">.</span>witness <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Then create multisig script</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> pubkeys <span class="token operator">=</span> <span class="token punctuation">[</span>ring<span class="token punctuation">.</span>publicKey<span class="token punctuation">,</span> ring2<span class="token punctuation">.</span>publicKey<span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> multisigScript <span class="token operator">=</span> Script<span class="token punctuation">.</span><span class="token function">fromMultisig</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> pubkeys<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Now we can pass the multisig script to the ring (which already knows it needs to generate segwit address).
+<em>Note: If the ring has a script property assigned, it will automatically return a P2SH or P2WSH address.</em></p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js">ring<span class="token punctuation">.</span>script <span class="token operator">=</span> multisigScript<span class="token punctuation">;</span>
+<span class="token keyword">const</span> address <span class="token operator">=</span> ring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Address from ring:'</span><span class="token punctuation">,</span> address<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Now bech32 address should contain <code>version byte = 0</code> and 32 byte long <code>hash</code> for script.</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> decodedAddress <span class="token operator">=</span> bech32<span class="token punctuation">.</span><span class="token function">decode</span><span class="token punctuation">(</span>address<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// data in bech32 should be md5(script)</span>
+<span class="token function">assert</span><span class="token punctuation">(</span>decodedAddress<span class="token punctuation">.</span>hash<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>multisigScript<span class="token punctuation">.</span><span class="token function">sha256</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="create-p2shp2wpkh-address">Create P2SH-P2WPKH Address</h3><p>Old clients on bitcoin network won&#39;t be able to send coins to bech32 addresses,
+they know neither bech32 address nor segwit format. To overcome that limitation
+we nest segwit programs in P2SH. With bcoin you can achieve this pretty simply:</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> ringUtils <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'./utils/keys'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> network <span class="token operator">=</span> <span class="token string">'regtest'</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token punctuation">[</span>ring<span class="token punctuation">]</span> <span class="token operator">=</span> ringUtils<span class="token punctuation">.</span><span class="token function">getRings</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> network<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+ring<span class="token punctuation">.</span>witness <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// Generates Witness program which will redeem</span>
+<span class="token comment" spellcheck="true">// the P2SH script.</span>
+<span class="token keyword">const</span> address <span class="token operator">=</span> ring<span class="token punctuation">.</span><span class="token function">getNestedAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Nested Address:'</span><span class="token punctuation">,</span> address<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Transactions sent to this address first will be redeemed as a P2SH
+and then redeem script (Witness program) will be retrieved and then it will continue
+executing as a P2WPKH.</p>
+<h3 id="create-p2shp2wsh-address">Create P2SH-P2WSH Address</h3><p>Nested address is also defined for P2WSH programs. With this
+example we&#39;ll create a multisig inside a P2WSH inside a P2SH...
+The code is the same for P2SH-P2WSH as for P2WSH, where the only difference is address
+generation.</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> pubkeys <span class="token operator">=</span> <span class="token punctuation">[</span>ring<span class="token punctuation">.</span>publicKey<span class="token punctuation">,</span> ring2<span class="token punctuation">.</span>publicKey<span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> multisigScript <span class="token operator">=</span> Script<span class="token punctuation">.</span><span class="token function">fromMultisig</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> pubkeys<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+ring<span class="token punctuation">.</span>script <span class="token operator">=</span> multisigScript<span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// This will return nested hash -> nested address</span>
+<span class="token comment" spellcheck="true">// legacy base58.</span>
+<span class="token keyword">const</span> address <span class="token operator">=</span> ring<span class="token punctuation">.</span><span class="token function">getNestedAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Address from ring:'</span><span class="token punctuation">,</span> address<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="spending-from-segwit-addresses">Spending from Segwit Addresses</h2><p>All legacy transactions need to be signed with a scriptSig, which are also included in a
+transaction and therefore in the blocks that mine them. When using segwit addresses we won&#39;t use the same
+space for putting our signatures, so the scriptSig of inputs won&#39;t contain anything (Unless it&#39;s nested in P2SH).
+Instead, they will be appended to witness stack.</p>
+<p>Spending from segwit addresses is as simple as it is for regular addresses with the bcoin API.
+It will automatically allocate coins, construct scripts and sign the transaction for us.
+We will use <code>MTX.fund</code> for automatically generating change output.</p>
+<p>To create and sign transactions &quot;offline&quot;(without going to chain db), we&#39;ll need:
+<code>prevTransaction Hash/Id</code>, <code>prevTransaction Vout/Index</code>, <code>Amount</code> and <code>Script</code>(which
+can be constructed from Address).</p>
+<h3 id="spend-from-p2wpkh">Spend from P2WPKH</h3><p>When you&#39;re spending from P2WPKH you need to put 2 things in the Segwit stack: Signature
+and Public key. Bcoin will handle that for us.</p>
+<p>First let&#39;s grab the address, where we received transaction</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> <span class="token punctuation">[</span>ring<span class="token punctuation">]</span> <span class="token operator">=</span> ringUtils<span class="token punctuation">.</span><span class="token function">getRings</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> network<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ring<span class="token punctuation">.</span>witness <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> address <span class="token operator">=</span> ring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>We need go gather information about the transaction we are spending from and
+the address we sent money to.</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> Amount <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>amount<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>script<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Coin <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>coin<span class="token punctuation">;</span>
+<span class="token keyword">const</span> revHex <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>util<span class="token punctuation">.</span>revHex<span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// ...</span>
+
+<span class="token keyword">const</span> sendTo <span class="token operator">=</span> <span class="token string">'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi'</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> txhash <span class="token operator">=</span> <span class="token function">revHex</span><span class="token punctuation">(</span><span class="token string">'88885ac82ab0b61e909755e7f64f2deeedb89c83'</span>
+                    <span class="token operator">+</span> <span class="token string">'3b68242da7de98c0934e1143'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> txinfo <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token comment" spellcheck="true">// prevout</span>
+  hash<span class="token punctuation">:</span> txhash<span class="token punctuation">,</span>
+  index<span class="token punctuation">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
+
+  value<span class="token punctuation">:</span> Amount<span class="token punctuation">.</span><span class="token function">fromBTC</span><span class="token punctuation">(</span><span class="token string">'200'</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+  script<span class="token punctuation">:</span> Script<span class="token punctuation">.</span><span class="token function">fromAddress</span><span class="token punctuation">(</span>address<span class="token punctuation">)</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> coin <span class="token operator">=</span> Coin<span class="token punctuation">.</span><span class="token function">fromOptions</span><span class="token punctuation">(</span>txinfo<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>We use revHex to convert Big Endian (BE) to Little Endian (LE) (<a href="https://en.wikipedia.org/wiki/Endianness">Endianness</a>).
+Coin is used for working with UTXOs and contains
+information about the previous output. Coin will later be used
+in MTX to fund our transaction.</p>
+<p>We have received 200 BTC and we are going to send
+only 100 BTC to our recipient, sending change to ourselves
+minus fees.</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token punctuation">(</span><span class="token keyword">async</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
+  <span class="token keyword">const</span> spend <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token comment" spellcheck="true">// Let's spend 100 BTC only</span>
+  spend<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span>sendTo<span class="token punctuation">,</span> Amount<span class="token punctuation">.</span><span class="token function">fromBTC</span><span class="token punctuation">(</span><span class="token string">'100'</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">await</span> spend<span class="token punctuation">.</span><span class="token function">fund</span><span class="token punctuation">(</span><span class="token punctuation">[</span>coin<span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token punctuation">{</span>
+    rate<span class="token punctuation">:</span> <span class="token number">10000</span><span class="token punctuation">,</span>
+    changeAddress<span class="token punctuation">:</span> address
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  spend<span class="token punctuation">.</span><span class="token function">sign</span><span class="token punctuation">(</span>ring<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token function">assert</span><span class="token punctuation">(</span>spend<span class="token punctuation">.</span><span class="token function">verify</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Transaction is ready'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Now you can broadcast it to the network'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>spend<span class="token punctuation">.</span><span class="token function">toRaw</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token string">'hex'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token punctuation">)</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>We could manage inputs and outputs manually by adding
+change input and calculate fees but <code>MTX.fund</code> does that for us.
+Based on existing outputs in MTX, <code>MTX.fund</code> will allocate coin(s),
+calculate fees based on the passed in rate and send change to the change address.</p>
+<p><code>spend.sign(ring)</code> - Will construct the scripts for every input and then sign them. At this
+point the transaction can be spent. To validate the correctness of our transaction (signature), we
+run one final check <code>assert(spend.verify())</code>.</p>
+<p><code>MTX.toRaw()</code> will return encoded transaction which can be broadcasted with any method.
+e.g. <code>bcoin-cli broadcast RAWTRANSACTION</code>.</p>
+<h3 id="spending-from-p2wsh">Spending from P2WSH</h3><p>We first need to generate the original address where we received funds.</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> <span class="token punctuation">[</span>ring<span class="token punctuation">,</span> ring2<span class="token punctuation">]</span> <span class="token operator">=</span> ringUtils<span class="token punctuation">.</span><span class="token function">getRings</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> network<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ring<span class="token punctuation">.</span>witness <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+ring2<span class="token punctuation">.</span>witness <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> pubkeys <span class="token operator">=</span> <span class="token punctuation">[</span>ring<span class="token punctuation">.</span>publicKey<span class="token punctuation">,</span> ring2<span class="token punctuation">.</span>publicKey<span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> redeemScript <span class="token operator">=</span> Script<span class="token punctuation">.</span><span class="token function">fromMultisig</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> pubkeys<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// let's grab the address</span>
+ring<span class="token punctuation">.</span>script <span class="token operator">=</span> redeemScript<span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> address <span class="token operator">=</span> ring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Address for p2wsh:'</span><span class="token punctuation">,</span> address<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>redeemScript will be used later to redeem P2WPKH program. Now
+we can construct the coin from this Address.</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> script <span class="token operator">=</span> Script<span class="token punctuation">.</span><span class="token function">fromAddress</span><span class="token punctuation">(</span>address<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> sendTo <span class="token operator">=</span> <span class="token string">'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi'</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> txhash <span class="token operator">=</span> <span class="token function">revHex</span><span class="token punctuation">(</span><span class="token string">'a12738af61f01c94ff3eba949da5bd23edb67ef4'</span>
+                  <span class="token operator">+</span> <span class="token string">'5c65b6445c988421eb9c3a37'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> txinfo <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token comment" spellcheck="true">// prevout</span>
+  hash<span class="token punctuation">:</span> txhash<span class="token punctuation">,</span>
+  index<span class="token punctuation">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+
+  value<span class="token punctuation">:</span> Amount<span class="token punctuation">.</span><span class="token function">fromBTC</span><span class="token punctuation">(</span><span class="token string">'20'</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+  script<span class="token punctuation">:</span> script
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> coin <span class="token operator">=</span> Coin<span class="token punctuation">.</span><span class="token function">fromOptions</span><span class="token punctuation">(</span>txinfo<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Signing code for P2WSH is almost identical to standard multisig addresses just with a different scriptSig.</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token punctuation">(</span><span class="token keyword">async</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
+  <span class="token comment" spellcheck="true">// Now let's spend our tx</span>
+  <span class="token keyword">const</span> spend1 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  ring<span class="token punctuation">.</span>script <span class="token operator">=</span> redeemScript<span class="token punctuation">;</span>
+
+  spend1<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    address<span class="token punctuation">:</span> sendTo<span class="token punctuation">,</span>
+    value<span class="token punctuation">:</span> Amount<span class="token punctuation">.</span><span class="token function">fromBTC</span><span class="token punctuation">(</span><span class="token string">'10'</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">await</span> spend1<span class="token punctuation">.</span><span class="token function">fund</span><span class="token punctuation">(</span><span class="token punctuation">[</span>coin<span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token punctuation">{</span>
+    changeAddress<span class="token punctuation">:</span> address<span class="token punctuation">,</span>
+    rate<span class="token punctuation">:</span> <span class="token number">10000</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  spend1<span class="token punctuation">.</span><span class="token function">scriptInput</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> coin<span class="token punctuation">,</span> ring<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  spend1<span class="token punctuation">.</span><span class="token function">signInput</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> coin<span class="token punctuation">,</span> ring<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token comment" spellcheck="true">// Now you should see that our TX</span>
+  <span class="token comment" spellcheck="true">// has two witness items in it:</span>
+  <span class="token comment" spellcheck="true">// First is the signature</span>
+  <span class="token comment" spellcheck="true">// Second redeem script</span>
+  <span class="token keyword">const</span> input <span class="token operator">=</span> spend1<span class="token punctuation">.</span>inputs<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+  <span class="token keyword">const</span> redeem <span class="token operator">=</span> input<span class="token punctuation">.</span>witness<span class="token punctuation">.</span><span class="token function">getRedeem</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token function">assert</span><span class="token punctuation">(</span>redeem<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>redeemScript<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Redeem script for P2WSH is in the witness with its signature.</p>
+<h3 id="p2sh-nested">P2SH Nested</h3><p>Bcoin MTX and KeyRing primitives construct all necessary scripts for us, so the thing
+that changes when moving to nested segwit addresses is the UTXO pubkeyScript.</p>
+<p>To spend P2SH inputs using bcoin, we just need to use <code>ring.getNestedAddress</code>
+instead of <code>ring.getAddress()</code> or set the <code>ring.nested</code> variable to <code>true</code> and bcoin
+can handle it automatically with <code>ring.getAddress()</code>.</p>
+<p>Modified P2WPKH example:</p>
+<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token keyword">const</span> address <span class="token operator">=</span> ring<span class="token punctuation">.</span><span class="token function">getNestedAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token template-string"><span class="token string">`Address: </span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>address<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">`</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> sendTo <span class="token operator">=</span> <span class="token string">'RTJCrETrS6m1otqXRRxkGCReRpbGzabDRi'</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> txhash <span class="token operator">=</span> <span class="token function">revHex</span><span class="token punctuation">(</span><span class="token string">'88885ac82ab0b61e909755e7f64f2deeedb89c83'</span>
+                    <span class="token operator">+</span> <span class="token string">'3b68242da7de98c0934e1143'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> txinfo <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token comment" spellcheck="true">// prevout</span>
+  hash<span class="token punctuation">:</span> txhash<span class="token punctuation">,</span>
+  index<span class="token punctuation">:</span> <span class="token number">0</span><span class="token punctuation">,</span>
+
+  value<span class="token punctuation">:</span> Amount<span class="token punctuation">.</span><span class="token function">fromBTC</span><span class="token punctuation">(</span><span class="token string">'200'</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+  script<span class="token punctuation">:</span> Script<span class="token punctuation">.</span><span class="token function">fromAddress</span><span class="token punctuation">(</span>address<span class="token punctuation">)</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>You can find full version of the code in <a href="https://github.com/nodar-chkuaselidze/bcoin-segwit-guide">guide-repo</a></p>
+<h2 id="final-notes">Final Notes</h2><p>You need to keep in mind that sending transactions from old clients to new ones
+is only possible if witness program is nested inside P2SH.
+In order to get better understanding how Segwit scripts work check <a href="https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki">BIP141</a>.</p>
+<h2 id="references">References</h2><p>Activated with segwit:</p>
+<ul>
+<li>Segwit - <a href="https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki">BIP141</a> <ul>
+<li>P2WPKH <a href="https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wpkh">BIP141</a></li>
+<li>P2WPKH nested in P2SH <a href="https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wpkh-nested-in-bip16-p2sh">BIP141</a></li>
+<li>P2WSH <a href="https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wsh">BIP141</a></li>
+<li>P2WSH nested in P2SH <a href="https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#p2wsh-nested-in-bip16-p2sh">BIP141</a></li>
+</ul>
+</li>
+<li>Transaction Signature Verification for Version 0 Witness Program - <a href="https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki">BIP143</a></li>
+<li>Dummy stack element malleability <a href="https://github.com/bitcoin/bips/blob/master/bip-0147.mediawiki">BIP147</a></li>
+</ul>
+<p>Activation:</p>
+<ul>
+<li>Reduced threshold Segwit MASF - <a href="BIP91">BIP91</a></li>
+<li>Signaling method - <a href="https://github.com/bitcoin/bips/blob/master/bip-0009.mediawiki">BIP9</a></li>
+</ul>
+<p>Related:</p>
+<ul>
+<li>Bech32 Addresses <a href="https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki">BIP173</a></li>
+</ul>
+<p>You can check <a href="https://github.com/bitcoin/bips">BIP List</a> for other related proposals.</p>
+
+
+					<!-- END OF GUIDE -->
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<!-- END OF ARTICLE CONTAINER -->
+
+					</div>
+					<!-- END BLOG CONTENT -->
+
+
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END NEW BLOGS -->
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END BLOGS -->
+
+
+		<!-- PARALLAX DOCS CTA -->
+		<section class="module bg-white-alfa-30 parallax color-white" data-background="../assets/images/bg-header.jpg">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12">
+						<div class="text-center">
+							<h2 class="montserrat text-uppercase m-b-30">Ready to start building? Read the docs!</h2>
+							<a href="http://bcoin.io/docs/index.html" target="_blank" class="btn btn-lg btn-purple">Documentation</a>
+						</div>
+					</div>
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END PARALLAX DOCS CTA -->
+
+		<!-- FOOTER -->
+		<footer id="footer" class="footer-minimal">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12">
+						<ul class="social-icons social-icons-circle text-center m-b-35">
+							<li><a href="https://twitter.com/bcoin"><i class="fa fa-twitter"></i></a></li>
+							<li><a href="https://github.com/bcoin-org/bcoin"><i class="fa fa-github"></i></a></li>
+
+
+							<li><a href="../slack-signup.html" target="_blank"><i class="fa fa-slack"></i></a></li>
+						</ul>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-12 text-center m-b-35">
+						<img class="m-b-35 QR-code" src="../assets/images/donation_QR.png"/>
+						<p class="m-0"><strong>Bcoin Development Donation Address:</strong><br />3Bi9H1hzCHWJoFEjc4xzVzEMywi35dyvsV</p>
+
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-12 text-center">
+						<p class="m-0">Copyright <a href="#">bcoin.io, Purse</a>, 2018, All Rights Reserved.</p>
+
+					</div>
+				</div>
+
+			</div>
+		</footer>
+		<!-- END FOOTER -->
+
+	</div>
+	<!-- /WRAPPER -->
+
+	<!-- JAVASCRIPT FILES -->
+
+	<script src="../assets/js/jquery-2.2.3.min.js"></script>
+	<script src="http://maps.googleapis.com/maps/api/js?v=3"></script>
+	<script src="../assets/bootstrap/js/bootstrap.min.js"></script>
+	<script src="../assets/js/plugins.min.js"></script>
+	<script src="../assets/js/stickyfill.min.js"></script>
+	<script src="../assets/js/custom.min.js"></script>
+	<script src="../assets/js/clipboard.min.js"></script>
+	<script async defer src="../assets/js/prism.js"></script>
+	<script>
+		var copyCode = new Clipboard('.copy-button', {
+		    target: function(trigger) {
+		        return trigger.previousElementSibling;
+		    }
+		});
+
+		copyCode.on('success', function(event) {
+		    event.trigger.classList.add('success');
+		    event.clearSelection();
+		    // event.trigger.textContent = 'Copied!';
+		    window.setTimeout(function() {
+		        event.trigger.classList.remove('success');
+		    }, 2000);
+		});
+	</script>
+
+  <!-- github button js -->
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Learn how to install bcoin on a brand-new Raspberry Pi Zero W, or other linux system.
+Create scripts to interact with bcoin in SPV mode and then output a fun, network status display and interface.
+In Part II, we'll add some external hardware to make your own stand-alone Bcoin Block Clock and Piggy Bank!">
+	<meta name="author" content="Matthew Zipkin">
+
+	<title>Bcoin Guide | Make your own Bcoin Block Clock!</title>
+
+	<!-- Favicons -->
+	<!-- old
+	<link rel="shortcut icon" href="../assets/images/bcoin-ico.png">-->
+
+	<!-- generated from http://www.favicon-generator.org/ -->
+	<link rel="apple-touch-icon" sizes="57x57" href="../assets/images/apple-icon-57x57.png">
+	<link rel="apple-touch-icon" sizes="60x60" href="../assets/images/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="../assets/images/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="76x76" href="../assets/images/apple-icon-76x76.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="../assets/images/apple-icon-114x114.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="../assets/images/apple-icon-120x120.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="../assets/images/apple-icon-144x144.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="../assets/images/apple-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="../assets/images/apple-icon-180x180.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="../assets/images/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="../assets/images/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="../assets/images/favicon-16x16.png">
+	<link rel="manifest" href="../assets/images/manifest.json">
+	<meta name="msapplication-TileColor" content="#ffffff">
+	<meta name="msapplication-TileImage" content="../assets/images/ms-icon-144x144.png">
+	<meta name="theme-color" content="#ffffff">
+
+	<!-- Web Fonts -->
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400italic,400,600,700' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Montserrat:700' rel='stylesheet' type='text/css'>
+
+	<!-- Bootstrap core CSS -->
+	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+	<!-- Code Snippet CSS -->
+	<link href="../assets/css/prism.css" rel="stylesheet">
+
+	<link href="../assets/css/custom.css" rel="stylesheet">
+
+	<!-- Icon Fonts -->
+	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
+	<link href="../assets/css/simple-line-icons.css" rel="stylesheet">
+
+	<!-- Plugins -->
+	<link href="../assets/css/magnific-popup.css" rel="stylesheet">
+	<link href="../assets/css/owl.carousel.css" rel="stylesheet">
+	<link href="../assets/css/flexslider.css" rel="stylesheet">
+	<link href="../assets/css/animate.min.css" rel="stylesheet">
+
+	<!-- Template core CSS -->
+	<link href="../assets/css/vertical.min.css" rel="stylesheet">
+	<link href="../assets/css/template.css" rel="stylesheet">
+
+	<!-- Google Analytics Tracking -->
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+        ga('create', 'UA-96446060-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+</head>
+<body>
+
+	<!-- PRELOADER -->
+	<div class="page-loader">
+		<div class="img-loader">Loading...
+			<!-- Bcoin logo in SVG -->
+			<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+				viewBox="0 0 200 56" style="enable-background:new 0 0 200 56;" xml:space="preserve">
+			<g id="XMLID_108_">
+				<g id="XMLID_123_">
+					<path id="XMLID_124_" d="M8.4,51.8H3.2V4.2h5.2v19.2h0.8c1.2-2,2.8-3.6,4.8-4.7c2-1.1,4.3-1.6,6.7-1.6c2,0,4,0.4,5.8,1.2
+						c1.8,0.8,3.4,1.9,4.8,3.3c1.4,1.5,2.5,3.2,3.3,5.4s1.2,4.6,1.2,7.3v1.4c0,2.8-0.4,5.2-1.2,7.4c-0.8,2.1-1.9,3.9-3.3,5.4
+						c-1.4,1.5-3,2.6-4.9,3.3s-3.8,1.1-5.9,1.1c-1.1,0-2.2-0.1-3.3-0.4c-1.1-0.3-2.2-0.6-3.2-1.2c-1-0.5-1.9-1.2-2.8-1.9
+						c-0.8-0.7-1.6-1.6-2.1-2.7H8.4V51.8z M19.4,47.7c1.6,0,3.1-0.3,4.4-0.9c1.3-0.6,2.5-1.4,3.5-2.4c1-1,1.8-2.3,2.3-3.8
+						c0.6-1.5,0.8-3.2,0.8-5v-1.4c0-1.8-0.3-3.5-0.8-4.9c-0.6-1.5-1.3-2.7-2.3-3.8c-1-1.1-2.2-1.9-3.5-2.5c-1.4-0.6-2.8-0.9-4.4-0.9
+						c-1.6,0-3,0.3-4.3,0.9c-1.3,0.6-2.5,1.5-3.5,2.6c-1,1.1-1.8,2.4-2.4,3.9c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1
+						c0.6,1.5,1.4,2.8,2.4,3.9s2.2,1.9,3.5,2.5C16.4,47.4,17.9,47.7,19.4,47.7z"/>
+				</g>
+				<g id="XMLID_120_">
+					<path id="XMLID_121_" d="M76.1,39.8c-0.4,1.9-1,3.6-1.8,5.2c-0.9,1.6-2,3-3.3,4.1s-2.9,2.1-4.7,2.7c-1.8,0.6-3.8,1-5.9,1
+						c-2.3,0-4.5-0.4-6.6-1.2c-2.1-0.8-3.9-1.9-5.4-3.4c-1.6-1.5-2.8-3.3-3.7-5.4c-0.9-2.1-1.4-4.6-1.4-7.4v-0.8c0-2.7,0.5-5.2,1.4-7.4
+						c0.9-2.2,2.1-4,3.7-5.5c1.6-1.5,3.4-2.7,5.4-3.5c2.1-0.8,4.3-1.2,6.6-1.2c2.1,0,4,0.3,5.8,1c1.8,0.6,3.3,1.5,4.7,2.7
+						c1.4,1.2,2.5,2.5,3.3,4.1c0.9,1.6,1.5,3.3,1.8,5.2l-5.2,1.2c-0.1-1.2-0.5-2.3-1-3.4c-0.5-1.1-1.2-2.1-2.1-2.9
+						c-0.9-0.8-1.9-1.5-3.2-2c-1.2-0.5-2.7-0.7-4.3-0.7c-1.6,0-3.1,0.3-4.5,0.9c-1.4,0.6-2.6,1.5-3.7,2.6c-1.1,1.1-1.9,2.4-2.5,4
+						c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1c0.6,1.5,1.4,2.8,2.5,3.8c1.1,1,2.3,1.8,3.7,2.4c1.4,0.6,3,0.9,4.6,0.9
+						s3.1-0.3,4.3-0.8c1.2-0.5,2.3-1.2,3.1-2c0.9-0.8,1.6-1.8,2.1-2.9c0.5-1.1,0.9-2.2,1-3.4L76.1,39.8z"/>
+				</g>
+				<g id="XMLID_116_">
+					<path id="XMLID_117_" d="M117.2,35.4c0,2.8-0.5,5.3-1.4,7.5c-0.9,2.2-2.1,4-3.6,5.4c-1.5,1.5-3.3,2.6-5.3,3.4
+						c-2,0.8-4.1,1.2-6.3,1.2c-2.2,0-4.3-0.4-6.3-1.2c-2-0.8-3.8-1.9-5.3-3.4c-1.5-1.5-2.7-3.3-3.6-5.4c-0.9-2.2-1.4-4.6-1.4-7.5v-0.8
+						c0-2.8,0.5-5.2,1.4-7.4c0.9-2.2,2.1-4,3.7-5.5c1.5-1.5,3.3-2.6,5.3-3.4c2-0.8,4.1-1.2,6.3-1.2c2.2,0,4.3,0.4,6.3,1.2
+						c2,0.8,3.8,1.9,5.3,3.4c1.5,1.5,2.8,3.3,3.7,5.5c0.9,2.2,1.4,4.6,1.4,7.4V35.4z M100.6,47.7c1.6,0,3.1-0.3,4.4-0.9
+						c1.4-0.6,2.5-1.4,3.6-2.5c1-1.1,1.8-2.4,2.4-3.9c0.6-1.5,0.9-3.2,0.9-5.1v-0.8c0-1.8-0.3-3.5-0.9-5c-0.6-1.5-1.4-2.8-2.4-3.9
+						c-1-1.1-2.2-1.9-3.6-2.6c-1.4-0.6-2.8-0.9-4.4-0.9c-1.6,0-3,0.3-4.4,0.9c-1.4,0.6-2.6,1.5-3.6,2.6c-1,1.1-1.8,2.4-2.4,3.9
+						c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1c0.6,1.5,1.4,2.8,2.4,3.9c1,1.1,2.2,1.9,3.6,2.5C97.5,47.5,99,47.7,100.6,47.7z
+						"/>
+				</g>
+				<g id="XMLID_112_">
+					<path id="XMLID_113_" d="M127.6,46.9h11.6V23h-10.4v-4.9h15.6v28.9h10.8v4.9h-27.6V46.9z M137.1,8c0-1.3,0.5-2.4,1.4-3.4
+						c0.9-0.9,2-1.4,3.3-1.4c1.3,0,2.4,0.5,3.3,1.4c0.9,0.9,1.4,2.1,1.4,3.4c0,1.3-0.5,2.4-1.4,3.4c-0.9,0.9-2,1.4-3.3,1.4
+						c-1.3,0-2.4-0.5-3.3-1.4C137.5,10.4,137.1,9.3,137.1,8z"/>
+				</g>
+				<g id="XMLID_109_">
+					<path id="XMLID_110_" d="M172.8,51.8h-5.2V18.1h5.2v5.7h0.8c2-4.4,5.6-6.7,10.7-6.7c3.8,0,6.9,1.2,9.1,3.6
+						c2.3,2.4,3.4,6.1,3.4,10.9v20.2h-5.2V32.8c0-3.5-0.8-6.2-2.3-8c-1.6-1.8-3.7-2.7-6.3-2.7c-3.2,0-5.6,1.1-7.4,3.3s-2.7,5.1-2.7,8.8
+						V51.8z"/>
+				</g>
+			</g>
+			</svg>
+
+
+		</div>
+	</div>
+	<!-- END PRELOADER -->
+
+	<!-- HEADER -->
+	<header class="header js-stick">
+			<div class="container">
+				<!-- YOUR LOGO HERE -->
+				<div class="inner-header">
+					<a class="inner-brand" href="../index.html">
+						<img class="brand-light" src="../assets/images/logo-light.png" width="100" alt="">
+						<img class="brand-dark" src="../assets/images/logo-dark.png" width="100" alt="">
+					</a>
+				</div>
+
+				<!-- OPEN MOBILE MENU -->
+				<div class="main-nav-toggle">
+					<div class="nav-icon-toggle" data-toggle="collapse" data-target="#custom-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</div>
+				</div>
+
+				<!-- WIDGETS MENU -->
+				<div class="inner-header pull-right hide-me">
+					<div class="menu-extras clearfix">
+
+						<!-- SLACK LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="../slack-signup.html" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Slack!">
+									<img src="../assets/images/slack_icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<!-- STACK EXCHANGE LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://bitcoin.stackexchange.com/questions/tagged/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Questions! Checkout Stack Exchange.">
+									<img src="../assets/images/stack-exchange-icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<!-- GITHUB STUFF -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://github.com/bcoin-org/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Visit bcoin on GitHub to see the code!">
+									<img src="../assets/images/github_icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<div class="menu-item">
+                            <div class="ghbuttons">
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin" data-icon="octicon-star" data-count-href="/bcoin-org/bcoin/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star bcoin-org/bcoin on GitHub">Star</a>
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin/fork" data-icon="octicon-repo-forked" data-count-href="/bcoin-org/bcoin/network" data-show-count="true" data-count-aria-label="# forks on GitHub" aria-label="Fork bcoin-org/bcoin on GitHub">Fork</a>
+                            </div>
+                        </div>
+
+
+
+
+					</div>
+				</div>
+
+				<!-- MAIN MENU -->
+				<nav id="custom-collapse" class="main-nav collapse clearfix">
+					<ul class="inner-nav pull-right">
+
+						<!-- HOME -->
+						<li><a href="../index.html">Home</a></li>
+						<!-- END HOME -->
+
+						<!-- FEATURES -->
+						<li><a href="../index.html#features">What is Bcoin</a></li>
+						<!-- END FEATURES -->
+
+						<!-- GUIDES -->
+						<li><a href="../guides.html">Guides</a></li>
+						<!-- GUIDES -->
+
+						<!-- API REFERENCE - newer, how to interact once you're setup -->
+						<li><a href="../api-docs/index.html">API Docs</a></li>
+						<!-- END API -->
+
+						<!-- FULL DOCS - older, full reference
+						<li><a href="http://bcoin.io/docs/index.html">Docs</a></li> -->
+						<!-- END DOCS -->
+
+						<!-- DIVIDER
+						<li><a>&nbsp;</a></li>
+
+						<li><a href="#">All Demos</a></li>-->
+
+					</ul>
+				</nav>
+
+			</div>
+		</header>
+	<!-- END HEADER -->
+
+	<!-- WRAPPER -->
+	<div class="wrapper">
+
+		<!-- PAGE TITLE -->
+		<section class="module-sm bg-white-dark" data-background="../assets/images/bg-header.jpg">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12 text-center">
+
+						<h2 class="montserrat text-uppercase m-b-10"><span class="text-highlight-black" style="line-height: 1.5;">&nbsp;Guides &nbsp;and &nbsp;Videos&nbsp;</span></h2>
+
+					</div>
+				</div>
+
+			</div>
+		</section>
+		<!-- END PAGE TITLE -->
+
+		<!-- GUIDES/TUTORIALS -->
+		<section class="module" style="padding-top:70px !important;">
+			<div class="container">
+
+				<div class="row">
+
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Install</h6>
+<ul class="icons-list">
+<!-- INSTALL-LIST -->
+<li><a href="install-windows.html">Install on Windows (Video)</a></li>
+<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
+<li><a href="install-linux.html">Install on Linux (Video)</a></li>
+<!-- /INSTALL-LIST -->
+</ul>
+<br>
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="vps-setup.html">Full Node VPS Setup</a></li>
+<li><a href="segwit.html">Segwit and Bcoin</a></li>
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="cltv.html">Time Locked Bitcoin Transactions w/ CLTV</a></li>
+<li><a href="building-plugins.html">Buidling Awesome bcoin Plugins</a></li>
+<li><a href="beginners.html">Beginners Guide to Getting Started</a></li>
+<li><a href="bcoin-clock.html">Make your own Bcoin Block Clock!</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="http://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="../slack-signup.html"> Slack.</a></p>
+    <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
+					<!-- END SIDEBAR -->
+					<!-- START OF ARTICLE CONTAINER -->
+					<div class="col-sm-9 blog-content post-thumbnail">
+						<!-- POST IMAGE -->
+						<article class="post format-image">
+							<div class="row">
+								<!--<div class="col-sm-5">
+									<div class="post-preview">
+										<a href="#"><img src="../assets/images/guides/get-started.png" alt=""></a>
+									</div>
+								</div>-->
+
+								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
+								<div class="panel-group">
+									<div class="col-sm-12 panel panel-default">
+										<div class="post-content" style="color:#000;">
+					<!-- START OF GUIDE -->
+<h2 class="post-title panel-title" id="make-your-own-bcoin-block-clock">Make your own Bcoin Block Clock!</h2><ul class="post-meta"><li class="author">By Matthew Zipkin</li></ul><h2 id="introduction">Introduction</h2><p>The goal of this guide is to run a bcoin node and interact with the Bitcoin network using minimal resources, as quickly as possible.
+Once bcoin is running we will add a visual interface and then connect some extra hardware to make it really fun.
+Although bcoin is capable of running a full archival node and even mining blocks, for this guide we will keep bcoin in <a href="https://en.bitcoin.it/wiki/Scalability#Simplified_payment_verification">SPV mode.</a>
+This means we can run the program on a tiny <a href="https://www.raspberrypi.org/products/raspberry-pi-zero-w/">Raspberry Pi Zero W</a> using a MicroSD card.
+This guide was written specifically for (any) Raspberry Pi but can also be easily ported to most other Linux systems.</p>
+<h2 id="set-up-the-raspberry-pi">Set up the Raspberry Pi</h2><p>Get yourself a <a href="https://purse.io/search/raspberry%20pi%20zero%20w">Raspberry Pi Zero W</a> and a <a href="https://purse.io/search/8gb%20class%2010%20microsd%20card">class 10 MicroSD card.</a></p>
+<h3 id="prepare-the-microsd-card-using-your-desktop-computer">Prepare the MicroSD card using your desktop computer</h3><p>Before you plug in the Pi for the first time, you need to install the OS on the MicroSD card and get a few settings ready for the Pi before it boots up.
+These operations will need to take place on a desktop computer, but almost any will do.</p>
+<p><a href="https://www.raspberrypi.org/downloads/raspbian/">Download the latest version of Raspbian Lite</a> (which is the &quot;headless&quot; version, we don&#39;t need the GUI!)</p>
+<p><a href="https://www.raspberrypi.org/documentation/installation/installing-images/README.md">UnZip the downloaded file and copy the disk image to the MicroSD card.</a></p>
+<p>Mount the MicroSD card with its new disk image on your computer again if it didn&#39;t mount automatically. We need to add two files to the <code>boot</code> volume:</p>
+<ul>
+<li><p><a href="https://www.raspberrypi.org/documentation/remote-access/ssh/README.md">Enable SSH</a> by just saving a file to <code>boot</code> called <code>ssh</code>, with no file extension.
+The file doesn&#39;t need to have any content (a blank text file is fine).</p>
+</li>
+<li><p><a href="https://www.raspberrypi.org/blog/another-update-raspbian/">Add your local WiFi information</a> by saving a file to <code>boot</code> called <code>wpa_supplicant.conf</code>.
+You will add the following lines to this file -- be sure to include the correct WiFi network name and password!</p>
+</li>
+</ul>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token comment" spellcheck="true"># add these lines to a new file boot/wpa_supplicant.conf</span>
+ctrl_interface<span class="token operator">=</span>DIR<span class="token operator">=</span>/var/run/wpa_supplicant GROUP<span class="token operator">=</span>netdev
+network<span class="token operator">=</span><span class="token punctuation">{</span>
+    ssid<span class="token operator">=</span><span class="token string">"&lt;YOUR NETWORK NAME>"</span>
+    psk<span class="token operator">=</span><span class="token string">"&lt;YOUR NETWORK PASSWORD>"</span>
+    key_mgmt<span class="token operator">=</span>WPA-PSK
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="boot-up-the-raspberry-pi-connect-via-ssh,-and-finish-conifguration">Boot up the Raspberry Pi, connect via SSH, and finish conifguration</h3><p>Unmount and eject the MicroSD card from your desktop computer and put it in the Raspberry Pi. Power it on!</p>
+<p>After a few minutes, open a terminal on your dektop computer and <a href="https://www.raspberrypi.org/documentation/remote-access/ip-address.md">find the Pi on your network.</a></p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">ssh</span> pi@raspberrypi.local</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p><em>The default password for all Raspberry Pis is <code>raspberry</code> :-)</em></p>
+<p>Now we are connected to, and executing commands on, the Raspberry Pi. Upgrade the OS and utilities.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">sudo</span> <span class="token function">apt-get</span> update <span class="token operator">&amp;&amp;</span> <span class="token function">sudo</span> <span class="token function">apt-get</span> upgrade</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Configure options.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">sudo</span> raspi-config</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><ul>
+<li><p>Password: Change the password!</p>
+</li>
+<li><p>Network: Change the hostname to <code>bclock</code> or anything else you like</p>
+</li>
+<li><p>Boot: Set the Pi to boot directly to the &quot;text console&quot; with user pi logged in</p>
+</li>
+<li><p>Interface: Turn on SPI and GPIO. We&#39;ll need these for the hardware add-ons later</p>
+</li>
+<li><p>Advanced: Expand file system. This will expand the filesystem from the small size of the disk image we downloaded, to use up all the available space on the MicroSD card.</p>
+</li>
+<li><p>Exit the config tool and reboot the Pi: <code>sudo shutdown -r now</code></p>
+</li>
+</ul>
+<h2 id="install-bcoin-and-its-dependencies">Install bcoin and its dependencies</h2><p>After the Pi has had a minute or so to reboot, connect to it again via SSH. Don&#39;t forget we changed the hostname and password in the last step!</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">ssh</span> pi@bclock.local</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="install-nodejs">Install nodejs</h3><p>Double check your processor type (Raspberry Pi Zero W is built around an ARMv6).</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">uname</span> -a <span class="token comment" spellcheck="true"># Linux bpi 4.14.34+ #1110 Mon Apr 16 14:51:42 BST 2018 armv6l GNU/Linux</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p><a href="https://nodejs.org/en/download/">Get the latest nodejs for 32-bit ARMv6</a>.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">cd</span> ~
+<span class="token function">wget</span> https://nodejs.org/dist/v8.11.2/node-v8.11.2-linux-armv6l.tar.xz</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Unpack the archive.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">tar</span> -xvf node-v8.11.2-linux-armv6l.tar.xz</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Add node and installed packages to PATH now and for all future sessions.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token keyword">echo</span> <span class="token string">'export PATH=<span class="token variable">$PATH</span>:/home/pi/node-v8.11.2-linux-armv6l/bin'</span> <span class="token operator">>></span> ~/.bashrc
+<span class="token function">export</span> PATH<span class="token operator">=</span><span class="token variable">$PATH</span>:/home/pi/node-v8.11.2-linux-armv6l/bin</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Update npm, using npm!</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">npm <span class="token function">install</span> -g npm</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Check versions.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">node --version <span class="token comment" spellcheck="true"># v8.11.2 at time of writing</span>
+npm --version  <span class="token comment" spellcheck="true"># 6.1.0 at time of writing</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Update node path (to global modules) for now and for all future sessions.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token keyword">echo</span> <span class="token string">"export NODE_PATH=<span class="token variable"><span class="token variable">`</span>npm root --quiet -g<span class="token variable">`</span></span>"</span> <span class="token operator">>></span> ~/.bashrc
+<span class="token function">export</span> NODE_PATH<span class="token operator">=</span><span class="token variable"><span class="token variable">`</span>npm root --quiet -g<span class="token variable">`</span></span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Install bcoin from GitHub master.</p>
+<ul>
+<li>You&#39;ll need to install <code>git</code> first, then download the bcoin repository</li>
+</ul>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> <span class="token function">git</span>
+<span class="token function">cd</span> ~
+<span class="token function">git</span> clone https://github.com/bcoin-org/bcoin
+<span class="token function">cd</span> bcoin
+npm <span class="token function">install</span> -g</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Install bclient.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">npm <span class="token function">install</span> -g bclient</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="test-it-out">Test it out!</h3><p>Launch the bcoin daemon in the background and start it syncing to the main network.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">bcoin --daemon --spv</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Watch the bcoin log, make sure it looks healthy (ctrl+c to stop printout and return to prompt).</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">tail</span> -F ~/.bcoin/debug.log</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Test the bclient installation by requesting node info from bcoin.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">bcoin-cli info</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>After a few minutes of loading, your output should resemble the printout below.
+You can repeat the <code>info</code> command to watch bcoin sync with the network, until <code>progress</code> reaches <code>1</code>. This won&#39;t take as much time as a full node would need but it could be a while.
+You can learn more about the command-line API clients <code>bcoin-cli</code> and <code>bwallet-cli</code> at <a href="http://bcoin.io/api-docs/?shell--cli#introduction">http://bcoin.io/api-docs.</a></p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token punctuation">{</span>
+  <span class="token string">"version"</span><span class="token keyword">:</span> <span class="token string">"v1.0.0-pre"</span>,
+  <span class="token string">"network"</span><span class="token keyword">:</span> <span class="token string">"main"</span>,
+  <span class="token string">"chain"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"height"</span><span class="token keyword">:</span> 2953,
+    <span class="token string">"tip"</span><span class="token keyword">:</span> <span class="token string">"00000000a98fac937fd0e2a74db339b25b3b0b948b99438c86b9d2a3a7b931da"</span>,
+    <span class="token string">"progress"</span><span class="token keyword">:</span> 0.009168617363335387
+  <span class="token punctuation">}</span>,
+  <span class="token string">"pool"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"host"</span><span class="token keyword">:</span> <span class="token string">"2601:645:4200:7dd:4c3e:1321:45a7:f21d"</span>,
+    <span class="token string">"port"</span><span class="token keyword">:</span> 8333,
+    <span class="token string">"agent"</span><span class="token keyword">:</span> <span class="token string">"/bcoin:v1.0.0-pre/"</span>,
+    <span class="token string">"services"</span><span class="token keyword">:</span> <span class="token string">"1000"</span>,
+    <span class="token string">"outbound"</span><span class="token keyword">:</span> 8,
+    <span class="token string">"inbound"</span><span class="token keyword">:</span> 0
+  <span class="token punctuation">}</span>,
+  <span class="token string">"mempool"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"tx"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"size"</span><span class="token keyword">:</span> 0
+  <span class="token punctuation">}</span>,
+  <span class="token string">"time"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"uptime"</span><span class="token keyword">:</span> 47,
+    <span class="token string">"system"</span><span class="token keyword">:</span> 1527881475,
+    <span class="token string">"adjusted"</span><span class="token keyword">:</span> 1527881474,
+    <span class="token string">"offset"</span><span class="token keyword">:</span> -1
+  <span class="token punctuation">}</span>,
+  <span class="token string">"memory"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"total"</span><span class="token keyword">:</span> 69,
+    <span class="token string">"jsHeap"</span><span class="token keyword">:</span> 13,
+    <span class="token string">"jsHeapTotal"</span><span class="token keyword">:</span> 32,
+    <span class="token string">"nativeHeap"</span><span class="token keyword">:</span> 37,
+    <span class="token string">"external"</span><span class="token keyword">:</span> 8
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="backup-the-wallet">Backup the wallet</h2><p>When bcoin is run for the first time, it will create a new wallet for you, labelled <code>primary</code>.
+That wallet will start off with one account labelled <code>default</code>. Display the secret key and mnemonic backup phrase for your wallet.
+Write down your seed phrase right now! You won&#39;t see it in plaintext again.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">bwallet-cli master
+
+<span class="token comment" spellcheck="true"># example output</span>
+<span class="token punctuation">{</span>
+  <span class="token string">"encrypted"</span><span class="token keyword">:</span> false,
+  <span class="token string">"key"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"xprivkey"</span><span class="token keyword">:</span> <span class="token string">"xprv9s21ZrQH143K3WpgRZFmmT5RpY7Lpbasv6cpi8fJNeWnY9U96M1YX42qr6WUZZZC6q6NE9zXkdaJs5Bfkq88wrCwLsXLeorQCrvcvnzFZiw"</span>
+  <span class="token punctuation">}</span>,
+  <span class="token string">"mnemonic"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"bits"</span><span class="token keyword">:</span> 128,
+    <span class="token string">"language"</span><span class="token keyword">:</span> <span class="token string">"english"</span>,
+    <span class="token string">"entropy"</span><span class="token keyword">:</span> <span class="token string">"0be6fc83dd5ea06de27d0c286f8cf731"</span>,
+    <span class="token string">"phrase"</span><span class="token keyword">:</span> <span class="token string">"armor dawn can rival tube dad measure pave chronic ladder differ ginger"</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Encrypt the wallet with the following command. This method can only be executed with cURL. Be sure to use a good password.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">curl http://127.0.0.1:8334/wallet/primary/passphrase -X POST --data <span class="token string">'{"passphrase":"&lt;YOUR GREAT PASSWORD>"}'</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Anytime you need an address to send bitcoin to you can use the command line.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token comment" spellcheck="true"># get account details including the most recently generated address</span>
+$ bwallet-cli account get default
+<span class="token punctuation">{</span>
+  <span class="token string">"name"</span><span class="token keyword">:</span> <span class="token string">"default"</span>,
+  <span class="token string">"initialized"</span><span class="token keyword">:</span> true,
+  <span class="token string">"witness"</span><span class="token keyword">:</span> false,
+  <span class="token string">"watchOnly"</span><span class="token keyword">:</span> false,
+  <span class="token string">"type"</span><span class="token keyword">:</span> <span class="token string">"pubkeyhash"</span>,
+  <span class="token string">"m"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"n"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"accountIndex"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"receiveDepth"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"changeDepth"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"nestedDepth"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"lookahead"</span><span class="token keyword">:</span> 10,
+  <span class="token string">"receiveAddress"</span><span class="token keyword">:</span> <span class="token string">"1DGvpMRkSNvybo7Ddoquf6EzvFxxnnbciG"</span>,
+  <span class="token string">"changeAddress"</span><span class="token keyword">:</span> <span class="token string">"1GP2VdeqPxw1NoWju1LtWZrm1Jexy1QeYP"</span>,
+  <span class="token string">"nestedAddress"</span><span class="token keyword">:</span> null,
+  <span class="token string">"accountKey"</span><span class="token keyword">:</span> <span class="token string">"xpub6CHwKfAR3HPFkEvNDJ4nBPFqhuaELJq57w9nWNA5JcNVQGGd2BDxdNH62yFw1WhMu4vGd4M2YgKoW3gyPPUgdHfLc9UKoJAesV6hQFrLk3P"</span>,
+  <span class="token string">"keys"</span><span class="token keyword">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>,
+  <span class="token string">"balance"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"tx"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"coin"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"unconfirmed"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"confirmed"</span><span class="token keyword">:</span> 0
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment" spellcheck="true"># generate a new address</span>
+$ bwallet-cli --account<span class="token operator">=</span>default address
+<span class="token punctuation">{</span>
+  <span class="token string">"name"</span><span class="token keyword">:</span> <span class="token string">"default"</span>,
+  <span class="token string">"account"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"branch"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"index"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"witness"</span><span class="token keyword">:</span> false,
+  <span class="token string">"nested"</span><span class="token keyword">:</span> false,
+  <span class="token string">"publicKey"</span><span class="token keyword">:</span> <span class="token string">"02fcfc02c218f24e1c2d81bf272ef1cb22b6e277858ad880fda9f2f3bf6df09d0a"</span>,
+  <span class="token string">"script"</span><span class="token keyword">:</span> null,
+  <span class="token string">"program"</span><span class="token keyword">:</span> null,
+  <span class="token string">"type"</span><span class="token keyword">:</span> <span class="token string">"pubkeyhash"</span>,
+  <span class="token string">"address"</span><span class="token keyword">:</span> <span class="token string">"1JNffravKaonUEAxG4oMWYK5CjvuoLax79"</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>You can stop the node with the command <code>bcoin-cli rpc stop</code>.</p>
+<h2 id="using-the-bcoin-javascript-object">Using the bcoin JavaScript object</h2><p><em>The complete scripts used in this tutorial are available at <a href="https://github.com/pinheadmz/bcoin-clock">https://github.com/pinheadmz/bcoin-clock</a></em></p>
+<p>In addition to starting and controlling a bcoin node from the command line, you can also create a node as an object in a Javascript program.
+This will give us more granular control of the options, and allow us to catch events for blocks and transactions.
+Just to get started, create a new file called <code>spv_clock.js</code> and start it off with the script below.
+It is a simpler version of <a href="https://github.com/bcoin-org/bcoin/blob/master/bin/spvnode">the actual script that gets run</a> by the <code>bcoin --spv --daemon</code> command.
+Run your script with the command <code>node spv_clock.js &gt;/dev/null &amp;</code> to run the bcoin spv node as a background process, or daemon.
+Once it&#39;s running, you can interact it with it from the command line the same way we did before.
+Play around with it a bit and then execute <code>bcoin-cli rpc stop</code> so we can start getting fancy!</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// spv_clock.js</span>
+
+<span class="token comment" spellcheck="true">// Get the SPV node object from the globally-installed bcoin package</span>
+<span class="token keyword">const</span> <span class="token punctuation">{</span>SPVNode<span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// Configure the node for mainnet, write logs, use the database on disk, etc</span>
+<span class="token keyword">const</span> node <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">SPVNode</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  network<span class="token punctuation">:</span> <span class="token string">'main'</span><span class="token punctuation">,</span>
+  config<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  argv<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  env<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  logFile<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  logConsole<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  logLevel<span class="token punctuation">:</span> <span class="token string">'debug'</span><span class="token punctuation">,</span>
+  db<span class="token punctuation">:</span> <span class="token string">'leveldb'</span><span class="token punctuation">,</span>
+  memory<span class="token punctuation">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+  persistent<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  workers<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  listen<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  loader<span class="token punctuation">:</span> require
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">(</span><span class="token keyword">async</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
+
+  <span class="token comment" spellcheck="true">// Validate the prefix directory (probably ~/.bcoin)</span>
+  <span class="token keyword">await</span> node<span class="token punctuation">.</span><span class="token function">ensure</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// Open the node and all its child objects, wait for the database to load</span>
+  <span class="token keyword">await</span> node<span class="token punctuation">.</span><span class="token function">open</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// Connect to the network</span>
+  <span class="token keyword">await</span> node<span class="token punctuation">.</span><span class="token function">connect</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token comment" spellcheck="true">// TODO: add cool stuff here in the next step! (*)</span>
+
+  <span class="token comment" spellcheck="true">// Start the blockchain sync</span>
+  node<span class="token punctuation">.</span><span class="token function">startSync</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token keyword">catch</span><span class="token punctuation">(</span><span class="token punctuation">(</span>err<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
+  console<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span>err<span class="token punctuation">.</span>stack<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  process<span class="token punctuation">.</span><span class="token function">exit</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="respond-to-events">Respond to events</h3><p>The line marked <code>(*)</code> above is where we can ask bcoin to react to certain &quot;events&quot; like a new block being added to the tip of the blockchain,
+or a transaction being received that affects our own wallet.
+For our purposes, we want bcoin to write a JSON file for each new block, so we can display the block details on the clock!
+First let&#39;s add a function (at the very top of the file) that writes these files, labeled by the block&#39;s height.
+We only need to keep 20 or so of the most recent blocks, so we&#39;ll allow the script to prune the directory as well.
+On a Raspberry Pi, the script below will create the directory at <code>/home/pi/blocks</code> (or <code>~/blocks</code>),</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// spv_clock.js</span>
+
+<span class="token comment" spellcheck="true">// allow the script to access the file system on disk</span>
+<span class="token keyword">const</span> fs <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'fs'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> os <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'os'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> maxFiles <span class="token operator">=</span> <span class="token number">20</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// create the a directory for block headers if it doesn't exist already</span>
+<span class="token keyword">const</span> blocksDir <span class="token operator">=</span> os<span class="token punctuation">.</span><span class="token function">homedir</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">'/blocks/'</span><span class="token punctuation">;</span>
+<span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>fs<span class="token punctuation">.</span><span class="token function">existsSync</span><span class="token punctuation">(</span>blocksDir<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{</span>
+  fs<span class="token punctuation">.</span><span class="token function">mkdirSync</span><span class="token punctuation">(</span>blocksDir<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment" spellcheck="true">// Write a JSON object to disk</span>
+<span class="token keyword">function</span> <span class="token function">writeFile</span><span class="token punctuation">(</span>index<span class="token punctuation">,</span> element<span class="token punctuation">,</span> dir<span class="token punctuation">)</span><span class="token punctuation">{</span>
+    fs<span class="token punctuation">.</span><span class="token function">writeFile</span><span class="token punctuation">(</span>dir <span class="token operator">+</span> index<span class="token punctuation">,</span> JSON<span class="token punctuation">.</span><span class="token function">stringify</span><span class="token punctuation">(</span>element<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">function</span><span class="token punctuation">(</span>err<span class="token punctuation">)</span><span class="token punctuation">{</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span>err<span class="token punctuation">)</span><span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">// delete files older than 20 blocks if it exists</span>
+            <span class="token keyword">try</span> <span class="token punctuation">{</span>
+                fs<span class="token punctuation">.</span><span class="token function">unlinkSync</span><span class="token punctuation">(</span>dir <span class="token operator">+</span> <span class="token punctuation">(</span>index<span class="token operator">-</span>maxFiles<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">catch</span><span class="token punctuation">(</span>err<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>err<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Then we can tell bcoin to call the above function whenever a new block arrives. This code will go right where the <code>(*)</code> line is in our script:</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// spv_clock.js</span>
+
+  <span class="token comment" spellcheck="true">// write new block details to file</span>
+  node<span class="token punctuation">.</span><span class="token function">on</span><span class="token punctuation">(</span><span class="token string">'block'</span><span class="token punctuation">,</span> <span class="token keyword">async</span> <span class="token punctuation">(</span>block<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
+      <span class="token comment" spellcheck="true">// most of the block's details are returned by the 'block' event but we need to get its height from the blockchain database</span>
+      headers <span class="token operator">=</span> <span class="token keyword">await</span> node<span class="token punctuation">.</span>chain<span class="token punctuation">.</span><span class="token function">getEntryByHash</span><span class="token punctuation">(</span>block<span class="token punctuation">.</span><span class="token function">hash</span><span class="token punctuation">(</span><span class="token string">'hex'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      blockHeight <span class="token operator">=</span> headers<span class="token punctuation">.</span>height<span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// make the block data human readable</span>
+      blockJSON <span class="token operator">=</span> block<span class="token punctuation">.</span><span class="token function">toJSON</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// index it by height (orphaned blocks will therefore be replaced by new block at same height)</span>
+      <span class="token function">writeFile</span><span class="token punctuation">(</span>blockHeight<span class="token punctuation">,</span> blockJSON<span class="token punctuation">,</span> blocksDir<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>If you run the script now with <code>node spv_clock.js &gt;/dev/null &amp;</code> you should start to see JSON files filling up the <code>blocks</code> directory.
+Next we will create our visualizer that reads these files! If you <code>cat</code> one of them you can see what kind of data is emitted by the &#39;block&#39; event.
+In SPV mode, the node only downloads the block headers and a little bit of extra metadata from the network.
+If this block had contained a transaction relevant to our wallet, there would be additional data to prove our transaction was included in that block.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">$ <span class="token function">cat</span> ~/blocks/526358
+<span class="token punctuation">{</span>
+    <span class="token string">"hash"</span><span class="token keyword">:</span><span class="token string">"00000000000000000009392f74e26fce58359267a64aa9aa86708062a2296492"</span>,
+    <span class="token string">"version"</span>:536870912,
+    <span class="token string">"prevBlock"</span><span class="token keyword">:</span><span class="token string">"0000000000000000001d437becc92a9cdf38af11105bf6370c6cde001bc0a2ec"</span>,
+    <span class="token string">"merkleRoot"</span><span class="token keyword">:</span><span class="token string">"bbbb711d2910205c8c2b444572e79ec5812705203103afc5f82980cb505550e1"</span>,
+    <span class="token string">"time"</span>:1528332683,
+    <span class="token string">"bits"</span>:389609537,
+    <span class="token string">"nonce"</span>:3638200179,
+    <span class="token string">"totalTX"</span>:1199,
+    <span class="token string">"hashes"</span>:<span class="token punctuation">[</span>
+        <span class="token string">"bbbb711d2910205c8c2b444572e79ec5812705203103afc5f82980cb505550e1"</span>
+    <span class="token punctuation">]</span>,
+    <span class="token string">"flags"</span><span class="token keyword">:</span><span class="token string">"00"</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="enter-python">Enter: Python</h2><p>Congratulations! If you made it this far, you have a working Bitcoin light client in the palm of your hand, ready to send and receive money.
+You&#39;ve modified it to record details about each new block in a file on disk.
+The rest of this guide will focus on interacting with the those block files, as well as the bcoin node and wallet servers via cURL requests in python.
+We use Python 2.7 because it is already installed on Raspbian, easy to interact with the command line, and because the extra hardware we add later is driven by libraries written in python.</p>
+<p><em>Reminder: The finished script is available at <a href="https://github.com/pinheadmz/bcoin-clock">https://github.com/pinheadmz/bcoin-clock</a></em></p>
+<p>First install some dependencies:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">sudo</span> <span class="token function">apt-get</span> <span class="token function">install</span> python-pip python-pil python-requests
+<span class="token function">sudo</span> pip <span class="token function">install</span> pyqrcode</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Create a new python file <code>gui_clock.py</code> and start with the code below.
+Make sure bcoin is already running with the <code>spv_clock.js</code> script, and then run your new python script with the command <code>python gui_clock.py</code>.
+If all goes well you should see a long JSON output, followed by a Bitcoin address and QR code, right in the terminal!
+That magic trick is performed by <a href="https://pythonhosted.org/PyQRCode/rendering.html">PyQRCode</a> which has several methods for returning a QR code.</p>
+<pre class="snippet line-numbers language-python"><code class="line-numbers language-python"><span class="token comment" spellcheck="true"># gui_clock.py</span>
+
+<span class="token keyword">import</span> requests
+<span class="token keyword">import</span> pyqrcode
+<span class="token keyword">import</span> json
+
+<span class="token comment" spellcheck="true">### default API endpoints, not using any authentication key</span>
+<span class="token comment" spellcheck="true"># testnet</span>
+<span class="token comment" spellcheck="true">#nodeurl = "http://127.0.0.1:18332/"</span>
+<span class="token comment" spellcheck="true">#wallurl = "http://127.0.0.1:18334/wallet/primary/"</span>
+<span class="token comment" spellcheck="true"># main</span>
+nodeurl <span class="token operator">=</span> <span class="token string">"http://127.0.0.1:8332/"</span>
+wallurl <span class="token operator">=</span> <span class="token string">"http://127.0.0.1:8334/wallet/primary/"</span>
+
+<span class="token comment" spellcheck="true">### set up some functions to get data from bcoin node &amp; wallet servers</span>
+<span class="token comment" spellcheck="true">### these functions are equivalent to using cURL from the command line</span>
+<span class="token comment" spellcheck="true">### the Python requests package makes this super easy for us</span>
+<span class="token keyword">def</span> <span class="token function">getInfo</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">return</span> requests<span class="token punctuation">.</span>get<span class="token punctuation">(</span>nodeurl<span class="token punctuation">)</span><span class="token punctuation">.</span>json<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+<span class="token keyword">def</span> <span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    params <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token string">"account"</span><span class="token punctuation">:</span><span class="token string">"default"</span><span class="token punctuation">}</span>
+    <span class="token keyword">return</span> requests<span class="token punctuation">.</span>post<span class="token punctuation">(</span>wallurl <span class="token operator">+</span> <span class="token string">'address'</span><span class="token punctuation">,</span> json<span class="token operator">=</span>params<span class="token punctuation">)</span><span class="token punctuation">.</span>json<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+<span class="token keyword">def</span> <span class="token function">getBalance</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">return</span> requests<span class="token punctuation">.</span>get<span class="token punctuation">(</span>wallurl <span class="token operator">+</span> <span class="token string">'balance?account=default'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>json<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">### Output!</span>
+<span class="token keyword">print</span> json<span class="token punctuation">.</span>dumps<span class="token punctuation">(</span>getInfo<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> indent<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+<span class="token keyword">print</span> json<span class="token punctuation">.</span>dumps<span class="token punctuation">(</span>getBalance<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> indent<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">### display address and QR code</span>
+addr <span class="token operator">=</span> getAddress<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token string">'address'</span><span class="token punctuation">]</span>
+<span class="token comment" spellcheck="true"># create a QR code with "M-level" error correction, 29x29 size ("version 3"), and 1-pixel "quiet zone" border</span>
+<span class="token comment" spellcheck="true"># learn more at https://pythonhosted.org/PyQRCode/create.html</span>
+code <span class="token operator">=</span> pyqrcode<span class="token punctuation">.</span>create<span class="token punctuation">(</span>addr<span class="token punctuation">,</span> <span class="token string">'M'</span><span class="token punctuation">,</span> version<span class="token operator">=</span><span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">.</span>terminal<span class="token punctuation">(</span>quiet_zone<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+<span class="token keyword">print</span> addr
+<span class="token keyword">print</span> code</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p><img src="https://raw.githubusercontent.com/pinheadmz/bcoin-clock/master/InfoAndQRcode.png"></p>
+<h3 id="get-block-history-and-details">Get block history and details</h3><p>So we can talk to bcoin from Python! Awesome. The next step is to read those <code>blocks</code> files that are being output by our SPV-node Javascript program.
+What we&#39;ll do is scan the <code>blocks</code> directory and import all the JSON files there into an global object of the 20 most recent blocks, indexed by block height (which should be the file name).
+You can just add this blob of code to the end of your Python script for now, we can clean it up later :-)</p>
+<pre class="snippet line-numbers language-python"><code class="line-numbers language-python"><span class="token comment" spellcheck="true"># gui_clock.py</span>
+
+<span class="token keyword">import</span> os<span class="token punctuation">,</span> sys
+
+<span class="token comment" spellcheck="true">### read the JSON files from disk and keep the last 20 in memory</span>
+<span class="token comment" spellcheck="true"># should be the same directory used in the Javascript program (~/blocks on Raspberry Pi)</span>
+BLOCKS_DIR <span class="token operator">=</span> os<span class="token punctuation">.</span>path<span class="token punctuation">.</span>expanduser<span class="token punctuation">(</span><span class="token string">'~'</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">'/blocks/'</span>
+<span class="token comment" spellcheck="true"># global variable to store all the block details</span>
+BLOCKS <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token punctuation">}</span>
+<span class="token comment" spellcheck="true"># generic function to load any directory of JSON files into any object passed in</span>
+<span class="token keyword">def</span> <span class="token function">readFiles</span><span class="token punctuation">(</span>dict<span class="token punctuation">,</span> dir<span class="token punctuation">)</span><span class="token punctuation">:</span>
+  files <span class="token operator">=</span> <span class="token punctuation">[</span>files <span class="token keyword">for</span> <span class="token punctuation">(</span>dirpath<span class="token punctuation">,</span> dirnames<span class="token punctuation">,</span> files<span class="token punctuation">)</span> <span class="token keyword">in</span> os<span class="token punctuation">.</span>walk<span class="token punctuation">(</span>dir<span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+  <span class="token keyword">for</span> index <span class="token keyword">in</span> files<span class="token punctuation">:</span>
+    <span class="token keyword">try</span><span class="token punctuation">:</span>
+      <span class="token keyword">with</span> open <span class="token punctuation">(</span>dir <span class="token operator">+</span> index<span class="token punctuation">)</span> <span class="token keyword">as</span> file<span class="token punctuation">:</span>
+        dict<span class="token punctuation">[</span>int<span class="token punctuation">(</span>index<span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">=</span> json<span class="token punctuation">.</span>load<span class="token punctuation">(</span>file<span class="token punctuation">)</span>
+    <span class="token keyword">except</span><span class="token punctuation">:</span>
+      <span class="token keyword">pass</span>
+    sortedDictKeys <span class="token operator">=</span> sorted<span class="token punctuation">(</span>dict<span class="token punctuation">)</span>
+    <span class="token keyword">if</span> len<span class="token punctuation">(</span>sortedDictKeys<span class="token punctuation">)</span> <span class="token operator">></span> <span class="token number">20</span><span class="token punctuation">:</span>
+      <span class="token keyword">del</span> dict<span class="token punctuation">[</span>sortedDictKeys<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">]</span>
+
+<span class="token comment" spellcheck="true"># run the above function one time to load up the BLOCKS object</span>
+readFiles<span class="token punctuation">(</span>BLOCKS<span class="token punctuation">,</span> BLOCKS_DIR<span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true"># Output!</span>
+<span class="token keyword">print</span> json<span class="token punctuation">.</span>dumps<span class="token punctuation">(</span>BLOCKS<span class="token punctuation">,</span> indent<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>In addition to the node info, address and QR code we got in the last step, this time you should also get a list of 20 blocks and their metadata.
+We&#39;ve almost got everything ready for the clock display under the hood!
+The last bit of internal calculation is to derive the progress of the <a href="https://en.bitcoin.it/wiki/Difficulty">difficulty adjustment interval</a>, 
+nd the <a href="https://en.bitcoin.it/wiki/Controlled_supply">block subsidy halving interval.</a>.
+Since we can get the block height from <code>getInfo()</code> it&#39;s easy to calculate where we are in each cycle:</p>
+<pre class="snippet line-numbers language-python"><code class="line-numbers language-python"><span class="token comment" spellcheck="true"># gui_clock.py</span>
+
+<span class="token comment" spellcheck="true">### calculate cycle progress as % and countdown integer given current blockchain height</span>
+<span class="token keyword">def</span> <span class="token function">getDiff</span><span class="token punctuation">(</span>height<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">return</span> <span class="token punctuation">{</span><span class="token string">"percent"</span><span class="token punctuation">:</span> <span class="token punctuation">(</span>height <span class="token operator">%</span> <span class="token number">2016</span> <span class="token operator">/</span> <span class="token number">2016.0</span><span class="token punctuation">)</span> <span class="token operator">*</span> <span class="token number">100</span><span class="token punctuation">,</span> <span class="token string">"countdown"</span><span class="token punctuation">:</span> <span class="token number">2016</span> <span class="token operator">-</span> <span class="token punctuation">(</span>height <span class="token operator">%</span> <span class="token number">2016</span><span class="token punctuation">)</span><span class="token punctuation">}</span>
+<span class="token keyword">def</span> <span class="token function">getHalf</span><span class="token punctuation">(</span>height<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword">return</span> <span class="token punctuation">{</span><span class="token string">"percent"</span><span class="token punctuation">:</span> <span class="token punctuation">(</span>height <span class="token operator">%</span> <span class="token number">210000</span> <span class="token operator">/</span> <span class="token number">210000.0</span> <span class="token punctuation">)</span> <span class="token operator">*</span> <span class="token number">100</span><span class="token punctuation">,</span> <span class="token string">"countdown"</span><span class="token punctuation">:</span> <span class="token number">210000</span> <span class="token operator">-</span> <span class="token punctuation">(</span>height <span class="token operator">%</span> <span class="token number">210000</span><span class="token punctuation">)</span><span class="token punctuation">}</span>
+
+info <span class="token operator">=</span> getInfo<span class="token punctuation">(</span><span class="token punctuation">)</span>
+height<span class="token operator">=</span>info<span class="token punctuation">[</span><span class="token string">'chain'</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token string">'height'</span><span class="token punctuation">]</span>
+<span class="token keyword">print</span> json<span class="token punctuation">.</span>dumps<span class="token punctuation">(</span>getDiff<span class="token punctuation">(</span>height<span class="token punctuation">)</span><span class="token punctuation">,</span> indent<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>
+<span class="token keyword">print</span> json<span class="token punctuation">.</span>dumps<span class="token punctuation">(</span>getHalf<span class="token punctuation">(</span>height<span class="token punctuation">)</span><span class="token punctuation">,</span> indent<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span>`</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="transaction-notifications">Transaction notifications</h3><p>In the same way that we record <code>block</code> events from the SPV node script, we can also catch incoming transactions to the wallet, 
+and save those details to a file for the clock script to read. Back to that <code>(*)</code> section of the node script, let&#39;s add another event listener.
+We&#39;ll need to start by adding the wallet database to our node object.</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// spv_clock.js</span>
+
+<span class="token comment" spellcheck="true">// add wallet database</span>
+<span class="token keyword">const</span> walletdb <span class="token operator">=</span> node<span class="token punctuation">.</span><span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'walletdb'</span><span class="token punctuation">)</span><span class="token punctuation">.</span>wdb<span class="token punctuation">;</span>
+<span class="token keyword">const</span> wallet <span class="token operator">=</span> <span class="token keyword">await</span> walletdb<span class="token punctuation">.</span>primary<span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// write new transaction details to file named by tx hash</span>
+node<span class="token punctuation">.</span><span class="token function">on</span><span class="token punctuation">(</span><span class="token string">'tx'</span><span class="token punctuation">,</span> <span class="token keyword">async</span> <span class="token punctuation">(</span>tx<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
+  <span class="token comment" spellcheck="true">// get readable format for transaction message</span>
+  txJSON <span class="token operator">=</span> tx<span class="token punctuation">.</span><span class="token function">inspect</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token comment" spellcheck="true">// discover which outputs of this tx belong to our wallet</span>
+  <span class="token keyword">let</span> details <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+  <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">const</span> output <span class="token keyword">of</span> txJSON<span class="token punctuation">.</span>outputs<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// encode the public key hash into the right address format for this network</span>
+    <span class="token keyword">let</span> outputJSON <span class="token operator">=</span> output<span class="token punctuation">.</span><span class="token function">getJSON</span><span class="token punctuation">(</span><span class="token string">'main'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token keyword">await</span> wallet<span class="token punctuation">.</span><span class="token function">hasAddress</span><span class="token punctuation">(</span>outputJSON<span class="token punctuation">.</span>address<span class="token punctuation">)</span><span class="token punctuation">)</span>
+      details<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>outputJSON<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token comment" spellcheck="true">// add "my output" list to return object</span>
+  txJSON<span class="token punctuation">.</span>details <span class="token operator">=</span> details<span class="token punctuation">;</span>
+  fs<span class="token punctuation">.</span><span class="token function">writeFile</span><span class="token punctuation">(</span>txDir <span class="token operator">+</span> txJSON<span class="token punctuation">.</span>hash<span class="token punctuation">,</span> JSON<span class="token punctuation">.</span><span class="token function">stringify</span><span class="token punctuation">(</span>txJSON<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token keyword">function</span><span class="token punctuation">(</span>err<span class="token punctuation">)</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>The JSON recorded for an incoming transaction looks like this:</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token punctuation">{</span>
+   <span class="token string">"hash"</span><span class="token keyword">:</span><span class="token string">"357d1862850e4370134b1937ba4caff5674f46457b3e1a1750f8c2e7d1fc78bb"</span>,
+   <span class="token string">"witnessHash"</span><span class="token keyword">:</span><span class="token string">"357d1862850e4370134b1937ba4caff5674f46457b3e1a1750f8c2e7d1fc78bb"</span>,
+   <span class="token string">"size"</span>:225,
+   <span class="token punctuation">..</span>.
+   <span class="token string">"inputs"</span>:<span class="token punctuation">[</span>
+      <span class="token punctuation">..</span>.
+   <span class="token punctuation">]</span>,
+   <span class="token string">"outputs"</span>:<span class="token punctuation">[</span>
+      <span class="token punctuation">{</span>
+         <span class="token string">"value"</span>:123450,
+         <span class="token string">"script"</span><span class="token keyword">:</span><span class="token string">"76a914e84da987245b8ea2688ed35bbeecef8da1afc05588ac"</span>,
+         <span class="token string">"address"</span><span class="token keyword">:</span><span class="token string">"n2hG6dA6KepqpV7Z6aCQQMnbPiABy4dzMj"</span>
+      <span class="token punctuation">}</span>,
+      <span class="token punctuation">{</span>
+         <span class="token string">"value"</span>:77676380,
+         <span class="token string">"script"</span><span class="token keyword">:</span><span class="token string">"76a914487af102bab462d6ee75e06dda1026cae4f9a8f488ac"</span>,
+         <span class="token string">"address"</span><span class="token keyword">:</span><span class="token string">"mn8CDzDkKo7JtF31c4HEqT9sSxZpi4W9YM"</span>
+      <span class="token punctuation">}</span>
+   <span class="token punctuation">]</span>,
+   <span class="token string">"locktime"</span>:0,
+   <span class="token string">"details"</span>:<span class="token punctuation">[</span>
+      <span class="token punctuation">{</span>
+         <span class="token string">"value"</span>:123450,
+         <span class="token string">"script"</span><span class="token keyword">:</span><span class="token string">"76a914e84da987245b8ea2688ed35bbeecef8da1afc05588ac"</span>,
+         <span class="token string">"address"</span><span class="token keyword">:</span><span class="token string">"n2hG6dA6KepqpV7Z6aCQQMnbPiABy4dzMj"</span>
+      <span class="token punctuation">}</span>
+   <span class="token punctuation">]</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Notice that even though the transaction has 2 outputs, only one was recorded in the <code>details</code> array. That&#39;s the only output we really &quot;received&quot; (that we can actually spend).
+In the python clock script, we&#39;ll add a function that checks for transaction files and calculates the total amount recieved.</p>
+<pre class="snippet line-numbers language-python"><code class="line-numbers language-python"><span class="token comment" spellcheck="true"># gui_clock.py</span>
+
+TXS_DIR <span class="token operator">=</span> os<span class="token punctuation">.</span>path<span class="token punctuation">.</span>expanduser<span class="token punctuation">(</span><span class="token string">'~'</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">'/txs/'</span>
+<span class="token comment" spellcheck="true"># check for new txs</span>
+<span class="token keyword">def</span> <span class="token function">checkTXs</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+  txs <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token punctuation">}</span>
+  <span class="token keyword">try</span><span class="token punctuation">:</span>
+    readFiles<span class="token punctuation">(</span>txs<span class="token punctuation">,</span> TXS_DIR<span class="token punctuation">)</span>
+  <span class="token keyword">except</span><span class="token punctuation">:</span>
+    <span class="token keyword">return</span> <span class="token boolean">False</span>
+  <span class="token keyword">for</span> hash<span class="token punctuation">,</span> tx <span class="token keyword">in</span> txs<span class="token punctuation">.</span>items<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    total <span class="token operator">=</span> <span class="token number">0</span>
+    <span class="token keyword">for</span> detail <span class="token keyword">in</span> tx<span class="token punctuation">[</span><span class="token string">'details'</span><span class="token punctuation">]</span><span class="token punctuation">:</span>
+      amt <span class="token operator">=</span> detail<span class="token punctuation">[</span><span class="token string">'value'</span><span class="token punctuation">]</span> <span class="token operator">/</span> <span class="token number">100000000.0</span>
+      total <span class="token operator">+=</span> amt
+    <span class="token comment" spellcheck="true"># remove tx file so we only notify once</span>
+    os<span class="token punctuation">.</span>remove<span class="token punctuation">(</span>TXS_DIR <span class="token operator">+</span> hash<span class="token punctuation">)</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="finishing-the-gui">Finishing the GUI</h2><p>What we have built so far is a system that:</p>
+<ol>
+<li><p>Launches an SPV Bitcoin node</p>
+</li>
+<li><p>Records metadata about every new block in a file</p>
+</li>
+<li><p>Records incoming transaction details in a file</p>
+</li>
+<li><p>Monitors the status of the node and the blockchain</p>
+</li>
+<li><p>Retrieves Bitcoin addresses on demand from the wallet and generates QR codes</p>
+</li>
+</ol>
+<p>All that remains to package up this structure with a fun graphical interface that refreshes its own status every second <em>(tick, tick, tick!)</em>.
+The final Python script is <a href="https://github.com/pinheadmz/bcoin-clock">available on Github</a>
+and you can read through it to see how I added the <code>curses</code> Python library to draw ASCII-art to the terminal screen.
+<code>curses</code> is a great tool for terminal applications because you can write text anywhere on the screen with (x,y) coordinates, and it can also
+capture single keystrokes from the user and respond immediately inside of an infinite loop.</p>
+<p>To draw the block history to the screen, we need to first decide how much time the width of the screen represents.
+Then, using the current time and the timestamps of all the blocks in our memory, figure out which blocks are within
+our timeline and where they are in that timeline. <code>curses</code> will tell us the size of the screen in rows and columns.</p>
+<pre class="snippet line-numbers language-python"><code class="line-numbers language-python"><span class="token comment" spellcheck="true"># gui_clock.py</span>
+
+<span class="token comment" spellcheck="true"># initialize curses</span>
+<span class="token keyword">import</span> curses
+stdscr <span class="token operator">=</span> curses<span class="token punctuation">.</span>initscr<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token comment" spellcheck="true"># store window dimensions</span>
+MAXYX <span class="token operator">=</span> stdscr<span class="token punctuation">.</span>getmaxyx<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">### draw the recent blockchain</span>
+WINDOW <span class="token operator">=</span> <span class="token number">30</span> <span class="token operator">*</span> <span class="token number">60</span> <span class="token comment" spellcheck="true"># total seconds across width of screen (thirty minutes)</span>
+<span class="token keyword">def</span> <span class="token function">drawBlockchain</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+  <span class="token comment" spellcheck="true"># calculate how much time is represented by each column on the screen</span>
+  secondsPerCol <span class="token operator">=</span> WINDOW<span class="token operator">/</span>MAXYX<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span>
+  <span class="token comment" spellcheck="true"># draw an axis across the screen like this: [-----------]</span>
+  stdscr<span class="token punctuation">.</span>addstr<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token string">"["</span> <span class="token operator">+</span> <span class="token string">"-"</span> <span class="token operator">*</span> <span class="token punctuation">(</span>MAXYX<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token operator">-</span><span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">"]"</span><span class="token punctuation">)</span>
+  <span class="token comment" spellcheck="true"># get the current unix timestamp</span>
+  now <span class="token operator">=</span> int<span class="token punctuation">(</span>time<span class="token punctuation">.</span>time<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token comment" spellcheck="true"># iterate through our array of blocks and draw them</span>
+  <span class="token keyword">for</span> index<span class="token punctuation">,</span> block <span class="token keyword">in</span> BLOCKS<span class="token punctuation">.</span>items<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token comment" spellcheck="true"># how old is this block in seconds?</span>
+    secondsAgo <span class="token operator">=</span> now <span class="token operator">-</span> block<span class="token punctuation">[</span><span class="token string">'time'</span><span class="token punctuation">]</span>
+    <span class="token comment" spellcheck="true"># is this block even in our displayed timeline?</span>
+    <span class="token keyword">if</span> secondsAgo <span class="token operator">&lt;</span> WINDOW<span class="token punctuation">:</span>
+      <span class="token comment" spellcheck="true"># calcualte the left-to-right position of the block in the timeline</span>
+      col <span class="token operator">=</span> MAXYX<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">-</span> <span class="token punctuation">(</span>secondsAgo <span class="token operator">/</span> secondsPerCol<span class="token punctuation">)</span> <span class="token operator">-</span> <span class="token number">9</span>
+      <span class="token keyword">if</span> col <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">:</span>
+        <span class="token comment" spellcheck="true"># draw the block details</span>
+        stdscr<span class="token punctuation">.</span>addstr<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> col<span class="token punctuation">,</span> <span class="token string">"|"</span><span class="token punctuation">)</span>
+        stdscr<span class="token punctuation">.</span>addstr<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> col<span class="token punctuation">,</span> "<span class="token comment" spellcheck="true">#" + str(index))</span>
+        stdscr<span class="token punctuation">.</span>addstr<span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> col<span class="token punctuation">,</span> <span class="token string">"Hash:"</span><span class="token punctuation">)</span>
+        <span class="token keyword">for</span> i <span class="token keyword">in</span> range<span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+          stdscr<span class="token punctuation">.</span>addstr<span class="token punctuation">(</span><span class="token number">3</span><span class="token operator">+</span>i<span class="token punctuation">,</span> col<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">,</span> block<span class="token punctuation">[</span><span class="token string">'hash'</span><span class="token punctuation">]</span><span class="token punctuation">[</span>i<span class="token operator">*</span><span class="token number">8</span><span class="token punctuation">:</span>i<span class="token operator">*</span><span class="token number">8</span><span class="token operator">+</span><span class="token number">8</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+        stdscr<span class="token punctuation">.</span>addstr<span class="token punctuation">(</span><span class="token number">11</span><span class="token punctuation">,</span> col<span class="token punctuation">,</span> <span class="token string">"TXs:"</span><span class="token punctuation">)</span>
+        stdscr<span class="token punctuation">.</span>addstr<span class="token punctuation">(</span><span class="token number">12</span><span class="token punctuation">,</span> col<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">,</span> str<span class="token punctuation">(</span><span class="token string">"{:,}"</span><span class="token punctuation">.</span>format<span class="token punctuation">(</span>block<span class="token punctuation">[</span><span class="token string">'totalTX'</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        stdscr<span class="token punctuation">.</span>addstr<span class="token punctuation">(</span><span class="token number">13</span><span class="token punctuation">,</span> col<span class="token punctuation">,</span> <span class="token string">"Age:"</span><span class="token punctuation">)</span>
+        stdscr<span class="token punctuation">.</span>addstr<span class="token punctuation">(</span><span class="token number">14</span><span class="token punctuation">,</span> col<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">,</span> str<span class="token punctuation">(</span>secondsAgo<span class="token operator">/</span><span class="token number">60</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">":"</span> <span class="token operator">+</span> str<span class="token punctuation">(</span>secondsAgo<span class="token operator">%</span><span class="token number">60</span><span class="token punctuation">)</span><span class="token punctuation">.</span>zfill<span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>I&#39;ve set up a little menu at the bottom of the screen where a user can zoom the timeline in or out.
+When <code>curses</code> catches a user pressing either <code>-</code> or <code>+</code>, the <code>WINDOW</code> parameter is increased or decreased.</p>
+<p><img src="https://raw.githubusercontent.com/pinheadmz/bcoin-clock/master/BcoinClockGUI.png"></p>
+<h2 id="next-steps">Next steps</h2><p>What else can we do with this structure?
+What else can you add on your own? Since we are receiving transactions, maybe there should be some kind of send function,
+<a href="http://bcoin.io/api-docs/?shell--curl#send-a-transaction">using the node API and another cURL request from Python.</a>
+You could also use the same QR code functionality to <a href="http://bcoin.io/api-docs/?shell--curl#get-private-key-by-address">display the private key for an address you have deposited to</a>,
+allowing the user to sweep that key with a mobile phone wallet.</p>
+<p>Notice when a wallet-related transaction gets confirmed in a block, the details we get for that block include a <a href="https://en.bitcoin.it/wiki/Protocol_documentation#Merkle_Trees">Merkle Proof</a>.
+This is expressed in a series of hashes and flags that describe the structure of the Merkle Tree our transaction is in.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token punctuation">{</span>
+<span class="token string">"hash"</span><span class="token keyword">:</span><span class="token string">"0000000000000030563c98f2a19f726c24d6f3ab69295d6161b5e8b99766e9a1"</span>,
+<span class="token string">"version"</span>:536870912,
+<span class="token string">"prevBlock"</span><span class="token keyword">:</span><span class="token string">"00000000000000488d4c972efa9535fb3e3137b109571a5790a3aa284cbd427a"</span>,
+<span class="token string">"merkleRoot"</span><span class="token keyword">:</span><span class="token string">"14f4d13857ea54be5724e3284fddd200f1dce5d6dcb859a9e79c6c8ea45fc200"</span>,
+<span class="token string">"time"</span>:1528410807,
+<span class="token string">"bits"</span>:425389056,
+<span class="token string">"nonce"</span>:2023619469,
+<span class="token string">"totalTX"</span>:72,
+<span class="token string">"hashes"</span>:<span class="token punctuation">[</span>
+    <span class="token string">"ea0c37e986eb55c3ff9b0abead1eb567cd6d252e4a2a956430598194b62c060c"</span>,
+    <span class="token string">"fee24064527576237da1ae8a835722596dc573cce1fa29b64b2af2d284c97fbb"</span>,
+    <span class="token string">"7100255726502d117c6d8a118243753f3f38e2f4b43844e09598d66d31e50e2b"</span>,
+    <span class="token string">"8f0d27afb0ae40427c0e900ba8843093e7a5b2b619227e9ec8f7108d4d6d12da"</span>,
+    <span class="token string">"22a0ab5395bef2050f270ebd8a33fb6794bce5e46d6f75289a17b0fecfaf65c3"</span>,
+    <span class="token string">"14c90c01fcc64ff892b1b599039ee6634e712736f37a284944944ee61a3292ea"</span>,
+    <span class="token string">"f9821e9ef769035f8fb845a89ce08106db8bff5c7e9f8997e2765ccdf4da3c37"</span>,
+    <span class="token string">"46e8991fd4c979cfbfa2dbc2a479eb29a16f1e3f4127168c0253dd671586f4e9"</span>,
+    <span class="token string">"4bf208da979cc9eb4b0a6fe7e6ca6ac9baf9660120b0dedc8ae8725456f6528a"</span>,
+    <span class="token string">"cbdb8da8ec97c50d7d5434f12bdb26b44dce9f4ea90aea69e870288d2e5c35ac"</span>
+    <span class="token punctuation">]</span>,
+<span class="token string">"flags"</span><span class="token keyword">:</span><span class="token string">"773d00"</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>...maybe the GUI should indicate somehow which blocks confirm our own transactions?</p>
+<p>We have been running bcoin in SPV mode so far, but what if we ran a full bcoin node? We could display the size of the mempool as 
+transactions get broadcast across the network and consumed by blocks. The number of transactions in the mempool and its total size in bytes are available
+from the <code>getInfo()</code> function we wrote.</p>
+<h2 id="extra-credit">Extra credit</h2><p>You don&#39;t have to keep this program in the SSH terminal -- if you&#39;ve been working on a Raspberry Pi it&#39;d be quite easy to attach a <a href="https://purse.io/search/5%22%20HDMI%20raspberry%20pi">small HDMI display</a>
+and <a href="https://purse.io/search/mini%20usb%20keyboard%20wireless">tiny wireless keyboard</a> to make yourself a stand alone clock.
+Install it in an old picture frame! Hang it on your wall and send us a photo! :-)</p>
+<p>The Bcoin Block Clock that I made took the interface one step further: LEDs!
+I used a <a href="https://learn.adafruit.com/neopixels-on-raspberry-pi">NeoPixel ring</a> to display the blocks over the past hour, using LED color to illustrate block version or size.
+A second, inner NeoPixel ring <a href="https://twitter.com/MatthewZipkin/status/885318444387680256">indicates the progress of the difficulty adjustment period.</a>
+I added a <a href="https://learn.adafruit.com/ssd1306-oled-displays-with-raspberry-pi-and-beaglebone-black">small OLED display</a> for the blockchain readout.
+The python libraries for these add-ons are open source and will integrate easily into your project.</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/rSh_Gh1O_YM" frameborder="0" allow="encrypted-media" allowfullscreen></iframe>
+
+					<!-- END OF GUIDE -->
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<!-- END OF ARTICLE CONTAINER -->
+
+					</div>
+					<!-- END BLOG CONTENT -->
+
+
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END NEW BLOGS -->
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END BLOGS -->
+
+
+		<!-- PARALLAX DOCS CTA -->
+		<section class="module bg-white-alfa-30 parallax color-white" data-background="../assets/images/bg-header.jpg">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12">
+						<div class="text-center">
+							<h2 class="montserrat text-uppercase m-b-30">Ready to start building? Read the docs!</h2>
+							<a href="http://bcoin.io/docs/index.html" target="_blank" class="btn btn-lg btn-purple">Documentation</a>
+						</div>
+					</div>
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END PARALLAX DOCS CTA -->
+
+		<!-- FOOTER -->
+		<footer id="footer" class="footer-minimal">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12">
+						<ul class="social-icons social-icons-circle text-center m-b-35">
+							<li><a href="https://twitter.com/bcoin"><i class="fa fa-twitter"></i></a></li>
+							<li><a href="https://github.com/bcoin-org/bcoin"><i class="fa fa-github"></i></a></li>
+
+
+							<li><a href="../slack-signup.html" target="_blank"><i class="fa fa-slack"></i></a></li>
+						</ul>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-12 text-center m-b-35">
+						<img class="m-b-35 QR-code" src="../assets/images/donation_QR.png"/>
+						<p class="m-0"><strong>Bcoin Development Donation Address:</strong><br />3Bi9H1hzCHWJoFEjc4xzVzEMywi35dyvsV</p>
+
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-12 text-center">
+						<p class="m-0">Copyright <a href="#">bcoin.io, Purse</a>, 2018, All Rights Reserved.</p>
+
+					</div>
+				</div>
+
+			</div>
+		</footer>
+		<!-- END FOOTER -->
+
+	</div>
+	<!-- /WRAPPER -->
+
+	<!-- JAVASCRIPT FILES -->
+
+	<script src="../assets/js/jquery-2.2.3.min.js"></script>
+	<script src="http://maps.googleapis.com/maps/api/js?v=3"></script>
+	<script src="../assets/bootstrap/js/bootstrap.min.js"></script>
+	<script src="../assets/js/plugins.min.js"></script>
+	<script src="../assets/js/stickyfill.min.js"></script>
+	<script src="../assets/js/custom.min.js"></script>
+	<script src="../assets/js/clipboard.min.js"></script>
+	<script async defer src="../assets/js/prism.js"></script>
+	<script>
+		var copyCode = new Clipboard('.copy-button', {
+		    target: function(trigger) {
+		        return trigger.previousElementSibling;
+		    }
+		});
+
+		copyCode.on('success', function(event) {
+		    event.trigger.classList.add('success');
+		    event.clearSelection();
+		    // event.trigger.textContent = 'Copied!';
+		    window.setTimeout(function() {
+		        event.trigger.classList.remove('success');
+		    }, 2000);
+		});
+	</script>
+
+  <!-- github button js -->
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+</body>
+</html>

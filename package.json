@@ -1,0 +1,30 @@
+{
+  "name": "bcoin-org.github.io",
+  "version": "1.0.0",
+  "description": "website for bcoin, including guides and tutorials",
+  "main": "index.html",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "clear-guides": "rm -rf ./guides; mkdir ./guides",
+    "convert-markdown": "node guide-generator.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bcoin-org/bcoin-org.github.io.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bcoin-org/bcoin-org.github.io/issues"
+  },
+  "homepage": "https://github.com/bcoin-org/bcoin-org.github.io#readme",
+  "dependencies": {
+    "highlight.js": "^9.12.0",
+    "marked": "^0.3.11",
+    "prism-languages": "^0.3.3",
+    "prismjs": "^1.6.0",
+    "underscore": "^1.8.3"
+  }
+}

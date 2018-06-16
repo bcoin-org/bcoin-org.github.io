@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd ../bcoin
+rm -rf docs
+make docs
+cd ../bcoin-org.github.io
+rm -rf ./docs
+cp -r ../bcoin/docs .

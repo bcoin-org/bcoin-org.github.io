@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="A guide to creating and working with wallets in bcoin">
+	<meta name="author" content="Daniel McNally">
+
+	<title>Bcoin Guide | Wallets and Accounts and Keys, Oh My!</title>
+
+	<!-- Favicons -->
+	<!-- old
+	<link rel="shortcut icon" href="../assets/images/bcoin-ico.png">-->
+
+	<!-- generated from http://www.favicon-generator.org/ -->
+	<link rel="apple-touch-icon" sizes="57x57" href="../assets/images/apple-icon-57x57.png">
+	<link rel="apple-touch-icon" sizes="60x60" href="../assets/images/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="../assets/images/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="76x76" href="../assets/images/apple-icon-76x76.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="../assets/images/apple-icon-114x114.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="../assets/images/apple-icon-120x120.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="../assets/images/apple-icon-144x144.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="../assets/images/apple-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="../assets/images/apple-icon-180x180.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="../assets/images/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="../assets/images/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="../assets/images/favicon-16x16.png">
+	<link rel="manifest" href="../assets/images/manifest.json">
+	<meta name="msapplication-TileColor" content="#ffffff">
+	<meta name="msapplication-TileImage" content="../assets/images/ms-icon-144x144.png">
+	<meta name="theme-color" content="#ffffff">
+
+	<!-- Web Fonts -->
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400italic,400,600,700' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Montserrat:700' rel='stylesheet' type='text/css'>
+
+	<!-- Bootstrap core CSS -->
+	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+	<!-- Code Snippet CSS -->
+	<link href="../assets/css/prism.css" rel="stylesheet">
+
+	<link href="../assets/css/custom.css" rel="stylesheet">
+
+	<!-- Icon Fonts -->
+	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
+	<link href="../assets/css/simple-line-icons.css" rel="stylesheet">
+
+	<!-- Plugins -->
+	<link href="../assets/css/magnific-popup.css" rel="stylesheet">
+	<link href="../assets/css/owl.carousel.css" rel="stylesheet">
+	<link href="../assets/css/flexslider.css" rel="stylesheet">
+	<link href="../assets/css/animate.min.css" rel="stylesheet">
+
+	<!-- Template core CSS -->
+	<link href="../assets/css/vertical.min.css" rel="stylesheet">
+	<link href="../assets/css/template.css" rel="stylesheet">
+
+	<!-- Google Analytics Tracking -->
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+        ga('create', 'UA-96446060-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+</head>
+<body>
+
+	<!-- PRELOADER -->
+	<div class="page-loader">
+		<div class="img-loader">Loading...
+			<!-- Bcoin logo in SVG -->
+			<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+				viewBox="0 0 200 56" style="enable-background:new 0 0 200 56;" xml:space="preserve">
+			<g id="XMLID_108_">
+				<g id="XMLID_123_">
+					<path id="XMLID_124_" d="M8.4,51.8H3.2V4.2h5.2v19.2h0.8c1.2-2,2.8-3.6,4.8-4.7c2-1.1,4.3-1.6,6.7-1.6c2,0,4,0.4,5.8,1.2
+						c1.8,0.8,3.4,1.9,4.8,3.3c1.4,1.5,2.5,3.2,3.3,5.4s1.2,4.6,1.2,7.3v1.4c0,2.8-0.4,5.2-1.2,7.4c-0.8,2.1-1.9,3.9-3.3,5.4
+						c-1.4,1.5-3,2.6-4.9,3.3s-3.8,1.1-5.9,1.1c-1.1,0-2.2-0.1-3.3-0.4c-1.1-0.3-2.2-0.6-3.2-1.2c-1-0.5-1.9-1.2-2.8-1.9
+						c-0.8-0.7-1.6-1.6-2.1-2.7H8.4V51.8z M19.4,47.7c1.6,0,3.1-0.3,4.4-0.9c1.3-0.6,2.5-1.4,3.5-2.4c1-1,1.8-2.3,2.3-3.8
+						c0.6-1.5,0.8-3.2,0.8-5v-1.4c0-1.8-0.3-3.5-0.8-4.9c-0.6-1.5-1.3-2.7-2.3-3.8c-1-1.1-2.2-1.9-3.5-2.5c-1.4-0.6-2.8-0.9-4.4-0.9
+						c-1.6,0-3,0.3-4.3,0.9c-1.3,0.6-2.5,1.5-3.5,2.6c-1,1.1-1.8,2.4-2.4,3.9c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1
+						c0.6,1.5,1.4,2.8,2.4,3.9s2.2,1.9,3.5,2.5C16.4,47.4,17.9,47.7,19.4,47.7z"/>
+				</g>
+				<g id="XMLID_120_">
+					<path id="XMLID_121_" d="M76.1,39.8c-0.4,1.9-1,3.6-1.8,5.2c-0.9,1.6-2,3-3.3,4.1s-2.9,2.1-4.7,2.7c-1.8,0.6-3.8,1-5.9,1
+						c-2.3,0-4.5-0.4-6.6-1.2c-2.1-0.8-3.9-1.9-5.4-3.4c-1.6-1.5-2.8-3.3-3.7-5.4c-0.9-2.1-1.4-4.6-1.4-7.4v-0.8c0-2.7,0.5-5.2,1.4-7.4
+						c0.9-2.2,2.1-4,3.7-5.5c1.6-1.5,3.4-2.7,5.4-3.5c2.1-0.8,4.3-1.2,6.6-1.2c2.1,0,4,0.3,5.8,1c1.8,0.6,3.3,1.5,4.7,2.7
+						c1.4,1.2,2.5,2.5,3.3,4.1c0.9,1.6,1.5,3.3,1.8,5.2l-5.2,1.2c-0.1-1.2-0.5-2.3-1-3.4c-0.5-1.1-1.2-2.1-2.1-2.9
+						c-0.9-0.8-1.9-1.5-3.2-2c-1.2-0.5-2.7-0.7-4.3-0.7c-1.6,0-3.1,0.3-4.5,0.9c-1.4,0.6-2.6,1.5-3.7,2.6c-1.1,1.1-1.9,2.4-2.5,4
+						c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1c0.6,1.5,1.4,2.8,2.5,3.8c1.1,1,2.3,1.8,3.7,2.4c1.4,0.6,3,0.9,4.6,0.9
+						s3.1-0.3,4.3-0.8c1.2-0.5,2.3-1.2,3.1-2c0.9-0.8,1.6-1.8,2.1-2.9c0.5-1.1,0.9-2.2,1-3.4L76.1,39.8z"/>
+				</g>
+				<g id="XMLID_116_">
+					<path id="XMLID_117_" d="M117.2,35.4c0,2.8-0.5,5.3-1.4,7.5c-0.9,2.2-2.1,4-3.6,5.4c-1.5,1.5-3.3,2.6-5.3,3.4
+						c-2,0.8-4.1,1.2-6.3,1.2c-2.2,0-4.3-0.4-6.3-1.2c-2-0.8-3.8-1.9-5.3-3.4c-1.5-1.5-2.7-3.3-3.6-5.4c-0.9-2.2-1.4-4.6-1.4-7.5v-0.8
+						c0-2.8,0.5-5.2,1.4-7.4c0.9-2.2,2.1-4,3.7-5.5c1.5-1.5,3.3-2.6,5.3-3.4c2-0.8,4.1-1.2,6.3-1.2c2.2,0,4.3,0.4,6.3,1.2
+						c2,0.8,3.8,1.9,5.3,3.4c1.5,1.5,2.8,3.3,3.7,5.5c0.9,2.2,1.4,4.6,1.4,7.4V35.4z M100.6,47.7c1.6,0,3.1-0.3,4.4-0.9
+						c1.4-0.6,2.5-1.4,3.6-2.5c1-1.1,1.8-2.4,2.4-3.9c0.6-1.5,0.9-3.2,0.9-5.1v-0.8c0-1.8-0.3-3.5-0.9-5c-0.6-1.5-1.4-2.8-2.4-3.9
+						c-1-1.1-2.2-1.9-3.6-2.6c-1.4-0.6-2.8-0.9-4.4-0.9c-1.6,0-3,0.3-4.4,0.9c-1.4,0.6-2.6,1.5-3.6,2.6c-1,1.1-1.8,2.4-2.4,3.9
+						c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1c0.6,1.5,1.4,2.8,2.4,3.9c1,1.1,2.2,1.9,3.6,2.5C97.5,47.5,99,47.7,100.6,47.7z
+						"/>
+				</g>
+				<g id="XMLID_112_">
+					<path id="XMLID_113_" d="M127.6,46.9h11.6V23h-10.4v-4.9h15.6v28.9h10.8v4.9h-27.6V46.9z M137.1,8c0-1.3,0.5-2.4,1.4-3.4
+						c0.9-0.9,2-1.4,3.3-1.4c1.3,0,2.4,0.5,3.3,1.4c0.9,0.9,1.4,2.1,1.4,3.4c0,1.3-0.5,2.4-1.4,3.4c-0.9,0.9-2,1.4-3.3,1.4
+						c-1.3,0-2.4-0.5-3.3-1.4C137.5,10.4,137.1,9.3,137.1,8z"/>
+				</g>
+				<g id="XMLID_109_">
+					<path id="XMLID_110_" d="M172.8,51.8h-5.2V18.1h5.2v5.7h0.8c2-4.4,5.6-6.7,10.7-6.7c3.8,0,6.9,1.2,9.1,3.6
+						c2.3,2.4,3.4,6.1,3.4,10.9v20.2h-5.2V32.8c0-3.5-0.8-6.2-2.3-8c-1.6-1.8-3.7-2.7-6.3-2.7c-3.2,0-5.6,1.1-7.4,3.3s-2.7,5.1-2.7,8.8
+						V51.8z"/>
+				</g>
+			</g>
+			</svg>
+
+
+		</div>
+	</div>
+	<!-- END PRELOADER -->
+
+	<!-- HEADER -->
+	<header class="header js-stick">
+			<div class="container">
+				<!-- YOUR LOGO HERE -->
+				<div class="inner-header">
+					<a class="inner-brand" href="../index.html">
+						<img class="brand-light" src="../assets/images/logo-light.png" width="100" alt="">
+						<img class="brand-dark" src="../assets/images/logo-dark.png" width="100" alt="">
+					</a>
+				</div>
+
+				<!-- OPEN MOBILE MENU -->
+				<div class="main-nav-toggle">
+					<div class="nav-icon-toggle" data-toggle="collapse" data-target="#custom-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</div>
+				</div>
+
+				<!-- WIDGETS MENU -->
+				<div class="inner-header pull-right hide-me">
+					<div class="menu-extras clearfix">
+
+						<!-- SLACK LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="../slack-signup.html" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Slack!">
+									<img src="../assets/images/slack_icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<!-- STACK EXCHANGE LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://bitcoin.stackexchange.com/questions/tagged/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Questions! Checkout Stack Exchange.">
+									<img src="../assets/images/stack-exchange-icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<!-- GITHUB STUFF -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://github.com/bcoin-org/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Visit bcoin on GitHub to see the code!">
+									<img src="../assets/images/github_icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<div class="menu-item">
+                            <div class="ghbuttons">
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin" data-icon="octicon-star" data-count-href="/bcoin-org/bcoin/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star bcoin-org/bcoin on GitHub">Star</a>
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin/fork" data-icon="octicon-repo-forked" data-count-href="/bcoin-org/bcoin/network" data-show-count="true" data-count-aria-label="# forks on GitHub" aria-label="Fork bcoin-org/bcoin on GitHub">Fork</a>
+                            </div>
+                        </div>
+
+
+
+
+					</div>
+				</div>
+
+				<!-- MAIN MENU -->
+				<nav id="custom-collapse" class="main-nav collapse clearfix">
+					<ul class="inner-nav pull-right">
+
+						<!-- HOME -->
+						<li><a href="../index.html">Home</a></li>
+						<!-- END HOME -->
+
+						<!-- FEATURES -->
+						<li><a href="../index.html#features">What is Bcoin</a></li>
+						<!-- END FEATURES -->
+
+						<!-- GUIDES -->
+						<li><a href="../guides.html">Guides</a></li>
+						<!-- GUIDES -->
+
+						<!-- API REFERENCE - newer, how to interact once you're setup -->
+						<li><a href="../api-docs/index.html">API Docs</a></li>
+						<!-- END API -->
+
+						<!-- FULL DOCS - older, full reference
+						<li><a href="http://bcoin.io/docs/index.html">Docs</a></li> -->
+						<!-- END DOCS -->
+
+						<!-- DIVIDER
+						<li><a>&nbsp;</a></li>
+
+						<li><a href="#">All Demos</a></li>-->
+
+					</ul>
+				</nav>
+
+			</div>
+		</header>
+	<!-- END HEADER -->
+
+	<!-- WRAPPER -->
+	<div class="wrapper">
+
+		<!-- PAGE TITLE -->
+		<section class="module-sm bg-white-dark" data-background="../assets/images/bg-header.jpg">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12 text-center">
+
+						<h2 class="montserrat text-uppercase m-b-10"><span class="text-highlight-black" style="line-height: 1.5;">&nbsp;Guides &nbsp;and &nbsp;Videos&nbsp;</span></h2>
+
+					</div>
+				</div>
+
+			</div>
+		</section>
+		<!-- END PAGE TITLE -->
+
+		<!-- GUIDES/TUTORIALS -->
+		<section class="module" style="padding-top:70px !important;">
+			<div class="container">
+
+				<div class="row">
+
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Install</h6>
+<ul class="icons-list">
+<!-- INSTALL-LIST -->
+<li><a href="install-windows.html">Install on Windows (Video)</a></li>
+<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
+<li><a href="install-linux.html">Install on Linux (Video)</a></li>
+<!-- /INSTALL-LIST -->
+</ul>
+<br>
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="vps-setup.html">Full Node VPS Setup</a></li>
+<li><a href="segwit.html">Segwit and Bcoin</a></li>
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="cltv.html">Time Locked Bitcoin Transactions w/ CLTV</a></li>
+<li><a href="building-plugins.html">Buidling Awesome bcoin Plugins</a></li>
+<li><a href="beginners.html">Beginners Guide to Getting Started</a></li>
+<li><a href="bcoin-clock.html">Make your own Bcoin Block Clock!</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="http://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="../slack-signup.html"> Slack.</a></p>
+    <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
+					<!-- END SIDEBAR -->
+					<!-- START OF ARTICLE CONTAINER -->
+					<div class="col-sm-9 blog-content post-thumbnail">
+						<!-- POST IMAGE -->
+						<article class="post format-image">
+							<div class="row">
+								<!--<div class="col-sm-5">
+									<div class="post-preview">
+										<a href="#"><img src="../assets/images/guides/get-started.png" alt=""></a>
+									</div>
+								</div>-->
+
+								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
+								<div class="panel-group">
+									<div class="col-sm-12 panel panel-default">
+										<div class="post-content" style="color:#000;">
+					<!-- START OF GUIDE -->
+<h2 class="post-title panel-title" id="wallets-and-accounts-and-keys-oh-my!">Wallets and Accounts and Keys, Oh My!</h2><ul class="post-meta"><li class="author">By Daniel McNally</li></ul><p>Bcoin offers a powerful, modular way to create and manage bitcoin wallets. In this guide, I&#39;ll walk you through the concepts and features you&#39;ll need to know about to get started.</p>
+<h2 id="the-basics">The Basics</h2><p>If you&#39;re a seasoned bitcoiner, you can probably skim this section or skip straight ahead to the <a href="#examples">Examples</a> section. But if you&#39;re relatively new or just want a refresher, this section will help you understand how wallets actually work. </p>
+<h3 id="wallets">Wallets</h3><p>In the most basic sense, a bitcoin wallet is data that enables you to receive and spend bitcoins. Wallets come in <a href="https://www.coindesk.com/information/how-to-store-your-bitcoins/">many different types and designs</a>, and assessing all the options can be overwhelming. Fortunately, bcoin implements the latest specifications for structuring wallets that are easy to backup, easy to restore, and that work just as well for a bitcoin novice making their first transactions as for a business with millions of users depositing and withdrawing bitcoin.</p>
+<h4 id="keys-to-the-game">Keys to the Game</h4><p>If you want to transact with bitcoin, you&#39;ll need keys. Each bitcoin address is associated with a particular key, and wallets are made up of many different keys. Keys consist of both a private key and a public key. The private key is required for spending and is extremely sensitive information, while a public key can be used to receive bitcoins and monitor a particular address. If you want to learn more about how this works, read up on <a href="https://en.wikipedia.org/wiki/Public-key_cryptography">Public-Key Cryptography</a>.</p>
+<h4 id="hd-vs-non-hd,-you-mean-like-tvs?">HD vs. Non-HD, you mean like TVs?</h4><p>You may have seen references to &quot;HD&quot; wallets and wondered what that means. HD in this context does not mean &quot;high definition,&quot; as I assumed it did at first, but rather &quot;hierarchical deterministic.&quot; An HD wallet takes a <em>hierarchy</em> of keys in order and makes it so any key in that sequence can be <em>determined</em> by the one before it. This means that if you can produce the first key in the hierarchy, you can then generate a practically unlimited number of subsequent keys. The specification for HD wallets as implemented in bcoin is defined by <a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">Bitcoin Improvement Proposal (BIP) 32</a>.</p>
+<p>Non-HD wallets, on the other hand, contain keys that are unrelated to one another. Backing up such a wallet means each key must be preserved individually. Not only is this more cumbersome, but it means that backups can quickly become out of date as new keys are added to the wallet. With an HD wallet, as long as you hold on to the seed - the data needed to recreate the first key - you will be able to recover every other key.</p>
+<p>While bcoin uses HD wallets, it does allow you to import individual keys into a wallet. This can be a handy feature in certain cases, but it means you&#39;ll need to backup any imported keys separately as they will not be recoverable simply by using your seed.</p>
+<p>But what exactly is the seed for an HD wallet? It can come in several forms, but bcoin implements <a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki">BIP39</a> which enables seeds to be represented by a mnemonic made up of a fixed set of common words. This means your seed can be easily spoken, written down, or perhaps even memorized. But be careful! Your seed can be used to recover and spend everything in your HD wallet (except for the aforementioned imported keys), so treat it like you would an actual wallet with cash in it.</p>
+<p>By default, mnemonics in bcoin are made up of twelve words representing 128 bits of entropy. This is a common standard that is far and away beyond what cutting edge computers can hope to crack via <a href="https://en.wikipedia.org/wiki/Brute-force_attack">brute force</a>. But if you want additional entropy, bcoin supports up to 512 bits of entropy which makes a 48 word mnemonic.</p>
+<h3 id="accounts">Accounts</h3><p>Wallets in bcoin are partitioned into accounts. When you first create a wallet, a &quot;default&quot; account is created automatically along with it. Accounts can be used to track and manage separate sets of keys all within a single wallet. For example, a business can use accounts to generate distinct addresses for depositors or to segregate customer funds internally. </p>
+<p>Bcoin implements <a href="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki">BIP44</a> as a method of generating unlimited accounts deterministically. This adds additional dimensions to the hierarchy described above, meaning the same seed that can recover all your keys can also recover all your addresses.</p>
+<p>Each account also comes with its own &quot;extended public key,&quot; a piece of data that can be used to generate all public keys for that account in deterministic fashion. This means, for instance, that a business can create limitless deposit addresses for its users without having to touch its critical private keys or seed. Remember that public keys can be used for receiving bitcoins, but not for spending, so a public key falling into the wrong hands will not immediately result in theft. </p>
+<h3 id="watch-only-wallets">Watch Only Wallets</h3><p>Speaking of not touching private keys, bcoin gives you the option to create wallets that are &quot;watch only.&quot; Watch only wallets don&#39;t contain <em>any</em> private keys, which means they can&#39;t be used to spend the bitcoins they receive. However, they work perfectly fine for creating addresses, receiving bitcoins, and detecting incoming transactions. Using watch only wallets where appropriate reduces the risk of your keys and bitcoin being stolen and is good security practice.</p>
+<p>Accounts always inherit the watch only behavior of their parent wallet. In other words, a watch only wallet will have exclusively watch only accounts while a regular wallet will have only regular accounts. Accordingly, you can&#39;t import private keys into a watch only wallet or public keys into regular wallets. If you try to mix and match watch only wallets and keys with bcoin, you&#39;re gonna have a bad time.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">~$ curl http://127.0.0.1:18332/wallet/watchonlywallet/import -X POST -d <span class="token string">'{"account":"default"
+,"privateKey":"cNZfR3NhQ9oCP3pTjvPZETUuTW
+Zo2k6EXtfczvbWyv7FdjMhppvJ"}'</span>
+<span class="token punctuation">{</span>
+  <span class="token string">"error"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"type"</span><span class="token keyword">:</span> <span class="token string">"Error"</span>,
+    <span class="token string">"message"</span><span class="token keyword">:</span> <span class="token string">"Cannot import privkey into watch-only wallet."</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+~$ curl http://127.0.0.1:18332/wallet/privatekeywallet/import -X POST -d <span class="token string">'{"account":"default","publicKey":"02f4f200cb9391f8bbcc0a35e1f654b9b993b214a04ae7efd0313f4d4bf3d95745"}'</span><span class="token punctuation">{</span>
+  <span class="token string">"error"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"type"</span><span class="token keyword">:</span> <span class="token string">"Error"</span>,
+    <span class="token string">"message"</span><span class="token keyword">:</span> <span class="token string">"Cannot import pubkey into non watch-only wallet."</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="api-authentication">API Authentication</h3><p>Bcoin can run as a server and allow you to interact with your wallets via a <a href="http://bcoin.io/api-docs/index.html?shell--curl#wallet">REST API</a>. It also allows you protect wallets from unauthenticated requests by running the server with the <code>wallet-auth</code> option. Each wallet you create has a <code>token</code> value that must be passed in with each request. Tokens, like accounts and keys, can also be deterministically generated using your HD seed. This means you can change the token on a wallet as often as you&#39;d like.</p>
+<h3 id="recovery">Recovery</h3><p>By using the HD standards mentioned above, bcoin allows one to easily restore or transfer their entire wallet to different wallet implementations. By providing just the mnemonic, one can fully recover their wallet to a fresh instance of bcoin or any other software that properly implements BIP33, BIP39, and BIP44, like the <a href="https://trezor.io/">Trezor</a> hardware wallet.</p>
+<h2 id="examples">Examples</h2><p>Enough chit chat, let&#39;s get down to business on how to create wallets, accounts, and keys with bcoin.</p>
+<h3 id="nodejs">Node.js</h3><p>Below is a demo using javascript to instantiate a wallet and output important data and keys. Since bcoin is modular, you can easily use just the wallet functionality as I&#39;ve done here.</p>
+<h4 id="setup">Setup</h4><p>With the <a href="https://www.npmjs.com/package/bcoin">bcoin package</a> installed, we&#39;ll first import bcoin and open a wallet database in memory.</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">//import the bcoin module and set it to testnet</span>
+<span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token keyword">set</span><span class="token punctuation">(</span><span class="token string">'testnet'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> WalletDB <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>WalletDB<span class="token punctuation">;</span>
+<span class="token keyword">const</span> WalletKey <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>wallet<span class="token punctuation">.</span>WalletKey<span class="token punctuation">;</span>
+<span class="token keyword">const</span> KeyRing <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>keyring<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Mnemonic <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>hd<span class="token punctuation">.</span>Mnemonic<span class="token punctuation">;</span>
+<span class="token keyword">const</span> HD <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>hd<span class="token punctuation">;</span>
+
+<span class="token function">walletExample</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token keyword">catch</span><span class="token punctuation">(</span>console<span class="token punctuation">.</span>error<span class="token punctuation">.</span><span class="token function">bind</span><span class="token punctuation">(</span>console<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">walletExample</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">//for demonstration purposes, we'll be creating a temporary wallet in memory</span>
+    <span class="token keyword">const</span> wdb <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">WalletDB</span><span class="token punctuation">(</span><span class="token punctuation">{</span> db<span class="token punctuation">:</span> <span class="token string">'memory'</span> <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">await</span> wdb<span class="token punctuation">.</span><span class="token function">open</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h4 id="creating-a-wallet">Creating a Wallet</h4><p>Creating a wallet in our database takes only one line.</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">//creates and returns a Wallet object from scratch using a random master key and default options</span>
+<span class="token keyword">const</span> wallet <span class="token operator">=</span> <span class="token keyword">await</span> wdb<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>wallet<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">/*{ 
+  wid: 2,
+  id: 'WLTdx4aYEPmmrQiYNwPop4nLtbpTEdJYwrN4',
+  network: 'testnet',
+  initialized: true,
+  accountDepth: 1,
+  token: 'eeae267e99d112793b892a8e30f89b1e1e0ba0d4984c2e6f09fc7931e750af5a', //the token you'll need to use the REST API with `wallet-auth` set to true
+  tokenDepth: 0,
+  state: 
+   { wid: undefined,
+     id: undefined,
+     tx: 0,
+     coin: 0,
+     unconfirmed: 0,
+     confirmed: 0 },
+  master: 
+   { encrypted: false,
+     key: { xprivkey: 'tprv8ZgxMBicQKsPdcD55gci7HBednWRaosU4CkAHNEAs3kAAj9m8TVrEzxAW3EPrTrFevVssHCCoRsA37vB65SUZs727k45Nz1Cjmy4tyaSFeR' }, //the keys to the castle, guard this carefully!
+     mnemonic: 
+      { bits: 128,
+        language: 'english',
+        entropy: '04a50a56fbaaadc26a2b1690ec74243f',
+        phrase: 'again choose noble warrior print thrive post glare movie glove animal legal', //the keys to the castle in human readable form
+        passphrase: '' } },
+  account: 
+   { wid: 2,
+     name: 'default',
+     network: &lt;Network: testnet>,
+     initialized: true,
+     witness: false,
+     watchOnly: false,
+     type: 'pubkeyhash',
+     m: 1,
+     n: 1,
+     accountIndex: 0,
+     receiveDepth: 1,
+     changeDepth: 1,
+     nestedDepth: 0,
+     lookahead: 10,
+     address: &lt;Address: type=pubkeyhash version=-1 str=mhNHETXFKDk7ZpGg3iEZb7guWZ2fbCuFjv>,
+     nestedAddress: null,
+     accountKey: 'tpubDDZ1r85SUsur87eW6uCrWancnCVHSLf5YcXzudCF6qBUQguR8upC6pgSuzxahDkf75SQ4LJ3R4x5NvfgQPmNjxhg2pcHzBCKcG2fBUQJ5U5', //the extended public key that can be used to generate receiving addresses for this account
+     keys: [] } 
+ }*/</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h4 id="creating-accounts-and-receiving-addresses">Creating Accounts and Receiving Addresses</h4><p>You can start generating addresses with our first account right away.</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> account <span class="token operator">=</span> <span class="token keyword">await</span> wallet<span class="token punctuation">.</span><span class="token function">getAccount</span><span class="token punctuation">(</span><span class="token string">'default'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">//now we have a wallet and default account, let's get our first and current receiving address</span>
+<span class="token keyword">const</span> key0 <span class="token operator">=</span> account<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token string">'string'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//this will be the same value as seen in the 'address' property under 'account' in our wallet above</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>key0<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//mhNHETXFKDk7ZpGg3iEZb7guWZ2fbCuFjv</span>
+
+<span class="token comment" spellcheck="true">//we can skip ahead if we want, grabbing the hundredth key in the heirarchy like so</span>
+<span class="token keyword">const</span> key100 <span class="token operator">=</span> account<span class="token punctuation">.</span><span class="token function">deriveReceive</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">//ok, technically this is the hundred-and-first key because the sequence is zero-based</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>key100<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token string">'string'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//mjVdQqQYWBpE6YzKyMRd96LxCMoJyeTX2i</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>You can also create a second account with a custom name.</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// let's create another account for hypothetical customer John Doe</span>
+<span class="token keyword">const</span> jdAccount <span class="token operator">=</span> <span class="token keyword">await</span> wallet<span class="token punctuation">.</span><span class="token function">createAccount</span><span class="token punctuation">(</span><span class="token punctuation">{</span>name<span class="token punctuation">:</span> <span class="token string">'john_doe'</span><span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>jdAccount<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">/*{ 
+  wid: 2,
+  name: '1',
+  network: &lt;Network: testnet>,
+  initialized: true,
+  witness: false,
+  watchOnly: false,
+  type: 'pubkeyhash',
+  m: 1,
+  n: 1,
+  accountIndex: 1,
+  receiveDepth: 1,
+  changeDepth: 1,
+  nestedDepth: 0,
+  lookahead: 10,
+  address: &lt;Address: type=pubkeyhash version=-1 str=muCSbWC6z1tAr2i1M5BKPWEZ8zapzcKfKh>,
+  nestedAddress: null,
+  accountKey: 'tpubDDZ1r85SUsur9txJF5ziLRD6757E1Q7x6VLfPby4YKqAdNwgmrkXBNDzMowxYJVoAizd7CCLHELY5X2HYzh6YurbH9vMyQJN
+T92n87z22yX',
+  keys: [] 
+}*/</span>
+
+<span class="token comment" spellcheck="true">//Mr. Doe wants to make 10 deposits, let's get him a unique address for each one</span>
+<span class="token keyword">const</span> depositAddressesToPrint <span class="token operator">=</span> <span class="token number">10</span><span class="token punctuation">;</span>
+<span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">var</span> i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">;</span> i<span class="token operator">&lt;</span>depositAddressesToPrint<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>jdAccount<span class="token punctuation">.</span><span class="token function">deriveReceive</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token string">'string'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token comment" spellcheck="true">/*
+muCSbWC6z1tAr2i1M5BKPWEZ8zapzcKfKh
+n4TWmQyPQ8mAr2oEfbBzKF8Dw6LXXBidYJ
+ms1jRu71BvEsJ4K3dMFrKFUnB8axZQdmSq
+mn8xFgB68RjWGdKPVb8Up4P4v5MyqPoEQj
+mzfXXKRXJBjTGRFrrg4wm1XPsdU9TLoN6T
+n36TShvFCDaWgCMHHszUGiczA7Tcru4AQp
+mnZBaquULuUhtwwxKTuxWNF7ZDMDNxScJd
+mfpwjevu3FY4ZsWPd31J9oBH1qrxZLF1tH
+mhTrDspHReXThUmMeo8dVJHqhkyHG8VPZ1
+mxKo27kJpNazq9Q3cQ7458k2S2vcQar9Pd
+*/</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h4 id="getting-private-keys">Getting Private Keys</h4><p>Bcoin handles your private keys automatically for things like sending transactions and signing messages, but you can also manually extract private keys from a wallet.</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">//the keys above are only good for receiving bitcoins, not spending them</span>
+<span class="token comment" spellcheck="true">//let's get the extended private key for John Doe's account, which can be used to generate every private key for the account</span>
+<span class="token keyword">const</span> jdExtendedPrivateKey <span class="token operator">=</span> wallet<span class="token punctuation">.</span>master<span class="token punctuation">.</span>key<span class="token punctuation">.</span><span class="token function">deriveAccount</span><span class="token punctuation">(</span><span class="token number">44</span><span class="token punctuation">,</span> jdAccount<span class="token punctuation">.</span>accountIndex<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">//44 is the fixed purpose for bip44 accounts </span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>jdExtendedPrivateKey<span class="token punctuation">.</span><span class="token function">xprivkey</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//tprv8gryhi3CLWEBGRvWMSL7w1YyY3bHr4w3XBjt75vm842mntgv9Tvvzsc8Bf3NZt13ydD5QZaJVShMudE33egMhSLnEM41t5UUhRj5wA5u8Sc</span>
+
+<span class="token comment" spellcheck="true">//for good measure, let's get the private key for John's first receiving address</span>
+<span class="token keyword">const</span> branch <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">//the branch for receiving addresses</span>
+<span class="token keyword">const</span> index <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">//index of 0 means the first key among the receiving addresses</span>
+<span class="token keyword">const</span> jdPrivateKey0 <span class="token operator">=</span> jdExtendedPrivateKey<span class="token punctuation">.</span><span class="token function">derive</span><span class="token punctuation">(</span>branch<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">derive</span><span class="token punctuation">(</span>index<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> jdWalletKey0 <span class="token operator">=</span> WalletKey<span class="token punctuation">.</span><span class="token function">fromHD</span><span class="token punctuation">(</span>jdAccount<span class="token punctuation">,</span> jdPrivateKey0<span class="token punctuation">,</span> branch<span class="token punctuation">,</span> index<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//the private key below can be imported into almost any bitcoin wallet, HD or non-HD, and used to spend coins from the corresponding address</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>jdWalletKey0<span class="token punctuation">.</span><span class="token function">getPrivateKey</span><span class="token punctuation">(</span><span class="token string">'base58'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span> 
+<span class="token comment" spellcheck="true">//cNZfR3NhQ9oCP3pTjvPZETUuTWZo2k6EXtfczvbWyv7FdjMhppvJ</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h4 id="generating-mnemonics-and-recovering-keys">Generating Mnemonics and Recovering Keys</h4><p>Finally, you can create mnemonics manually and seed new wallets with them. And if you need to generate keys from a mnemonic you provide - either by recreating a wallet or by extracting specific keys - you can do that as well.</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">//can wegenerate a mnemonic with twice as many bits of entropy to future proof against brute force attacks from the next millenium? sure we can.</span>
+<span class="token keyword">const</span> mnemonic24 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Mnemonic</span><span class="token punctuation">(</span><span class="token punctuation">{</span>bits<span class="token punctuation">:</span> <span class="token number">256</span><span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>mnemonic24<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//page unknown ladder thunder airport merry run ball inject clinic danger valley equip consider normal twist casual duck essay almost trade regular two segment</span>
+
+<span class="token comment" spellcheck="true">//what if we need to recover the wallet we've created above? no problem.</span>
+<span class="token keyword">const</span> mnemonic <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Mnemonic</span><span class="token punctuation">(</span><span class="token string">'again choose noble warrior print thrive post glare movie glove animal legal'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> masterKey <span class="token operator">=</span> HD<span class="token punctuation">.</span><span class="token function">fromMnemonic</span><span class="token punctuation">(</span>mnemonic<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//this wallet will generate all the same accounts, keys, addresses, and tokens if swapped in for the 'wallet' variable in examples above</span>
+<span class="token keyword">const</span> recoveredWallet <span class="token operator">=</span> <span class="token keyword">await</span> wdb<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token punctuation">{</span>master<span class="token punctuation">:</span> masterKey<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">//we can also recover only the keys for John Doe's first receiving address without recreating the wallet or account</span>
+<span class="token comment" spellcheck="true">//this time we'll skip instantiating the account and use the BIP44 path for the second account, first branch, and first index on bitcoin testnet</span>
+<span class="token keyword">const</span> jdRecoveredPrivateKey <span class="token operator">=</span> masterKey<span class="token punctuation">.</span><span class="token function">derivePath</span><span class="token punctuation">(</span><span class="token string">"m/44'/1'/1'/0/0"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> jdKeyRing <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">KeyRing</span><span class="token punctuation">(</span>jdRecoveredPrivateKey<span class="token punctuation">)</span><span class="token punctuation">;</span> 
+<span class="token comment" spellcheck="true">//our output should be the same as what we logged to the console earlier in this example</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>jdKeyRing<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token string">'string'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//muCSbWC6z1tAr2i1M5BKPWEZ8zapzcKfKh</span>
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>jdKeyRing<span class="token punctuation">.</span><span class="token function">getPrivateKey</span><span class="token punctuation">(</span><span class="token string">'base58'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token comment" spellcheck="true">//cNZfR3NhQ9oCP3pTjvPZETUuTWZo2k6EXtfczvbWyv7FdjMhppvJ</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="command-line-examples-against-a-local-bcoin-server">Command Line Examples against a Local bcoin Server</h3><p>If you already have bcoin <a href="https://github.com/bcoin-org/bcoin/wiki/Beginner&#39;s-Guide">set up as a full node</a>, you can use the command line to create wallets and demonstrate some of the topics I discussed in this guide. My examples below are against a running testnet bcoin instance with <code>wallet-auth</code> set to true.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">~$ bcoin wallet create guide1
+<span class="token punctuation">{</span>
+  <span class="token string">"network"</span><span class="token keyword">:</span> <span class="token string">"testnet"</span>,
+  <span class="token string">"wid"</span><span class="token keyword">:</span> 2,
+  <span class="token string">"id"</span><span class="token keyword">:</span> <span class="token string">"guide1"</span>,
+  <span class="token string">"initialized"</span><span class="token keyword">:</span> true,
+  <span class="token string">"watchOnly"</span><span class="token keyword">:</span> false,
+  <span class="token string">"accountDepth"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"token"</span><span class="token keyword">:</span> <span class="token string">"c88bc2fda2f265bc00c8fd28771c62695dbbddfd05ef2510f9e0afbec14818ba"</span>,
+  <span class="token string">"tokenDepth"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"state"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"tx"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"coin"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"unconfirmed"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"confirmed"</span><span class="token keyword">:</span> 0
+  <span class="token punctuation">}</span>,
+  <span class="token string">"master"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"encrypted"</span><span class="token keyword">:</span> <span class="token boolean">false</span>
+  <span class="token punctuation">}</span>,
+  <span class="token string">"account"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"name"</span><span class="token keyword">:</span> <span class="token string">"default"</span>,
+    <span class="token string">"initialized"</span><span class="token keyword">:</span> true,
+    <span class="token string">"witness"</span><span class="token keyword">:</span> false,
+    <span class="token string">"watchOnly"</span><span class="token keyword">:</span> false,
+    <span class="token string">"type"</span><span class="token keyword">:</span> <span class="token string">"pubkeyhash"</span>,
+    <span class="token string">"m"</span><span class="token keyword">:</span> 1,
+    <span class="token string">"n"</span><span class="token keyword">:</span> 1,
+    <span class="token string">"accountIndex"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"receiveDepth"</span><span class="token keyword">:</span> 1,
+    <span class="token string">"changeDepth"</span><span class="token keyword">:</span> 1,
+    <span class="token string">"nestedDepth"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"lookahead"</span><span class="token keyword">:</span> 10,
+    <span class="token string">"receiveAddress"</span><span class="token keyword">:</span> <span class="token string">"mirZQBLNFsjgxRC6STfCJU71nXqSon9U17"</span>,
+    <span class="token string">"nestedAddress"</span><span class="token keyword">:</span> null,
+    <span class="token string">"changeAddress"</span><span class="token keyword">:</span> <span class="token string">"n3qdAvsVk7v4q4CAp25SSPsfcBARJexSUr"</span>,
+    <span class="token string">"accountKey"</span><span class="token keyword">:</span> <span class="token string">"tpubDCsPHK6xw9CziuN6o7tk1rubLopp5ipy4rDsapkA12KYdcuLXNH7frWUcWsMiFjU5Jxqp2d37SidfmvAahsLqon14wXtor7uQvjLZscb2fh"</span>,
+    <span class="token string">"keys"</span><span class="token keyword">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h4 id="auth-tokens">Auth Tokens</h4><p>See that <code>token</code>? We&#39;ll be needing that. With the token, we can do things like query our wallet balance.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">~$ bcoin wallet balance --id guide1 --token c88bc2fda2f265bc00c8fd28771c62695d
+bbddfd05ef2510f9e0afbec14818ba
+<span class="token punctuation">{</span>
+  <span class="token string">"wid"</span><span class="token keyword">:</span> 2,
+  <span class="token string">"id"</span><span class="token keyword">:</span> <span class="token string">"guide1"</span>,
+  <span class="token string">"account"</span><span class="token keyword">:</span> -1,
+  <span class="token string">"unconfirmed"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"confirmed"</span><span class="token keyword">:</span> 0
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Without it, we get a 403 Forbidden error.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">~$ bcoin wallet balance --id guide1Error: Status code: 403.
+    at HTTPClient._request <span class="token punctuation">(</span>/opt/bitnami/nodejs/lib/node_modules/bcoin/lib/http/client.js:229:11<span class="token punctuation">)</span>
+    at process._tickCallback <span class="token punctuation">(</span>internal/process/next_tick.js:109:7<span class="token punctuation">)</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>However, we can change our token for this wallet as often as we&#39;d like. In a production-like setting, you&#39;d probably want to encrypt the wallet with a passphrase which would also be required for the <code>retoken</code> call below. </p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">~$ bcoin wallet retoken --id guide1 --token c88bc2fda2f265bc00c8fd28771c62695dbbddfd05ef2510f9e0afbec14818ba
+26ea429fe1c0da8505c9b0e61a46343d802779d73393ee72130df0fb1a9eaa7e</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h4 id="creating-an-account">Creating an Account</h4><p>With our new token, let&#39;s create an account for John Doe&#39;s sister, Jane.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">~$ bcoin wallet --id guide1 account create jane_doe --token 26ea429fe1c0da8505c9b0e61a46343d802779d73393ee72130df0fb1a9eaa7e
+<span class="token punctuation">{</span>
+  <span class="token string">"wid"</span><span class="token keyword">:</span> 2,
+  <span class="token string">"id"</span><span class="token keyword">:</span> <span class="token string">"guide1"</span>,
+  <span class="token string">"name"</span><span class="token keyword">:</span> <span class="token string">"jane_doe"</span>,
+  <span class="token string">"initialized"</span><span class="token keyword">:</span> true,
+  <span class="token string">"witness"</span><span class="token keyword">:</span> false,
+  <span class="token string">"watchOnly"</span><span class="token keyword">:</span> false,
+  <span class="token string">"type"</span><span class="token keyword">:</span> <span class="token string">"pubkeyhash"</span>,
+  <span class="token string">"m"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"n"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"accountIndex"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"receiveDepth"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"changeDepth"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"nestedDepth"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"lookahead"</span><span class="token keyword">:</span> 10,
+  <span class="token string">"receiveAddress"</span><span class="token keyword">:</span> <span class="token string">"n4RwFEkSV7MSxBqqvNziakuGgeS8XFusKq"</span>,
+  <span class="token string">"nestedAddress"</span><span class="token keyword">:</span> null,
+  <span class="token string">"changeAddress"</span><span class="token keyword">:</span> <span class="token string">"mfaHH8ESM8pzoR1wLSSRQS89kpaBi9dBVt"</span>,
+  <span class="token string">"accountKey"</span><span class="token keyword">:</span> <span class="token string">"tpubDCsPHK6xw9CzjZQMnqwoZjLjMHqbkWjNYakAatZ9ktAf6Lou2H7jw2h93x24zT86BadMMmCAsp69yuUjBsGgHkfC41TpgXMPzSZRFxu3Ghi"</span>,
+  <span class="token string">"keys"</span><span class="token keyword">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>We already have the first receiving address for Jane in <code>receiveAddress</code> above, but let&#39;s get one more for good measure.</p>
+<pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash">~$ bcoin wallet --id guide1 address --account jane_doe --token 26ea429fe1c0da8505c9b0e61a46343d802779d73393ee72130df0fb1a9eaa7e
+<span class="token punctuation">{</span>
+  <span class="token string">"network"</span><span class="token keyword">:</span> <span class="token string">"testnet"</span>,
+  <span class="token string">"wid"</span><span class="token keyword">:</span> 2,
+  <span class="token string">"id"</span><span class="token keyword">:</span> <span class="token string">"guide1"</span>,
+  <span class="token string">"name"</span><span class="token keyword">:</span> <span class="token string">"jane_doe"</span>,
+  <span class="token string">"account"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"branch"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"index"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"witness"</span><span class="token keyword">:</span> false,
+  <span class="token string">"nested"</span><span class="token keyword">:</span> false,
+  <span class="token string">"publicKey"</span><span class="token keyword">:</span> <span class="token string">"02dda1237f65e26d05451fb96b15e85c3fb5c420ebdfcf31835857c38daa8ef5d6"</span>,
+  <span class="token string">"script"</span><span class="token keyword">:</span> null,
+  <span class="token string">"program"</span><span class="token keyword">:</span> null,
+  <span class="token string">"type"</span><span class="token keyword">:</span> <span class="token string">"pubkeyhash"</span>,
+  <span class="token string">"address"</span><span class="token keyword">:</span> <span class="token string">"mqDhGEywrWDm5DHw71Qxm5U8Lc6WvhZVeM"</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h2 id="conclusion">Conclusion</h2><p>After reading this guide, you should have a decent understanding of not only the concepts behind bitcoin wallets, but also of how to go about creating and managing them with bcoin. Now you can integrate bcoin&#39;s wallet functionality directly into your application, or run bcoin as a full node and interact with it for your wallet creation needs. Good luck!</p>
+
+
+					<!-- END OF GUIDE -->
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<!-- END OF ARTICLE CONTAINER -->
+
+					</div>
+					<!-- END BLOG CONTENT -->
+
+
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END NEW BLOGS -->
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END BLOGS -->
+
+
+		<!-- PARALLAX DOCS CTA -->
+		<section class="module bg-white-alfa-30 parallax color-white" data-background="../assets/images/bg-header.jpg">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12">
+						<div class="text-center">
+							<h2 class="montserrat text-uppercase m-b-30">Ready to start building? Read the docs!</h2>
+							<a href="http://bcoin.io/docs/index.html" target="_blank" class="btn btn-lg btn-purple">Documentation</a>
+						</div>
+					</div>
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END PARALLAX DOCS CTA -->
+
+		<!-- FOOTER -->
+		<footer id="footer" class="footer-minimal">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12">
+						<ul class="social-icons social-icons-circle text-center m-b-35">
+							<li><a href="https://twitter.com/bcoin"><i class="fa fa-twitter"></i></a></li>
+							<li><a href="https://github.com/bcoin-org/bcoin"><i class="fa fa-github"></i></a></li>
+
+
+							<li><a href="../slack-signup.html" target="_blank"><i class="fa fa-slack"></i></a></li>
+						</ul>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-12 text-center m-b-35">
+						<img class="m-b-35 QR-code" src="../assets/images/donation_QR.png"/>
+						<p class="m-0"><strong>Bcoin Development Donation Address:</strong><br />3Bi9H1hzCHWJoFEjc4xzVzEMywi35dyvsV</p>
+
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-12 text-center">
+						<p class="m-0">Copyright <a href="#">bcoin.io, Purse</a>, 2018, All Rights Reserved.</p>
+
+					</div>
+				</div>
+
+			</div>
+		</footer>
+		<!-- END FOOTER -->
+
+	</div>
+	<!-- /WRAPPER -->
+
+	<!-- JAVASCRIPT FILES -->
+
+	<script src="../assets/js/jquery-2.2.3.min.js"></script>
+	<script src="http://maps.googleapis.com/maps/api/js?v=3"></script>
+	<script src="../assets/bootstrap/js/bootstrap.min.js"></script>
+	<script src="../assets/js/plugins.min.js"></script>
+	<script src="../assets/js/stickyfill.min.js"></script>
+	<script src="../assets/js/custom.min.js"></script>
+	<script src="../assets/js/clipboard.min.js"></script>
+	<script async defer src="../assets/js/prism.js"></script>
+	<script>
+		var copyCode = new Clipboard('.copy-button', {
+		    target: function(trigger) {
+		        return trigger.previousElementSibling;
+		    }
+		});
+
+		copyCode.on('success', function(event) {
+		    event.trigger.classList.add('success');
+		    event.clearSelection();
+		    // event.trigger.textContent = 'Copied!';
+		    window.setTimeout(function() {
+		        event.trigger.classList.remove('success');
+		    }, 2000);
+		});
+	</script>
+
+  <!-- github button js -->
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<title>Bcoin - A javascript bitcoin library</title>
+<style>
+html, body, p, div { padding: 0; margin: 0; }
+p { margin: 15px; }
+body > div > small {
+  display: block;
+  margin: 15px;
+  font-family: monospace;
+  font-size: 12px;
+}
+body > div > h1 {
+  font-family: monospace;
+  font-size: 25px;
+  margin: 15px;
+  padding: 0;
+}
+body > div {
+  height: 490px;
+  width: 466px;
+  font-family: monospace;
+  font-size: 18px;
+  border: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -233px;
+  margin-top: -320px;
+}
+</style>
+<div>
+  <h1>A bitcoin full node in the browser</h1>
+  <p>Welcome. This is the entry page for starting a bitcoin full node in your
+  browser (using <a href="https://github.com/bcoin-org/bcoin">bcoin</a>).  This
+  will create a real full node in your browser: your <em>browser</em> will
+  connect to the p2p network and do all of the block verification/serving. It
+  will maintain a mempool and wallet database.</p>
+  <p><b>Warning</b>: this will use a lot of your bandwidth, cpu, and
+  potentially disk space.</p>
+  <small><em>Note:</em> Please do not abuse the ws-&gt;tcp proxy. It already
+  blocks all ports except bitcoin ports. If it is abused, I will be forced to
+  require a proof of work for socket creation, making it slower for
+  everyone.</small>
+  <p><a href="http://browser.bcoin.io/?network=main&prune=true">
+    Click here to start a full node on main (pruned).
+  </a></p>
+  <p><a href="http://browser.bcoin.io/?network=testnet&prune=true">
+    Click here to start a full node on testnet (pruned).
+  </a></p>
+</div>
+

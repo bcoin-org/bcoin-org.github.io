@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Follow along with the steps to build a transaction from scratch using built-in bcoin utilities. These steps are based on those outlined in the Bitcoin Wiki.">
+	<meta name="author" content="Javed Khan">
+
+	<title>Bcoin Guide | Generate an Address</title>
+
+	<!-- Favicons -->
+	<!-- old
+	<link rel="shortcut icon" href="../assets/images/bcoin-ico.png">-->
+
+	<!-- generated from http://www.favicon-generator.org/ -->
+	<link rel="apple-touch-icon" sizes="57x57" href="../assets/images/apple-icon-57x57.png">
+	<link rel="apple-touch-icon" sizes="60x60" href="../assets/images/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="../assets/images/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="76x76" href="../assets/images/apple-icon-76x76.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="../assets/images/apple-icon-114x114.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="../assets/images/apple-icon-120x120.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="../assets/images/apple-icon-144x144.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="../assets/images/apple-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="../assets/images/apple-icon-180x180.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="../assets/images/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="../assets/images/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="../assets/images/favicon-16x16.png">
+	<link rel="manifest" href="../assets/images/manifest.json">
+	<meta name="msapplication-TileColor" content="#ffffff">
+	<meta name="msapplication-TileImage" content="../assets/images/ms-icon-144x144.png">
+	<meta name="theme-color" content="#ffffff">
+
+	<!-- Web Fonts -->
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400italic,400,600,700' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Montserrat:700' rel='stylesheet' type='text/css'>
+
+	<!-- Bootstrap core CSS -->
+	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+	<!-- Code Snippet CSS -->
+	<link href="../assets/css/prism.css" rel="stylesheet">
+
+	<link href="../assets/css/custom.css" rel="stylesheet">
+
+	<!-- Icon Fonts -->
+	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
+	<link href="../assets/css/simple-line-icons.css" rel="stylesheet">
+
+	<!-- Plugins -->
+	<link href="../assets/css/magnific-popup.css" rel="stylesheet">
+	<link href="../assets/css/owl.carousel.css" rel="stylesheet">
+	<link href="../assets/css/flexslider.css" rel="stylesheet">
+	<link href="../assets/css/animate.min.css" rel="stylesheet">
+
+	<!-- Template core CSS -->
+	<link href="../assets/css/vertical.min.css" rel="stylesheet">
+	<link href="../assets/css/template.css" rel="stylesheet">
+
+	<!-- Google Analytics Tracking -->
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+        ga('create', 'UA-96446060-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+</head>
+<body>
+
+	<!-- PRELOADER -->
+	<div class="page-loader">
+		<div class="img-loader">Loading...
+			<!-- Bcoin logo in SVG -->
+			<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+				viewBox="0 0 200 56" style="enable-background:new 0 0 200 56;" xml:space="preserve">
+			<g id="XMLID_108_">
+				<g id="XMLID_123_">
+					<path id="XMLID_124_" d="M8.4,51.8H3.2V4.2h5.2v19.2h0.8c1.2-2,2.8-3.6,4.8-4.7c2-1.1,4.3-1.6,6.7-1.6c2,0,4,0.4,5.8,1.2
+						c1.8,0.8,3.4,1.9,4.8,3.3c1.4,1.5,2.5,3.2,3.3,5.4s1.2,4.6,1.2,7.3v1.4c0,2.8-0.4,5.2-1.2,7.4c-0.8,2.1-1.9,3.9-3.3,5.4
+						c-1.4,1.5-3,2.6-4.9,3.3s-3.8,1.1-5.9,1.1c-1.1,0-2.2-0.1-3.3-0.4c-1.1-0.3-2.2-0.6-3.2-1.2c-1-0.5-1.9-1.2-2.8-1.9
+						c-0.8-0.7-1.6-1.6-2.1-2.7H8.4V51.8z M19.4,47.7c1.6,0,3.1-0.3,4.4-0.9c1.3-0.6,2.5-1.4,3.5-2.4c1-1,1.8-2.3,2.3-3.8
+						c0.6-1.5,0.8-3.2,0.8-5v-1.4c0-1.8-0.3-3.5-0.8-4.9c-0.6-1.5-1.3-2.7-2.3-3.8c-1-1.1-2.2-1.9-3.5-2.5c-1.4-0.6-2.8-0.9-4.4-0.9
+						c-1.6,0-3,0.3-4.3,0.9c-1.3,0.6-2.5,1.5-3.5,2.6c-1,1.1-1.8,2.4-2.4,3.9c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1
+						c0.6,1.5,1.4,2.8,2.4,3.9s2.2,1.9,3.5,2.5C16.4,47.4,17.9,47.7,19.4,47.7z"/>
+				</g>
+				<g id="XMLID_120_">
+					<path id="XMLID_121_" d="M76.1,39.8c-0.4,1.9-1,3.6-1.8,5.2c-0.9,1.6-2,3-3.3,4.1s-2.9,2.1-4.7,2.7c-1.8,0.6-3.8,1-5.9,1
+						c-2.3,0-4.5-0.4-6.6-1.2c-2.1-0.8-3.9-1.9-5.4-3.4c-1.6-1.5-2.8-3.3-3.7-5.4c-0.9-2.1-1.4-4.6-1.4-7.4v-0.8c0-2.7,0.5-5.2,1.4-7.4
+						c0.9-2.2,2.1-4,3.7-5.5c1.6-1.5,3.4-2.7,5.4-3.5c2.1-0.8,4.3-1.2,6.6-1.2c2.1,0,4,0.3,5.8,1c1.8,0.6,3.3,1.5,4.7,2.7
+						c1.4,1.2,2.5,2.5,3.3,4.1c0.9,1.6,1.5,3.3,1.8,5.2l-5.2,1.2c-0.1-1.2-0.5-2.3-1-3.4c-0.5-1.1-1.2-2.1-2.1-2.9
+						c-0.9-0.8-1.9-1.5-3.2-2c-1.2-0.5-2.7-0.7-4.3-0.7c-1.6,0-3.1,0.3-4.5,0.9c-1.4,0.6-2.6,1.5-3.7,2.6c-1.1,1.1-1.9,2.4-2.5,4
+						c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1c0.6,1.5,1.4,2.8,2.5,3.8c1.1,1,2.3,1.8,3.7,2.4c1.4,0.6,3,0.9,4.6,0.9
+						s3.1-0.3,4.3-0.8c1.2-0.5,2.3-1.2,3.1-2c0.9-0.8,1.6-1.8,2.1-2.9c0.5-1.1,0.9-2.2,1-3.4L76.1,39.8z"/>
+				</g>
+				<g id="XMLID_116_">
+					<path id="XMLID_117_" d="M117.2,35.4c0,2.8-0.5,5.3-1.4,7.5c-0.9,2.2-2.1,4-3.6,5.4c-1.5,1.5-3.3,2.6-5.3,3.4
+						c-2,0.8-4.1,1.2-6.3,1.2c-2.2,0-4.3-0.4-6.3-1.2c-2-0.8-3.8-1.9-5.3-3.4c-1.5-1.5-2.7-3.3-3.6-5.4c-0.9-2.2-1.4-4.6-1.4-7.5v-0.8
+						c0-2.8,0.5-5.2,1.4-7.4c0.9-2.2,2.1-4,3.7-5.5c1.5-1.5,3.3-2.6,5.3-3.4c2-0.8,4.1-1.2,6.3-1.2c2.2,0,4.3,0.4,6.3,1.2
+						c2,0.8,3.8,1.9,5.3,3.4c1.5,1.5,2.8,3.3,3.7,5.5c0.9,2.2,1.4,4.6,1.4,7.4V35.4z M100.6,47.7c1.6,0,3.1-0.3,4.4-0.9
+						c1.4-0.6,2.5-1.4,3.6-2.5c1-1.1,1.8-2.4,2.4-3.9c0.6-1.5,0.9-3.2,0.9-5.1v-0.8c0-1.8-0.3-3.5-0.9-5c-0.6-1.5-1.4-2.8-2.4-3.9
+						c-1-1.1-2.2-1.9-3.6-2.6c-1.4-0.6-2.8-0.9-4.4-0.9c-1.6,0-3,0.3-4.4,0.9c-1.4,0.6-2.6,1.5-3.6,2.6c-1,1.1-1.8,2.4-2.4,3.9
+						c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1c0.6,1.5,1.4,2.8,2.4,3.9c1,1.1,2.2,1.9,3.6,2.5C97.5,47.5,99,47.7,100.6,47.7z
+						"/>
+				</g>
+				<g id="XMLID_112_">
+					<path id="XMLID_113_" d="M127.6,46.9h11.6V23h-10.4v-4.9h15.6v28.9h10.8v4.9h-27.6V46.9z M137.1,8c0-1.3,0.5-2.4,1.4-3.4
+						c0.9-0.9,2-1.4,3.3-1.4c1.3,0,2.4,0.5,3.3,1.4c0.9,0.9,1.4,2.1,1.4,3.4c0,1.3-0.5,2.4-1.4,3.4c-0.9,0.9-2,1.4-3.3,1.4
+						c-1.3,0-2.4-0.5-3.3-1.4C137.5,10.4,137.1,9.3,137.1,8z"/>
+				</g>
+				<g id="XMLID_109_">
+					<path id="XMLID_110_" d="M172.8,51.8h-5.2V18.1h5.2v5.7h0.8c2-4.4,5.6-6.7,10.7-6.7c3.8,0,6.9,1.2,9.1,3.6
+						c2.3,2.4,3.4,6.1,3.4,10.9v20.2h-5.2V32.8c0-3.5-0.8-6.2-2.3-8c-1.6-1.8-3.7-2.7-6.3-2.7c-3.2,0-5.6,1.1-7.4,3.3s-2.7,5.1-2.7,8.8
+						V51.8z"/>
+				</g>
+			</g>
+			</svg>
+
+
+		</div>
+	</div>
+	<!-- END PRELOADER -->
+
+	<!-- HEADER -->
+	<header class="header js-stick">
+			<div class="container">
+				<!-- YOUR LOGO HERE -->
+				<div class="inner-header">
+					<a class="inner-brand" href="../index.html">
+						<img class="brand-light" src="../assets/images/logo-light.png" width="100" alt="">
+						<img class="brand-dark" src="../assets/images/logo-dark.png" width="100" alt="">
+					</a>
+				</div>
+
+				<!-- OPEN MOBILE MENU -->
+				<div class="main-nav-toggle">
+					<div class="nav-icon-toggle" data-toggle="collapse" data-target="#custom-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</div>
+				</div>
+
+				<!-- WIDGETS MENU -->
+				<div class="inner-header pull-right hide-me">
+					<div class="menu-extras clearfix">
+
+						<!-- SLACK LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="../slack-signup.html" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Slack!">
+									<img src="../assets/images/slack_icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<!-- STACK EXCHANGE LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://bitcoin.stackexchange.com/questions/tagged/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Questions! Checkout Stack Exchange.">
+									<img src="../assets/images/stack-exchange-icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<!-- GITHUB STUFF -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://github.com/bcoin-org/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Visit bcoin on GitHub to see the code!">
+									<img src="../assets/images/github_icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<div class="menu-item">
+                            <div class="ghbuttons">
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin" data-icon="octicon-star" data-count-href="/bcoin-org/bcoin/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star bcoin-org/bcoin on GitHub">Star</a>
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin/fork" data-icon="octicon-repo-forked" data-count-href="/bcoin-org/bcoin/network" data-show-count="true" data-count-aria-label="# forks on GitHub" aria-label="Fork bcoin-org/bcoin on GitHub">Fork</a>
+                            </div>
+                        </div>
+
+
+
+
+					</div>
+				</div>
+
+				<!-- MAIN MENU -->
+				<nav id="custom-collapse" class="main-nav collapse clearfix">
+					<ul class="inner-nav pull-right">
+
+						<!-- HOME -->
+						<li><a href="../index.html">Home</a></li>
+						<!-- END HOME -->
+
+						<!-- FEATURES -->
+						<li><a href="../index.html#features">What is Bcoin</a></li>
+						<!-- END FEATURES -->
+
+						<!-- GUIDES -->
+						<li><a href="../guides.html">Guides</a></li>
+						<!-- GUIDES -->
+
+						<!-- API REFERENCE - newer, how to interact once you're setup -->
+						<li><a href="../api-docs/index.html">API Docs</a></li>
+						<!-- END API -->
+
+						<!-- FULL DOCS - older, full reference
+						<li><a href="http://bcoin.io/docs/index.html">Docs</a></li> -->
+						<!-- END DOCS -->
+
+						<!-- DIVIDER
+						<li><a>&nbsp;</a></li>
+
+						<li><a href="#">All Demos</a></li>-->
+
+					</ul>
+				</nav>
+
+			</div>
+		</header>
+	<!-- END HEADER -->
+
+	<!-- WRAPPER -->
+	<div class="wrapper">
+
+		<!-- PAGE TITLE -->
+		<section class="module-sm bg-white-dark" data-background="../assets/images/bg-header.jpg">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12 text-center">
+
+						<h2 class="montserrat text-uppercase m-b-10"><span class="text-highlight-black" style="line-height: 1.5;">&nbsp;Guides &nbsp;and &nbsp;Videos&nbsp;</span></h2>
+
+					</div>
+				</div>
+
+			</div>
+		</section>
+		<!-- END PAGE TITLE -->
+
+		<!-- GUIDES/TUTORIALS -->
+		<section class="module" style="padding-top:70px !important;">
+			<div class="container">
+
+				<div class="row">
+
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Install</h6>
+<ul class="icons-list">
+<!-- INSTALL-LIST -->
+<li><a href="install-windows.html">Install on Windows (Video)</a></li>
+<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
+<li><a href="install-linux.html">Install on Linux (Video)</a></li>
+<!-- /INSTALL-LIST -->
+</ul>
+<br>
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="vps-setup.html">Full Node VPS Setup</a></li>
+<li><a href="segwit.html">Segwit and Bcoin</a></li>
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="cltv.html">Time Locked Bitcoin Transactions w/ CLTV</a></li>
+<li><a href="building-plugins.html">Buidling Awesome bcoin Plugins</a></li>
+<li><a href="beginners.html">Beginners Guide to Getting Started</a></li>
+<li><a href="bcoin-clock.html">Make your own Bcoin Block Clock!</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="http://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="../slack-signup.html"> Slack.</a></p>
+    <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
+					<!-- END SIDEBAR -->
+					<!-- START OF ARTICLE CONTAINER -->
+					<div class="col-sm-9 blog-content post-thumbnail">
+						<!-- POST IMAGE -->
+						<article class="post format-image">
+							<div class="row">
+								<!--<div class="col-sm-5">
+									<div class="post-preview">
+										<a href="#"><img src="../assets/images/guides/get-started.png" alt=""></a>
+									</div>
+								</div>-->
+
+								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
+								<div class="panel-group">
+									<div class="col-sm-12 panel panel-default">
+										<div class="post-content" style="color:#000;">
+					<!-- START OF GUIDE -->
+<h2 class="post-title panel-title" id="generate-an-address">Generate an Address</h2><ul class="post-meta"><li class="author">By Javed Khan</li></ul><p>Follow along with the steps below to build a transaction from scratch using built-in bcoin utilities. These steps are based on those outlined in the <a href="https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses">Bitcoin Wiki</a>.</p>
+<p>Of course, if you&#39;re using the bcoin wallet module, it will do these steps for you automatically when you <a href="../api-docs/index.html#generate-receiving-address">generate an address</a>!</p>
+<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses</span>
+
+<span class="token keyword">const</span> secp256k1 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcrypto/lib/secp256k1'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> ripemd160 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcrypto/lib/ripemd160'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> sha256 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcrypto/lib/sha256'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token punctuation">{</span>base58<span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bstring'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment" spellcheck="true">// 0 - Having a private ECDSA key</span>
+privkey <span class="token operator">=</span> Buffer<span class="token punctuation">.</span><span class="token keyword">from</span><span class="token punctuation">(</span><span class="token string">"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725"</span><span class="token punctuation">,</span> <span class="token string">"hex"</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 1 - Take the corresponding public key generated with it (65 bytes, 1 byte 0x04, 32 bytes corresponding to X coordinate, 32 bytes corresponding to Y coordinate)</span>
+pubkey <span class="token operator">=</span> secp256k1<span class="token punctuation">.</span><span class="token function">publicKeyCreate</span><span class="token punctuation">(</span>privkey<span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 2 - Perform SHA-256 hashing on the public key</span>
+step2 <span class="token operator">=</span> sha256<span class="token punctuation">.</span><span class="token function">digest</span><span class="token punctuation">(</span>pubkey<span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 3 - Perform RIPEMD-160 hashing on the result of SHA-256</span>
+step3 <span class="token operator">=</span> ripemd160<span class="token punctuation">.</span><span class="token function">digest</span><span class="token punctuation">(</span>step2<span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 4 - Add version byte in front of RIPEMD-160 hash (0x00 for Main Network)</span>
+step4 <span class="token operator">=</span> Buffer<span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span><span class="token punctuation">[</span>buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token function">alloc</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> step3<span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 5 - Perform SHA-256 hash on the extended RIPEMD-160 result</span>
+step5 <span class="token operator">=</span> sha256<span class="token punctuation">.</span><span class="token function">digest</span><span class="token punctuation">(</span>step4<span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 6 - Perform SHA-256 hash on the result of the previous SHA-256 hash</span>
+step6 <span class="token operator">=</span> sha256<span class="token punctuation">.</span><span class="token function">digest</span><span class="token punctuation">(</span>step5<span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 7 - Take the first 4 bytes of the second SHA-256 hash. This is the address checksum</span>
+step7 <span class="token operator">=</span> step6<span class="token punctuation">.</span><span class="token function">slice</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 8 - Add the 4 checksum bytes from stage 7 at the end of extended RIPEMD-160 hash from stage 4. This is the 25-byte binary Bitcoin Address.</span>
+step8 <span class="token operator">=</span> Buffer<span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span><span class="token punctuation">[</span>step4<span class="token punctuation">,</span> step7<span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+<span class="token comment" spellcheck="true">// 9 - Convert the result from a byte string into a base58 string using Base58Check encoding. This is the most commonly used Bitcoin Address format</span>
+addr <span class="token operator">=</span> base58<span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span>step8<span class="token punctuation">)</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre>
+
+					<!-- END OF GUIDE -->
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<!-- END OF ARTICLE CONTAINER -->
+
+					</div>
+					<!-- END BLOG CONTENT -->
+
+
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END NEW BLOGS -->
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END BLOGS -->
+
+
+		<!-- PARALLAX DOCS CTA -->
+		<section class="module bg-white-alfa-30 parallax color-white" data-background="../assets/images/bg-header.jpg">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12">
+						<div class="text-center">
+							<h2 class="montserrat text-uppercase m-b-30">Ready to start building? Read the docs!</h2>
+							<a href="http://bcoin.io/docs/index.html" target="_blank" class="btn btn-lg btn-purple">Documentation</a>
+						</div>
+					</div>
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END PARALLAX DOCS CTA -->
+
+		<!-- FOOTER -->
+		<footer id="footer" class="footer-minimal">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12">
+						<ul class="social-icons social-icons-circle text-center m-b-35">
+							<li><a href="https://twitter.com/bcoin"><i class="fa fa-twitter"></i></a></li>
+							<li><a href="https://github.com/bcoin-org/bcoin"><i class="fa fa-github"></i></a></li>
+
+
+							<li><a href="../slack-signup.html" target="_blank"><i class="fa fa-slack"></i></a></li>
+						</ul>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-12 text-center m-b-35">
+						<img class="m-b-35 QR-code" src="../assets/images/donation_QR.png"/>
+						<p class="m-0"><strong>Bcoin Development Donation Address:</strong><br />3Bi9H1hzCHWJoFEjc4xzVzEMywi35dyvsV</p>
+
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-12 text-center">
+						<p class="m-0">Copyright <a href="#">bcoin.io, Purse</a>, 2018, All Rights Reserved.</p>
+
+					</div>
+				</div>
+
+			</div>
+		</footer>
+		<!-- END FOOTER -->
+
+	</div>
+	<!-- /WRAPPER -->
+
+	<!-- JAVASCRIPT FILES -->
+
+	<script src="../assets/js/jquery-2.2.3.min.js"></script>
+	<script src="http://maps.googleapis.com/maps/api/js?v=3"></script>
+	<script src="../assets/bootstrap/js/bootstrap.min.js"></script>
+	<script src="../assets/js/plugins.min.js"></script>
+	<script src="../assets/js/stickyfill.min.js"></script>
+	<script src="../assets/js/custom.min.js"></script>
+	<script src="../assets/js/clipboard.min.js"></script>
+	<script async defer src="../assets/js/prism.js"></script>
+	<script>
+		var copyCode = new Clipboard('.copy-button', {
+		    target: function(trigger) {
+		        return trigger.previousElementSibling;
+		    }
+		});
+
+		copyCode.on('success', function(event) {
+		    event.trigger.classList.add('success');
+		    event.clearSelection();
+		    // event.trigger.textContent = 'Copied!';
+		    window.setTimeout(function() {
+		        event.trigger.classList.remove('success');
+		    }, 2000);
+		});
+	</script>
+
+  <!-- github button js -->
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+</body>
+</html>
