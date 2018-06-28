@@ -377,6 +377,13 @@ Parameters | Description
 ---------- | -----------
 id <br> _string_ | named id of the wallet whose info you would like to retrieve
 
+<aside class="notice">
+The <code>balance</code> value returned by this API call is a bit confusing. <code>confirmed</code> refers to the total value of all transactions confirmed
+on the blockchain. <code>unconfirmed</code> includes all those same confirmed transactions as well as any transactions still in the mempool.
+So the <code>unconfirmed</code> value isn't just the value of pending transactions, it's what the total balance of the wallet WILL BE 
+once all pending transactions are confirmed.
+</aside>
+
 ## Get Master HD Key
 ```javascript
 let id;
