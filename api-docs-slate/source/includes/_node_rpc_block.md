@@ -436,7 +436,7 @@ curl $url \
   -X POST \
   --data '{
     "method": "getblockheader",
-    "params": [ "'$blockhash'", '$details' ]
+    "params": [ "'$blockhash'", '$verbose' ]
   }'
 ```
 
