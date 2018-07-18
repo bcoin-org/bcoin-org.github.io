@@ -491,7 +491,7 @@ curl $walleturl/$id \
 ```shell--cli
 # watchOnly defaults to true if --key flag is set
 
-bwallet-cli mkwallet $id --witness=$witness --passphrase=$passphrase --watch=$watchOnly --key=$accountKey
+bwallet-cli mkwallet $id --witness=$witness --passphrase=$passphrase --watchOnly=$watchOnly --accountKey=$accountKey
 ```
 
 ```javascript
