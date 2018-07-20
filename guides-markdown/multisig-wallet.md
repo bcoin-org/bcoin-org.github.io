@@ -11,48 +11,47 @@ How to use bcoin with a multisig wallet and account. For both as a hot-wallet an
 ## How it works
 
 Bitcoin multisig account is an account which holds more than 1 public key,
-and generates P2SH or P2WSH address for those public key.
+and generates P2SH or P2WSH address for those public keys.
 When you want to use those funds,
-we must create multisig transaction which has been signed by private key corresponds to those public key,
-see [our multisig transaction guide](http://bcoin.io/guides/multisig-tx.html) for more detail about multisig transaction itself.
+you must create a multisig transaction which has been signed by private keys corresponding to those public keys.
+See [our multisig transaction guide](http://bcoin.io/guides/multisig-tx.html) for more detail about the multisig transaction itself.
 
-In this guide, we take a step little further and see a whole lifecycle of the multisig account in a more practical way.
+In this guide, we take it a little step further and see a whole lifecycle of the multisig account in a more practical way.
 
 ## Usecases
 
-### 1. Personal wallet which is secure against key compromisation
+### 1. Personal wallet which is secure against key compromise
 
-Usually in a cryptocurrency world, when you lose your master key and it's seed for the wallet there are no way to recover your funds.
+Usually in a cryptocurrency world, when you lose your master key and it's seed for the wallet there is no way to recover your funds.
 But by splitting your secret keys into ...
 
-1. your own server
-2. local hardware you own
-3. your personal vault with paper wallet.
+1. your own laptop.
+2. hardware wallet you own.
+3. a paper wallet in your personal vault
 
-you can backup your funds unless more than two keys were compromised at the same time.
-In this case, you may use 1. and 2. for usual spending.
-You only need 3 when you lost your secret key for 1 and 2
+...your funds will be safe unless more than one key is compromised at the same time.
+In this case, you may use 1. and 2. for usual spending,
+and only need 3 if you lose your secret keys 1 and 2.
 
 ### 2. Wallet held by more than one person
 
-Some kind of funds are desirable to be held by several people.
+Sometimes it is desireable to distribute the control of funds among several people.
 For example, funds for a corporation or for a crowdfunding project.
-We can mitigate the risk of fund loss by utilizing a multisig in the case such as ...
+We can mitigate the risk of fund loss by utilizing a multisig in cases where single person with control:
 
-1. Person who is in charge has changed.
-2. Or disappeared suddenly.
-3. Or lost his secret-key.
-4. Or be stolen the secret-key
-5. Or tried to thief all funds for his personal use.
+1. Is no longer in charge
+2. Disappears suddenly
+3. Loses their secret-key
+4. Tries to steal all funds for their own personal use
 
-## Walk through
+## Walk-through
 
- This tutorial includes following step.
- 1. setting up a bcoin wallet server with https.
- 2. setting up a hot multisig wallet for personal use.
- 3. setting up a watch-only multisig wallet.
- 4. receive incoming information from the wallet server.
- 5. spend funds from the wallet.
+ This tutorial includes the following steps
+ 1. setting up a bcoin wallet server with https
+ 2. setting up a hot wallet on the server
+ 3. setting up a watch-only multisig wallet on your server
+ 4. receive incoming information from the wallet server
+ 5. spend funds from the wallet
  6. recovering the wallet
 
 ### 1. Setting up bcoin wallet server with https.
@@ -81,8 +80,9 @@ Next, let's create `~/.bcoin/bcoin.conf` and `~/.bcoin/wallet.conf` something li
 
 Our `bcoin.conf` is
 
-```sh:bcoin.conf
-# let's first try with testnet, moving to mainnet could be done anytime you get comfortable with how our security works.
+```bash
+# Let's first try with the testnet.
+# Moving to the mainnet could be done at anytime you get comfortable with the security model.
 network: testnet
 
 # this option is something similar to `-rpcallowip`  in bitcoind.
@@ -95,7 +95,7 @@ ssl-cert: /etc/letsencrypt/archive/bcoin.multisigtest.com/fullchain1.pem
 ssl-key: /etc/letsencrypt/archive/bcoin.multisigtest.com/privkey1.com
 
 # It is good idea to always use an api key for security
-# Note: We recomment to make it more long and hard to guess in the real environment.
+# Note: We recommend to make it longer and harder to guess in the real environment.
 # Here we are making it simple for explanation purpose.
 api-key: mySecretApiKey
 ```
@@ -105,7 +105,7 @@ and `wallet.conf`.
 > Note that you must place `wallet.conf` under `~/.bcoin/testnet` if you are trying in testnet (or under `~/.bcoin/regtest` if in regtest mode)
 
 
-```sh:wallet.conf
+```bash
 # If you want to run the wallet on the different place from the node, 
 # you must specify these. But this time, we are going ro run at the same place.
 # node-host: bcoin.multisigtest.com
@@ -143,7 +143,7 @@ log-file: true
 By default, rpc port for wallet command in testnet is `18334` so lets check if it's running correctly
 by querying the wallet name `primary` (i.e. default wallet.)
 
-```sh
+```bash
 url="https://x:mySecretApiKey@bcoin.multisigtest.com:18334"
 myadmintoken="959f407c35f3bc4e33a643f9c0e6bbcf0c6c1f65c16bb2e20edcb3197c1fd034"
 curl ${url}/wallet/primary?token=${myadmintoken}
@@ -155,11 +155,11 @@ Since we have set `wallet-auth` to true in `wallet.conf`, each wallet's are sepe
 
 And then you can query by
 
-```sh
+```bash
 curl $url/wallet/primary?token=${primarytoken}
 ```
 
-### 2. Setting up hot multisig wallet for personal use
+### 2. Setting up hot wallet on the server.
 
 Now let's create a multisig account in this `primary` wallet.
 
@@ -174,14 +174,14 @@ Let's assume this wallet is for managing funds for three people.
 You, Alice, and Bob.
 
 > NOTE: Strictly speaking, there is no such a thing *watch-only account*.
-> Accounts will never hold private key no matter the wallet which it belongs to holds it's master private key or not.
+> Accounts will never hold a private key no matter the wallet which it belongs to holds it's master private key or not.
 > If the wallet does, then it is able to derive account private key so the account will be *hot* .
 > In fact, this is the way how bcoin actually handles it's private key for an account, it derives every time when it's need.
 > If the wallet doesn't hold master private key (i.e. if it's watch-only), then an account derived from the wallet will be also watch-only.
 
 we can set watch-only wallet named `sharedWallet1` on bcoin node by
 
-```sh
+```bash
 curl -X PUT $url/wallet/sharedWallet1 --data '
   {"watchOnly": true, "type": "multisig", "m": 2, "n": 3 }
   '
@@ -196,17 +196,19 @@ bwallet-cli \
   --type=multisig \
   --m=2 \
   --n=3 \
-  --name=multisig1 \
   mkwallet sharedWallet1
 ```
 
-> NOTE: this time, we specified `type` for wallet. But strictly speaking again, wallet itself does not hold property if it is multisig or not.
-> So some options we have passed here (i.e. `type`, `m`, `n`, and `name`) are for the default account created with the wallet.
+Wallet will always have account named `default` when it's created.
+This is the multisig account we are going to use.
+
+> NOTE: this time, we specified `type` for the wallet. But strictly speaking again, wallet itself does not hold property if it is multisig or not.
+> So some options we have passed here (i.e. `type`, `m`, and `n`) are for the default account created with the wallet.
 
 If the wallet is created successfully, than you will see the access token for that wallet in the return value.
 So let's set that token into variable named `sharedWalletToken` and pass to co-signers.
 
-You must register your public key to this account. Let's do it by using bcoin api.
+You must register your public key to this `default` account. Let's do it by using bcoin api.
 
 TODO: create and register key.
 
@@ -229,19 +231,17 @@ console.log(tpub)
 
 and throw it to the bcoin server
 
-```sh
-curl -X PUT ${url}/wallet/sharedWallet1/account/multisig1\?token\=${sharedWalletToken} \
+```bash
+curl -X PUT ${url}/wallet/sharedWallet1/shared-key\?token\=${sharedWalletToken} \
   --data \ 
   '{
-    "type": "multisig",
+    "account": "default",
     "accountKey": '"${aliceTpub}"',
-    "m": 2,
-    "n": 3
     }'
 ```
 
 > NOTE: It is possible to delete the xpub(tpub) from the wallet if the number of keys registered hasn't reached to `n`.
-> This could be usefull when you accidently registered a wrong key.
+> This could be useful when you accidentally registered a wrong key.
 > But if it has reached to `n` , you must create a new account.
 
 Finally, do the same thing for Bob. Then the multisig account is ready.
@@ -250,15 +250,15 @@ Finally, do the same thing for Bob. Then the multisig account is ready.
 
 Ok, so let's check the wallet's status by
 
-```sh
-curl ${url}/wallet/sharedWallet1/account/multisig1?token=${sharedWalletToken}
+```bash
+curl ${url}/wallet/sharedWallet1/account/default?token=${sharedWalletToken}
 ```
 
 You should see something like
 
 ```json
 {
-  "name": "multisig1",
+  "name": "default",
   "initialized": true,
   "witness": true,
   "watchOnly": true,
@@ -288,11 +288,11 @@ You should see something like
 ```
 
 You can see that values in a `balance` are all zero.
-So before going to next section, please send the fund to the account's address.
+So before going to the next section, please send the fund to the account's address.
 
 But before sending, let's listen on to the wallet with websocket interface
 
-```sh
+```bash
 bwallet-cli --id=sharedWallet1 \
   --url=${url} \
   --network=testnet \
@@ -302,13 +302,15 @@ bwallet-cli --id=sharedWallet1 \
 ```
 
 Sending can be done in anyway you like.
-Check out our [TX creation guide](http://bcoin.io/guides/working-with-txs.html) if you wan't to do it using bcoin api.
+Check out our [TX creation guide](http://bcoin.io/guides/working-with-txs.html) if you want to do it using bcoin api.
 
 Ready? than let's continue
 
 ### 5. Spending funds from the wallet.
 
-TODO:
+> TODO: wait till [issue No. 444](https://github.com/bcoin-org/bcoin/pull/444) solves.
+> Till that, we assume mktx will return the same value with hot wallet
+
 
 ### 6. Recovering the wallet.
 
@@ -316,9 +318,11 @@ Having private key in local itself doesn't mean that your funds are safe.
 even when the node is compromised or deleted completely, you must be able to recover it.
 So let's assume that `sharedWallet1` has been deleted completely.
 
-Recovering procedure is quite simple. You just repeat the public key registration process as we did above, and run `rescan` comamnd at the end.
+Recovering procedure is quite simple.
+You just repeat the public key registration process as we did above, and run `rescan` command at the end.
 
-```sh
+```bash
+# create watch-only wallet with default multisig account.
 bwallet-cli \
   --url=${url} \
   --network=testnet \
@@ -328,8 +332,10 @@ bwallet-cli \
   --type=multisig \
   --m=2 \
   --n=3 \
-  --name=multisig1 \
   mkwallet sharedWallet2
+
+# copy a wallet token from return value
+# and set it into sharedWalletToken2
 
 # add shared xpub(tpub) again. You must repeat this `n` times for all keys
 bwallet-cli \
@@ -337,8 +343,8 @@ bwallet-cli \
   --url=${url} \
   --network=testnet \
   --api-key=mySecretApiKey \
-  --token=${myadmintoken} \
-  --acount=multisig1 \
+  --token=${sharedWalletToken2} \
+  --account=default \
   shared add <tpub...>
 
 # and then rescan
@@ -347,10 +353,15 @@ bwallet-cli \
   --url=${url} \
   --network=testnet \
   --api-key=mySecretApiKey \
-  --token=${myadmintoken} \ # rescanning requires admin token
-  --acount=multisig1 \
+  --token=${sharedWalletToken2} \ # rescanning requires admin token
+  --account=default \
   rescan 10000  # start rescanning from height 10000
 ```
+
+> NOTE: rescan is only possible in full archival node.
+> If your node currently runs in spv or pruned mode,
+> you must change the node settings and run the `reset` command on the node
+> to make it full archive node.
 
 You can specify block height from which node starts rescanning.
 This will speed up rescanning process, but make sure to start from the number lower than first time the wallet has received the incoming tx.
