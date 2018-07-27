@@ -435,10 +435,10 @@ Since the bcoin wallet doesn't natively support CLTV coins,
 we're going to implement our own naive persistent storage so that
 we can keep a reference to the redeem script, locking address (P2WSH address),
 locktime, and the redeem address. We'll do this by saving this information
-to a json in a separate text file.
+to a json object in a separate text file.
 
 For this portion of the code, we're going to have two evaluation branches.
-We'll check if we have this file with information saved to it. If we don't,
+We'll first check if we have this file with information saved to it. If we don't,
 then we need to make the locking transaction. If we do, then we check if the current
 block height meets the locktime requirement (saved in our document) and
 create, sign, and broadcast our redeeming transaction
@@ -605,7 +605,7 @@ async function lockAndRedeemCLTV(walletId) {
 };
 ```
 
-Now you can run `lockAndRedeemCLTV` once to send the CLTV transaction and again to redeem it.
+Now you can run `lockAndRedeemCLTV` once to send the CLTV transaction and again to redeem it
 on a live Regtest network! Feel free to play around with the different values to see how it works.
 You can use different wallets, change the locktime, or change the redeem amount. Take a look
 at the JSON file that is saved after creating the transaction to see what the raw information looks
