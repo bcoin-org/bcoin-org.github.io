@@ -207,7 +207,9 @@
 			afterInit: afterOWLinit,
 			afterUpdate: afterOWLinit,
 			touchDrag: false,
-			mouseDrag: false
+			mouseDrag: false,
+			dots: false,
+			nav: false,
 		});
 
 		function afterOWLinit() {
@@ -297,6 +299,8 @@
 			navigation:       true,
 			pagination:       true,
 			singleItem:       true,
+			dots: false,
+			nav: false,
 			transitionStyle : 'backSlide',
 			navigationText: [
 				'<i class="icon-arrow-left icons"></i>',
