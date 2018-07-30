@@ -98,9 +98,10 @@ const client = new NodeClient(clientOptions);
 ```
 
 > The above command returns JSON "result" like this:
+>
+> verbose=1
 
 ```json
-// verbose=1
 [
   {
     "size": 226,
@@ -142,8 +143,9 @@ const client = new NodeClient(clientOptions);
 ]
 ```
 
+> verbose=0
+
 ```json
-// verbose=0
 [
   "56ab7663c80cb6ffc9f8a4b493d77b2e6f52ae8ff64eefa8899c2065922665c8"
 ]
@@ -203,9 +205,10 @@ const client = new NodeClient(clientOptions);
 ```
 
 > The above command returns JSON "result" like this:
+>
+> verbose=1
 
 ```json
-// verbose=1
 [
   {
     "size": 226,
@@ -244,11 +247,10 @@ const client = new NodeClient(clientOptions);
     ]
   }
 ]
-[e
 ```
+> verbose=0
 
 ```json
-// verbose=0
 [
   "939a3b8485b53a718d89e7e4412473b3762fa1d9bbd555fc8b01e73be0ab1881"
 ]

@@ -33,6 +33,7 @@ includes:
   - wallet_tx
   - wallet_accounts
   - wallet_events
+  - wallet_rpc
   - errors
 
 search: true

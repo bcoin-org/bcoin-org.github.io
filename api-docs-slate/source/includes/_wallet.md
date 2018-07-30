@@ -2140,7 +2140,7 @@ const wallet = walletClient.wallet(id);
 }
 ```
 
-Lock outpoints.
+Lock outpoints. Also see [lockunspent](#lockunspent) and [listlockunspent](#listlockunspent).
 
 ### HTTP Request
 
@@ -2206,7 +2206,7 @@ const wallet = walletClient.wallet(id);
 }
 ```
 
-Unlock outpoints.
+Unlock outpoints. Also see [lockunspent](#lockunspent) and [listlockunspent](#listlockunspent).
 
 ### HTTP Request
 
@@ -2274,7 +2274,7 @@ const wallet = walletClient.wallet(id);
 ]
 ```
 
-Get all locked outpoints.
+Get all locked outpoints. Also see [lockunspent](#lockunspent) and [listlockunspent](#listlockunspent).
 
 ### HTTP Request
 

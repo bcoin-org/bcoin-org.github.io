@@ -153,6 +153,7 @@ const client = new NodeClient(clientOptions);
 ```
 
 Returns Memory usage info.
+Identical to node RPC call [wallet-getmemoryinfo](#wallet-getmemoryinfo).
 
 
 ### Params

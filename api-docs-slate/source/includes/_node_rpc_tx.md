@@ -706,7 +706,8 @@ const client = new NodeClient(clientOptions);
 [
   "e66c029a755d326f14cc32f485ea43e705ef59ed4a8061e8f47e681fbdefefea",
   "0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8"
-]```
+]
+```
 
 Checks the proof for transaction inclusion. Returns transaction hash if valid.
 
