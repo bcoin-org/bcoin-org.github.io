@@ -178,7 +178,7 @@ Dark Blue BG for Parallax Docs Callout*/
 
 @media screen and (max-width: 767px){
     .projects-item a {
-        min-width: 320px;
+        min-width: 335px;
     }
 }
 
@@ -215,6 +215,10 @@ Dark Blue BG for Parallax Docs Callout*/
     font-weight: 400;
     font-size: 18px;
     color: #6d6e71 !important;
+}
+.project-info i{
+    opacity: .5;
+    font-size: 11px;
 }
 .community-links {
     padding-top:15px;
