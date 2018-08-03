@@ -592,6 +592,7 @@ N. | Name | Default |  Description
 2.2 | vout | | Transaction Outpoint Index
 2.3 | scriptPubKey | | script with pubkey you are going to sign
 2.4 | redeemScript | | redeemScript if tx is P2SH
+2.5 | amount | | value of output in BTC
 3 | privkeylist | | List of private keys
 4 | sighashtype | | Type of signature hash
 
