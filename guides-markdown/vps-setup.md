@@ -176,8 +176,7 @@ The VPS is setup, from here the intructions will be the same regardless of VPS p
 $ curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
 $ source ~/.bashrc
 $ nvm install 9.2.1
-$ sudo apt-get install build-essential
-$ sudo apt-get install python
+$ sudo apt-get install build-essential python
 ```
 ## Create a New User
 It's not ideal to run as the root user. While logged in as root:
