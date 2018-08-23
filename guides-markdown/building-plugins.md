@@ -1,4 +1,4 @@
-# Buidling Awesome bcoin Plugins
+# Building Awesome bcoin Plugins
 
 ```post-author
 Javed Khan
