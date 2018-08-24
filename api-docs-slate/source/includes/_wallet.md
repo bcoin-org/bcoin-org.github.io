@@ -181,8 +181,8 @@ Name | Type | Default | Description
 id | String |  | Wallet ID (used for storage)
 master | HDPrivateKey | | Master HD key. If not present, it will be generated
 witness | Boolean | `false` | Whether to use witness programs
-watchOnly | Boolean | `false` |
-accountKey | String | | The extended public key for the primary account in the new wallet. This value is ignored if `watchOnly` is `false`
+watchOnly <br>(`watch-only` for CLI) | Boolean | `false` |
+accountKey <br>(`account-key` for CLI) | String | | The extended public key for the primary account in the new wallet. This value is ignored if `watchOnly` is `false`
 accountIndex | Number | `0` | The BIP44 [account index](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Account)
 receiveDepth | Number | | The index of the _next_ receiving address
 changeDepth | Number | | The index of the _next_ change address
@@ -491,7 +491,7 @@ curl $walleturl/$id \
 ```shell--cli
 # watchOnly defaults to true if --key flag is set
 
-bwallet-cli mkwallet $id --witness=$witness --passphrase=$passphrase --watchOnly=$watchOnly --accountKey=$accountKey
+bwallet-cli mkwallet $id --witness=$witness --passphrase=$passphrase --watch-only=$watchOnly --account-key=$accountKey
 ```
 
 ```javascript
