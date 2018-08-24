@@ -98,7 +98,18 @@ const client = new NodeClient(clientOptions);
 Auth is accomplished via HTTP Basic Auth, using your node's API key.
 
 <aside class="notice">
-You must replace <code>api-key</code> with your personal API key.
+You must replace <code>api-key</code> with your own, strong API key.<br>
+<br>
+A good way to generate a strong key is to use the <code>bcrypto</code> module that is installed as a 
+dependency for <code>bcoin</code>. From your bcoin directory (or anywhere, if <code>bcrypto</code> is installed globally), run:<br>
+<code>node -e "bcrypto=require('bcrypto'); console.log(bcrypto.randomBytes(32).toString('hex'))"</code><br>
+Which will generate and output a securley random, 32-byte hex string.<br>
+This string could be saved in <code>bcoin.conf</code> to persist over restarts, or it may be passed to bcoin
+at launch (for example):<br>
+<code>bcoin --api-key=92ded8555d6f04e440ba540f2221349cbf799c454f7e08d3f16577d3e0127b0e</code><br>
+<br>
+For more information about <code>bcoin.conf</code> and other launch paramaters, see
+<a href="https://github.com/bcoin-org/bcoin/blob/master/docs/Configuration.md">docs/Configuration</a>.
 </aside>
 
 <aside class="warning">
