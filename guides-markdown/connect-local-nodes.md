@@ -116,6 +116,32 @@ const fullNode = new bcoin.FullNode({
 
   console.log('spvNode\'s peers after connection:', spvNode.pool.peers.head());
 
+  // generate a block that pays out to SPV node's watch address
+  fullNode.rpc.generateToAddress([1, 'R9M3aUWCcKoiqDPusJvqNkAbjffLgCqYip']);
+
+  // await for the SPV node to receive the first block.
+  // Notice that Map is not empty, but contains
+  // the hash of the coinbase transaction, of which
+  // the address is watched by the SPV node.
+  await pEvent(spvNode, 'block');
+
+  // generate a block to an address the SPV node IS NOT watching
+  fullNode.rpc.generateToAddress([1, 'RQKEexR9ZufYP6AKbwhzdv8iuiMFDh4sNZ']);
+
+  // await for the SPV node to receive the second block.
+  // Notice that Map is now empty, since this block does
+  // not contain any transaction watched by the SPV node.
+  await pEvent(spvNode, 'block');
+
+  // broadcast a tx that DOESN'T pay out to SPV node's watch address
+  //const tx1 = bcoin.TX.fromRaw('01000000011d06bce42b67f1de811a3444353fab5d400d82728a5bbf9c89978be37ad3eba9000000006a47304402200de4fd4ecc365ea90f93dbc85d219d7f1bd92ec8743648acb48b6602977e0b4302203ca2eeabed8e6f457234652a92711d66dd8eda71ed90fb6c49b3c12ce809a5d401210257654e1b0de2d8b08d514e51af5d770e9ef617ca2b254d84dd26685fbc609ec3ffffffff0280969800000000001976a914a4ecde9642f8070241451c5851431be9b658a7fe88acc4506a94000000001976a914b9825cafc838c5b5befb70ecded7871d011af89d88ac00000000', 'hex');
+  //await fullNode.sendTX(tx1);
+  // broadcast a tx that pays out to SPV node's watch address
+  //const tx2 = bcoin.TX.fromRaw('010000000106b014e37704109fefe2c5c9f4227d68840c3497fc89a9832db8504df039a6c7000000006a47304402207dc8173fbd7d23c3950aaf91b1bc78c0ed9bf910d47a977b24a8478a91b28e69022024860f942a16bc67ec54884e338b5b87f4a9518a80f9402564061a3649019319012103cb25dc2929ea58675113e60f4c08d084904189ab44a9a142179684c6cdd8d46affffffff0280c3c901000000001976a91400ba915c3d18907b79e6cfcd8b9fdf69edc7a7db88acc41c3c28010000001976a91437f306a0154e1f0de4e54d6cf9d46e07722b722688ac00000000', 'hex');
+  //fullNode.sendTX(tx2);
+  // await for the second transaction to be received by the SPV node
+  //await pEvent(spvNode, 'tx');
+
   // closing nodes
   await fullNode.disconnect();
   await spvNode.disconnect();
