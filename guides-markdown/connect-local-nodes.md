@@ -35,18 +35,36 @@ const regtest = Network.get().toString();
 // create nodes
 const spvNode = new bcoin.SPVNode({
   network: regtest,
-  httpPort: 48449 // avoid clash of ports
+  httpPort: 48449, // avoid clash of ports
+
+  // write log file and chain data to specific directory
+  prefix: '~/connect-test/SPV',
+  memory: false,
+  logFile: true,
+  logConsole: false,
+  logLevel: 'spam',
 });
 
 const fullNode = new bcoin.FullNode({
   network: regtest,
   port: 48445,
   bip37: true, // accept SPV nodes
-  listen: true
+  listen: true,
+
+  // write log file and chain data to specific directory
+  prefix: '~/connect-test/FULL',
+  memory: false,
+  logFile: true,
+  logConsole: false,
+  logLevel: 'spam'
 });
 // nodes created!
 
 (async () => {
+  // creates directory at `prefix`
+  await spvNode.ensure();
+  await fullNode.ensure();
+
   // start nodes
   await spvNode.open();
   await fullNode.open();
