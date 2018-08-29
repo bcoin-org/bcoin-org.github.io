@@ -23,7 +23,6 @@ installed.
 const bcoin = require('bcoin').set('regtest');
 const NetAddress = bcoin.net.NetAddress;
 const Network = bcoin.Network;
-const assert = require('assert');
 
 async function delay(ms) {
   return new Promise(resolve => {
@@ -69,7 +68,6 @@ const fullNode = new bcoin.FullNode({
 
   // no peers for the spvNode yet :(
   console.log('spvNode\'s peers before connection:', spvNode.pool.peers.head());
-  assert.equal(spvNode.pool.peers.head(), null);
 
   // connect spvNode with fullNode
   spvNode.pool.peers.add(peer);
@@ -79,8 +77,6 @@ const fullNode = new bcoin.FullNode({
 
   // nodes are now connected!
   console.log('spvNode\'s peers after connection:', spvNode.pool.peers.head());
-  assert.equal(spvNode.pool.peers.head().inspect(),
-    '<Peer: handshake=true host=127.0.0.1:48445 outbound=true ping=-1>');
 
   // closing nodes
   await fullNode.disconnect();
