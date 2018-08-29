@@ -43,6 +43,9 @@ const spvNode = new bcoin.SPVNode({
   logFile: true,
   logConsole: false,
   logLevel: 'spam',
+
+  // reduce log spam on SPV node (won't warn on Full node)
+  maxOutbound: 1,
 });
 
 const fullNode = new bcoin.FullNode({
