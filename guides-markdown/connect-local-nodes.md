@@ -107,7 +107,5 @@ const fullNode = new bcoin.FullNode({
   await fullNode.close();
   await spvNode.close();
   // nodes closed
-
-  console.log('success!');
 })();
 ```
