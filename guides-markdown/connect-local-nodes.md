@@ -23,6 +23,7 @@ installed.
 const bcoin = require('bcoin').set('regtest');
 const NetAddress = bcoin.net.NetAddress;
 const Network = bcoin.Network;
+const pEvent = require('p-event'); // tool to await for events
 
 async function delay(ms) {
   return new Promise(resolve => {
@@ -93,10 +94,10 @@ const fullNode = new bcoin.FullNode({
   // connect spvNode with fullNode
   spvNode.pool.peers.add(peer);
 
-  // allow some time to establish connection
-  await delay(3000);
-
+  // await to establish connection
+  await pEvent(spvNode.pool, 'peer connect');
   // nodes are now connected!
+
   console.log('spvNode\'s peers after connection:', spvNode.pool.peers.head());
 
   // closing nodes
