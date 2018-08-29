@@ -77,12 +77,7 @@ const fullNode = new bcoin.FullNode({
   await fullNode.connect();
   // nodes started!
 
-  // get peer from known address
-  const addr = new NetAddress({
-    host: '127.0.0.1',
-    port: fullNode.pool.options.port
   });
-  const peer = spvNode.pool.createOutbound(addr);
 
   // allow some time for spvNode to figure
   // out that its peer list is empty
@@ -91,7 +86,14 @@ const fullNode = new bcoin.FullNode({
   // no peers for the spvNode yet :(
   console.log('spvNode\'s peers before connection:', spvNode.pool.peers.head());
 
+  // get peer from known address
+  const addr = new NetAddress({
+    host: '127.0.0.1',
+    port: fullNode.pool.options.port
+  });
+
   // connect spvNode with fullNode
+  const peer = spvNode.pool.createOutbound(addr);
   spvNode.pool.peers.add(peer);
 
   // await to establish connection
