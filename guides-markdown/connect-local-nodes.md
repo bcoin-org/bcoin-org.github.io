@@ -77,6 +77,20 @@ const fullNode = new bcoin.FullNode({
   await fullNode.connect();
   // nodes started!
 
+
+  // start the SPV node's blockchain sync
+  spvNode.startSync();
+
+  // SPV node: watch this address
+  const address = bcoin.Address.fromString('R9M3aUWCcKoiqDPusJvqNkAbjffLgCqYip', spvNode.network);
+  spvNode.pool.watchAddress(address);
+
+  // SPV node: catch block and tx events
+  spvNode.on('block', (block) => {
+    console.log('-- SPV node received block: --\n', block);
+  });
+  spvNode.on('tx', (tx) => {
+    console.log('-- SPV node received tx: --\n', tx);
   });
 
   // allow some time for spvNode to figure
