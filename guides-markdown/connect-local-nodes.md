@@ -70,6 +70,7 @@ const fullNode = new bcoin.FullNode({
 });
 // nodes created!
 
+
 (async () => {
   // creates directory at `prefix`
   await spvNode.ensure();
@@ -91,10 +92,7 @@ const fullNode = new bcoin.FullNode({
   const address = bcoin.Address.fromString('R9M3aUWCcKoiqDPusJvqNkAbjffLgCqYip', spvNode.network);
   spvNode.pool.watchAddress(address);
 
-  // SPV node: catch block and tx events
-  spvNode.on('block', (block) => {
-    console.log('-- SPV node received block: --\n', block);
-  });
+  // SPV node: catch tx events
   spvNode.on('tx', (tx) => {
     console.log('-- SPV node received tx: --\n', tx);
   });
@@ -121,23 +119,6 @@ const fullNode = new bcoin.FullNode({
   // nodes are now connected!
 
   console.log('spvNode\'s peers after connection:', spvNode.pool.peers.head());
-
-  // generate a block that pays out to SPV node's watch address
-  fullNode.rpc.generateToAddress([1, 'R9M3aUWCcKoiqDPusJvqNkAbjffLgCqYip']);
-
-  // await for the SPV node to receive the first block.
-  // Notice that Map is not empty, but contains
-  // the hash of the coinbase transaction, of which
-  // the address is watched by the SPV node.
-  await pEvent(spvNode, 'block');
-
-  // generate a block to an address the SPV node IS NOT watching
-  fullNode.rpc.generateToAddress([1, 'RQKEexR9ZufYP6AKbwhzdv8iuiMFDh4sNZ']);
-
-  // await for the SPV node to receive the second block.
-  // Notice that Map is now empty, since this block does
-  // not contain any transaction watched by the SPV node.
-  await pEvent(spvNode, 'block');
 
   // broadcast a tx that DOESN'T pay out to SPV node's watch address
   //const tx1 = bcoin.TX.fromRaw('01000000011d06bce42b67f1de811a3444353fab5d400d82728a5bbf9c89978be37ad3eba9000000006a47304402200de4fd4ecc365ea90f93dbc85d219d7f1bd92ec8743648acb48b6602977e0b4302203ca2eeabed8e6f457234652a92711d66dd8eda71ed90fb6c49b3c12ce809a5d401210257654e1b0de2d8b08d514e51af5d770e9ef617ca2b254d84dd26685fbc609ec3ffffffff0280969800000000001976a914a4ecde9642f8070241451c5851431be9b658a7fe88acc4506a94000000001976a914b9825cafc838c5b5befb70ecded7871d011af89d88ac00000000', 'hex');
