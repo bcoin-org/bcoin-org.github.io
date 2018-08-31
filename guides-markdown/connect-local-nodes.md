@@ -13,11 +13,17 @@ manually set ports, they don't get connected automatically because they don't
 know each other's port. We thus have to connect them manually. In this example
 we will fire up one SPV and one Full node and initiate a connection from the
 SPV side. The SPV node is given the address of the Full node and attempts to
-connect. If everything goes well, the two nodes connect. Finally they are
-gracefully closed.
+connect. If everything goes well, the two nodes connect. The Full node then
+broadcasts two transactions. The first tx pays to an address contained in the
+bloom filter of the SPV node, the second tx to another address which the SPV
+node doesn't watch. If everything goes well, the first transaction is received
+by the SPV node and the second isn't. Finally the two nodes are gracefully
+closed.
 
-The script should work out of the box, the only requirement is having `bcoin`
-installed.
+We use the library `p-event` which promisifies events in order to `await` for
+connection of the nodes and the reception of the transaction cleanly.
+
+Requirements: `bcoin` (duh), `p-event` (`npm install bcoin p-event`)
 
 ```javascript
 const bcoin = require('bcoin').set('regtest');
