@@ -8,13 +8,15 @@ Orfeas Stefanos Thyfronitis Litos
 Start and manually connect two regtest nodes in a single script.
 ```
 
-When we start two nodes in the regtest (loopback network, 127.0.0.1) with
-manually set ports, they don't get connected automatically because they don't
-know each other's port. We thus have to connect them manually. In this example
-we will fire up one SPV and one Full node and initiate a connection from the
-SPV side. The SPV node is given the address of the Full node and attempts to
-connect. If everything goes well, the two nodes connect. The Full node then
-broadcasts two transactions. The first tx pays to an address contained in the
+When we start two nodes on the regtest network (loopback network, 127.0.0.1)
+with manually set ports, they don't get connected automatically because they
+don't know each other's port. We thus have to connect them manually. In this
+example we will fire up one SPV and one full node and initiate a connection from
+the SPV side. The SPV node is given the address of the full node and attempts to
+connect. If everything goes well, the two nodes connect.
+
+To demonstrate that the connection was successful, we'll have full node
+broadcast two transactions. The first tx pays to an address contained in the
 bloom filter of the SPV node, the second tx to another address which the SPV
 node doesn't watch. If everything goes well, the first transaction is received
 by the SPV node and the second isn't. Finally the two nodes are gracefully
@@ -51,7 +53,7 @@ const spvNode = new bcoin.SPVNode({
   logConsole: false,
   logLevel: 'spam',
 
-  // reduce log spam on SPV node (cannot reduce to 0 for Full node)
+  // reduce log spam on SPV node (cannot reduce to 0 for full node)
   maxOutbound: 1,
 });
 
