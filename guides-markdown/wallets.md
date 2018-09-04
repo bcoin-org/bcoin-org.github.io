@@ -163,9 +163,9 @@ You can start generating addresses with our first account right away.
 const account = await wallet.getAccount('default');
 
 //now we have a wallet and default account, let's get our first and current receiving address
-const key0 = account.getAddress('string');
+const addr = account.receiveAddress();
 //this will be the same value as seen in the 'address' property under 'account' in our wallet above
-console.log(key0);
+console.log(addr.toString());
 //mhNHETXFKDk7ZpGg3iEZb7guWZ2fbCuFjv
 
 //we can skip ahead if we want, grabbing the hundredth key in the heirarchy like so
@@ -228,7 +228,7 @@ Bcoin handles your private keys automatically for things like sending transactio
 ```javascript
 //the keys above are only good for receiving bitcoins, not spending them
 //let's get the extended private key for John Doe's account, which can be used to generate every private key for the account
-const jdExtendedPrivateKey = wallet.master.key.deriveAccount(44, jdAccount.accountIndex); //44 is the fixed purpose for bip44 accounts 
+const jdExtendedPrivateKey = wallet.master.key.deriveAccount(44, jdAccount.network.keyPrefix.coinType, jdAccount.accountIndex); //44 is the fixed purpose for bip44 accounts
 console.log(jdExtendedPrivateKey.xprivkey());
 //tprv8gryhi3CLWEBGRvWMSL7w1YyY3bHr4w3XBjt75vm842mntgv9Tvvzsc8Bf3NZt13ydD5QZaJVShMudE33egMhSLnEM41t5UUhRj5wA5u8Sc
 
@@ -238,7 +238,7 @@ const index = 0; //index of 0 means the first key among the receiving addresses
 const jdPrivateKey0 = jdExtendedPrivateKey.derive(branch).derive(index);
 const jdWalletKey0 = WalletKey.fromHD(jdAccount, jdPrivateKey0, branch, index);
 //the private key below can be imported into almost any bitcoin wallet, HD or non-HD, and used to spend coins from the corresponding address
-console.log(jdWalletKey0.getPrivateKey('base58')); 
+console.log(jdWalletKey0.getPrivateKey('base58'));
 //cNZfR3NhQ9oCP3pTjvPZETUuTWZo2k6EXtfczvbWyv7FdjMhppvJ
 ```
 
