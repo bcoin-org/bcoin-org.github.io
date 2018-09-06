@@ -44,10 +44,7 @@ async function delay(ms) {
 }
 
 const regtest = Network.get().toString();
-const logPrefix = path.format({
-  dir: os.homedir(),
-  base: 'connect-test'
-})
+const logPrefix = path.join(os.homedir(), 'connect-test');
 
 // create nodes
 const spvNode = new bcoin.SPVNode({
@@ -55,7 +52,7 @@ const spvNode = new bcoin.SPVNode({
   httpPort: 48449, // avoid clash of ports
 
   // write log file and chain data to specific directory
-  prefix: path.format({dir: logPrefix, base: 'SPV'}),
+  prefix: path.join(logPrefix, 'SPV'),
   memory: false,
   logFile: true,
   logConsole: false,
@@ -72,7 +69,7 @@ const fullNode = new bcoin.FullNode({
   listen: true,
 
   // write log file and chain data to specific directory
-  prefix: path.format({dir: logPrefix, base: 'FULL'}),
+  prefix: path.join(logPrefix, 'FULL'),
   memory: false,
   logFile: true,
   logConsole: false,
