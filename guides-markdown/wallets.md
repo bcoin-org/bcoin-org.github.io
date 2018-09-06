@@ -99,6 +99,7 @@ async function walletExample() {
 	//for demonstration purposes, we'll be creating a temporary wallet in memory
 	const wdb = new WalletDB({ db: 'memory' });
 	await wdb.open();
+}
 ```
 
 #### Creating a Wallet
