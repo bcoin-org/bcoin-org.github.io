@@ -4,6 +4,7 @@ code { white-space: nowrap;}
 </style>
 
 # Events and Sockets
+
 ```post-author
 Matthew Zipkin
 ```
@@ -12,6 +13,60 @@ Matthew Zipkin
 A list of all emitted events throughout the bcoin library.
 Which functions call them, what data they return, which objects catch and re-emit them,
 and which events are available over websocket connection.
+```
+
+## Listen for Events
+
+To listen for and react to events in bcoin, a listener must be added in the runtime script.
+If you are running a full node (for example) you might already be familiar with [the bcoin
+full node launch script](https://github.com/bcoin-org/bcoin/blob/master/bin/node), which
+instantiates a `FullNode` object, adds a wallet, and begins the connection and synchronization process.
+The script ends with an `async` function that actually starts these processes, and this is
+a good place to add event listeners. [Using the table below](#events-directory) you can discover which object needs
+to be listened `on` for each event type. Notice that because the wallet is added as a plugin,
+its object hierarchy path is a little... awkward :-)
+
+```javascript
+// https://github.com/bcoin-org/bcoin/blob/master/bin/node
+
+(async () => {
+  await node.ensure();
+  await node.open();
+  await node.connect();
+  node.startSync();
+
+  // add event listeners after everything is open, connected, and started
+
+  // NODE
+  node.on('tx', (details) => {
+    console.log(' -- node tx -- \n', details)
+  });
+  node.on('block', (details) => {
+    console.log(' -- node block -- \n', details)
+  });
+
+  // MEMPOOL
+  node.mempool.on('confirmed', (details) => {
+    console.log(' -- mempool confirmed -- \n', details)
+  });
+
+  // WALLET
+  node.plugins.walletdb.wdb.on('balance', (details) => {
+    console.log(' -- wallet balance -- \n', details)
+  });
+
+  node.plugins.walletdb.wdb.on('confirmed', (details) => {
+    console.log(' -- wallet confirmed -- \n', details)
+  });
+
+  node.plugins.walletdb.wdb.on('address', (details) => {
+    console.log(' -- wallet address -- \n', details)
+  });
+
+})().catch((err) => {
+  console.error(err.stack);
+  process.exit(1);
+});
 ```
 
 ## Events Directory
@@ -26,7 +81,7 @@ and not all re-emitters return everything they receive.
 | `tip` | [ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js) | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `open()`, `disconnect()`, `reconnect()`, `setBestChain()`, `reset()`| |
 | `connect` | [ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js), [Block](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/block.js), [CoinView](https://github.com/bcoin-org/bcoin/blob/master/lib/coins/coinview.js) | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `setBestChain()`, `reconnect()`| _chain_&#8594;[FullNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/fullnode.js) (returns&nbsp;ChainEntry,&nbsp;Block&nbsp;only)<br>_chain_&#8594;[SPVNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/spvnode.js) (returns&nbsp;ChainEntry,&nbsp;Block&nbsp;only)<br>_SPVNode_,&nbsp;_FullNode_&#8594;[NodeClient](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/nodeclient.js) (emits as `block connect`, returns&nbsp;ChainEntry,&nbsp;Block.txs&nbsp;only) |
 | `disconnect` | [ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js), [Headers](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/headers.js), [CoinView](https://github.com/bcoin-org/bcoin/blob/master/lib/coins/coinview.js) | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `reorganizeSPV()` | _chain_&#8594;[FullNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/fullnode.js) (returns&nbsp;ChainEntry,&nbsp;Headers&nbsp;only)<br>_chain_&#8594;[SPVNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/spvnode.js) (returns&nbsp;ChainEntry,&nbsp;Headers&nbsp;only)<br>_SPVNode_,&nbsp;_FullNode_&#8594;[NodeClient](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/nodeclient.js) (emits as `block disconnect`, returns&nbsp;ChainEntry&nbsp;only) |
-| `disconnect` | [ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js), [Block](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/block.js), [CoinView](https://github.com/bcoin-org/bcoin/blob/master/lib/coins/coinview.js) | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `disconnect()` | _chain_&#8594;[FullNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/fullnode.js) (returns&nbsp;ChainEntry,&nbsp;Block&nbsp;only)<br>_chain_&#8594;[SPVNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/spvnode.js) (returns&nbsp;ChainEntry,&nbsp;Block&nbsp;only)<br>_SPVNode_,&nbsp;_FullNode_&#8594;[NodeClient](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/nodeclient.js) (emits as `block disconnect`, returns&nbsp;ChainEntry&nbsp;only)  |
+| `disconnect` | [ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js), [Block](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/block.js), [CoinView](https://github.com/bcoin-org/bcoin/blob/master/lib/coins/coinview.js) | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `disconnect()` | _chain_&#8594;[FullNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/fullnode.js) (returns&nbsp;ChainEntry,&nbsp;Block&nbsp;only)<br>_chain_&#8594;[SPVNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/spvnode.js) (returns&nbsp;ChainEntry,&nbsp;Block&nbsp;only)<br>_SPVNode_,&nbsp;_FullNode_&#8594;[NodeClient](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/nodeclient.js) (emits as `block disconnect`, returns&nbsp;ChainEntry&nbsp;only) |
 | `reconnect` | [ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js), [Block](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/block.js) | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `reconnect()`| |
 | `reorganize` | tip ([ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js)), competitor ([ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js)) | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `reorganize()`, `reorganizeSPV()` | _chain_&#8594;[FullNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/fullnode.js)<br>_chain_&#8594;[SPVNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/spvnode.js) |
 | `block` | [Block](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/block.js), [ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js) | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `setBestChain()`<br>[CPUMiner](https://github.com/bcoin-org/bcoin/blob/master/lib/mining/cpuminer.js): `_start()`| _chain_&#8594;[Pool](https://github.com/bcoin-org/bcoin/blob/master/lib/net/pool.js)<br> _chain_&#8594;[FullNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/fullnode.js) (returns&nbsp;Block&nbsp;only)<br> _chain_&#8594;[SPVNode](https://github.com/bcoin-org/bcoin/blob/master/lib/node/spvnode.js) (returns&nbsp;Block&nbsp;only) |
@@ -34,7 +89,7 @@ and not all re-emitters return everything they receive.
 | `bad orphan` | Error, ID | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `handleOrphans()`<br>[Mempool](https://github.com/bcoin-org/bcoin/blob/master/lib/mempool/mempool.js): `handleOrphans()` | |
 | `resolved` | [Block](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/block.js), [ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js) | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `handleOrphans()` | |
 | `checkpoint` | Hash, Height | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `verifyCheckpoint()` | |
-| `orphan` | [Block](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/block.js) |  [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `storeOrphan()` | |
+| `orphan` | [Block](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/block.js) | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `storeOrphan()` | |
 | `full` | | [Chain](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chain.js): `maybeSync()` | _chain_&#8594;[Pool](https://github.com/bcoin-org/bcoin/blob/master/lib/net/pool.js)|
 | `confirmed` | [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [ChainEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/blockchain/chainentry.js) | [Mempool](https://github.com/bcoin-org/bcoin/blob/master/lib/mempool/mempool.js): `_addBlock()`| |
 | `confirmed` | [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) | [TXDB](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js): `confirm()` | _txdb_&#8594;[WalletDB](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/walletdb.js) (also&nbsp;returns&nbsp;Wallet)<br>_txdb_&#8594;[Wallet](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/wallet.js)|
@@ -47,7 +102,7 @@ and not all re-emitters return everything they receive.
 | `tx` | [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) | [TXDB](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js): `insert()` | _txdb_&#8594;[WalletDB](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/walletdb.js) (also&nbsp;returns&nbsp;Wallet)<br>_txdb_&#8594;[Wallet](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/wallet.js)|
 | `double spend` | [MempoolEntry](https://github.com/bcoin-org/bcoin/blob/master/lib/mempool/mempoolentry.js) | [Mempool](https://github.com/bcoin-org/bcoin/blob/master/lib/mempool/mempool.js): `removeDoubleSpends()` | |
 | `balance` | [Balance](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) | [TXDB](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js): `insert()`, `confirm()`, `disconnect()`, `erase()` | _txdb_&#8594;[WalletDB](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/walletdb.js) (also&nbsp;returns&nbsp;Wallet)<br>_txdb_&#8594;[Wallet](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/wallet.js)|
-| `address` |  [[WalletKey](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/walletkey.js)] | [Wallet](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/wallet.js): `_add()`,  |  _wallet_&#8594;[WalletDB](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/walletdb.js) (returns&nbsp;parent&nbsp;Wallet,&nbsp;[WalletKey]) |
+| `address` | [[WalletKey](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/walletkey.js)] | [Wallet](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/wallet.js): `_add()`, | _wallet_&#8594;[WalletDB](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/walletdb.js) (returns&nbsp;parent&nbsp;Wallet,&nbsp;[WalletKey]) |
 
 ## Socket Events
 
@@ -56,21 +111,112 @@ Those servers each have child objects such as `Chain`, `Mempool`, `Pool`, and `W
 relay events from them out the socket. To receive an event, the socket client must watch a
 channel (such as `chain`, `mempool`, or `auth`) or join the a wallet
 (which would be user-defined like `primary`, `hot-wallet`, or `multisig1`). All wallets can be
-joined at once by joining `'*'`. See more about joining and watching with hooks and calls below.
+joined at once by joining `'*'`. 
+
+### Listen for Socket Events
+
+To make a socket connection to bcoin, you need to run a websocket client.
+Luckily the bcoin developers have developed [`bsock`](https://github.com/bcoin-org/bsock), 
+a minimal websocket-only implementation of the socket.io protocol. By default, bsock listens on
+`localhost`, and you only need to pass it a port number to connect to one of the bcoin servers.
+The example below illustrates how to establish the socket connection, authenticate with your
+user-defined [API key](http://bcoin.io/api-docs/#authentication) and then send and recieve events!
+[See the tables below for a complete list of calls and events available in bcoin.](#socket-events-directory)
+
+```javascript
+// bsock-example.js
+
+const bsock = require('bsock');
+const {Network, Address, Headers, ChainEntry} = require('bcoin');
+const network = Network.get('regtest');
+const apiKey = 'api-key';
+
+nodeSocket = bsock.connect(network.rpcPort);
+walletSocket = bsock.connect(network.walletPort);
+
+nodeSocket.on('connect', async (e) => {
+  try {
+    console.log('Node - Connect event:\n', e);
+
+    // `auth` must be called before any other actions
+    console.log('Node - Attempting auth:\n', await nodeSocket.call('auth', apiKey));
+
+    // `watch chain` subscirbes us to chain events like `block`
+    console.log('Node - Attempting watch chain:\n', await nodeSocket.call('watch chain'));
+
+    // Some calls simply request information from the server like an http request
+    console.log('Node - Attempting get tip:');
+    const tip = await nodeSocket.call('get tip');
+    console.log(ChainEntry.fromRaw(tip));
+
+  } catch (e) {
+    console.log('Node - Connection Error:\n', e);
+  } 
+});
+
+// listen for new blocks
+nodeSocket.bind('chain connect', (raw, txs) => {
+  console.log('Node - Chain Connect Event -- raw:\n', ChainEntry.fromRaw(raw));
+});
+
+walletSocket.on('connect', async (e) => {
+  try {
+    console.log('Wallet - Connect event:\n', e);
+
+    // `auth` is required before proceeding
+    console.log('Wallet - Attempting auth:\n', await walletSocket.call('auth', apiKey));
+
+    // here we join all wallets, but we could also just join `primary` or any other wallet
+    console.log('Wallet - Attempting join *:\n', await walletSocket.call('join', '*'));
+
+  } catch (e) {
+    console.log('Wallet - Connection Error:\n', e);
+  } 
+});
+
+// listen for new wallet transactions
+walletSocket.bind('tx', (wallet, tx) => {
+  console.log('Wallet - TX Event -- wallet:\n', wallet);
+  console.log('Wallet - TX Event -- tx:\n', tx);
+});
+
+// listen for new address events
+// (only fired when current account address receives a transaction)
+walletSocket.bind('address', (wallet, json) => {
+  console.log('Wallet - Address Event -- wallet:\n', wallet);
+  console.log('Wallet - Address Event -- json:\n', json);
+});
+```
+
+To see this script in action, first start bcoin however you usually do:
+
+`bcoin --daemon --network=regtest`
+
+Run the script (this is where the event output will be printed):
+
+`node bsock-example.js`
+
+Then, in a separate terminal window, run some commands to trigger the events!
+
+`bcoin-cli rpc generatetoaddress 1  RJ14p2tpf5ANiFJBpKrTSPTgFnzScsDAhN`
+
+
+
+## Socket Events Directory
 
 ### Wallet
 
-All wallet events are triggered by a `WalletDB` object, which have may be triggered by its parent
-`TXDB` or `Wallet`. The socket emits the event along with the wallet ID, and whatever "Returns" are listed above.
+All wallet events are emitted by a `WalletDB` object, which may have been triggered by its parent
+`TXDB` or `Wallet`. The socket emits the event along with the wallet ID, and the same "Returns" as listed above.
 
-| Event |
-|-|
-| `tx` |
-| `confirmed` |
-| `unconfirmed` |
-| `conflict` |
-| `balance` |
-| `address` |
+| Event | Returns |
+|-|-|
+| `tx` | WalletID, [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
+| `confirmed` | WalletID, [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
+| `unconfirmed` | WalletID, [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
+| `conflict` | WalletID, [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js)|
+| `balance` | WalletID, [Balance](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
+| `address` | WalletID, [[WalletKey](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/walletkey.js)] |
 
 ### Node
 
