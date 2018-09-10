@@ -27,7 +27,7 @@ to be listened `on` for each event type. Notice that because the wallet is added
 its object hierarchy path is a little... awkward :-)
 
 ```javascript
-// https://github.com/bcoin-org/bcoin/blob/master/bin/node
+// Based on https://github.com/bcoin-org/bcoin/blob/master/bin/node
 
 (async () => {
   await node.ensure();
@@ -41,6 +41,7 @@ its object hierarchy path is a little... awkward :-)
   node.on('tx', (details) => {
     console.log(' -- node tx -- \n', details)
   });
+  
   node.on('block', (details) => {
     console.log(' -- node block -- \n', details)
   });
@@ -113,21 +114,21 @@ channel (such as `chain`, `mempool`, or `auth`) or join the a wallet
 (which would be user-defined like `primary`, `hot-wallet`, or `multisig1`). All wallets can be
 joined at once by joining `'*'`. 
 
-### Listen for Socket Events
+### Listen for Socket Events with bsock
 
 To make a socket connection to bcoin, you need to run a websocket client.
-Luckily the bcoin developers have developed [`bsock`](https://github.com/bcoin-org/bsock), 
+Luckily the bcoin developers have developed [bsock](https://github.com/bcoin-org/bsock), 
 a minimal websocket-only implementation of the socket.io protocol. By default, bsock listens on
 `localhost`, and you only need to pass it a port number to connect to one of the bcoin servers.
 The example below illustrates how to establish the socket connection, authenticate with your
-user-defined [API key](http://bcoin.io/api-docs/#authentication) and then send and recieve events!
+user-defined [API key](http://bcoin.io/api-docs/#authentication) and then send and receive events!
 [See the tables below for a complete list of calls and events available in bcoin.](#socket-events-directory)
 
 ```javascript
 // bsock-example.js
 
 const bsock = require('bsock');
-const {Network, Address, Headers, ChainEntry} = require('bcoin');
+const {Network, ChainEntry} = require('bcoin');
 const network = Network.get('regtest');
 const apiKey = 'api-key';
 
@@ -147,7 +148,7 @@ nodeSocket.on('connect', async (e) => {
     // Some calls simply request information from the server like an http request
     console.log('Node - Attempting get tip:');
     const tip = await nodeSocket.call('get tip');
-    console.log(ChainEntry.fromRaw(tip));
+    console.log(ChainEntry.from(tip));
 
   } catch (e) {
     console.log('Node - Connection Error:\n', e);
@@ -156,7 +157,7 @@ nodeSocket.on('connect', async (e) => {
 
 // listen for new blocks
 nodeSocket.bind('chain connect', (raw, txs) => {
-  console.log('Node - Chain Connect Event -- raw:\n', ChainEntry.fromRaw(raw));
+  console.log('Node - Chain Connect Event:\n', ChainEntry.fromRaw(raw));
 });
 
 walletSocket.on('connect', async (e) => {
@@ -190,16 +191,63 @@ walletSocket.bind('address', (wallet, json) => {
 
 To see this script in action, first start bcoin however you usually do:
 
-`bcoin --daemon --network=regtest`
+```bash
+bcoin --daemon --network=regtest
+```
 
 Run the script (this is where the event output will be printed):
 
-`node bsock-example.js`
+```bash
+node bsock-example.js
+```
 
 Then, in a separate terminal window, run some commands to trigger the events!
 
-`bcoin-cli rpc generatetoaddress 1  RJ14p2tpf5ANiFJBpKrTSPTgFnzScsDAhN`
+```bash
+bcoin-cli rpc generatetoaddress 1  RJ14p2tpf5ANiFJBpKrTSPTgFnzScsDAhN
+```
 
+### Sockets made easy: bclient
+
+`bsock` is a great low-level library for dealing with sockets, but we also have
+[bclient](https://github.com/bcoin-org/bclient) which simplifies both socket and regular http
+connections. A simple one-line command in the terminal can listen to all wallet events and
+print all the returned data:
+
+```bash
+bwallet-cli listen
+```
+
+`bclient` can also be used in a script to listen for events. If you're already familiar with
+the [bclient API](https://bcoin.io/api-docs) this will look very familiar. Here's part of the
+script above re-written using `bclient` instead of `bsock`:
+
+```javascript
+const {NodeClient} = require('bclient');
+const {Network, ChainEntry} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+const client = new NodeClient(clientOptions);
+
+(async () => {
+  // bclient handles the connection, the auth, and the channel subscriptions
+  await client.open();
+
+  // use socket connection to request data
+  const tip = await client.getTip();
+  console.log(tip);
+})();
+
+// listen for new blocks
+client.bind('chain connect', (raw) => {
+  console.log('Node - Chain Connect Event:\n', ChainEntry.fromRaw(raw));
+});
+```
 
 
 ## Socket Events Directory
