@@ -259,10 +259,10 @@ All wallet events are emitted by a `WalletDB` object, which may have been trigge
 
 | Event | Returns |
 |-|-|
-| `tx` | WalletID, [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
-| `confirmed` | WalletID, [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
-| `unconfirmed` | WalletID, [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
-| `conflict` | WalletID, [TX](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/tx.js), [Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js)|
+| `tx` | WalletID, [TX Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
+| `confirmed` | WalletID, [TX Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
+| `unconfirmed` | WalletID, [TX Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
+| `conflict` | WalletID, [TX Details](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js)|
 | `balance` | WalletID, [Balance](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/txdb.js) |
 | `address` | WalletID, [[WalletKey](https://github.com/bcoin-org/bcoin/blob/master/lib/wallet/walletkey.js)] |
 
