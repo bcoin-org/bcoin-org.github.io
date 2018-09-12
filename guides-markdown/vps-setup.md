@@ -303,7 +303,7 @@ $ bclient info --api-key=hunter2
 
 ```
 
-For a complete list of CLI commands, check the [API documentation](http://bcoin.io/api-docs/index.html). The CLI supports node, wallet and has full RPC functionality.
+For a complete list of CLI commands, check the [API documentation](https://bcoin.io/api-docs/index.html). The CLI supports node, wallet and has full RPC functionality.
 
 ### Using Bcoin as a library
 

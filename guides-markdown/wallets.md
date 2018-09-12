@@ -66,7 +66,7 @@ Zo2k6EXtfczvbWyv7FdjMhppvJ"}'
 
 ### API Authentication
 
-Bcoin can run as a server and allow you to interact with your wallets via a [REST API](http://bcoin.io/api-docs/index.html?shell--curl#wallet). It also allows you protect wallets from unauthenticated requests by running the server with the `wallet-auth` option. Each wallet you create has a `token` value that must be passed in with each request. Tokens, like accounts and keys, can also be deterministically generated using your HD seed. This means you can change the token on a wallet as often as you'd like.
+Bcoin can run as a server and allow you to interact with your wallets via a [REST API](https://bcoin.io/api-docs/index.html?shell--curl#wallet). It also allows you protect wallets from unauthenticated requests by running the server with the `wallet-auth` option. Each wallet you create has a `token` value that must be passed in with each request. Tokens, like accounts and keys, can also be deterministically generated using your HD seed. This means you can change the token on a wallet as often as you'd like.
 
 ### Recovery
 

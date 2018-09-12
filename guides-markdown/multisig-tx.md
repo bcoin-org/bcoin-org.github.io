@@ -428,7 +428,7 @@ You will notice that we grab the `.account.accountKey`, first key is the xpubkey
 and both will be using xpubkey key derivation to come up with new addresses.
 You won't need to share any other public keys, they will derive them for you.
 Depth of the account is the only thing you'll need to keep in mind.
-[addSharedKey](http://bcoin.io/api-docs/index.html#add-xpubkey-multisig) in
+[addSharedKey](https://bcoin.io/api-docs/index.html#add-xpubkey-multisig) in
 wallet/account is used for adding cosigner xpubkeys keys.
 
 ### Step 2: Generate Transaction
@@ -500,7 +500,7 @@ send remaining funds (minus fee) to change address and sign it.
 `wallet2.sign` will take raw transaction and sign it with according key.
 After that we can just broadcast the transaction to the network.
 
-[API-DOCS]: http://bcoin.io/api-docs/index.html
+[API-DOCS]: https://bcoin.io/api-docs/index.html
 
 
 ## Final Notes
