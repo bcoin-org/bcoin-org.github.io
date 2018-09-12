@@ -26,7 +26,7 @@ and, then satisfying some locking condition on that previous output.
 "Scripts" are conditions that need to be satisfied on an output to
 prove ownership. You can have a Bitcoin script that is locked with the
 math problem "What is 2 + 5", and anyone that knows to answer "7" can "prove"
-ownership over that output (Check out this guide, [Intro To Scripting](http://bcoin.io/guides/scripting.html)
+ownership over that output (Check out this guide, [Intro To Scripting](https://bcoin.io/guides/scripting.html)
 to see how to write and redeem this simple script in bcoin, and [this section](https://github.com/bitcoinbook/bitcoinbook/blob/develop/ch06.asciidoc#a-simple-script) in Mastering Bitcoin for a helpful walkthrough).
 
 In the vast majority of Bitcoin and other cryptocurrency transactions,

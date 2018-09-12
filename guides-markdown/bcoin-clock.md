@@ -180,7 +180,7 @@ bcoin-cli info
 
 After a few minutes of loading, your output should resemble the printout below.
 You can repeat the `info` command to watch bcoin sync with the network, until `progress` reaches `1`. This won't take as much time as a full node would need but it could be a while.
-You can learn more about the command-line API clients `bcoin-cli` and `bwallet-cli` at [http://bcoin.io/api-docs.](http://bcoin.io/api-docs/?shell--cli#introduction)
+You can learn more about the command-line API clients `bcoin-cli` and `bwallet-cli` at [https://bcoin.io/api-docs.](https://bcoin.io/api-docs/?shell--cli#introduction)
 
 ```bash
 {
@@ -714,8 +714,8 @@ When `curses` catches a user pressing either `-` or `+`, the `WINDOW` parameter 
 
 What else can we do with this structure?
 What else can you add on your own? Since we are receiving transactions, maybe there should be some kind of send function,
-[using the node API and another cURL request from Python.](http://bcoin.io/api-docs/?shell--curl#send-a-transaction)
-You could also use the same QR code functionality to [display the private key for an address you have deposited to](http://bcoin.io/api-docs/?shell--curl#get-private-key-by-address),
+[using the node API and another cURL request from Python.](https://bcoin.io/api-docs/?shell--curl#send-a-transaction)
+You could also use the same QR code functionality to [display the private key for an address you have deposited to](https://bcoin.io/api-docs/?shell--curl#get-private-key-by-address),
 allowing the user to sweep that key with a mobile phone wallet.
 
 Notice when a wallet-related transaction gets confirmed in a block, the details we get for that block include a [Merkle Proof](https://en.bitcoin.it/wiki/Protocol_documentation#Merkle_Trees).

@@ -17,7 +17,7 @@ throughout the bcoin ecosystem including
 [`bclient`](https://github.com/bcoin-org/bclient) and [`bpanel`](https://github.com/bpanel-org/bpanel).
 
 For a deeper dive into events and sockets in bcoin, including a tutorial
-on using `bsock` and `bclient`, see the [bcoin.io Events and Sockets Guide.](http://bcoin.io/guides/events.html)
+on using `bsock` and `bclient`, see the [bcoin.io Events and Sockets Guide.](https://bcoin.io/guides/events.html)
 
 ```
 # Authentication

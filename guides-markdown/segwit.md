@@ -438,7 +438,7 @@ You can check [BIP List][BIPS] for other related proposals.
 [tx-malleability]: https://en.bitcoin.it/wiki/Transaction_Malleability
 [BIP62]: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#motivation
 [guide-repo]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide
-[multisig-guide]: http://bcoin.io/guides/multisig-tx.html
+[multisig-guide]: https://bcoin.io/guides/multisig-tx.html
 
 [create-p2wpkh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2wpkh.js
 [create-p2wsh.js]: https://github.com/nodar-chkuaselidze/bcoin-segwit-guide/blob/master/create-p2wsh.js

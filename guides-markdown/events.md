@@ -121,7 +121,7 @@ Luckily the bcoin developers have developed [bsock](https://github.com/bcoin-org
 a minimal websocket-only implementation of the socket.io protocol. By default, bsock listens on
 `localhost`, and you only need to pass it a port number to connect to one of the bcoin servers.
 The example below illustrates how to establish the socket connection, authenticate with your
-user-defined [API key](http://bcoin.io/api-docs/#authentication) and then send and receive events!
+user-defined [API key](https://bcoin.io/api-docs/#authentication) and then send and receive events!
 [See the tables below for a complete list of calls and events available in bcoin.](#socket-events-directory)
 
 ```javascript

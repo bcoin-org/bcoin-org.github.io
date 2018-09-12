@@ -32,7 +32,7 @@
 	<meta name="theme-color" content="#ffffff">
 
 	<!-- Web Fonts -->
-	<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400italic,400,600,700' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Open+Sans:300,400italic,400,600,700' rel='stylesheet'>
 	<link href='https://fonts.googleapis.com/css?family=Montserrat:700' rel='stylesheet' type='text/css'>
 
 	<!-- Bootstrap core CSS -->
@@ -210,7 +210,7 @@
 						<!-- END API -->
 
 						<!-- FULL DOCS - older, full reference
-						<li><a href="http://bcoin.io/docs/index.html">Docs</a></li> -->
+						<li><a href="https://bcoin.io/docs/index.html">Docs</a></li> -->
 						<!-- END DOCS -->
 
 						<!-- DIVIDER
@@ -284,7 +284,7 @@
   <!-- TEXT WIDGET -->
   <div class="widget">
     <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
-    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="http://bcoin.io/docs/index.html">Full Documentation</a></p>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
   </div>
   <!-- END TEXT WIDGET -->
 
@@ -319,8 +319,8 @@
 <blockquote>
 <p>ALL|ANYONECANPAY<br>This construction can be used to make a &quot;crowdfunding”-style transaction. Someone attempting to raise funds can construct a transaction with a single output. The single output pays the &quot;goal&quot; amount to the fundraiser. Such a transaction is obviously not valid, as it has no inputs. However, others can now amend it by adding an input of their own, as a donation. They sign their own input with ALL|ANYONECANPAY. Unless enough inputs are gathered to reach the value of the output, the transaction is invalid. Each donation is a &quot;pledge,&quot; which cannot be collected by the fundraiser until the entire goal amount is raised.</p>
 </blockquote>
-<h2 id="the-code">The Code</h2><p>We&#39;ll walk through the steps of creating the transaction first without any wallet database or node running. Then we&#39;ll do the same thing using bcoin&#39;s walletdb to manage the keys to see how it would work in a more realistic application (skip to <a href="#version-2-using-the-bcoin-wallet-system">Version 2</a>) further in the guide to check it out). At the end, we&#39;ll put out some ideas of how these can be built upon for a more robust, production ready application. (If this is something you&#39;d be interested in building, <a href="http://bcoin.io/slack-signup.html">get in touch</a>!). If you want to see the code, checkout the <a href="https://github.com/Bucko13/bitcoin-fundraise">repo on github</a>.</p>
-<p>If you&#39;re not comfortable with key management, coin selection, and how transactions are constructed, checkout the tutorial on <a href="http://bcoin.io/guides/working-with-txs.html">working with transactions</a> first.</p>
+<h2 id="the-code">The Code</h2><p>We&#39;ll walk through the steps of creating the transaction first without any wallet database or node running. Then we&#39;ll do the same thing using bcoin&#39;s walletdb to manage the keys to see how it would work in a more realistic application (skip to <a href="#version-2-using-the-bcoin-wallet-system">Version 2</a>) further in the guide to check it out). At the end, we&#39;ll put out some ideas of how these can be built upon for a more robust, production ready application. (If this is something you&#39;d be interested in building, <a href="https://bcoin.io/slack-signup.html">get in touch</a>!). If you want to see the code, checkout the <a href="https://github.com/Bucko13/bitcoin-fundraise">repo on github</a>.</p>
+<p>If you&#39;re not comfortable with key management, coin selection, and how transactions are constructed, checkout the tutorial on <a href="https://bcoin.io/guides/working-with-txs.html">working with transactions</a> first.</p>
 <h3 id="version-1--manual-key-management">Version 1 - Manual Key Management</h3><h4 id="step-1-setup">Step 1: Setup</h4><p>Let&#39;s first start by importing the right tools, setting up some constants, and creating our keychains. (make sure you&#39;ve installed the latest version of bcoin into your project with <code>npm install bcoin</code>).</p>
 <p>Note that we&#39;re setting the fundingTarget and amountToFund as constants for simplicity, but they could be set based on user input or some other variable circumstances.</p>
 <pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
@@ -736,7 +736,7 @@
 					<div class="col-sm-12">
 						<div class="text-center">
 							<h2 class="montserrat text-uppercase m-b-30">Ready to start building? Read the docs!</h2>
-							<a href="http://bcoin.io/docs/index.html" target="_blank" class="btn btn-lg btn-purple">Documentation</a>
+							<a href="https://bcoin.io/docs/index.html" target="_blank" class="btn btn-lg btn-purple">Documentation</a>
 						</div>
 					</div>
 				</div><!-- .row -->
@@ -784,7 +784,7 @@
 	<!-- JAVASCRIPT FILES -->
 
 	<script src="../assets/js/jquery-2.2.3.min.js"></script>
-	<script src="http://maps.googleapis.com/maps/api/js?v=3"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?v=3"></script>
 	<script src="../assets/bootstrap/js/bootstrap.min.js"></script>
 	<script src="../assets/js/plugins.min.js"></script>
 	<script src="../assets/js/stickyfill.min.js"></script>
