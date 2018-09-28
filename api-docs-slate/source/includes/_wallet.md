@@ -633,8 +633,8 @@ If you have never set a passphrase for this wallet before, you need to omit the 
 ```shell--cli
 id="primary"
 passphrase="secret123"
-rate=0.00000500
-value=0.00001000
+rate=0.00001000
+value=0.00020000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
 bwallet-cli send --id=$id --value=$value --address=$address ---passphrase=$passphrase
@@ -643,8 +643,8 @@ bwallet-cli send --id=$id --value=$value --address=$address ---passphrase=$passp
 ```shell--curl
 id="primary"
 passphrase="secret123"
-rate=500
-value=1000
+rate=1000
+value=20000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
 curl $walleturl/$id/send \
@@ -662,8 +662,8 @@ curl $walleturl/$id/send \
 let id, passphrase, rate, value, address;
 id="primary"
 passphrase="secret123"
-rate=500
-value=1000
+rate=1000
+value=20000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
 const {WalletClient} = require('bclient');
@@ -774,7 +774,7 @@ address <br> _string_ | destination address for transaction
 ```shell--cli
 id="multisig1"
 passphrase="multisecret123"
-rate=0.00000500
+rate=0.00001000
 value=0.05000000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
@@ -784,7 +784,7 @@ bwallet-cli mktx --id=$id --value=$value --address=$address ---passphrase=$passp
 ```shell--curl
 id="multisig1"
 passphrase="multisecret123"
-rate=500
+rate=1000
 value=5000000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
@@ -803,7 +803,7 @@ curl $walleturl/$id/create \
 let id, passphrase, rate, value, address;
 id="multisig1"
 passphrase="multisecret123"
-rate=500
+rate=1000
 value=5000000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
