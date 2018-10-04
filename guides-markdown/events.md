@@ -73,7 +73,7 @@ its object hierarchy path is a little... awkward :-)
 ## Events Directory
 
 This list is comprehensive for all Bitcoin transaction, wallet, and blockchain activity.
-Events regarding errors, socket connections and peer conections have been omitted for clarity.
+Events regarding errors, socket connections and peer connections have been omitted for clarity.
 Notice that certain methods emit the same events but with different return objects,
 and not all re-emitters return everything they receive.
 
@@ -110,7 +110,7 @@ and not all re-emitters return everything they receive.
 Websocket connections in bcoin are handled by two servers, one for `Node` and one for `Wallet`.
 Those servers each have child objects such as `Chain`, `Mempool`, `Pool`, and `WalletDB`, and
 relay events from them out the socket. To receive an event, the socket client must watch a
-channel (such as `chain`, `mempool`, or `auth`) or join the a wallet
+channel (such as `chain`, `mempool`, or `auth`) or join a wallet
 (which would be user-defined like `primary`, `hot-wallet`, or `multisig1`). All wallets can be
 joined at once by joining `'*'`. 
 
