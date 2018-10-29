@@ -1,9 +1,3 @@
-<style>
-  .terminal{background-color:dimgray;color:white;padding:5px;font-family:monospace;white-space:pre}
-  .terminal a{text-decoration:none;color:white;}
-}
-</style>
-
 # Run a bcoin full node in a web browser
 
 ```post-author
@@ -21,7 +15,7 @@ Because bcoin is written in JavaScript, the entire codebase can be interpreted b
 a standard web browser like Chrome or Firefox. We use `webpack` to compile the library.
 This process resolves all the `require()` statements that a NodeJS server can follow
 but a browser can not. Webpack is also configured to use `-browser` versions of
-some modules for things like the database and cryptography. Finally, it compresses
+some modules for things like databases and cryptography. Finally, it compresses
 the code by renaming functions and variables, and removing as much whitespace as possible.
 The entire bcoin codebase compresses down to around 1.5 MB!
 
@@ -76,10 +70,11 @@ This command creates two new files in the `/browser` directory:
 functions of the actual web interface. `worker.js` is a script that allows the main
 thread to spawn sub-processes to handle some tasks in parallel.
 
-<div style="background-color:#b3c4fb;padding:5px">
-  <span style="font-weight:bold"> Note:</span>
-  The logging package `blgr` has been recently updated, make sure you have installed
-  [the latest version!](https://github.com/bcoin-org/blgr/pull/1/files)
+<div class="aside">
+  <span> Note:</span>
+  `bcoin` and the logging package `blgr` have been recently updated, make sure you have installed
+updated versions with these patches merged: [blgr PR#1](https://github.com/bcoin-org/blgr/pull/1),
+[bcoin PR#622](https://github.com/bcoin-org/bcoin/pull/622)
 </div>
 
 ### Step 2: Run the proxy server locally
@@ -141,8 +136,7 @@ websocket connection. `wsproxy.js` makes the actual TCP connections to peers on
 the live Bitcoin network, and simply forwards the raw data back to the browser.
 
 The full node running in the browser "has no idea" that it's not actually connected
-directly to the Bitcoin network. If this isn't blowing your mind right now, it should!
-This design is crazy brilliant!
+directly to the Bitcoin network.
 
 There is even a text input field for executing RPC commands. Try entering "getinfo"
 there and hitting enter. The responding pop-up window can be closed by clicking
@@ -194,3 +188,7 @@ original code repository:
 <div class="terminal">This is a simple proof-of-concept. It's not a pretty interface. I hope to see
 others doing something far more interesting. A browser extension may be better:
 the chrome extension API exposes raw TCP access.</div>
+
+<br>
+
+Also be sure to check out [bpanel](https://bpanel.org), the web-based user interface for bcoin. The browser package we just built could be installed into a bpanel plugin -- creating a totally self-contained, extensible, fully validating Bitcoin web applicaiton. 

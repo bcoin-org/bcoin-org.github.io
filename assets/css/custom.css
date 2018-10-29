@@ -96,3 +96,25 @@ pre .copy-button:focus {
   outline: none;
   box-shadow: 0 0 5px rgba(81,167,232,0.5);
 }
+
+.terminal {
+  background-color: dimgray;
+  color: white;
+  padding: 5px;
+  font-family: monospace;
+  white-space: pre
+}
+
+.terminal a {
+  text-decoration: none;
+  color: white;
+}
+
+.aside {
+  background-color: #b3c4fb;
+  padding: 5px;
+}
+
+.aside span {
+  font-weight: bold;
+}
