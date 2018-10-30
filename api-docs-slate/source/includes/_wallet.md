@@ -23,16 +23,16 @@ const id = 'primary'; // or whatever your wallet name is
 const wallet = walletClient.wallet(id);
 ```
 
-The best way to interact with the wallet API is with the bwallet-cli in the `bclient`
+The best way to interact with the wallet API is with bwallet-cli in the `bclient`
 [package](https://www.npmjs.com/package/bclient). Installing globally with
-`npm i -g bclient` gives you access to the cli. You can also install locally
+`npm i -g bclient` gives you access to the CLI. You can also install locally
 to your project.
 
 Note that when using it in your own program, you will need to explicitly
 pass in a port option. The easiest way to do this is with `bcoin.Network`.
 
 You can create a client for a specific wallet (and be compatible with the old
-api) with the `wallet` method on `WalletClient` class.
+API) with the `wallet` method on `WalletClient` class.
 
 The wallet HTTP server listens on it's own port, separate from the node's server.
 By default the wallet server listens on these `localhost` ports:
@@ -44,6 +44,79 @@ main      | 8334
 testnet   | 18334
 regtest   | 48334
 simnet    | 18558
+
+
+## Configuration
+Persistent configuration can be added to `wallet.conf` in your `prefix` directory.
+This could be the same directory as `bcoin.conf` for the node server, [but could also
+be in a network-specific directory.](https://github.com/bcoin-org/bcoin/blob/master/docs/Configuration.md)
+
+> Example Configuration:
+
+```shell--vars
+network: regtest
+wallet-auth: true
+api-key: api-key
+http-host: 0.0.0.0
+```
+
+<aside class="notice">
+It is highly recommended to always use <code>wallet-auth</code> and to set a unique <code>api-key</code>,
+even for local development or local wallets. Without <code>wallet-auth: true</code> other applications
+on your system could theoretically access your wallet through the HTTP server
+without any authentication barriers. <code>wallet-auth: true</code> requires a wallet's token to be submitted with every request.
+</aside>
+
+
+## Wallet Auth
+> The following samples return a wallet object using a wallet token
+
+```javascript
+let token, id;
+```
+
+```shell--vars
+id='primary'
+token='17715756779e4a5f7c9b26c48d90a09d276752625430b41b5fcf33cf41aa7615'
+```
+
+```shell--curl
+curl $walleturl/$id?token=$token
+```
+
+```shell--cli
+bwallet-cli get --token=$token
+```
+
+```javascript
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: 'api-key'
+}
+
+const walletClient = new WalletClient(walletOptions);
+const wallet = walletClient.wallet(id, token);
+
+(async () => {
+  const result = await wallet.getInfo();
+  console.log(result);
+})();
+```
+
+Individual wallets have their own api keys, referred to internally as "tokens" (a 32 byte hash - calculated as `HASH256(m/44'->ec-private-key|tokenDepth)`).
+
+A wallet is always created with a corresponding token. When using API endpoints
+for a specific wallet, the token must be sent back in the query string or JSON
+body.
+
+<aside class="warning">
+The examples in this section demonstrate how to use a wallet token for API access, which is recommended. However, for clarity, further examples in these docs will omit the token requirement.
+</aside>
 
 
 ## The WalletDB and Object
@@ -136,81 +209,31 @@ bclient returns a WalletClient object that can perform [admin functions](#wallet
 Accounts within the same wallet are all related by deterministic hierarchy. However, wallets are not related to each other in any way. This means that when a wallet seed is backed up, all of its accounts (and their keys) can be derived from that backup. However, each newly created wallet must be backed up separately.
 </aside>
 
-## Configuration
-Persistent configuration can be added to `wallet.conf` in your `prefix` directory.
-Same directory has `bcoin.conf` for the node server.
 
-> Example Configuration:
-
-```shell--vars
-network: regtest
-wallet-auth: true
-api-key: api-key
-http-host: 0.0.0.0
-```
-
-<aside class="notice">
-It is highly recommended to always use <code>wallet-auth</code> and to set a unique <code>api-key</code>,
-even for local development or local wallets. Without <code>wallet-auth: true</code> other applications
-on your system could theoretically access your wallet through the HTTP server
-without any authentication barriers. <code>wallet-auth: true</code> requires a wallet's token to be submitted with every request.
-</aside>
-
-## Wallet Options
-> Wallet options object will look something like this:
-
-```json
-{
-  "id": "walletId",
-  "witness": true,
-  "watchOnly": false,
-  "accountKey": "rpubKB4S62xohva5NNbR3a3e84ybBb6E5AszR713RHzUrefCrbmqYuSEhvC2Reehdzz6v9vu6xN3XuMuFEC57esDUu38Af1ZZFgFydot9Zzs4ixT",
-  "accountIndex": 1,
-  "type": "pubkeyhash"
-  "m": 1,
-  "n": 1,
-  "keys": [],
-  "mnemonic": 'differ trigger sight sun undo fine sheriff mountain prison remove fantasy arm'
-}
-```
-Options are used for wallet creation. None are required.
-
-### Options Object
-Name | Type | Default | Description
----------- | ----------- | -------------- | -------------
-id | String |  | Wallet ID (used for storage)
-master | HDPrivateKey | | Master HD key. If not present, it will be generated
-witness | Boolean | `false` | Whether to use witness programs
-watchOnly <br>(`watch-only` for CLI) | Boolean | `false` |
-accountKey <br>(`account-key` for CLI) | String | | The extended public key for the primary account in the new wallet. This value is ignored if `watchOnly` is `false`
-accountIndex | Number | `0` | The BIP44 [account index](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Account)
-receiveDepth | Number | | The index of the _next_ receiving address
-changeDepth | Number | | The index of the _next_ change address
-type | String | `'pubkeyhash'` |Type of wallet (pubkeyhash, multisig)
-compressed | Boolean | `true` | Whether to use compressed public keys
-m | Number | `1` | m value for multisig (`m-of-n`)
-n | Number | `1` | n value for multisig (`m-of-n`)
-mnemonic | String | | A mnemonic phrase to use to instantiate an hd private key. One will be generated if none provided
-
-
-## Wallet Auth
-> The following samples return a wallet object using a wallet token
+## Create A Wallet
 
 ```javascript
-let token, id;
+let id, passphrase, witness, watchOnly, accountKey;
 ```
 
 ```shell--vars
-id='primary'
-token='17715756779e4a5f7c9b26c48d90a09d276752625430b41b5fcf33cf41aa7615'
+id='newWallet'
+passphrase='secret456'
+witness=false
+watchOnly=true
+accountKey='rpubKBAoFrCN1HzSEDye7jcQaycA8L7MjFGmJD1uuvUZ21d9srAmAxmB7o1tCZRyXmTRuy5ZDQDV6uxtcxfHAadNFtdK7J6RV9QTcHTCEoY5FtQD'
 ```
 
 ```shell--curl
-curl $walleturl/$id?token=$token
+curl $walleturl/$id \
+  -X PUT \
+  --data '{"witness":'$witness', "passphrase":"'$passphrase'", "watchOnly": '$watchOnly', "accountKey":"'$accountKey'"}'
 ```
 
 ```shell--cli
-bwallet-cli get --token=$token
+# watchOnly defaults to true if --key flag is set
+
+bwallet-cli mkwallet $id --witness=$witness --passphrase=$passphrase --watch-only=$watchOnly --account-key=$accountKey
 ```
 
 ```javascript
@@ -225,23 +248,75 @@ const walletOptions = {
 }
 
 const walletClient = new WalletClient(walletOptions);
-const wallet = walletClient.wallet(id, token);
 
-(async () => {
-  const result = await wallet.getInfo();
+const options = {
+  passphrase: passphrase,
+  witness: witness,
+  watchOnly: watchOnly,
+  accountKey: accountKey
+};
+
+(async() => {
+  const result = await walletClient.createWallet(id, options);
   console.log(result);
 })();
 ```
 
-Individual wallets have their own api keys, referred to internally as "tokens" (a 32 byte hash - calculated as `HASH256(m/44'->ec-private-key|tokenDepth)`).
+> Sample response:
 
-A wallet is always created with a corresponding token. When using API endpoints
-for a specific wallet, the token must be sent back in the query string or JSON
-body.
+```json
+{
+  "network": "regtest",
+  "wid": 2,
+  "id": "newWallet",
+  "watchOnly": true,
+  "accountDepth": 1,
+  "token": "21b728d8f9e4d909349cf0c8f1e4e74fd45b180103cb7f1885a197d04012ba08",
+  "tokenDepth": 0,
+  "master": {
+    "encrypted": true,
+    "until": 1527181467,
+    "iv": "53effaf192a346b40b08a52dac0658ce",
+    "algorithm": "pbkdf2",
+    "n": 50000,
+    "r": 0,
+    "p": 0
+  },
+  "balance": {
+    "tx": 0,
+    "coin": 0,
+    "unconfirmed": 0,
+    "confirmed": 0
+  }
+}
+```
 
-<aside class="warning">
-The examples in this section demonstrate how to use a wallet token for API access, which is recommended. However, for clarity, further examples in these docs will omit the token requirement.
-</aside>
+Create a new wallet with a specified ID.
+
+### HTTP Request
+
+`PUT /wallet/:id`
+
+### Parameters:
+
+Name | Type | Default | Description
+---------- | ----------- | -------------- | -------------
+id | String |  | Wallet ID (used for storage)
+master | HDPrivateKey | | Master HD key. If not present, it will be generated
+witness | Boolean | `false` | Whether to use witness programs
+watchOnly | Boolean | `false` | (`watch-only` for CLI)
+accountKey | String | | The extended public key for the primary account in the new wallet. This value is ignored if `watchOnly` is `false` <br>(`account-key` for CLI)
+type | String | |Type of wallet (pubkeyhash (default), multisig)
+m | Number | `1` | m value for multisig (`m-of-n`)
+n | Number | `1` | n value for multisig (`m-of-n`)
+mnemonic | String | | A mnemonic phrase to use to instantiate an hd private key. One will be generated if none provided
+passphrase | String | | A strong passphrase used to encrypt the wallet
+accountDepth* | Number | `0` | The index of the _next_ [BIP44 account index](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Account)
+compressed* | Boolean | `true` | Whether to use compressed public keys
+
+_(*) options are only available in Javascript usage, not CLI or curl_
+
+
 
 ## Reset Authentication Token
 ```javascript
@@ -467,101 +542,6 @@ Once a passphrase has been set for a wallet, the API will not reveal the unencry
 Parameters | Description
 ---------- | -----------
 id <br> _string_ | named id of the wallet whose info you would like to retrieve
-
-## Create A Wallet
-
-```javascript
-let id, passphrase, witness, watchOnly, accountKey;
-```
-
-```shell--vars
-id='newWallet'
-passphrase='secret456'
-witness=false
-watchOnly=true
-accountKey='rpubKBAoFrCN1HzSEDye7jcQaycA8L7MjFGmJD1uuvUZ21d9srAmAxmB7o1tCZRyXmTRuy5ZDQDV6uxtcxfHAadNFtdK7J6RV9QTcHTCEoY5FtQD'
-```
-
-```shell--curl
-curl $walleturl/$id \
-  -X PUT \
-  --data '{"witness":'$witness', "passphrase":"'$passphrase'", "watchOnly": '$watchOnly', "accountKey":"'$accountKey'"}'
-```
-
-```shell--cli
-# watchOnly defaults to true if --key flag is set
-
-bwallet-cli mkwallet $id --witness=$witness --passphrase=$passphrase --watch-only=$watchOnly --account-key=$accountKey
-```
-
-```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
-const network = Network.get('regtest');
-
-const walletOptions = {
-  network: network.type,
-  port: network.walletPort,
-  apiKey: 'api-key'
-}
-
-const walletClient = new WalletClient(walletOptions);
-
-const options = {
-  passphrase: passphrase,
-  witness: witness,
-  watchOnly: watchOnly,
-  accountKey: accountKey
-};
-
-(async() => {
-  const result = await walletClient.createWallet(id, options);
-  console.log(result);
-})();
-```
-
-> Sample response:
-
-```json
-{
-  "network": "regtest",
-  "wid": 2,
-  "id": "newWallet",
-  "watchOnly": true,
-  "accountDepth": 1,
-  "token": "21b728d8f9e4d909349cf0c8f1e4e74fd45b180103cb7f1885a197d04012ba08",
-  "tokenDepth": 0,
-  "master": {
-    "encrypted": true,
-    "until": 1527181467,
-    "iv": "53effaf192a346b40b08a52dac0658ce",
-    "algorithm": "pbkdf2",
-    "n": 50000,
-    "r": 0,
-    "p": 0
-  },
-  "balance": {
-    "tx": 0,
-    "coin": 0,
-    "unconfirmed": 0,
-    "confirmed": 0
-  }
-}
-```
-
-Create a new wallet with a specified ID.
-
-### HTTP Request
-
-`PUT /wallet/:id`
-
-Parameters | Description
----------- | -----------
-id <br> _string_ | id of wallet you would like to create
-
-<aside class="notice">
-See <a href="#wallet-options">Wallet Options</a> for full list and description of possible options that can be passed
-</aside>
 
 
 ## Change Passphrase
