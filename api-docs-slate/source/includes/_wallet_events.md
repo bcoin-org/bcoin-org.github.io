@@ -194,4 +194,4 @@ Returns Balance object.
 Emitted when a transaction is received by the wallet account's current receive address,
 causing the wallet to derive a new receive address.
 
-Returns an array of WalletKey objects with new address details.
+Returns an array of [KeyRing](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/keyring.js) objects with new address details.
