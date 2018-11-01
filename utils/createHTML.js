@@ -58,10 +58,15 @@ const createHTML = async function createHTML(markdownFile, htmlFile, author, pos
       guideDescription = code;
       return '';
     }
+    addClass = '';
+    if (language === 'command-line') {
+      addClass = 'command-line';
+      language = 'bash';
+    }
     if (!language || !PrismLanguages)
       language = 'bash';
 
-    return `<pre class="snippet line-numbers language-${language}">`
+    return `<pre class="snippet line-numbers language-${language} ` + addClass + `">`
              + `<code class="line-numbers language-${language}">`
              + Prism.highlight(code, PrismLanguages[language])
              + '</code>'
