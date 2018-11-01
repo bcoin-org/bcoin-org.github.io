@@ -31,16 +31,16 @@ to the browser.
 
 First, install bcoin from the GitHub repository like usual:
 
-```bash
-$ git clone https://github.com/bcoin-org/bcoin
-$ cd bcoin
-$ npm install
+```command-line
+git clone https://github.com/bcoin-org/bcoin
+cd bcoin
+npm install
 ```
 
 Next, we'll need to install `webpack` to format the code for the browser:
 
-```bash
-$ npm install webpack
+```command-line
+npm install webpack
 ```
 
 The first time you run webpack, it might prompt you to install `webpack-cli`, enter yes.
@@ -59,8 +59,8 @@ the `package.json` file in the bcoin repository. You may notice that webapck con
 files are also stored in the root directory. The config file for this task is `webpack.app.js`.
 It will be loaded automatically when you run the command:
 
-```bash
-$ npm run webpack-app
+```command-line
+npm run webpack-app
 ```
 
 This command creates two new files in the `/browser` directory:
@@ -85,8 +85,8 @@ web interface, and it also runs the proxy server `wsproxy.js`.
 
 Start the server with the command:
 
-```bash
-$ node browser/server.js
+```command-line
+node browser/server.js
 ```
 
 ...then navigate a web browser to [http://localhost:8080](http://localhost:8080)
@@ -99,8 +99,8 @@ Did it work?
 
 The bcoin full node in the browser package has been configured like this:
 
-```bash
-# browser/src/app.js
+```javascript
+// browser/src/app.js
 
 const ProxySocket = require('./proxysocket');
 
@@ -149,8 +149,8 @@ host a bcoin-in-a-browser website like the one at [https://bcoin.io/browser](htt
 we just need to tweak a few parameters in `browser/server.js`. Note the web server
 configuration happening here:
 
-```bash
-# browser/server.js
+```javascript
+// browser/server.js
 
 const server = bweb.server({
   port: Number(process.argv[2]) || 8080,
@@ -161,8 +161,8 @@ It turns out that when we ran the command to start the web server we could also
 have added a port argument. If your server only has certain ports open you may
 need to add that argument to the command:
 
-```bash
-$ node browser/server.js 5000
+```command-line
+node browser/server.js 5000
 ```
 
 In addition, [the default behavior for a `bweb` server](https://github.com/bcoin-org/bweb)
@@ -170,8 +170,8 @@ is only to serve locally (on `127.0.0.1` or `localhost`). To open your server to
 the internet like we have at [https://bcoin.io/browser](https://bcoin.io/browser),
 you need to add a specific `host` option to the configuration like so:
 
-```bash
-# browser/server.js
+```javascript
+// browser/server.js
 
 const server = bweb.server({
   host: '0.0.0.0',
