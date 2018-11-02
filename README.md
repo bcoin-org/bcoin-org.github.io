@@ -17,5 +17,10 @@ To add a new guide, just a submit a Pull Request with a markdown file added to t
 - Section at the end for how the example could be expanded on, i.e. ready for production or additional functionality
 - If possible, links to repo with full working code implementation
 
+#### Rendering markdown and using in-line code examples
+You can render your code locally using the command `npm run convert-markdown`, which will populate the `/guides` directory with rendered HTML files. Please make sure your markdown renders correctly before submitting a pull request for a new guide.
+
+The `convert-markdown` script uses [PrismJS](https://prismjs.com/) to decorate in-line code with language recognition. The current Prism settings can be found in Line 2 of [prism.css](https://github.com/bcoin-org/bcoin-org.github.io/blob/staging/assets/css/prism.css#L2). There is also a required [prism.js](https://github.com/bcoin-org/bcoin-org.github.io/blob/staging/assets/js/prism.js) file. If you need to add a new language to render your guide correctly, the Prism website will generate both files for you, just make sure you start with the current settings and don't remove any settings used by another guide!
+
 ## Updating API Docs
 Our [API Documentation](https://bcoin.io/api-docs/index.html) runs on the Open Source [Slate Framework](https://github.com/lord/slate). To make an update, fork the repo and make the changes to the appropriate Markdown in the file directory: bcoin-org.github.io/api-docs-slate/source/includes/. When your PR is merged in to staging, the new docs will be built and deployed to the live docs page https://bcoin.io/api-docs/index.html.
