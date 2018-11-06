@@ -13,7 +13,7 @@ on two chains. Create a Hash Time-Locked Contract to perform the swap securely.
 
 A cross-chain atomic swap is a type of crypto-currency exchange. Like trading dollars for pesos,
 it's a process in which two people can exchange one crypto-currency for another, but without trust or third-party
-moderation. We say the swaps are "atomic" because they must be [all-or-nothing.](https://en.wikipedia.org/wiki/Atomicity_(database_systems)
+moderation. We say the swaps are "atomic" because they must be <a href="https://en.wikipedia.org/wiki/Atomicity_(database_systems)">all-or-nothing.</a>
 To protect both users, there must be no scenario in which one person can control both coins at the same time.
 
 Atomic swaps can be executed on many blockchains, but not all. In this guide we'll
@@ -418,27 +418,23 @@ verifyMTX(mtx){
 ## Agreeing on and executing a swap
 
 Now that we have all the tools, you might be asking yourself ["What is the minimum amount of information
-two parties need to send each other to engage in a swap?"](https://youtu.be/i7wnagAyqvc?t=2507) This where
-some additional crypto-magic comes in to play. It turns out that besides the exchange rate and volume, the only thing
-the two trading partners need to exchange is:
+two parties need to send each other to engage in a swap?"](https://youtu.be/i7wnagAyqvc?t=2507) This is where
+some additional crypto-magic comes in to play. It turns out that besides the exchange rate and volume, the only thing the two trading partners need to exchange is:
 
 1. One ECDSA public key from each party
 2. A hashed secret from one party
 
 Using these data and the scripting functions from the last section, both parties can deterministically derive
-the P2SH addresses for this contract on both chains. By watching for transactions in and out of those addresses
+the P2SH addresses for the contracts on both chains. By watching for transactions in and out of those addresses
 on both chains, everyone will have everything they need to play the atomic swap game.
 
-We can add two simple functions to generate these data, using the `bcrypto` module as a utility:
+We can add two simple functions to generate these data, using the [bcrypto](https://github.com/bcoin-org/bcrypto) module as a utility:
 
 ```javascript
 // lib/swap.js
 // Class Swap {}...
 
-/**
- * Generate a random secret and derive its SHA-256 hash
- */
-
+// Generate a random secret and derive its SHA-256 hash
 getSecret() {
   secret = bcrypto.random.randomBytes(32);
   const hash = bcrypto.SHA256.digest(secret);
@@ -449,10 +445,7 @@ getSecret() {
   }
 }
 
-/**
- * Generate an ECDSA public / private key pair
- */
-
+//Generate an ECDSA public / private key pair
 getKeyPair(){
   // Generate new random private key
   const master = this.hd.generate();
@@ -473,7 +466,7 @@ getKeyPair(){
 They key exchange method is up to the users on the application layer. They could save a little space
 by agreeing on a protocol in advance. We can imagine preset, hard-coded locktimes and perhaps
 a common exchange rate API. In my demonstration repository, I have a script `app/prep-swap.js` that imports
-the `bstring` module and encodes the keys into base58 strings which Alice and Bob can send each other:
+the [bstring](https://github.com/bcoin-org/bstring) module and encodes the keys into base58 strings which Alice and Bob can send each other:
 
 <div class="terminal" style="word"> --- 
 
@@ -496,7 +489,7 @@ PRIVATE: keep safe and pass to run script:
 Remember part of the swap protocol involves Alice revealing her secret value to Bob. That is
 done on the blockchain, so Bob needs to watch the chain for Alice's redemption transaction
 and pull the secret value out of it somehow. Since we know the exact structure of Alice's
-[input script](#scripts) we can expect her secret value to be the second value in the script.
+[input script](#scripts) we can expect her secret to be the second value in the script.
 Once we catch Alice's transaction we need to figure out which input is redeeming the swap,
 then grab the secret. We discover the input by looking for the P2SH address we derived earlier.
 
@@ -566,12 +559,12 @@ BTC_WalletInfo = await BTC_WalletClient.createWallet('SwapWithAlice', {watchOnly
 const BTC_Wallet = BTC_WalletClient.wallet('SwapWithAlice');
 
 // Import the watch-only address into the wallet's default account
-await BTC_Wallet.importAddress('default', BTC_Address);
+await BTC_Wallet.importAddress('default', BTC_P2SH_Address);
 
 // Listen for events by "joining" the wallet with it's API token
 await BTC_WalletClient.join('SwapWithAlice', BTC_WalletInfo.token);
 
-// Establish the entire procedure and bind it to the watch-only wallet
+// Establish the entire swap-seep procedure and bind it to the watch-only wallet
 BTC_Wallet.bind('tx', async (wallet, txDetails) => {
 
     // Get details from Alice's TX, emitted by the event
@@ -583,7 +576,7 @@ BTC_Wallet.bind('tx', async (wallet, txDetails) => {
       BTC_P2SH_Address
     );
 
-    /*  Create a TX on the BITCOIN CASH chain to sweep Alice's BCH output.
+   /*  Create a TX on the BITCOIN CASH chain to sweep Alice's BCH output.
      *  We assume `BCH_RedeemScript` has already been derived and we have verified
      *  that Alice has sent the right amount of BCH to that P2SH address.
      *  Alice's BCH funding TX is stored as `Alices_BCH_FundingTX`, and
@@ -597,7 +590,7 @@ BTC_Wallet.bind('tx', async (wallet, txDetails) => {
     );
 
     // Build a BCH transaction to spend Alice's output
-    const swapTX = wantSwap.getRedeemTX(
+    const swapTX = BCH_Swap.getRedeemTX(
       Bobs_BCH_WalletAddress,
       feeRate,
       Alices_BCH_FundingTX,
@@ -614,26 +607,26 @@ BTC_Wallet.bind('tx', async (wallet, txDetails) => {
 
     // Broadcast BCH swap-sweep TX, and we're done!
     const broadcastResult = await BCH_NodeClient.broadcast(stringTX);
-  });
-})();
+});
 ```
 
 Alice will have similar code running on her end. When she broadcasts her BTC sweep
 transaction, Bob's code will automatically catch it, derive the HTLC secret, and
 sweep the BCH transaction.
 
-<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/utOAL2Uw_Mk" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/utOAL2Uw_Mk?rel=1" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 <a name="next-steps"></a>
 ## Next steps
 
 We've built a very simple atomic swaps application! But what have we sacrificed for convenience?
 To improve privacy, we might want to use separate public keys for each blockchain, instead of using
-the same key on both networks. We also have been using raw public keys, most of the time in Bitcoin
+the same key on both networks (although it is very cool and convenient that public keys can be re-used
+on these two networks). We also have been using raw public keys, but most of the time in Bitcoin
 we exchange hashed (RIPE-160) public keys. In our case, this hash would require a few extra OP codes
 in the redeem script. We should also check all the amounts being transacted and return an error if
 the counterparty didn't send the right amount. The watch-only wallets work great, but what if Bob
-creates his watch only wallet AFTER Alice sends her first transaction? How will Bob ever know?
+creates his watch-only wallet AFTER Alice sends her first transaction? How will Bob ever know?
 The app should be able to rescan recent blockchain history to make sure it hasn't missed anything on launch.
 
 And finally - CSV encoding. We built our app using timelocks based in seconds, not blocks.
