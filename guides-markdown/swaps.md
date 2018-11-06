@@ -110,7 +110,7 @@ Mailbox “A” and take the Bitcoin that Bob sent. Alice would have all the mon
 ## Scripts
 
 Now it's time to turn these "two-lock mailboxes" into actual Bitcoin transactions. For this guide we
-will describe a very simple method that sacrafices some privacy and potentially some security. See
+will describe a very simple method that sacrifices some privacy and potentially some security. See
 [next steps](#next-steps) for more details on this.
 This will be the redeem script in the output of our Hash Time-Locked Contract:
 
@@ -520,32 +520,109 @@ extractSecret(tx, address){
 ## Watch-only wallets and events
 
 The last mechanism we need to make a functional atomic swap application is a wallet, or
-several wallets. You can see one design in `app/run-swap.js` in my
-[completed repository](https://github.com/pinheadmz/swap-test). Refer to the bcoin.io guide
-[Events and Sockets](events.html) for more background on events "joining wallets" with websockets.
+several wallets. Refer to the bcoin.io guide [Events and Sockets](events.html)
+for more background on events and "joining wallets" with websockets. 
 
-Because there are four servers to keep straight (`bcoin` and `bcash`, each with a node and a wallet)
-it gets a little too complicated for the purposes of this guide. We recommend reviewing the example code
-in the completed repo. In summary, the story goes like this:
+To run an atomic swap with bcoin and bcash, an application will run four servers:
 
-* Alice and Bob exchange public keys and hashes as long base58 strings
+* bcoin node
+* bcoin wallet
+* bcash node
+* bcash wallet
 
-* Alice loads her private key, secret, and Bob's public key into the app
+You can see my design in `app/run-swap.js` in the 
+[completed repository](https://github.com/pinheadmz/swap-test). Notice the 
+[configuration](https://github.com/pinheadmz/swap-test#configuration) section of the README
+which lists the port numbers for each server.
 
-* Alice's app derives P2SH addresses for both Bitcoin and Bitcoin Cash, and sends some amount of BCH to 
-that address
+For brevity, we'll just review the last step in our swap story: Bob extracting the HTLC
+secret from Alice's Bitcoin Cash sweep-transaction and using it to sweep his own Bitcoin
+transaction. Keep in mind by the time the following code is run, Bob has already deposited
+BTC into the swap address for Alice to sweep. The code is presented linearly here but in
+the actual application it is organized a bit differently.
 
-* Meanwhile, Bob loads the keys into his app which derives the exact same P2SH addresses, and 
-watches both blockchains
+We assume the application has already constructed `BTC_Swap` and `BCH_Swap` objects,
+as well as `BTC_WalletClient`, `BCH_WalletClient`, `BTC_NodeClient` and `BCH_NodeClient`.
 
-* When Bob sees Alice broadcast her initial funding transaction, he sends some amount of BTC
-to the P2SH address for that chain
+```javascript
+// app/run-swap.js
 
-* Alice detects Bob's funding transaction, and sweeps its output using her secret
+// Derive the redeem script
+const BTC_RedeemScript = Swap.getRedeemScript(
+  hash,
+  publicKey_Alice,
+  publicKey_Bob,
+  timelock
+);
 
-* Bob detects Alice's sweep transaction and extracts the HTLC secret
+// Derive P2SH address from the script
+const BTC_AddrFromScript = BTC_Swap.getAddressFromRedeemScript(BTC_RedeemScript);
+const BTC_P2SH_Address = BTC_AddrFromScript.toString('testnet');
 
-* Bob uses the secret to sweep the output of the Bitcoin transaction
+// Create a watch-only wallet to catch Alice's BTC sweep and get its details
+BTC_WalletInfo = await BTC_WalletClient.createWallet('SwapWithAlice', {watchOnly: true});
+
+// Get the wallet we just created
+const BTC_Wallet = BTC_WalletClient.wallet('SwapWithAlice');
+
+// Import the watch-only address into the wallet's default account
+await BTC_Wallet.importAddress('default', BTC_Address);
+
+// Listen for events by "joining" the wallet with it's API token
+await BTC_WalletClient.join('SwapWithAlice', BTC_WalletInfo.token);
+
+// Establish the entire procedure and bind it to the watch-only wallet
+BTC_Wallet.bind('tx', async (wallet, txDetails) => {
+
+    // Get details from Alice's TX, emitted by the event
+    const fundingTX = BTC_Swap.TX.fromRaw(txDetails.tx, 'hex');
+
+    // Extract the HTLC secret value
+    const revealedSecret = BTC_Swap.extractSecret(
+      fundingTX,
+      BTC_P2SH_Address
+    );
+
+    /*  Create a TX on the BITCOIN CASH chain to sweep Alice's BCH output.
+     *  We assume `BCH_RedeemScript` has already been derived and we have verified
+     *  that Alice has sent the right amount of BCH to that P2SH address.
+     *  Alice's BCH funding TX is stored as `Alices_BCH_FundingTX`, and
+     *  the output that concerns Bob is `Alices_BCH_FundingTX_OutputIndex`.
+     */
+
+    // Derive the input script to redeem the BCH transaction
+    const BCH_SwapScript = BCH_Swap.getSwapInputScript(
+      BCH_RedeemScript,
+      revealedSecret
+    );
+
+    // Build a BCH transaction to spend Alice's output
+    const swapTX = wantSwap.getRedeemTX(
+      Bobs_BCH_WalletAddress,
+      feeRate,
+      Alices_BCH_FundingTX,
+      Alices_BCH_FundingTX_OutputIndex,
+      BCH_RedeemScript,
+      BCH_SwapScript,
+      null,
+      Bobs_PrivateKey
+    );
+
+    // Finalize and serialize the TX for broadcast
+    const finalTX = swapTX.toTX();
+    const stringTX = finalTX.toRaw().toString('hex');
+
+    // Broadcast BCH swap-sweep TX, and we're done!
+    const broadcastResult = await BCH_NodeClient.broadcast(stringTX);
+  });
+})();
+```
+
+Alice will have similar code running on her end. When she broadcasts her BTC sweep
+transaction, Bob's code will automatically catch it, derive the HTLC secret, and
+sweep the BCH transaction.
+
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/utOAL2Uw_Mk" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 <a name="next-steps"></a>
 ## Next steps
