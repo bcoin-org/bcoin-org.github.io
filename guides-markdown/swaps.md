@@ -565,7 +565,7 @@ await BTC_Wallet.importAddress('default', BTC_P2SH_Address);
 await BTC_WalletClient.join('SwapWithAlice', BTC_WalletInfo.token);
 
 // Establish the entire swap-seep procedure and bind it to the watch-only wallet
-BTC_Wallet.bind('tx', async (wallet, txDetails) => {
+BTC_Wallet.bind('confirmed', async (wallet, txDetails) => {
 
     // Get details from Alice's TX, emitted by the event
     const fundingTX = BTC_Swap.TX.fromRaw(txDetails.tx, 'hex');
