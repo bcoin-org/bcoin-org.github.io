@@ -152,7 +152,7 @@ Keep in mind that the stack is <a href="https://en.wikipedia.org/wiki/Stack_(abs
 so if this input script looks "upside-down" that's because the last element will end up being on the top of the
 stack when the redeem script is run.
 
-The Time Lock is executed when `OP_IF` gets a `false` value. This causes script execution to skip all OP codes
+The time lock is executed when `OP_IF` gets a `false` value. This causes script execution to skip all OP codes
 until it finds `OP_ELSE`, where it continues processing up to `OP_ENDIF`. The time lock will only be checked when `if (false)`.
 
 First it executes a [Check Sequence Verify](https://github.com/bitcoinbook/bitcoinbook/blob/develop/ch07.asciidoc#relative-timelocks)
@@ -219,7 +219,7 @@ check out the bcoin.io guides [Intro to Scripting](scripting.html) and the more 
 ```javascript
 // lib/swap.js
 
-Class Swap {
+class Swap {
   ...
 
   // REDEEM script: the output of the swap HTLC
@@ -291,7 +291,7 @@ both networks, we can generate valid P2SH addresses using the same function:
 ```javascript
 // lib/swap.js
 
-Class Swap {
+class Swap {
   ...
 
   getAddressFromRedeemScript(redeemScript){
@@ -316,7 +316,7 @@ and sign it! Generating the signatures is handled entirely by the `TX` module in
 ```javascript
 // lib/swap.js
 
-Class Swap {
+class Swap {
   ...
 
   signInput(
@@ -356,7 +356,7 @@ methods work, see the bcoin.io guide [Working with transactions](working-with-tx
 ```javascript
 // lib/swap.js
 
-Class Swap {
+class Swap {
   ...
 
   // Works for both refund and swap
@@ -431,7 +431,7 @@ against the network rules:
 ```javascript
 // lib/swap.js
 
-Class Swap {
+class Swap {
   ...
     
   verifyMTX(mtx){
@@ -458,7 +458,7 @@ We can add two simple functions to generate these data, using the [bcrypto](http
 ```javascript
 // lib/swap.js
 
-Class Swap {
+class Swap {
   ...
 
   // Generate a random secret and derive its SHA-256 hash
@@ -472,7 +472,7 @@ Class Swap {
     }
   }
 
-  //Generate an ECDSA public / private key pair
+  // Generate an ECDSA public / private key pair
   getKeyPair(){
     // Generate new random private key
     const master = this.hd.generate();
@@ -530,6 +530,8 @@ console.log('PRIVATE: keep safe and pass to run script:\n', privBase58);
 console.log('\n --- \n');
 ```
 
+Running the script above with the command `node app/prep-swap.js` returns output like this:
+
 <div class="terminal" style="word"> --- 
 
 PUBLIC: send to counterparty:
@@ -558,7 +560,7 @@ then grab the secret. We discover the input by looking for the P2SH address we d
 ```javascript
 // lib/swap.js
 
-Class Swap {
+class Swap {
   ...
 
   extractSecret(tx, address){
