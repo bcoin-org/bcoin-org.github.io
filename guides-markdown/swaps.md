@@ -11,12 +11,15 @@ on two chains. Create a Hash Time-Locked Contract to perform the swap securely.
 
 ## What are cross-chain atomic swaps?
 
-A cross-chain atomic swap is a type of crypto-currency exchange. Like trading dollars for pesos,
-it's a process in which two people can exchange one crypto-currency for another, but without trust or third-party
-moderation. We say the swaps are "atomic" because they must be <a href="https://en.wikipedia.org/wiki/Atomicity_(database_systems)">all-or-nothing.</a>
+A cross-chain atomic swap is a type of peer-to-peer cryptocurrency exchange. Like trading dollars for pesos,
+it's a process in which two people can exchange one cryptocurrency for another, but without
+trust or third-party moderation. We say the swaps are "atomic" because they must be
+<a href="https://en.wikipedia.org/wiki/Atomicity_(database_systems)">all-or-nothing.</a>
 To protect both users, there must be no scenario in which one person can control both coins at the same time.
 
-Atomic swaps can be executed on many blockchains, but not all. In this guide we'll
+Atomic swaps can be executed between many blockchains, but not all. For the scheme to work, both
+chains need some kind of relative timelock operation (like `OP_CHECKSEQUENCEVERIFY`), as well as the ability
+to hash a blob of data and check against a given hash. In this guide we'll
 be focusing on just Bitcoin and Bitcoin Cash, using the [bcoin](https://github.com/bcoin-org/bcoin)
 and [bcash](https://github.com/bcoin-org/bcash) libraries respectively. It's a bit of
 a game: the rules can't be broken, but you still have to pay attention. The magic
@@ -56,7 +59,8 @@ the secret code, it is visible for the entire world to see, like the screen on a
 ## Let's swap!
 
 For now we’ll ignore the time locks, but just keep in mind they are there. In an ideal situation, only
-the hash locks are used anyway. Let’s say Alice wants Bitcoin and Bob wants Bitcoin Cash. They agree to
+the hash locks are used anyway. As we'll see later on, the time locks are only used as refunds in order
+to cancel the swap. Let’s say Alice wants Bitcoin and Bob wants Bitcoin Cash. They agree to
 swap the coins they have for the coins they want.
 
 <p style="text-align:center"><img src="../assets/images/guides/swap4.png"></p>
@@ -102,16 +106,19 @@ game doesn’t really begin until she reveals her secret code so we make her ref
 Bob thinks Alice is going to flake out, he can refund his Bitcoin from Mailbox “A” long before Alice can
 refund her Bitcoin Cash from Mailbox “B”. 
 
-Think about the counter-example. If Mailbox “B” had the shorter refund time, Alice could wait until that time
-expires, refund herself the Bitcoin Cash from Mailbox “B” AND THEN ALSO enter the secret code into Bitcoin
-Mailbox “A” and take the Bitcoin that Bob sent. Alice would have all the money and Bob would be broke!
+To illustrate why this is important, consider if the times were reversed. If Mailbox “B” had the shorter
+refund time, Alice could wait until that time expires, refund herself the Bitcoin Cash from Mailbox “B”
+AND THEN ALSO enter the secret code into Bitcoin Mailbox “A” and take the Bitcoin that Bob sent.
+Alice would have all the money and Bob would be broke!
 
 <a name="scripts"></a>
 ## Scripts
 
 Now it's time to turn these "two-lock mailboxes" into actual Bitcoin transactions. For this guide we
-will describe a very simple method that sacrifices some privacy and potentially some security. See
-[next steps](#next-steps) for more details on this.
+will describe a very simple method of constructing and executing smart contracts that sacrifice some
+privacy and potentially some security. It is not recommended these be used _as is_ in production.
+For details on how the implementation can be improved, see [next steps](#next-steps) below.
+
 This will be the redeem script in the output of our Hash Time-Locked Contract:
 
 ```bash
@@ -141,11 +148,14 @@ script in the input of a transaction:
 <true>
 ```
 
-Keep in mind that the stack is first-in / last-out, so if this input script looks "upside-down" that's because the
-last element will end up being on the top of the stack when the redeem script is run.
+Keep in mind that the stack is <a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)">first-in / last-out</a>,
+so if this input script looks "upside-down" that's because the last element will end up being on the top of the
+stack when the redeem script is run.
 
-The Time Lock is executed when `OP_IF` gets a `false` value. First it executes a
-[Check Sequence Verify](https://github.com/bitcoinbook/bitcoinbook/blob/develop/ch07.asciidoc#relative-timelocks)
+The Time Lock is executed when `OP_IF` gets a `false` value. This causes script execution to skip all OP codes
+until it finds `OP_ELSE`, where it continues processing up to `OP_ENDIF`. The time lock will only be checked when `if (false)`.
+
+First it executes a [Check Sequence Verify](https://github.com/bitcoinbook/bitcoinbook/blob/develop/ch07.asciidoc#relative-timelocks)
 routine, which fails if the given relative locktime has not yet passed. Then it simply checks a signature
 against a given public key like usual. To redeem the transaction with this path, we will use this input script:
 
@@ -154,7 +164,7 @@ against a given public key like usual. To redeem the transaction with this path,
 <false>
 ```
 
-## bcoin and bcash
+## Creating HTLC scripts with bcoin and bcash
 
 The `bcoin` and `bcash` libraries are so similar that we can use the exact same commands
 to create HTLCs on both chains, and build a working application with wallets. A finished package
@@ -202,60 +212,62 @@ give us the specific `Address` module for making Bitcoin addresses. We could cre
 _SWEET._
 
 The next three functions we'll need will compile our Bitcoin scripts from the last section into
-the actual byte code used in serialized transactions on the network. For more background on this,
+the actual byte code used in serialized transactions on the network. To learn more about working with scripts,
 check out the bcoin.io guides [Intro to Scripting](scripting.html) and the more advanced
 [Time Locked Bitcoin Transactions w/ CLTV](cltv.html).
 
 ```javascript
 // lib/swap.js
-// Class Swap {}...
 
+Class Swap {
+  ...
 
-// REDEEM script: the output of the swap HTLC
-getRedeemScript(hash, refundPubkey, swapPubkey, locktime){
-  const redeem = new this.Script();
+  // REDEEM script: the output of the swap HTLC
+  getRedeemScript(hash, refundPubkey, swapPubkey, locktime){
+    const redeem = new this.Script();
 
-  redeem.pushSym('OP_IF');
-  redeem.pushSym('OP_SHA256');
-  redeem.pushData(hash);
-  redeem.pushSym('OP_EQUALVERIFY');
-  redeem.pushData(swapPubkey);
-  redeem.pushSym('OP_CHECKSIG');
-  redeem.pushSym('OP_ELSE');
-  redeem.pushInt(locktime);
-  redeem.pushSym('OP_CHECKSEQUENCEVERIFY');
-  redeem.pushSym('OP_DROP');
-  redeem.pushData(refundPubkey);
-  redeem.pushSym('OP_CHECKSIG');
-  redeem.pushSym('OP_ENDIF');
-  redeem.compile();
+    redeem.pushSym('OP_IF');
+    redeem.pushSym('OP_SHA256');
+    redeem.pushData(hash);
+    redeem.pushSym('OP_EQUALVERIFY');
+    redeem.pushData(swapPubkey);
+    redeem.pushSym('OP_CHECKSIG');
+    redeem.pushSym('OP_ELSE');
+    redeem.pushInt(locktime);
+    redeem.pushSym('OP_CHECKSEQUENCEVERIFY');
+    redeem.pushSym('OP_DROP');
+    redeem.pushData(refundPubkey);
+    redeem.pushSym('OP_CHECKSIG');
+    redeem.pushSym('OP_ENDIF');
+    redeem.compile();
 
-  return redeem;
-}
+    return redeem;
+  }
 
-// SWAP script: used by counterparty to open the hash lock 
-getSwapInputScript(redeemScript, secret){
-  const inputSwap = new this.Script();
+  // SWAP script: used by counterparty to open the hash lock 
+  getSwapInputScript(redeemScript, secret){
+    const inputSwap = new this.Script();
 
-  inputSwap.pushInt(0); // signature placeholder
-  inputSwap.pushData(secret);
-  inputSwap.pushInt(1); // <true>
-  inputSwap.pushData(redeemScript.toRaw()); // P2SH
-  inputSwap.compile();
+    inputSwap.pushInt(0); // signature placeholder
+    inputSwap.pushData(secret);
+    inputSwap.pushInt(1); // <true>
+    inputSwap.pushData(redeemScript.toRaw()); // P2SH
+    inputSwap.compile();
 
-  return inputSwap;
-}
+    return inputSwap;
+  }
 
-// REFUND script: used by original sender of funds to open time lock
-getRefundInputScript(redeemScript){
-  const inputRefund = new this.Script();
+  // REFUND script: used by original sender of funds to open time lock
+  getRefundInputScript(redeemScript){
+    const inputRefund = new this.Script();
 
-  inputRefund.pushInt(0); // signature placeholder
-  inputRefund.pushInt(0); // <false>
-  inputRefund.pushData(redeemScript.toRaw()); // P2SH
-  inputRefund.compile();
+    inputRefund.pushInt(0); // signature placeholder
+    inputRefund.pushInt(0); // <false>
+    inputRefund.pushData(redeemScript.toRaw()); // P2SH
+    inputRefund.compile();
 
-  return inputRefund;
+    return inputRefund;
+  }
 }
 ```
 
@@ -278,11 +290,14 @@ both networks, we can generate valid P2SH addresses using the same function:
 
 ```javascript
 // lib/swap.js
-// Class Swap {}...
 
-getAddressFromRedeemScript(redeemScript){
-  // P2SH wrapper around 160-bit hash of serialized redeem script
-  return this.Address.fromScripthash(redeemScript.hash160());
+Class Swap {
+  ...
+
+  getAddressFromRedeemScript(redeemScript){
+    // P2SH wrapper around 160-bit hash of serialized redeem script
+    return this.Address.fromScripthash(redeemScript.hash160());
+  }
 }
 ```
 
@@ -296,30 +311,33 @@ bchtest:pppj5wmjdqj6mxc8yfz2vfsrzdvqpsjctu0pu5wus3 # Bitcoin Cash</div>
 
 Once funds are sent to the P2SH addresses, we can spend them using either the `swap` or
 `refund` input scripts. We have already generated the scripts so we just need to create a transaction
-and sign it! Generating the signatures is handled entirely by the `tx.js` module in each library:
+and sign it! Generating the signatures is handled entirely by the `TX` module in each library:
 
 ```javascript
 // lib/swap.js
-// Class Swap {}...
 
-signInput(
-  mtx,
-  index,
-  redeemScript,
-  value,
-  privateKey,
-  sigHashType,
-  version_or_flags
-) {
+Class Swap {
+  ...
 
-  return mtx.signature(
+  signInput(
+    mtx,
     index,
     redeemScript,
     value,
     privateKey,
     sigHashType,
     version_or_flags
-  );
+  ) {
+
+    return mtx.signature(
+      index,
+      redeemScript,
+      value,
+      privateKey,
+      sigHashType,
+      version_or_flags
+    );
+  }
 }
 ```
 
@@ -327,7 +345,8 @@ Uhh... what the heck is `version_or_flags`? Ok, here we finally have some diverg
 `bcoin` and `bcash`. In the `tx.signature()` function, `bcoin` expects a `version` integer to select either
 legacy or [SegWit serialization](https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#specification)
 for signing. Since Bitcoin Cash does not have any SegWit features at all, this parameter is instead used
-to pass additional SigHash flags used for replay protection at the time of the hard fork.
+to pass additional SigHash flags used for
+[replay protection at the time of the hard fork.](https://github.com/Bitcoin-ABC/bitcoin-abc/blob/master/doc/abc/replay-protected-sighash.md)
 
 Due to a similar inconsistency, we will need to pass different values for `sigHashType` depending on 
 which chain we are constructing transactions for. With those disclaimers behind us, let's build the transaction!
@@ -336,70 +355,73 @@ methods work, see the bcoin.io guide [Working with transactions](working-with-tx
 
 ```javascript
 // lib/swap.js
-// Class Swap {}...
 
-// Works for both refund and swap
-getRedeemTX(
-  address,
-  fee,
-  fundingTX,
-  fundingTXoutput,
-  redeemScript,
-  inputScript,
-  locktime,
-  privateKey
-){
+Class Swap {
+  ...
 
-  // Create a mutable transaction object
-  const redeemTX = new this.MTX();
-
-  // Get the output we want to spend (coins sent to the P2SH address) 
-  const coin = this.Coin.fromTX(fundingTX, fundingTXoutput, -1);
-
-  // Add that coin as an input to our transaction
-  redeemTX.addCoin(coin);
-
-  // Redeem the input coin with either the swap or refund script
-  redeemTX.inputs[0].script = inputScript;
-
-  // Create the output back to our primary wallet
-  redeemTX.addOutput({
-    address: address,
-    value: coin.value - fee
-  });
-
-  // If this was a refund redemption we need to set the sequence
-  // Sequence is the relative timelock value applied to individual inputs
-  if (locktime)
-    redeemTX.setSequence(0, locktime, this.CSV_seconds);
-  else
-    redeemTX.inputs[0].sequence = 0xffffffff;
-
-  // Set SIGHASH and replay protection bits
-  let version_or_flags = 0;
-  let type = null;
-  if (this.libName === 'bcash') {
-    version_or_flags = this.flags;
-    type = this.Script.hashType.SIGHASH_FORKID | this.Script.hashType.ALL; 
-  }
-
-  // Create the signature authorizing the input script to spend the coin
-  const sig = this.signInput(
-    redeemTX,
-    0,
+  // Works for both refund and swap
+  getRedeemTX(
+    address,
+    fee,
+    fundingTX,
+    fundingTXoutput,
     redeemScript,
-    coin.value,
-    privateKey,
-    type,
-    version_or_flags
-  );
+    inputScript,
+    locktime,
+    privateKey
+  ){
 
-  // Insert the signature into the input script where we had a `0` placeholder
-  inputScript.setData(0, sig);
+    // Create a mutable transaction object
+    const redeemTX = new this.MTX();
 
-  // Finish up and return
-  inputScript.compile();
-  return redeemTX;
+    // Get the output we want to spend (coins sent to the P2SH address) 
+    const coin = this.Coin.fromTX(fundingTX, fundingTXoutput, -1);
+
+    // Add that coin as an input to our transaction
+    redeemTX.addCoin(coin);
+
+    // Redeem the input coin with either the swap or refund script
+    redeemTX.inputs[0].script = inputScript;
+
+    // Create the output back to our primary wallet
+    redeemTX.addOutput({
+      address: address,
+      value: coin.value - fee
+    });
+
+    // If this was a refund redemption we need to set the sequence
+    // Sequence is the relative timelock value applied to individual inputs
+    if (locktime)
+      redeemTX.setSequence(0, locktime, this.CSV_seconds);
+    else
+      redeemTX.inputs[0].sequence = 0xffffffff;
+
+    // Set SIGHASH and replay protection bits
+    let version_or_flags = 0;
+    let type = null;
+    if (this.libName === 'bcash') {
+      version_or_flags = this.flags;
+      type = this.Script.hashType.SIGHASH_FORKID | this.Script.hashType.ALL; 
+    }
+
+    // Create the signature authorizing the input script to spend the coin
+    const sig = this.signInput(
+      redeemTX,
+      0,
+      redeemScript,
+      coin.value,
+      privateKey,
+      type,
+      version_or_flags
+    );
+
+    // Insert the signature into the input script where we had a `0` placeholder
+    inputScript.setData(0, sig);
+
+    // Finish up and return
+    inputScript.compile();
+    return redeemTX;
+  }
 }
 ```
 
@@ -408,10 +430,13 @@ against the network rules:
 
 ```javascript
 // lib/swap.js
-// Class Swap {}...
-  
-verifyMTX(mtx){
-  return mtx.verify(this.flags)
+
+Class Swap {
+  ...
+    
+  verifyMTX(mtx){
+    return mtx.verify(this.flags)
+  }
 }
 ```
 
@@ -432,33 +457,36 @@ We can add two simple functions to generate these data, using the [bcrypto](http
 
 ```javascript
 // lib/swap.js
-// Class Swap {}...
 
-// Generate a random secret and derive its SHA-256 hash
-getSecret() {
-  secret = bcrypto.random.randomBytes(32);
-  const hash = bcrypto.SHA256.digest(secret);
+Class Swap {
+  ...
 
-  return {
-    'secret': secret,
-    'hash': hash
+  // Generate a random secret and derive its SHA-256 hash
+  getSecret() {
+    secret = bcrypto.random.randomBytes(32);
+    const hash = bcrypto.SHA256.digest(secret);
+
+    return {
+      'secret': secret,
+      'hash': hash
+    }
   }
-}
 
-//Generate an ECDSA public / private key pair
-getKeyPair(){
-  // Generate new random private key
-  const master = this.hd.generate();
-  const key = master.derivePath('m/44/0/0/0/0');
-  privateKey = key.privateKey;
+  //Generate an ECDSA public / private key pair
+  getKeyPair(){
+    // Generate new random private key
+    const master = this.hd.generate();
+    const key = master.derivePath('m/44/0/0/0/0');
+    privateKey = key.privateKey;
 
-  // Derive public key from private key
-  const keyring = this.KeyRing.fromPrivate(privateKey);
-  const publicKey = keyring.publicKey;
+    // Derive public key from private key
+    const keyring = this.KeyRing.fromPrivate(privateKey);
+    const publicKey = keyring.publicKey;
 
-  return {
-    'publicKey': publicKey,
-    'privateKey': privateKey,
+    return {
+      'publicKey': publicKey,
+      'privateKey': privateKey,
+    }
   }
 }
 ```
@@ -466,7 +494,41 @@ getKeyPair(){
 They key exchange method is up to the users on the application layer. They could save a little space
 by agreeing on a protocol in advance. We can imagine preset, hard-coded locktimes and perhaps
 a common exchange rate API. In my demonstration repository, I have a script `app/prep-swap.js` that imports
-the [bstring](https://github.com/bcoin-org/bstring) module and encodes the keys into base58 strings which Alice and Bob can send each other:
+the [bstring](https://github.com/bcoin-org/bstring) module and encodes the keys into base58
+strings which Alice and Bob can send each other:
+
+```javascript
+// app/prep-swap.js
+
+/*
+ * Create parameters for swap
+ */
+
+const {base58} = require('bstring');
+const Swap = require('../lib/swap');
+
+const swap = new Swap('bcoin', 'testnet');  // could be any library for this step
+const secret = swap.getSecret();
+const keys = swap.getKeyPair();
+
+const pub = {
+  hash: secret.hash.toString('hex'),
+  publicKey: keys.publicKey.toString('hex')
+};
+const priv = {
+  secret: secret.secret.toString('hex'),
+  privateKey: keys.privateKey.toString('hex'),
+};
+
+const pubBase58 = base58.encode(new Buffer(JSON.stringify(pub)));
+const privBase58 = base58.encode(new Buffer(JSON.stringify(priv)));
+
+console.log('\n --- \n');
+console.log('PUBLIC: send to counterparty:\n', pubBase58);
+console.log('\n --- \n');
+console.log('PRIVATE: keep safe and pass to run script:\n', privBase58);
+console.log('\n --- \n');
+```
 
 <div class="terminal" style="word"> --- 
 
@@ -486,7 +548,7 @@ PRIVATE: keep safe and pass to run script:
 
 ## Using the blockchain to communicate
 
-Remember part of the swap protocol involves Alice revealing her secret value to Bob. That is
+Remember, part of the swap protocol involves Alice revealing her secret value to Bob. That is
 done on the blockchain, so Bob needs to watch the chain for Alice's redemption transaction
 and pull the secret value out of it somehow. Since we know the exact structure of Alice's
 [input script](#scripts) we can expect her secret to be the second value in the script.
@@ -495,18 +557,21 @@ then grab the secret. We discover the input by looking for the P2SH address we d
 
 ```javascript
 // lib/swap.js
-// Class Swap {}...
 
-extractSecret(tx, address){
-  // Find the input that spends from the P2SH address
-  for (const input of tx.inputs){
-    const inputJSON = input.getJSON();
-    const inAddr = inputJSON.address;
-    // Once we find it, return the second script item (the secret)
-    if (inAddr === address)
-      return input.script.code[1].data;
+Class Swap {
+  ...
+
+  extractSecret(tx, address){
+    // Find the input that spends from the P2SH address
+    for (const input of tx.inputs){
+      const inputJSON = input.getJSON();
+      const inAddr = inputJSON.address;
+      // Once we find it, return the second script item (the secret)
+      if (inAddr === address)
+        return input.script.code[1].data;
+    }
+    return false;
   }
-  return false;
 }
 ```
 
@@ -530,7 +595,7 @@ which lists the port numbers for each server.
 
 For brevity, we'll just review the last step in our swap story: Bob extracting the HTLC
 secret from Alice's Bitcoin Cash sweep-transaction and using it to sweep his own Bitcoin
-transaction. Keep in mind by the time the following code is run, Bob has already deposited
+transaction. Keep in mind that by the time the following code is run, Bob has already deposited
 BTC into the swap address for Alice to sweep. The code is presented linearly here but in
 the actual application it is organized a bit differently.
 
@@ -620,19 +685,27 @@ sweep the BCH transaction.
 ## Next steps
 
 We've built a very simple atomic swaps application! But what have we sacrificed for convenience?
-To improve privacy, we might want to use separate public keys for each blockchain, instead of using
+
+* To improve privacy, we might want to use separate public keys for each blockchain, instead of using
 the same key on both networks (although it is very cool and convenient that public keys can be re-used
-on these two networks). We also have been using raw public keys, but most of the time in Bitcoin
-we exchange hashed (RIPE-160) public keys. In our case, this hash would require a few extra OP codes
-in the redeem script. We should also check all the amounts being transacted and return an error if
-the counterparty didn't send the right amount. The watch-only wallets work great, but what if Bob
-creates his watch-only wallet AFTER Alice sends her first transaction? How will Bob ever know?
-The app should be able to rescan recent blockchain history to make sure it hasn't missed anything on launch.
+on these two networks).
 
-And finally - CSV encoding. We built our app using timelocks based in seconds, not blocks.
+* We have been using raw public keys, but most of the time in Bitcoin we exchange hashed (RIPE-160)
+public keys. In our case, this hash would require a few extra OP codes in the redeem script.
+
+* We should also check all the amounts being transacted and return an error if the counterparty didn't
+send the right amount.
+
+* The watch-only wallets work great, but what if Bob creates his watch-only wallet AFTER Alice sends
+her first transaction? How will Bob ever know? The app should be able to rescan recent blockchain
+history to make sure it hasn't missed anything on launch.
+
+* CSV encoding. We built our app using timelocks based in seconds, not blocks.
 BIP 68 describes a specific bit-by-bit encoding scheme that must be used to create a valid timelock value.
-Look for the function `CSVencode()` in `lib/sawp.js`
+Look for the function `CSVencode()` in `lib/swap.js`
 
+* User interface: all this command line copying/pasting is not a great user experience. A better
+UI or [bpanel plugin](https://bpanel.org/docs/plugin-started.html) would make the application much easier to use.
 
 **HAPPY SWAPPING!**
 
@@ -648,3 +721,13 @@ Look for the function `CSVencode()` in `lib/sawp.js`
 [BIP 68: Relative lock-time using consensus-enforced sequence numbers](https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki)
 
 [BIP 16: Pay to Script Hash](https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki)
+
+## Related reading
+
+[Intro to Scripting](scripting.html)
+
+[Time Locked Bitcoin Transactions w/ CLTV](cltv.html)
+
+[Working with transactions](working-with-txs.html)
+
+[Events and Sockets](events.html)
