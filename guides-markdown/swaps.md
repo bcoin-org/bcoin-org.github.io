@@ -11,9 +11,9 @@ on two chains. Create a Hash Time-Locked Contract to perform the swap securely.
 
 ## What are cross-chain atomic swaps?
 
-A cross-chain atomic swap is a type of peer-to-peer cryptocurrency exchange. Like trading dollars for pesos,
-it's a process in which two people can exchange one cryptocurrency for another, but without
-trust or third-party moderation. We say the swaps are "atomic" because they must be
+A cross-chain atomic swap is method of exchanging different cryptocurrencies directly between two peers.
+Like trading dollars for pesos, it's a process in which two people can exchange one cryptocurrency for
+another, but without trust or third-party moderation. We say the swaps are "atomic" because they must be
 <a href="https://en.wikipedia.org/wiki/Atomicity_(database_systems)">all-or-nothing.</a>
 To protect both users, there must be no scenario in which one person can control both coins at the same time.
 
