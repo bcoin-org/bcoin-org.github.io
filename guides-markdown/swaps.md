@@ -709,6 +709,9 @@ Look for the function `CSVencode()` in `lib/swap.js`
 * User interface: all this command line copying/pasting is not a great user experience. A better
 UI or [bpanel plugin](https://bpanel.org/docs/plugin-started.html) would make the application much easier to use.
 
+If you have any ideas or suggestions please feel free to post an issue or pull request
+in the proof-of-concept repo! [https://github.com/pinheadmz/swap-test](https://github.com/pinheadmz/swap-test)
+
 **HAPPY SWAPPING!**
 
 
