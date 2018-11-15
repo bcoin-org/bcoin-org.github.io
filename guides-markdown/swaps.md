@@ -41,14 +41,15 @@ take out the coin.
 HTLCs are more complicated. First of all, they have TWO locks, and EITHER lock can open the mailbox and
 expose the coin. They also use much fancier locks than usual.
 
-<p style="float:left"><img src="../assets/images/guides/swap3t.png"></p>
+<img src="../assets/images/guides/swap3t.png" style="float:left">
 
 ### TIME LOCKS
 
 Time locks still require the right key but they ALSO require a certain amount of time to pass. Even if
 you have the key for this lock, you still need to wait until the time “expires” before you can open it.
 
-<p style="float:right"><img src="../assets/images/guides/swap3h.png"></p>
+<br>
+<img src="../assets/images/guides/swap3h.png" style="float:right">
 
 ### HASH LOCKS
 
