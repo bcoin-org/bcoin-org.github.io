@@ -148,7 +148,7 @@ nodeSocket.on('connect', async (e) => {
     // Some calls simply request information from the server like an http request
     console.log('Node - Attempting get tip:');
     const tip = await nodeSocket.call('get tip');
-    console.log(ChainEntry.from(tip));
+    console.log(ChainEntry.fromRaw(tip));
 
   } catch (e) {
     console.log('Node - Connection Error:\n', e);
