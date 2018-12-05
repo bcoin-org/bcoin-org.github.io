@@ -102,7 +102,7 @@ You must replace <code>api-key</code> with your own, strong API key.<br>
 <br>
 A good way to generate a strong key is to use the <code>bcrypto</code> module that is installed as a 
 dependency for <code>bcoin</code>. From your bcoin directory (or anywhere, if <code>bcrypto</code> is installed globally), run:<br>
-<code>node -e "bcrypto=require('bcrypto'); console.log(bcrypto.randomBytes(32).toString('hex'))"</code><br>
+<code>node -e "bcrypto=require('bcrypto'); console.log(bcrypto.random.randomBytes(32).toString('hex'))"</code><br>
 Which will generate and output a securley random, 32-byte hex string.<br>
 This string could be saved in <code>bcoin.conf</code> to persist over restarts, or it may be passed to bcoin
 at launch (for example):<br>
