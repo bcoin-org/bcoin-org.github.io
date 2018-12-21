@@ -44,7 +44,12 @@
 }
 
 .content code {
-  white-space: pre;
+  hyphens: none;
+  word-break: break-word;
+}
+
+table code {
+    white-space: pre;
 }
 
 .toc-wrapper .toc-link.active {
