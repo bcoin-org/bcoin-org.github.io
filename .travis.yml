@@ -2,7 +2,7 @@ language: node_js
 node_js:
   - stable
 before_install:
-  - gpg2 --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+  - sudo apt-get install -y gpg2 && gpg2 --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
   - rvm get stable
   - rvm use ruby --install --default
 before_script:
