@@ -3,7 +3,7 @@ node_js:
   - stable
 before_install:
   - sudo apt-get install gnupg2 -y
-  - gpg2 --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+  - command curl -sSL https://rvm.io/mpapis.asc | gpg2 --import -
   - rvm get stable
   - rvm use ruby --install --default
 before_script:
