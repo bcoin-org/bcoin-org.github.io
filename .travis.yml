@@ -3,7 +3,7 @@ node_js:
   - stable
 before_install:
   - sudo apt-get install gnupg2 -y
-  - gpg2 --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+  - gpg2 --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
   - rvm get stable
   - rvm use ruby --install --default
 before_script:
