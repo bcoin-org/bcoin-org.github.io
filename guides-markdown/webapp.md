@@ -39,7 +39,7 @@ and if you're interested you can also step through my build process
 Nothing special here, this is how all bcoin projects start. If you already have
 bcoin installed somewhere, you don't have to do this again.
 
-```command-line
+```
 git clone https://github.com/bcoin-org/bcoin
 cd bcoin
 npm install
@@ -59,7 +59,7 @@ Let's install it globally so we can just run it from the command line in any dir
 npm install -g bpkg
 ```
 
-There is one other package we can install as an option and that is `uglify-es`.
+There is one other package we can install as an option and that is [uglify-es.](https://www.npmjs.com/package/uglify-es)
 This package [minifies](https://en.wikipedia.org/wiki/Minification_%28programming%29)
 the code after it has been converted, to save an immense amount of space in the
 final JavaScript files. For this project, `uglify-es` will save us about 40% of
