@@ -30,7 +30,7 @@ into [hierarchical-deterministic wallet accounts](https://github.com/bitcoin/bip
 generates its own random seed phrases, and outputs both legacy and
 [SegWit addresses.](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki)
 
-You can play with the finished app at [http://bcoin.io/apps/address](http://bcoin.io/apps/address),
+You can play with the finished app at [http://bcoin.io/apps/address](https://bcoin.io/apps/address),
 and if you're interested you can also step through my build process
 [commit-by-commit](https://github.com/pinheadmz/bcoin-webapp/commits).
 
@@ -126,4 +126,264 @@ this module!
 <div style='text-align: center'>
    <img src='../assets/images/guides/webapp-hd-console.png' style='width:50%'>
  </div>
+
+## Create an HD object from a user's mnemonic phrase
+
+Let's add a text-input field to the webpage for the user to type in a mnemonic phrase:
+
+```html
+<label for='mne'>Mnemonic phrase: </label>
+<input id='mne' oninput='parseMne()'>
+<div id='mne-check'></div>
+```
+
+I added some CSS here too but the really important bit is `oninput=parseMne()`.
+This is telling the page to call a JavaScript function every time anything is typed or
+changed in the text field. We'll write that function next and insert it into a `<script>`
+tag in the html page. The first thing we want to do is parse the user's input and
+return an error if the phrase isn't valid -- bcoin will take care of all the hard work!
+Creating a bcoin `Mnemonic` object from a seed phrase is simple, we'll just wrap it
+in a decent user experience:
+
+```javascript
+function parseMne() {
+  const phrase = document.getElementById('mne').value;
+  let mne;
+  try {
+    mne = HD.Mnemonic.fromPhrase(phrase);
+  } catch (e) {
+    document.getElementById('mne-check').innerHTML = `Bad phrase: ${e.message}`;
+    return false;
+  }
+  document.getElementById('mne-check').innerHTML = `Phrase OK`;
+
+  // ** second function here **
+}
+```
+
+At this point you can already enter a phrase into the text field, and it will display
+an error on every key stroke until the phrase is complete and valid. For testing purposes,
+use this scary-looking string:
+
+`abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about`
+
+## Derive an HD master private key from the mnemonic
+
+Next we want to output the extended private key for our mnemonic. This is the long string
+prefixed by `xpriv` (or `xpub` for the public key). Testnet and regtest networks use
+different prefix bytes, so we'll need to get the user's input on that. We'll use a
+series of radio-buttons to select the network, then grab that value and process the
+`mne` object from the last function. The output will pop up in two new `<span>`s.
+
+```html
+<form name='nets' onchange='parseMne()'>
+  Network:
+  <input type='radio' name='net' value='main' checked><label for='main'>Main</label>
+  <input type='radio' name='net' value='testnet'><label for='testnet'>Testnet</label>
+  <input type='radio' name='net' value='regtest'><label for='regtest'>Regtest</label>
+  <input type='radio' name='net' value='simnet'><label for='simnet'>Simnet</label>
+</form>
+<br>
+<div>
+  Extended private key:
+  <span id='xpriv'></span>
+</div>
+<div>
+  Extended public key:
+  <span id='xpub'></span>
+</div>
+```
+
+Add this function to our in-line script:
+
+```javascript
+function makeKey(mne) {
+  const hd = HD.fromMnemonic(mne);
+  const net = document.nets.net.value;
+  document.getElementById('xpub').innerHTML = hd.toPublic().toBase58(net)
+  document.getElementById('xpriv').innerHTML = hd.toBase58(net);
+
+  // *** third function here ***
+}
+```
+
+...and then call it from the last line of our previous function:
+
+```javascript
+function parseMne() {
+  ...
+
+  // ** second function here **
+  makeKey(mne);
+}
+```
+
+Notice how easy it is with bcoin to create an HD object from the phrase, and get both
+the private and public keys. We could encode those keys in a few different formats
+(Base58, JSON, raw serial bytes) and for any available network.
+
+## Derive child keys from the BIP32 path
+
+Now that we have a master private key, we can generate an (almost) infinite number
+of Bitcoin addresses. The bcoin wallet is designed to follow 
+[BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) which
+specifies a series of derivations and a function for each level. It's a standard
+path that many Bitcoin wallets follow, so we can let the user derive any standard
+address, but we should also let them change any part of the path! For this guide,
+we're going to hard-code which levels are 'hardened', but you'll see how to make
+that more flexible if you want.
+
+Let's get user input with defaults set to a standard Bitcoin BIP44 path,
+Account `0`, receive address (instead of change) and index `0`. Notice again how
+we call the whole chain of derivation functions any time a value is changed.
+
+```html
+<div>
+  Derivation path:
+  <span>m/</span>
+  <input type='number' onchange='parseMne()' id='purpose' min='0' value='44'>'/
+  <input type='number' onchange='parseMne()' id='coin' min='0' value='0'>'/
+  <input type='number' onchange='parseMne()' id='account' min='0' value='0'>'/
+  <input type='number' onchange='parseMne()' id='branch' min='0' value='0'>/
+  <input type='number' onchange='parseMne()' id='index' min='0' value='0'>
+</div>
+```
+
+In bcoin, traversing the HD path of keys is a recursive process, so once we get the
+user input, it's a pretty simple chain to get the key we want. The second parameter
+I'm passing here to each `derive()` call is a boolean that represents `hardened`
+derivation. Learn more about that
+[here](https://bitcoin.stackexchange.com/questions/37488/eli5-whats-the-difference-between-a-child-key-and-a-hardened-child-key-in-bip3)
+and [here](https://bitcoin.stackexchange.com/questions/37826/best-practices-for-hardened-keys-in-hd-wallets).
+
+
+```javascript
+function getAddr(hd, net) {
+  const purpose = parseInt(document.getElementById('purpose').value);
+  const coin = parseInt(document.getElementById('coin').value);
+  const account = parseInt(document.getElementById('account').value);
+  const branch = parseInt(document.getElementById('branch').value);
+  const index = parseInt(document.getElementById('index').value);
+  
+  const key = 
+    hd.derive(purpose, true)
+    .derive(coin, true)
+    .derive(account, true)
+    .derive(branch, false)
+    .derive(index, false);
+
+  // **** output addresses here ****
+}
+```
+
+...and like before we'll call this from the end of the last function `makeKey()`:
+
+```javascript
+function makeKey(mne){
+  ...
+
+  // *** third function here ***
+  getAddr(hd, net);
+}
+```
+
+## Derive address from key
+
+Now that we can derive a master seed and generate any child key the user wants, we
+need to derive from that key a usable Bitcoin address. This is actually a function
+the bcoin `HD` module can _not_ do. So we'll need to import just one more tiny bit
+of the bcoin library: `KeyRing`.
+
+Again, with `bpkg`, exporting modules from bcoin is a cinch:
+
+```
+cd <wherever your bcoin repo is installed>
+bpkg --browser --standalone --plugin [ uglify-es --toplevel ] --name KeyRing --output <your app dir>/KeyRing.js lib/primitives/keyring.js
+```
+
+Add the new `keyring` module to your webapp:
+
+```html
+<script type='text/javascript' src='KeyRing.js'></script>
+```
+
+Now we can access the `KeyRing` module, create `KeyRing` objects from private keys,
+and get the addresses. We'll actually make two `KeyRing`'s so we can derive both legacy
+and SegWit addresses. First, add a `<div>` for the output to fill in:
+
+```html
+<div id='address'></div>
+```
+
+Then add this code to the end of the `getAddr()` function:
+
+```javascript
+function getAddr(hd, net) {
+  ...
+
+  // **** output addresses here ****
+  const ringL = KeyRing.fromPrivate(key.privateKey);
+  ringL.witness = false;
+  const legAddr = ringL.getAddress('base58', net);
+  const ringW = KeyRing.fromPrivate(key.privateKey);
+  ringW.witness = true;
+  const witAddr = ringW.getAddress('string', net);
+      
+  let addrInfo = '';
+  addrInfo += `Legacy address: ${legAddr}<br>`;
+  addrInfo += `SegWit address: ${witAddr}`;
+  document.getElementById('address').innerHTML = addrInfo;
+}
+```
+
+## Generate a new phrase
+
+This is all pretty cool but by now you're probably tired of entering the "abandon abandon"
+phrase over and over again. Let's add a button at the top of the page that will
+generate a new 12-word seed (and all the keys and addresses) with every click.
+
+First add the button to the top of the webpage:
+
+```html
+<button onclick='generate()'>Generate!</button><br><br>
+```
+
+And insert this function in the `<script>` section somewhere:
+
+```javascript
+function generate() {
+  const newMne = new HD.Mnemonic().toString();
+  document.getElementById('mne').value = newMne;
+  parseMne();
+}
+```
+
+This function will generate pseudo-random entropy
+[(even in the browser)](https://github.com/bcoin-org/bcrypto/blob/934f5ea45a0bc0926b9e7916f68bfeb2ea4881e3/lib/js/random.js#L139-L156)
+and derive a new 12-word phrase from that seed. It pops the phrase in our text field
+and then runs all the downstream derivation functions!
+
+![Finished webapp](../assets/images/guides/webapp-finished3.gif "Finished webapp")
+
+## What's next
+
+bcoin has a JavaScript module for every Bitcoin function you can think of: keys,
+transactions, blocks, wallets, output scripts...! There's a lot you can do without
+running any kind of node. The simplicity of bcoin means you can create stand-alone
+web applications and run them online or offline.
+[Sign transactions](https://github.com/bcoin-org/bcoin/blob/master/lib/primitives/mtx.js#L1038)
+on an air-gapped computer, or use the
+[script parser](https://github.com/bcoin-org/bcoin/blob/master/lib/script/script.js)
+to test complicated smart contracts.
+
+You can even connect to actual running full or SPV node!
+[bcoin has an HTTP API](https://bcoin.io/api-docs) which you could link to from your
+webapp. You could even use `bpkg` to bundle a
+[complete node and wallet client](https://github.com/bcoin-org/bclient) and connect
+to your bcoin node via websockets!
+
+Whatever you build, be sure to let us know! We want to hear from you on
+[Twitter](https://twitter.com/Bcoin), [GitHub](https://github.com/bcoin-org/bcoin)
+or [Slack](http://bcoin.io/slack-signup.html).
+
 
