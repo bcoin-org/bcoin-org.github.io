@@ -374,11 +374,21 @@ function generate() {
 ```
 
 This function will generate pseudo-random entropy
-[(even in the browser)](https://github.com/bcoin-org/bcrypto/blob/934f5ea45a0bc0926b9e7916f68bfeb2ea4881e3/lib/js/random.js#L139-L156)
+[(even in the browser)](https://github.com/bcoin-org/bcrypto/blob/934f5ea45a0bc0926b9e7916f68bfeb2ea4881e3/lib/js/random.js#L139-L172)
 and derive a new 12-word phrase from that seed. It pops the phrase in our text field
 and then runs all the downstream derivation functions!
 
 ![Finished webapp](../assets/images/guides/webapp-finished3.gif "Finished webapp")
+
+## A word about security
+
+Web browsers are inherently dangerous environments. Browser plugins can modify any
+content or JavaScript function on the page, and web sites are easy vectors for
+phishing attacks. Tools like this are nice because they can work on almost any
+platform, or be imported into an [Electron](https://electronjs.org/) app or
+[Cordova](https://cordova.apache.org/) app, where the environment can be better
+secured. Verify whatever source code you can, only run trusted software, and use
+offline machines whenever possible for these types of calculations!
 
 ## What's next
 
