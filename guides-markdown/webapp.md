@@ -74,14 +74,15 @@ npm install -g uglify-es
 
 ## Compile a bcoin module for the browser
 
-In bcoin, mnemonic seeds, HD derivation and private keys are all handled by the
-[hd module](https://github.com/bcoin-org/bcoin/tree/master/lib/hd). Here's the command
+In bcoin mnemonic seeds, HD derivation, and private keys are all handled by the
+[hd module](https://github.com/bcoin-org/bcoin/tree/master/lib/hd). Here's the commands
 to compile the hd module for our web-app:
 
 ```
 mkdir <new dir for your app>
 cd <wherever your bcoin repo is installed>
-bpkg --browser --standalone --plugin [ uglify-es --toplevel ] --name HD --output <your new app dir>/HD.js lib/hd/index.js
+bpkg --browser --standalone --plugin [ uglify-es --toplevel ] --name HD \
+--output <your new app dir>/HD.js lib/hd/index.js
 ```
 
 Here's a rundown of those `bpkg` command options:
@@ -112,7 +113,11 @@ Create this file in the same directory that `HD.js` was exported to.
     <title>bcoin webapp</title>
   </head>
   <body>
+    <!-- Input elements and text will go here -->
     <script type="text/javascript" src="HD.js"></script>
+    <script type="text/javascript">
+      // Additional JavaScript code will go here
+    </script>
   </body>
 </html> 
 ```
@@ -137,10 +142,10 @@ Let's add a text-input field to the webpage for the user to type in a mnemonic p
 <div id='mne-check'></div>
 ```
 
-I added some CSS here too but the really important bit is `oninput=parseMne()`.
+You can add some CSS here too but the really important bit is `oninput=parseMne()`.
 This is telling the page to call a JavaScript function every time anything is typed or
-changed in the text field. We'll write that function next and insert it into a `<script>`
-tag in the html page. The first thing we want to do is parse the user's input and
+changed in the text field. We'll write that function next and insert it after the `<script>`
+tag in the HTML page. The first thing we want to do is parse the user's input and
 return an error if the phrase isn't valid -- bcoin will take care of all the hard work!
 Creating a bcoin `Mnemonic` object from a seed phrase is simple, we'll just wrap it
 in a decent user experience:
@@ -150,10 +155,16 @@ function parseMne() {
   const phrase = document.getElementById('mne').value;
   let mne;
   try {
+
+    // attempt to create a Mnemonic object from the phrase
     mne = HD.Mnemonic.fromPhrase(phrase);
+
   } catch (e) {
+
+    // if the phrase is malformed, an error will be thrown
     document.getElementById('mne-check').innerHTML = `Bad phrase: ${e.message}`;
     return false;
+
   }
   document.getElementById('mne-check').innerHTML = `Phrase OK`;
 
@@ -163,9 +174,14 @@ function parseMne() {
 
 At this point you can already enter a phrase into the text field, and it will display
 an error on every key stroke until the phrase is complete and valid. For testing purposes,
-use this scary-looking string:
+you can use this scary-looking string:
 
 `abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about`
+
+The reason it ends with the word "about" is because that word is actually a checksum,
+and is calculated by an algorithm to check for mistakes in the first 11 words. Try
+moving words around in the phrase, introducing typos and mistakes. The error-checking
+should track accordingly.
 
 ## Derive an HD master private key from the mnemonic
 
@@ -173,7 +189,7 @@ Next we want to output the extended private key for our mnemonic. This is the lo
 prefixed by `xpriv` (or `xpub` for the public key). Testnet and regtest networks use
 different prefix bytes, so we'll need to get the user's input on that. We'll use a
 series of radio-buttons to select the network, then grab that value and process the
-`mne` object from the last function. The output will pop up in two new `<span>`s.
+`mne` object from the last function. The output will pop up in two new `<span>`'s.
 
 ```html
 <form name='nets' onchange='parseMne()'>
@@ -198,16 +214,25 @@ Add this function to our in-line script:
 
 ```javascript
 function makeKey(mne) {
+
+  // create a new HD object from the Mnemonic object derived from the phrase
   const hd = HD.fromMnemonic(mne);
+
+  // get the selected network from the HTML form
   const net = document.nets.net.value;
-  document.getElementById('xpub').innerHTML = hd.toPublic().toBase58(net)
+  
+  // the HD object has a built-in function to derive the private key in Base58 format
   document.getElementById('xpriv').innerHTML = hd.toBase58(net);
 
+  // the public key must be derived first, then a Base58 string can be derived from that
+  document.getElementById('xpub').innerHTML = hd.toPublic().toBase58(net)
+  
   // *** third function here ***
 }
 ```
 
-...and then call it from the last line of our previous function:
+Then go back up to our previous function `paraseMne()` and add a line there so it
+calls our new function `makeKey()` at the end:
 
 ```javascript
 function parseMne() {
@@ -229,13 +254,14 @@ of Bitcoin addresses. The bcoin wallet is designed to follow
 [BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) which
 specifies a series of derivations and a function for each level. It's a standard
 path that many Bitcoin wallets follow, so we can let the user derive any standard
-address, but we should also let them change any part of the path! For this guide,
+address, but we should also let them change any part of the path. For this guide,
 we're going to hard-code which levels are 'hardened', but you'll see how to make
 that more flexible if you want.
 
-Let's get user input with defaults set to a standard Bitcoin BIP44 path,
+We'll get a user-input path with defaults set to a standard Bitcoin BIP44 "purpose",
 Account `0`, receive address (instead of change) and index `0`. Notice again how
-we call the whole chain of derivation functions any time a value is changed.
+we call the whole chain of derivation functions any time a value is changed with
+the attribute `onchange='parseMne()'`.
 
 ```html
 <div>
@@ -259,12 +285,15 @@ and [here](https://bitcoin.stackexchange.com/questions/37826/best-practices-for-
 
 ```javascript
 function getAddr(hd, net) {
+
+  // gather the value of all the input fields
   const purpose = parseInt(document.getElementById('purpose').value);
   const coin = parseInt(document.getElementById('coin').value);
   const account = parseInt(document.getElementById('account').value);
   const branch = parseInt(document.getElementById('branch').value);
   const index = parseInt(document.getElementById('index').value);
-  
+
+  // derive a key from a key from a key from a key from a key from the master :-)  
   const key = 
     hd.derive(purpose, true)
     .derive(coin, true)
@@ -276,7 +305,8 @@ function getAddr(hd, net) {
 }
 ```
 
-...and like before we'll call this from the end of the last function `makeKey()`:
+...and like before we'll call this function `getAddr()` from the end of the last
+function `makeKey()`:
 
 ```javascript
 function makeKey(mne){
@@ -322,13 +352,20 @@ function getAddr(hd, net) {
   ...
 
   // **** output addresses here ****
+
+  // create a KeyRing object from the derived private key
   const ringL = KeyRing.fromPrivate(key.privateKey);
+  // set witness to false for legacy address
   ringL.witness = false;
+  // get the address in base58 format for this network
   const legAddr = ringL.getAddress('base58', net);
+
+  // do it all again but this time with witness enabled
   const ringW = KeyRing.fromPrivate(key.privateKey);
   ringW.witness = true;
   const witAddr = ringW.getAddress('string', net);
-      
+    
+  // print the output in to the HTML elements
   let addrInfo = '';
   addrInfo += `Legacy address: ${legAddr}<br>`;
   addrInfo += `SegWit address: ${witAddr}`;
@@ -352,8 +389,12 @@ And insert this function in the `<script>` section somewhere:
 
 ```javascript
 function generate() {
+
+  // creating a new Mnemonic object automatically generates random entropy
   const newMne = new HD.Mnemonic().toString();
   document.getElementById('mne').value = newMne;
+
+  // run all the downstream derivation functions
   parseMne();
 }
 ```
