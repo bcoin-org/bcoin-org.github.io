@@ -74,7 +74,7 @@ npm install -g uglify-es
 
 ## Compile a bcoin module for the browser
 
-In bcoin mnemonic seeds, HD derivation, and private keys are all handled by the
+In bcoin, mnemonic seeds, HD derivation, and private keys are all handled by the
 [hd module](https://github.com/bcoin-org/bcoin/tree/master/lib/hd). Here's the commands
 to compile the hd module for our web-app:
 
@@ -167,8 +167,6 @@ function parseMne() {
 
   }
   document.getElementById('mne-check').innerHTML = `Phrase OK`;
-
-  // ** second function here **
 }
 ```
 
@@ -210,10 +208,11 @@ series of radio-buttons to select the network, then grab that value and process 
 </div>
 ```
 
-Add this function to our in-line script:
+Add this code to the end of the `parseMne()` function:
 
 ```javascript
-function makeKey(mne) {
+function parseMne() {
+  ...
 
   // create a new HD object from the Mnemonic object derived from the phrase
   const hd = HD.fromMnemonic(mne);
@@ -226,20 +225,6 @@ function makeKey(mne) {
 
   // the public key must be derived first, then a Base58 string can be derived from that
   document.getElementById('xpub').innerHTML = hd.toPublic().toBase58(net)
-  
-  // *** third function here ***
-}
-```
-
-Then go back up to our previous function `paraseMne()` and add a line there so it
-calls our new function `makeKey()` at the end:
-
-```javascript
-function parseMne() {
-  ...
-
-  // ** second function here **
-  makeKey(mne);
 }
 ```
 
@@ -257,6 +242,7 @@ path that many Bitcoin wallets follow, so we can let the user derive any standar
 address, but we should also let them change any part of the path. For this guide,
 we're going to hard-code which levels are 'hardened', but you'll see how to make
 that more flexible if you want.
+
 
 We'll get a user-input path with defaults set to a standard Bitcoin BIP44 "purpose",
 Account `0`, receive address (instead of change) and index `0`. Notice again how
@@ -277,14 +263,16 @@ the attribute `onchange='parseMne()'`.
 
 In bcoin, traversing the HD path of keys is a recursive process, so once we get the
 user input, it's a pretty simple chain to get the key we want. The second parameter
-I'm passing here to each `derive()` call is a boolean that represents `hardened`
+we're passing here to each `derive()` call is a boolean that represents `hardened`
 derivation. Learn more about that
 [here](https://bitcoin.stackexchange.com/questions/37488/eli5-whats-the-difference-between-a-child-key-and-a-hardened-child-key-in-bip3)
 and [here](https://bitcoin.stackexchange.com/questions/37826/best-practices-for-hardened-keys-in-hd-wallets).
 
+Continue the `parseMne()` function as follows:
 
 ```javascript
-function getAddr(hd, net) {
+function parseMne() {
+  ...
 
   // gather the value of all the input fields
   const purpose = parseInt(document.getElementById('purpose').value);
@@ -300,20 +288,6 @@ function getAddr(hd, net) {
     .derive(account, true)
     .derive(branch, false)
     .derive(index, false);
-
-  // **** output addresses here ****
-}
-```
-
-...and like before we'll call this function `getAddr()` from the end of the last
-function `makeKey()`:
-
-```javascript
-function makeKey(mne){
-  ...
-
-  // *** third function here ***
-  getAddr(hd, net);
 }
 ```
 
@@ -324,11 +298,12 @@ need to derive from that key a usable Bitcoin address. This is actually a functi
 the bcoin `HD` module can _not_ do. So we'll need to import just one more tiny bit
 of the bcoin library: `KeyRing`.
 
-Again, with `bpkg`, exporting modules from bcoin is a cinch:
+With `bpkg`, exporting modules from bcoin is a cinch:
 
 ```
 cd <wherever your bcoin repo is installed>
-bpkg --browser --standalone --plugin [ uglify-es --toplevel ] --name KeyRing --output <your app dir>/KeyRing.js lib/primitives/keyring.js
+bpkg --browser --standalone --plugin [ uglify-es --toplevel ] --name KeyRing \
+--output <your app dir>/KeyRing.js lib/primitives/keyring.js
 ```
 
 Add the new `keyring` module to your webapp:
@@ -345,13 +320,11 @@ and SegWit addresses. First, add a `<div>` for the output to fill in:
 <div id='address'></div>
 ```
 
-Then add this code to the end of the `getAddr()` function:
+Then add this code to the end of the `parseMne()` function:
 
 ```javascript
-function getAddr(hd, net) {
+function parseMne() {
   ...
-
-  // **** output addresses here ****
 
   // create a KeyRing object from the derived private key
   const ringL = KeyRing.fromPrivate(key.privateKey);
@@ -375,9 +348,10 @@ function getAddr(hd, net) {
 
 ## Generate a new phrase
 
-This is all pretty cool but by now you're probably tired of entering the "abandon abandon"
-phrase over and over again. Let's add a button at the top of the page that will
-generate a new 12-word seed (and all the keys and addresses) with every click.
+This is all pretty cool but by now you're probably tired of entering the "abandon
+abandon..." phrase over and over again. Let's add a button at the top of the page
+that will generate a new 12-word seed (and all the keys and addresses) with every
+click.
 
 First add the button to the top of the webpage:
 
