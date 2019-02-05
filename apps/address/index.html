@@ -31,6 +31,11 @@
     </div>
     <br>
 
+    <div style='font-family:monospace'>
+      <span id='bip44path'></span>
+    </div>
+    <br>
+
     <div id='address' style='font-family: monospace;'></div>
     <br>
 
@@ -61,6 +66,7 @@ function parseXpub() {
     document.getElementById('explain').innerHTML = '';
     document.getElementById('address').innerHTML = '';
     document.getElementById('pathprefix').innerHTML = '';
+    document.getElementById('bip44path').innerHTML = '';
     return false;
   }
   document.getElementById('xpub-check').innerHTML =
@@ -96,7 +102,8 @@ function parseXpub() {
   
   // print output
   let explain = '';
-  let path = ''
+  let path = '';
+  let bip44path = '';
   const coins = {
     main: 0,
     testnet: 1,
@@ -115,6 +122,20 @@ function parseXpub() {
   if (depth)
     path += `${account + (hard ? "'" : '')}/`;
   document.getElementById('pathprefix').innerHTML = path
+
+  if (depth === 3 && hard) {
+    bip44path += '(Possible BIP44 path: ';
+    bip44path += "m/44'/";
+    bip44path += coins[network] + "'/";
+    bip44path += account + "'/";
+    bip44path += branch + "/";
+    bip44path += index;
+    bip44path += ")<br>";
+    if (branch === 0 || branch ===1)
+      bip44path += "Branch: " + (branch === 0 ? 'Receive' : 'Change');
+    document.getElementById('bip44path').innerHTML = bip44path;
+  } else
+    document.getElementById('bip44path').innerHTML = '';
 
   let addrInfo = '';
   addrInfo += `Legacy address: ${legAddr}<br>`;
