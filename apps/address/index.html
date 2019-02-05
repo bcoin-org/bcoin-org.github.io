@@ -4,46 +4,36 @@
     <title>Address - bcoin apps</title>
   </head>
   <body style='text-align: center; font-size:22px;'>
-    <button onclick='generate()' style='height:50px'>Generate!</button><br><br>
-    <label for='mne'>Mnemonic phrase: </label>
-    <input id='mne' style='width:80%; font-size:22px;' oninput='parseMne()'>
-    <div id='mne-check' style='height:35px'></div>
-    <form name='nets' onchange='parseMne()'>
-      Network:
-      <input type='radio' name='net' value='main' checked><label for='main'>Main</label>
-      <input type='radio' name='net' value='testnet'><label for='testnet'>Testnet</label>
-      <input type='radio' name='net' value='regtest'><label for='regtest'>Regtest</label>
-      <input type='radio' name='net' value='simnet'><label for='simnet'>Simnet</label>
-    </form>
     <br>
-    <div style='height:50px; text-align:left'>
-      Extended private key:
-      <span id='xpriv' style='font-family: monospace; font-size:15px; display: inline-block; width: 50%'></span><br>
-      Extended public key:
-      <span id='xpub' style='font-family: monospace; font-size:15px; display: inline-block; width: 50%'></span>
-    </div>
+
+    <label for='xpub'>Extended public key: </label>
+    <input id='xpub' style='width:80%; font-size:22px;font-family: monospace' oninput='parseXpub()'>
+    <div id='xpub-check' style='height:35px'></div>
     <br>
+
     <div>
-      Derivation path:
-      <span style='font-family:monospace'>m/</span>
-      <input type='number' onchange='parseMne()' style='width:40px' id='purpose' min='0' value='44'>'/
-      <input type='number' onchange='parseMne()' style='width:40px' id='coin' min='0' value='0'>'/
-      <input type='number' onchange='parseMne()' style='width:40px' id='account' min='0' value='0'>'/
-      <input type='number' onchange='parseMne()' style='width:40px' id='branch' min='0' value='0'>/
-      <input type='number' onchange='parseMne()' style='width:40px' id='index' min='0' value='0'>
+      <div id='explain'
+        style='
+          text-align: left;
+          margin: auto;
+          font-family: monospace;
+          font-size: 20px;
+          font-style: italic;
+          display: inline-block;
+      '></div>
     </div>
-    <div id='explain' 
-      style='
-        text-align: left;
-        margin: auto;
-        width: 15%;
-        font-family: monospace;
-        font-size: 20px;
-        font-style: italic;
-    '></div>
     <br>
+
+    <div style='font-family:monospace'>
+      Derivation path:
+      <span id='pathprefix'>
+      </span><input type='number' onchange='parseXpub()' style='width:40px' id='branch' min='0' value='0'>/<input type='number' onchange='parseXpub()' style='width:40px' id='index' min='0' value='0'>
+    </div>
+    <br>
+
     <div id='address' style='font-family: monospace;'></div>
     <br>
+
     <div style='text-align:left'>
       <span style='font-style: italic; font-size: 15px'>
         This webpage is for informational purposes ONLY.<br>
@@ -53,77 +43,89 @@
         was made</a>.
       </span>
     </div>
+
     <script type='text/javascript' src='HD.js'></script>
     <script type='text/javascript' src='KeyRing.js'></script>
-
     <script type='text/javascript'>
 
-function parseMne() {
-  const phrase = document.getElementById('mne').value;
-  let mne;
+function parseXpub() {
+  const string = document.getElementById('xpub').value;
+
+  // import and check xpub
+  let xpub;
   try {
-    mne = HD.Mnemonic.fromPhrase(phrase);
+    xpub = HD.fromBase58(string);
   } catch (e) {
-    document.getElementById('mne-check').innerHTML = `<span style='color:red'>Bad phrase: ${e.message}</span>`;
-    document.getElementById('xpub').innerHTML = '';
-    document.getElementById('xpriv').innerHTML = '';
+    document.getElementById('xpub-check').innerHTML =
+      `<span style='color:red'>Bad xpub: ${e.message}</span>`;
     document.getElementById('explain').innerHTML = '';
     document.getElementById('address').innerHTML = '';
+    document.getElementById('pathprefix').innerHTML = '';
     return false;
   }
-  document.getElementById('mne-check').innerHTML = `<span style='color:green'>Phrase OK</span>`;
-  makeKey(mne);
-}
+  document.getElementById('xpub-check').innerHTML =
+    `<span style='color:green'>xpub OK</span>`;
 
-function makeKey(mne) {
-  const hd = HD.fromMnemonic(mne);
-  const net = document.nets.net.value;
-  document.getElementById('xpub').innerHTML = hd.toPublic().toBase58(net)
-  document.getElementById('xpriv').innerHTML = hd.toBase58(net);
-  getAddr(hd, net);
-}
+  // derive network
+  const names = {
+    x: 'main',
+    t: 'testnet',
+    r: 'regtest',
+    s: 'simnet'
+  };
+  const network = names[string[0]];
 
-function getAddr(hd, net) {
-  const purpose = parseInt(document.getElementById('purpose').value);
-  const coin = parseInt(document.getElementById('coin').value);
-  const account = parseInt(document.getElementById('account').value);
+  // derive child keys
+  const depth = xpub.depth;
+  const childIndex = xpub.childIndex;
+  const hard = childIndex >= HD.common.HARDENED;
+  const account = hard ? (childIndex - HD.common.HARDENED) : childIndex;
+
   const branch = parseInt(document.getElementById('branch').value);
   const index = parseInt(document.getElementById('index').value);
 
-  const key = 
-    hd.derive(purpose, true)
-    .derive(coin, true)
-    .derive(account, true)
-    .derive(branch, false)
-    .derive(index, false);
+  const key = xpub.derive(branch, false).derive(index, false);
 
-  const ringL = KeyRing.fromPrivate(key.privateKey);
+  // derive SegWit and Legacy addresses
+  const ringL = KeyRing.fromPublic(key.publicKey);
   ringL.witness = false;
-  const legAddr = ringL.getAddress('base58', net);
-  const ringW = KeyRing.fromPrivate(key.privateKey);
+  const legAddr = ringL.getAddress('base58', network);
+  const ringW = KeyRing.fromPublic(key.publicKey);
   ringW.witness = true;
-  const witAddr = ringW.getAddress('string', net);
+  const witAddr = ringW.getAddress('string', network);
   
+  // print output
+  let explain = '';
+  let path = ''
+  const coins = {
+    main: 0,
+    testnet: 1,
+    regtest: 1,
+    simnet: 115
+  };
+
+  explain += `Network: ${network}<br>`;
+  explain += `Depth: ${depth}<br>`;
+  explain += `Child Index: ${account + (hard ? "'" : '')}<br>`;
+  document.getElementById('explain').innerHTML = explain;
+
+  path += 'm/';
+  for (let i = 1; i < depth; i++)
+    path += '?/';
+  if (depth)
+    path += `${account + (hard ? "'" : '')}/`;
+  document.getElementById('pathprefix').innerHTML = path
+
   let addrInfo = '';
   addrInfo += `Legacy address: ${legAddr}<br>`;
   addrInfo += `SegWit address: ${witAddr}`;
   document.getElementById('address').innerHTML = addrInfo;
-
-  let explain = '';
-  if (purpose === 44){
-    explain += 'Purpose: BIP44<br>';
-    explain += coin === 0 ? 'Coin: Bitcoin<br>' : coin === 1 ? 'Coin: Testnet<br>' : '';
-    explain += `Account: ${account}<br>`;
-    explain += branch === 0 ? 'Branch: Receive<br>' : branch === 1 ? 'Branch: Change<br>' : '';
-    explain += `Index: ${index}`;
-  }
-  document.getElementById('explain').innerHTML = explain;
 }
 
 function generate() {
   const newMne = new HD.Mnemonic().toString();
   document.getElementById('mne').value = newMne;
-  parseMne();
+  parseXpub();
 }
     </script>
   </body>
