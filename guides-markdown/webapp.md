@@ -236,7 +236,7 @@ and allow the user to derive these typical addresses.
 
 For testing this, let's use a BIP44-based xpub example:
 
-`tpubD6NzVbkrYhZ4XYa9MoLt4BiMZ4gkt2faZ4BcmKu2a9te4LDpQmvEz2L2yDERivHxFPnxXXhqDRkUNnQCpZggCyEZLBktV7VaSmwayqMJy1s`
+`tpubDC5FSnBiZDMmhiuCmWAYsLwgLYrrT9rAqvTySfuCCrgsWz8wxMXUS9Tb9iVMvcRbvFcAHGkMD5Kx8koh4GquNGNTfohfk7pgjhaPCdXpoba`
 
 We'll get a user-input path with defaults set to `receive` address (as opposed to `change`)
 and address index `0`. Notice again how we call the whole chain of derivation functions
