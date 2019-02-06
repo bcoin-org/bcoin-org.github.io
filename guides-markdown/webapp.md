@@ -234,6 +234,10 @@ index to specify receive or change, and finally an incremented index for address
 For the purposes of this guide, we'll assume only BIP44 xpubs are being entered,
 and allow the user to derive these typical addresses.
 
+For testing this, let's use a BIP44-based xpub example:
+
+`tpubD6NzVbkrYhZ4XYa9MoLt4BiMZ4gkt2faZ4BcmKu2a9te4LDpQmvEz2L2yDERivHxFPnxXXhqDRkUNnQCpZggCyEZLBktV7VaSmwayqMJy1s`
+
 We'll get a user-input path with defaults set to `receive` address (as opposed to `change`)
 and address index `0`. Notice again how we call the whole chain of derivation functions
 any time a value is changed with the attribute `onchange='parseXpub()'`.
@@ -325,7 +329,8 @@ function parseXpub() {
 }
 ```
 
-![Finished webapp](../assets/images/guides/webapp-finished3.gif "Finished webapp")
+I added some bells and whistles to the final version. [You can review the source code
+here.](https://github.com/bcoin-org/bcoin-org.github.io/blob/staging/apps/address/index.html)
 
 ## A word about security
 
