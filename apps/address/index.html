@@ -72,7 +72,7 @@ function parseXpub() {
   document.getElementById('xpub-check').innerHTML =
     `<span style='color:green'>xpub OK</span>`;
 
-  // derive network
+  // derive metadata
   const names = {
     x: 'main',
     t: 'testnet',
@@ -80,16 +80,14 @@ function parseXpub() {
     s: 'simnet'
   };
   const network = names[string[0]];
-
-  // derive child keys
   const depth = xpub.depth;
   const childIndex = xpub.childIndex;
   const hard = childIndex >= HD.common.HARDENED;
   const account = hard ? (childIndex - HD.common.HARDENED) : childIndex;
 
+  // derive child key
   const branch = parseInt(document.getElementById('branch').value);
   const index = parseInt(document.getElementById('index').value);
-
   const key = xpub.derive(branch, false).derive(index, false);
 
   // derive SegWit and Legacy addresses
@@ -123,6 +121,7 @@ function parseXpub() {
     path += `${account + (hard ? "'" : '')}/`;
   document.getElementById('pathprefix').innerHTML = path
 
+  // try to parse BIP44 path
   if (depth === 3 && hard) {
     bip44path += '(Possible BIP44 path: ';
     bip44path += "m/44'/";
@@ -141,12 +140,6 @@ function parseXpub() {
   addrInfo += `Legacy address: ${legAddr}<br>`;
   addrInfo += `SegWit address: ${witAddr}`;
   document.getElementById('address').innerHTML = addrInfo;
-}
-
-function generate() {
-  const newMne = new HD.Mnemonic().toString();
-  document.getElementById('mne').value = newMne;
-  parseXpub();
 }
     </script>
   </body>

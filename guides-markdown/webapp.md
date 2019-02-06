@@ -17,22 +17,20 @@ adding alternative scripts for components like [databases](https://github.com/bc
 and [cryptography](https://github.com/bcoin-org/bcrypto/blob/master/lib/js/sha256.js)
 so every bcoin function will run properly in the browser. In a previous guide, we
 illustrated [how to run a full node in the web browser](https://bcoin.io/guides/browser).
-While that is an amusing novelty and intriguing proof-of-concept, its of little practical
-utility... for now. But because bcoin was developed with a modular architecture, we can
-build very useful web-based applications for Bitcoin using small bits of the code base,
-and only importing what we need.
+While that is an amusing novelty and intriguing proof-of-concept, its actual utility is
+limited by the security and efficiency of the platform. But because bcoin was developed
+with a modular architecture, we can build very useful web-based applications for Bitcoin
+using small bits of the code base, and only importing what we need.
 
 ## Let's build a Bitcoin web-app
 
 For this guide, we're going to build a simple website that turns
-[12-word seed phrases](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)
-into [hierarchical-deterministic wallet accounts](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki),
-generates its own random seed phrases, and outputs both legacy and
+[Extended Public Keys (xpubs)](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Extended_keys)
+into hierarchical-deterministic wallet accounts](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki),
+and outputs both legacy and
 [SegWit addresses.](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki)
 
-You can play with the finished app at [http://bcoin.io/apps/address](https://bcoin.io/apps/address),
-and if you're interested you can also step through my build process
-[commit-by-commit](https://github.com/pinheadmz/bcoin-webapp/commits).
+You can play with the finished app at [http://bcoin.io/apps/address](https://bcoin.io/apps/address).
 
 ## Install the bcoin library
 
@@ -132,132 +130,119 @@ this module!
    <img src='../assets/images/guides/webapp-hd-console.png' style='width:50%'>
  </div>
 
-## Create an HD object from a user's mnemonic phrase
+## Create an HD object from a user's xpub
 
 Let's add a text-input field to the webpage for the user to type in a mnemonic phrase:
 
 ```html
-<label for='mne'>Mnemonic phrase: </label>
-<input id='mne' oninput='parseMne()'>
-<div id='mne-check'></div>
+<label for='xpub'>Extended public key: </label>
+<input id='xpub' oninput='parseXpub()'>
+<div id='xpub-check'></div>
 ```
 
-You can add some CSS here too but the really important bit is `oninput=parseMne()`.
+You can add some CSS here too but the really important bit is `oninput=parseXpub()`.
 This is telling the page to call a JavaScript function every time anything is typed or
 changed in the text field. We'll write that function next and insert it after the `<script>`
 tag in the HTML page. The first thing we want to do is parse the user's input and
-return an error if the phrase isn't valid -- bcoin will take care of all the hard work!
-Creating a bcoin `Mnemonic` object from a seed phrase is simple, we'll just wrap it
+return an error if the key isn't valid -- bcoin will take care of all the hard work!
+Creating a bcoin `HD` object from a base58-encoded xpub is simple, we'll just wrap it
 in a decent user experience:
 
 ```javascript
-function parseMne() {
-  const phrase = document.getElementById('mne').value;
-  let mne;
+function parseXpub() {
+  const string = document.getElementById('xpub').value;
+  let xpub;
   try {
 
-    // attempt to create a Mnemonic object from the phrase
-    mne = HD.Mnemonic.fromPhrase(phrase);
+    // attempt to create an HD object from the input string
+    xpub = HD.fromBase58(string);
 
   } catch (e) {
 
-    // if the phrase is malformed, an error will be thrown
-    document.getElementById('mne-check').innerHTML = `Bad phrase: ${e.message}`;
+    // if the string is malformed, an error will be thrown
+    document.getElementById('xpub-check').innerHTML = `Bad xpub: ${e.message}`;
     return false;
 
   }
-  document.getElementById('mne-check').innerHTML = `Phrase OK`;
+  document.getElementById('xpub-check').innerHTML = `xpub OK`;
 }
 ```
 
-At this point you can already enter a phrase into the text field, and it will display
-an error on every key stroke until the phrase is complete and valid. For testing purposes,
-you can use this scary-looking string:
+At this point you can already paste an xpub string into the text field, and it will display
+an error if the key is not complete and valid. You can try changing one character and see the
+error detection. For testing purposes, you can use
+[this example xpub from the BIP32 spec](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Test_Vectors):
 
-`abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about`
+`xpub6D4BDPcP2GT577Vvch3R8wDkScZWzQzMMUm3PWbmWvVJrZwQY4VUNgqFJPMM3No2dFDFGTsxxpG5uJh7n7epu4trkrX7x7DogT5Uv6fcLW5`
 
-The reason it ends with the word "about" is because that word is actually a checksum,
-and is calculated by an algorithm to check for mistakes in the first 11 words. Try
-moving words around in the phrase, introducing typos and mistakes. The error-checking
-should track accordingly.
+## Extract the metadata encoded by the key
 
-## Derive an HD master private key from the mnemonic
+Extended Public Keys are packed with details about how they were derived. We'll
+pull some of that information out and display it to the user. We can tell right
+away by the string's prefix what network it is for. In bcoin, key prefixes are defined
+by each network in the
+[protocol/networks.js](https://github.com/bcoin-org/bcoin/blob/master/lib/protocol/networks.js)
+file. The xpub also tells us how far down the derivation tree it is, and at what index.
+In BIP44 paths, the index is a "hardened" key often referred to as the "account index".
+Simply by instantiating an `HD` object, bcoin has already extracted those properties.
 
-Next we want to output the extended private key for our mnemonic. This is the long string
-prefixed by `xpriv` (or `xpub` for the public key). Testnet and regtest networks use
-different prefix bytes, so we'll need to get the user's input on that. We'll use a
-series of radio-buttons to select the network, then grab that value and process the
-`mne` object from the last function. The output will pop up in two new `<span>`'s.
-
-```html
-<form name='nets' onchange='parseMne()'>
-  Network:
-  <input type='radio' name='net' value='main' checked><label for='main'>Main</label>
-  <input type='radio' name='net' value='testnet'><label for='testnet'>Testnet</label>
-  <input type='radio' name='net' value='regtest'><label for='regtest'>Regtest</label>
-  <input type='radio' name='net' value='simnet'><label for='simnet'>Simnet</label>
-</form>
-<br>
-<div>
-  Extended private key:
-  <span id='xpriv'></span>
-</div>
-<div>
-  Extended public key:
-  <span id='xpub'></span>
-</div>
-```
-
-Add this code to the end of the `parseMne()` function:
+Let's print out those data to a new `div` in the webpage.
+Add some more lines to the `parseXpub()` function started already:
 
 ```javascript
-function parseMne() {
+function parseXpub() {
   ...
 
-  // create a new HD object from the Mnemonic object derived from the phrase
-  const hd = HD.fromMnemonic(mne);
+  // derive network from first letter of string
+  const names = {
+    x: 'main',
+    t: 'testnet',
+    r: 'regtest',
+    s: 'simnet'
+  };
+  const network = names[string[0]];
 
-  // get the selected network from the HTML form
-  const net = document.nets.net.value;
-  
-  // the HD object has a built-in function to derive the private key in Base58 format
-  document.getElementById('xpriv').innerHTML = hd.toBase58(net);
+  // get all other metadata imported by bcoin
+  const depth = xpub.depth;
+  const childIndex = xpub.childIndex;
+  const hard = childIndex >= HD.common.HARDENED;
+  const account = hard ? (childIndex - HD.common.HARDENED) : childIndex;
 
-  // the public key must be derived first, then a Base58 string can be derived from that
-  document.getElementById('xpub').innerHTML = hd.toPublic().toBase58(net)
+  // compose output and insert into html
+  let explain = '';
+  explain += `Network: ${network}<br>`;
+  explain += `Depth: ${depth}<br>`;
+  explain += `Child Index: ${account + (hard ? "'" : '')}<br>`;
+  document.getElementById('explain').innerHTML = explain;
 }
 ```
 
-Notice how easy it is with bcoin to create an HD object from the phrase, and get both
-the private and public keys. We could encode those keys in a few different formats
-(Base58, JSON, raw serial bytes) and for any available network.
+Then somewhere in the body of the html document, add a target for the output:
+
+```html
+<div id='explain'></div>
+```
 
 ## Derive child keys from the BIP32 path
 
-Now that we have a master private key, we can generate an (almost) infinite number
+Now that we have a master public key, we can generate an (almost) infinite number
 of Bitcoin addresses. The bcoin wallet is designed to follow 
 [BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) which
 specifies a series of derivations and a function for each level. It's a standard
-path that many Bitcoin wallets follow, so we can let the user derive any standard
-address, but we should also let them change any part of the path. For this guide,
-we're going to hard-code which levels are 'hardened', but you'll see how to make
-that more flexible if you want.
+path that many Bitcoin wallets follow with a hardened account index, a "soft" branch
+index to specify receive or change, and finally an incremented index for addresses.
+For the purposes of this guide, we'll assume only BIP44 xpubs are being entered,
+and allow the user to derive these typical addresses.
 
-
-We'll get a user-input path with defaults set to a standard Bitcoin BIP44 "purpose",
-Account `0`, receive address (instead of change) and index `0`. Notice again how
-we call the whole chain of derivation functions any time a value is changed with
-the attribute `onchange='parseMne()'`.
+We'll get a user-input path with defaults set to `receive` address (as opposed to `change`)
+and address index `0`. Notice again how we call the whole chain of derivation functions
+any time a value is changed with the attribute `onchange='parseXpub()'`.
 
 ```html
 <div>
   Derivation path:
-  <span>m/</span>
-  <input type='number' onchange='parseMne()' id='purpose' min='0' value='44'>'/
-  <input type='number' onchange='parseMne()' id='coin' min='0' value='0'>'/
-  <input type='number' onchange='parseMne()' id='account' min='0' value='0'>'/
-  <input type='number' onchange='parseMne()' id='branch' min='0' value='0'>/
-  <input type='number' onchange='parseMne()' id='index' min='0' value='0'>
+  <input type='number' onchange='parseXpub()' id='branch' min='0' value='0'>/
+  <input type='number' onchange='parseXpub()' id='index' min='0' value='0'>
 </div>
 ```
 
@@ -268,32 +253,24 @@ derivation. Learn more about that
 [here](https://bitcoin.stackexchange.com/questions/37488/eli5-whats-the-difference-between-a-child-key-and-a-hardened-child-key-in-bip3)
 and [here](https://bitcoin.stackexchange.com/questions/37826/best-practices-for-hardened-keys-in-hd-wallets).
 
-Continue the `parseMne()` function as follows:
+Continue the `parseXpub()` function as follows:
 
 ```javascript
-function parseMne() {
+function parseXpub() {
   ...
 
   // gather the value of all the input fields
-  const purpose = parseInt(document.getElementById('purpose').value);
-  const coin = parseInt(document.getElementById('coin').value);
-  const account = parseInt(document.getElementById('account').value);
   const branch = parseInt(document.getElementById('branch').value);
   const index = parseInt(document.getElementById('index').value);
 
-  // derive a key from a key from a key from a key from a key from the master :-)  
-  const key = 
-    hd.derive(purpose, true)
-    .derive(coin, true)
-    .derive(account, true)
-    .derive(branch, false)
-    .derive(index, false);
+  // derive a key from a key from the master :-)
+  const key = xpub.derive(branch, false).derive(index, false);
 }
 ```
 
 ## Derive address from key
 
-Now that we can derive a master seed and generate any child key the user wants, we
+Now that we can import a master public key and generate any child key the user wants, we
 need to derive from that key a usable Bitcoin address. This is actually a function
 the bcoin `HD` module can _not_ do. So we'll need to import just one more tiny bit
 of the bcoin library: `KeyRing`.
@@ -320,23 +297,25 @@ and SegWit addresses. First, add a `<div>` for the output to fill in:
 <div id='address'></div>
 ```
 
-Then add this code to the end of the `parseMne()` function:
+Then add this code to the end of the `parseXpub()` function:
 
 ```javascript
-function parseMne() {
+function parseXpub() {
   ...
 
   // create a KeyRing object from the derived private key
-  const ringL = KeyRing.fromPrivate(key.privateKey);
+  const ringLegacy = KeyRing.fromPublic(key.publicKey);
+
   // set witness to false for legacy address
-  ringL.witness = false;
+  ringLegacy.witness = false;
+
   // get the address in base58 format for this network
-  const legAddr = ringL.getAddress('base58', net);
+  const legAddr = ringLegacy.getAddress('base58', network);
 
   // do it all again but this time with witness enabled
-  const ringW = KeyRing.fromPrivate(key.privateKey);
-  ringW.witness = true;
-  const witAddr = ringW.getAddress('string', net);
+  const ringWitness = KeyRing.fromPublic(key.publicKey);
+  ringWitness.witness = true;
+  const witAddr = ringWitness.getAddress('string', network);
     
   // print the output in to the HTML elements
   let addrInfo = '';
@@ -346,45 +325,15 @@ function parseMne() {
 }
 ```
 
-## Generate a new phrase
-
-This is all pretty cool but by now you're probably tired of entering the "abandon
-abandon..." phrase over and over again. Let's add a button at the top of the page
-that will generate a new 12-word seed (and all the keys and addresses) with every
-click.
-
-First add the button to the top of the webpage:
-
-```html
-<button onclick='generate()'>Generate!</button><br><br>
-```
-
-And insert this function in the `<script>` section somewhere:
-
-```javascript
-function generate() {
-
-  // creating a new Mnemonic object automatically generates random entropy
-  const newMne = new HD.Mnemonic().toString();
-  document.getElementById('mne').value = newMne;
-
-  // run all the downstream derivation functions
-  parseMne();
-}
-```
-
-This function will generate pseudo-random entropy
-[(even in the browser)](https://github.com/bcoin-org/bcrypto/blob/934f5ea45a0bc0926b9e7916f68bfeb2ea4881e3/lib/js/random.js#L139-L172)
-and derive a new 12-word phrase from that seed. It pops the phrase in our text field
-and then runs all the downstream derivation functions!
-
 ![Finished webapp](../assets/images/guides/webapp-finished3.gif "Finished webapp")
 
 ## A word about security
 
 Web browsers are inherently dangerous environments. Browser plugins can modify any
-content or JavaScript function on the page, and web sites are easy vectors for
-phishing attacks. Tools like this are nice because they can work on almost any
+content or
+[JavaScript function on the page](https://github.com/w3c/webcrypto/issues/107),
+and web sites are easy vectors for
+phishing attacks. Tools like ours are nice because they can work on almost any
 platform, or be imported into an [Electron](https://electronjs.org/) app or
 [Cordova](https://cordova.apache.org/) app, where the environment can be better
 secured. Verify whatever source code you can, only run trusted software, and use
