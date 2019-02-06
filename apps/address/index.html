@@ -7,7 +7,8 @@
     <br>
 
     <label for='xpub'>Extended public key: </label>
-    <input id='xpub' style='width:80%; font-size:22px;font-family: monospace' oninput='parseXpub()'>
+    <input id='xpub' style='width:80%; font-size:22px;font-family: monospace' oninput='parseXpub()'
+      value='tpubDC5FSnBiZDMmhiuCmWAYsLwgLYrrT9rAqvTySfuCCrgsWz8wxMXUS9Tb9iVMvcRbvFcAHGkMD5Kx8koh4GquNGNTfohfk7pgjhaPCdXpoba'>
     <div id='xpub-check' style='height:35px'></div>
     <br>
 
@@ -141,6 +142,9 @@ function parseXpub() {
   addrInfo += `SegWit address: ${witAddr}`;
   document.getElementById('address').innerHTML = addrInfo;
 }
+
+// on load default value
+parseXpub();
     </script>
   </body>
 </html>
