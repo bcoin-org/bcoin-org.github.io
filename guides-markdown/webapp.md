@@ -132,7 +132,7 @@ this module!
 
 ## Create an HD object from a user's xpub
 
-Let's add a text-input field to the webpage for the user to type in a mnemonic phrase:
+Let's add a text-input field to the webpage for the user to type in a xpub string:
 
 ```html
 <label for='xpub'>Extended public key: </label>
@@ -293,7 +293,7 @@ Add the new `keyring` module to your webapp:
 <script type='text/javascript' src='KeyRing.js'></script>
 ```
 
-Now we can access the `KeyRing` module, create `KeyRing` objects from private keys,
+Now we can access the `KeyRing` module, create `KeyRing` objects from public keys,
 and get the addresses. We'll actually make two `KeyRing`'s so we can derive both legacy
 and SegWit addresses. First, add a `<div>` for the output to fill in:
 
@@ -307,7 +307,7 @@ Then add this code to the end of the `parseXpub()` function:
 function parseXpub() {
   ...
 
-  // create a KeyRing object from the derived private key
+  // create a KeyRing object from the derived public key
   const ringLegacy = KeyRing.fromPublic(key.publicKey);
 
   // set witness to false for legacy address
@@ -355,7 +355,7 @@ on an air-gapped computer, or use the
 [script parser](https://github.com/bcoin-org/bcoin/blob/master/lib/script/script.js)
 to test complicated smart contracts.
 
-You can even connect to actual running full or SPV node!
+You can even connect to an actual running full or SPV node!
 [bcoin has an HTTP API](https://bcoin.io/api-docs) which you could link to from your
 webapp. You could even use `bpkg` to bundle a
 [complete node and wallet client](https://github.com/bcoin-org/bclient) and connect
