@@ -248,7 +248,7 @@ console.log(jdWalletKey0.getPrivateKey('base58'));
 Finally, you can create mnemonics manually and seed new wallets with them. And if you need to generate keys from a mnemonic you provide - either by recreating a wallet or by extracting specific keys - you can do that as well.
 
 ```javascript
-//can wegenerate a mnemonic with twice as many bits of entropy to future proof against brute force attacks from the next millenium? sure we can.
+//can we generate a mnemonic with twice as many bits of entropy to future proof against brute force attacks from the next millenium? sure we can.
 const mnemonic24 = new Mnemonic({bits: 256});
 console.log(mnemonic24.toString());
 //page unknown ladder thunder airport merry run ball inject clinic danger valley equip consider normal twist casual duck essay almost trade regular two segment
