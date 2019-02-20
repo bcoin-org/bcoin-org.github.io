@@ -268,7 +268,7 @@ console.log(keyring)
 HDPublicKey {
   depth: 5,
   parentFingerPrint: 3443512669,
-  childIndex: 10,
+  childIndex: 30,
   chainCode:
    <Buffer 92 74 63 8e a1 37 4f 76 c3 45 b3 72 a9 f9 6e 3f 6f e8 91 21 ea b7 2f aa d1 14 3b 03 4a 28 88 ec>,
   publicKey:
@@ -276,7 +276,7 @@ HDPublicKey {
   fingerPrint: -1 } { name: 'john_doe',
   account: 1,
   branch: 0,
-  index: 10,
+  index: 30,
   witness: false,
   nested: false,
   publicKey:
