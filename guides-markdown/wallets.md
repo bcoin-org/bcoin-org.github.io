@@ -243,12 +243,59 @@ console.log(jdWalletKey0.getPrivateKey('base58'));
 //cNZfR3NhQ9oCP3pTjvPZETUuTWZo2k6EXtfczvbWyv7FdjMhppvJ
 ```
 
+#### Using an HD path
+
+Sometimes it is handy to work with an HD path. This is an object that contains information on a particular path to a key in the tree hierarchy of the wallet. In particular, a path knows the account, the branch and the index of the relevant key. This is according to [BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki), which specifies that every account gets its own subtree of keys. According to BIP44, an account has two children (known as branches): the first for receiveing addresses and the second for change addresses. Here in bcoin, there is also a third branch, for nested segwit addresses. (bcoin does not implement BIPS [49](https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki) and [84](https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki) yet.) These three branches can in turn have as many children as needed. These correspond to the aforementioned index and provide the actual keys that are used for transactions.
+
+```javascript
+const path = await wdb.getPath(wallet.wid, jdAccount.receiveKey().getHash())
+// Let's skip 30 indexes
+path.index += 30
+
+// Get the corresponding keyring:
+const jdKey = jdAccount.accountKey.derive(path.branch).derive(path.index)
+const keyring = WalletKey.fromHD(jdAccount, jdKey, path.branch, path.index)
+
+// Warning: if any coins are paid to the address of the generated keyring above,
+// the wallet won't notice until 20 more receive keys are generated. This is
+// because by default wallets look for received coins in the addresses that
+// correspond to the next 10 indexes. You may actually use this as a trick to
+// hide some money from yourself, only to see them again after receiving several
+// transactions. Surprise money!
+
+console.log(keyring)
+/*
+HDPublicKey {
+  depth: 5,
+  parentFingerPrint: 3443512669,
+  childIndex: 10,
+  chainCode:
+   <Buffer 92 74 63 8e a1 37 4f 76 c3 45 b3 72 a9 f9 6e 3f 6f e8 91 21 ea b7 2f aa d1 14 3b 03 4a 28 88 ec>,
+  publicKey:
+   <Buffer 02 7e 0a 71 6f ee 92 03 7e 13 4f af d0 b8 41 34 1c 2c e7 7b 31 dc 59 69 84 6a 81 fc 58 57 24 1c 40>,
+  fingerPrint: -1 } { name: 'john_doe',
+  account: 1,
+  branch: 0,
+  index: 10,
+  witness: false,
+  nested: false,
+  publicKey:
+   '027e0a716fee92037e134fafd0b841341c2ce77b31dc5969846a81fc5857241c40',
+  script: null,
+  program: null,
+  type: 'pubkeyhash',
+  address: 'n3ymqyMsqLjhyzZUqkRtGjyvRxVvhHU7q8' }
+*/
+```
+
+An HD path is a powerful tool that allows you to manually traverse the HD wallet tree with ease. But be warned, there's a lot into HD wallets, so be sure you understand what you're doing. With great power comes great responsibility!
+
 #### Generating Mnemonics and Recovering Keys
 
 Finally, you can create mnemonics manually and seed new wallets with them. And if you need to generate keys from a mnemonic you provide - either by recreating a wallet or by extracting specific keys - you can do that as well.
 
 ```javascript
-//can wegenerate a mnemonic with twice as many bits of entropy to future proof against brute force attacks from the next millenium? sure we can.
+//can we generate a mnemonic with twice as many bits of entropy to future proof against brute force attacks from the next millenium? sure we can.
 const mnemonic24 = new Mnemonic({bits: 256});
 console.log(mnemonic24.toString());
 //page unknown ladder thunder airport merry run ball inject clinic danger valley equip consider normal twist casual duck essay almost trade regular two segment
