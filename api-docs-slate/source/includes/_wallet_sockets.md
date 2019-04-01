@@ -1,45 +1,39 @@
-# Wallet Events
+# Wallet Sockets
 
-## Using Wallet Sockets
-Wallet events use the socket.io protocol.
+## Wallet sockets - bsock
 
-Socket IO implementations:
-
-- JS: [https://github.com/socketio/socket.io-client](https://github.com/socketio/socket.io-client)
-- Python: [https://github.com/miguelgrinberg/python-socketio](https://github.com/miguelgrinberg/python-socketio)
-- Go: [https://github.com/googollee/go-socket.io](https://github.com/googollee/go-socket.io)
-- C++: [https://github.com/socketio/socket.io-client-cpp](https://github.com/socketio/socket.io-client-cpp)
-- bsock: [https://github.com/bcoin-org/bsock](https://github.com/bcoin-org/bsock) (recommended!)
-
-`bsock` is a minimal websocket-only implementation of the socket.io protocol,
-complete with ES6/ES7 features, developed by the bcoin team. `bsock` is used
-throughout the bcoin ecosystem including
-[`bclient`](https://github.com/bcoin-org/bclient) and [`bpanel`](https://github.com/bpanel-org/bpanel).
-
-For a deeper dive into events and sockets in bcoin, including a tutorial
-on using `bsock` and `bclient`, see the [bcoin.io Events and Sockets Guide.](https://bcoin.io/guides/events.html)
-
+```shell--curl
+(See JavaScript example)
 ```
-# Authentication
-socket.emit('auth', '<api-key>')
 
-# Joining
-socket.emit('join', 'wallet-id', 'token')
+```shell--cli
+(See JavaScript example)
+```
 
-# example - join specific wallet:
-socket.emit('join', 'primary', '92ded8555d6f04e440ba540f2221349cbf799c454f7e08d3f16577d3e0127b0e')
+```javascript
+const bsock = require('bsock');
+const walletSocket = bsock.connect('<network wallet RPC port>');
 
-# example - join all wallets:
-socket.emit('join', '*')
+// Authenticate and join wallet after connection to listen for events
+walletSocket.on('connect', async () => {
+  // Auth
+  await walletSocket.call('auth', '<api-key>');
 
-# Leaving
-socket.emit('leave', 'wallet-id')
+  // Join - All wallets
+  await walletSocket.call('join', '*', '<admin token>');
 
-# Listen for new transactions
-socket.on('tx', (walletID, details) => {
+  // Join - Specific wallet
+  await walletSocket.call('join', '<wallet id>', '<wallet token>');
+});
+
+// Listen for new transactions
+walletSocket.bind('tx', (walletID, details) => {
   console.log('Wallet -- TX Event, Wallet ID:\n', walletID);
   console.log('Wallet -- TX Event, TX Details:\n', details);
 });
+
+// Leave
+walletSocket.call('leave', <wallet id>);
 ```
 
 ### Wallet Socket Authentication
@@ -52,13 +46,68 @@ will be accepted.
 After creating a websocket and authing with the server, you must send a `join`
 event to listen for events on a wallet. Join all wallets by passing `'*'`.
 Leave a wallet with the `leave` event.
+Wallet or admin token is required if `wallet-auth` is `true`.
 
 ### Listening for events
 
 All wallet events return the `wallet-id` in addition to the JSON data described below.
 
+## Wallet sockets - bclient
 
-## `tx`
+```shell--curl
+(See JavaScript example)
+```
+
+```shell--cli
+(See JavaScript example)
+```
+
+```javascript
+const {WalletClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const walletOptions = {
+  network: network.type,
+  port: network.walletPort,
+  apiKey: '<api-key>'
+}
+
+const walletClient = new WalletClient(walletOptions);
+
+(async () => {
+  // Connection and auth handled by opening client
+  await walletClient.open();
+  await walletClient.join('*', '<admin token>');
+})();
+
+// Listen for new transactions
+walletClient.bind('tx', (walletID, details) => {
+  console.log('Wallet -- TX Event, Wallet ID:\n', walletID);
+  console.log('Wallet -- TX Event, TX Details:\n', details);
+});
+
+// Leave all wallets
+walletClient.leave('<wallet id>');
+```
+
+`bclient` abstracts away the connection and authentication steps to make listening
+for events much easier.
+
+## Wallet sockets - Calls
+
+The only wallet calls available are covered in the [previous section.](#wallet-sockets-bsock)
+
+They are:
+
+`auth`
+`join`
+`leave`
+
+
+## Wallet sockets - Events
+
+## wallet `tx`
 
 > Example:
 
@@ -94,7 +143,6 @@ All wallet events return the `wallet-id` in addition to the JSON data described 
 Emitted on transaction.
 
 Returns tx details.
-
 
 ## `conflict`
 

@@ -32,8 +32,10 @@ includes:
   - wallet_admin
   - wallet_tx
   - wallet_accounts
-  - wallet_events
   - wallet_rpc
+  - sockets
+  - node_sockets
+  - wallet_sockets
   - errors
 
 search: true
