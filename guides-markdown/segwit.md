@@ -38,7 +38,7 @@ scriptPubKeys:
   - `P2WPKH` scriptPubkey is `OP_0 0x14 {20-byte-hash}`, where `OP_0` is the *version byte*
 *0x14* is the size of the data, and the `{20-byte-hash}` is HASH160(PubKey).
   - `P2WSH` scriptPubkey is `OP_0 0x20 {32-byte-hash}`, where `OP_0` is the *version byte*
-*0x20* is the size of the data, and the `{32-byte-hash}` is md5(script).
+*0x20* is the size of the data, and the `{32-byte-hash}` is SHA256(script).
 Note: These witness programs aren't executed right away, they are stacks and are used
 to construct the scripts for verification.
 
@@ -162,7 +162,7 @@ Now bech32 address should contain `version byte = 0` and 32 byte long `hash` for
 ```js
 const decodedAddress = bech32.decode(address.toString());
 
-// data in bech32 should be md5(script)
+// data in bech32 should be SHA256(script)
 assert(decodedAddress.hash.equals(multisigScript.sha256()));
 ```
 
