@@ -4,15 +4,12 @@
 
 Complete list of commands:
 
-Command     				|cURL method	| Description
+Command                     |cURL method	| Description
 ----------------------------|---------------|------------
 `/`							| `GET`			| get info
-`/coin/address/:address`	| `GET`			| UTXO by address
-`/coin/:hash/:index`		| `GET`			| UTXO by txid
-`/coin/address`				| `POST`		| Bulk read UTXOs
 `/tx/:hash`					| `GET`			| TX by hash
 `/tx/address/:address`		| `GET`			| TX by address
-`/tx/address`				| `POST`		| Bulk read TXs
+`/coin/:hash/:index`		| `GET`			| UTXO by txid and index
 `/block/:block`				| `GET`			| Block by hash or height
 `/mempool`					| `GET`			| Mempool snapshot
 `/broadcast`				| `POST`		| Broadcast TX
@@ -60,6 +57,16 @@ const client = new NodeClient(clientOptions);
     "height": 205,
     "tip": "38d4ff72bca6737d958e1456be90443c0e09186349f28b952564118ace222331",
     "progress": 1
+  },
+  "indexes": {
+    "addr": {
+      "enabled": false,
+      "height": 0
+    },
+    "tx": {
+      "enabled": false,
+      "height": 0
+    }
   },
   "pool": {
     "host": "18.188.224.12",
