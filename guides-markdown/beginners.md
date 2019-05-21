@@ -151,4 +151,4 @@ Note: Selfish mode is not recommended. We encourage you to _help_ the network by
 
 ## Further Configuration
 
-See [Configuration](https://github.com/bcoin-org/bcoin/blob/master/docs/Configuration.md).
+See [Configuration](https://github.com/bcoin-org/bcoin/blob/master/docs/configuration.md).

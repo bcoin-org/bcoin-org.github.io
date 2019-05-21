@@ -74,7 +74,7 @@ These files may contain any of the configuration parameters, and will be interpr
 
 [A sample bcoin.conf file is included in the code repository](https://github.com/bcoin-org/bcoin/blob/master/etc/sample.conf)
 
-[Detailed configuration documentation is available in docs/Configuration](https://github.com/bcoin-org/bcoin/blob/master/docs/Configuration.md)
+[Detailed configuration documentation is available in docs/configuration](https://github.com/bcoin-org/bcoin/blob/master/docs/configuration.md)
 
 
 

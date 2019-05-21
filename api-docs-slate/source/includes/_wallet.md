@@ -49,7 +49,7 @@ simnet    | 18558
 ## Configuration
 Persistent configuration can be added to `wallet.conf` in your `prefix` directory.
 This could be the same directory as `bcoin.conf` for the node server, [but could also
-be in a network-specific directory.](https://github.com/bcoin-org/bcoin/blob/master/docs/Configuration.md)
+be in a network-specific directory.](https://github.com/bcoin-org/bcoin/blob/master/docs/configuration.md)
 
 > Example Configuration:
 
@@ -68,7 +68,7 @@ without any authentication barriers. <code>wallet-auth: true</code> requires a w
 </aside>
 
 
-## Wallet Auth
+## Wallet Authentication
 > The following samples return a wallet object using a wallet token
 
 ```javascript
@@ -108,11 +108,36 @@ const wallet = walletClient.wallet(id, token);
 })();
 ```
 
-Individual wallets have their own api keys, referred to internally as "tokens" (a 32 byte hash - calculated as `HASH256(m/44'->ec-private-key|tokenDepth)`).
+There are three levels of authentication for the bcoin wallet API server:
 
-A wallet is always created with a corresponding token. When using API endpoints
-for a specific wallet, the token must be sent back in the query string or JSON
-body.
+### 1. API Key
+
+The API key is set either in `wallet.conf` or with the argument `--api-key=` at launch.
+When set, the API key is required (using [HTTP Basic Authorization](https://en.wikipedia.org/wiki/Basic_access_authentication))
+to access ALL endpoints, otherwise a `401 Unauthorized` error is returned.
+See the section on [node API server authentication](#authentication) for tips on creating a strong key.
+
+### 2. Wallet tokens
+
+Every individual wallet has its own security token, which is a 32 byte hash calculated from the wallet master key:
+
+`SHA256(m/44' Private Key | tokenDepth)`
+
+A wallet is always created with a corresponding token. Even watch-only wallets will have a master private key,
+used just for this purpose. The token is returned when a wallet is created, or from the [wallet info](#get-wallet-info)
+API endpoint (which is restricted to `admin` access, see next subsection). When `wallet-auth` is set to `true`,
+the token must be sent in the query string or JSON body for any requests regarding that wallet.
+Requests with incorrect tokens are rejected with a `403 Forbidden` error.
+
+### 3. Wallet admin token
+
+The admin token is set by the user in `wallet.conf`, with the launch argument `bcoin --wallet-admin-token=`
+or, if running `bwallet` as a separate server, just `bwallet --admin-token=`.
+It is required to be a 32 byte hex string. Like the individual wallet tokens, it is only required when
+`wallet-auth: true`, and must be included in the query string or JSON body. Requests sent with an
+admin token automatically overrides individual wallet tokens, and can therefore access all wallets.
+
+The admin token also enables access to extra API endpoints outlined in [Wallet Admin Commands](#wallet-admin-commands).
 
 <aside class="warning">
 The examples in this section demonstrate how to use a wallet token for API access, which is recommended. However, for clarity, further examples in these docs will omit the token requirement.
