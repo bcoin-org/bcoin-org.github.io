@@ -10,7 +10,7 @@ Bcoin offers a powerful, modular way to create and manage bitcoin wallets. In th
 
 ## The Basics
 
-If you're a seasoned bitcoiner, you can probably skim this section or skip straight ahead to the [Examples](#examples) section. But if you're relatively new or just want a refresher, this section will help you understand how wallets actually work. 
+If you're a seasoned bitcoiner, you can probably skim this section or skip straight ahead to the [Examples](#examples) section. But if you're relatively new or just want a refresher, this section will help you understand how wallets actually work.
 
 ### Wallets
 
@@ -34,11 +34,11 @@ By default, mnemonics in bcoin are made up of twelve words representing 128 bits
 
 ### Accounts
 
-Wallets in bcoin are partitioned into accounts. When you first create a wallet, a "default" account is created automatically along with it. Accounts can be used to track and manage separate sets of keys all within a single wallet. For example, a business can use accounts to generate distinct addresses for depositors or to segregate customer funds internally. 
+Wallets in bcoin are partitioned into accounts. When you first create a wallet, a "default" account is created automatically along with it. Accounts can be used to track and manage separate sets of keys all within a single wallet. For example, a business can use accounts to generate distinct addresses for depositors or to segregate customer funds internally.
 
 Bcoin implements [BIP44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) as a method of generating unlimited accounts deterministically. This adds additional dimensions to the hierarchy described above, meaning the same seed that can recover all your keys can also recover all your addresses.
 
-Each account also comes with its own "extended public key," a piece of data that can be used to generate all public keys for that account in deterministic fashion. This means, for instance, that a business can create limitless deposit addresses for its users without having to touch its critical private keys or seed. Remember that public keys can be used for receiving bitcoins, but not for spending, so a public key falling into the wrong hands will not immediately result in theft. 
+Each account also comes with its own "extended public key," a piece of data that can be used to generate all public keys for that account in deterministic fashion. This means, for instance, that a business can create limitless deposit addresses for its users without having to touch its critical private keys or seed. Remember that public keys can be used for receiving bitcoins, but not for spending, so a public key falling into the wrong hands will not immediately result in theft.
 
 ### Watch Only Wallets
 
@@ -89,7 +89,7 @@ With the [bcoin package](https://www.npmjs.com/package/bcoin) installed, we'll f
 const bcoin = require('bcoin').set('testnet');
 const WalletDB = bcoin.WalletDB;
 const WalletKey = bcoin.wallet.WalletKey;
-const KeyRing = bcoin.keyring;
+const KeyRing = bcoin.KeyRing;
 const Mnemonic = bcoin.hd.Mnemonic;
 const HD = bcoin.hd;
 
@@ -110,7 +110,7 @@ Creating a wallet in our database takes only one line.
 //creates and returns a Wallet object from scratch using a random master key and default options
 const wallet = await wdb.create();
 console.log(wallet);
-/*{ 
+/*{
   wid: 2,
   id: 'WLTdx4aYEPmmrQiYNwPop4nLtbpTEdJYwrN4',
   network: 'testnet',
@@ -118,23 +118,23 @@ console.log(wallet);
   accountDepth: 1,
   token: 'eeae267e99d112793b892a8e30f89b1e1e0ba0d4984c2e6f09fc7931e750af5a', //the token you'll need to use the REST API with `wallet-auth` set to true
   tokenDepth: 0,
-  state: 
+  state:
    { wid: undefined,
      id: undefined,
      tx: 0,
      coin: 0,
      unconfirmed: 0,
      confirmed: 0 },
-  master: 
+  master:
    { encrypted: false,
      key: { xprivkey: 'tprv8ZgxMBicQKsPdcD55gci7HBednWRaosU4CkAHNEAs3kAAj9m8TVrEzxAW3EPrTrFevVssHCCoRsA37vB65SUZs727k45Nz1Cjmy4tyaSFeR' }, //the keys to the castle, guard this carefully!
-     mnemonic: 
+     mnemonic:
       { bits: 128,
         language: 'english',
         entropy: '04a50a56fbaaadc26a2b1690ec74243f',
         phrase: 'again choose noble warrior print thrive post glare movie glove animal legal', //the keys to the castle in human readable form
         passphrase: '' } },
-  account: 
+  account:
    { wid: 2,
      name: 'default',
      network: <Network: testnet>,
@@ -152,7 +152,7 @@ console.log(wallet);
      address: <Address: type=pubkeyhash version=-1 str=mhNHETXFKDk7ZpGg3iEZb7guWZ2fbCuFjv>,
      nestedAddress: null,
      accountKey: 'tpubDDZ1r85SUsur87eW6uCrWancnCVHSLf5YcXzudCF6qBUQguR8upC6pgSuzxahDkf75SQ4LJ3R4x5NvfgQPmNjxhg2pcHzBCKcG2fBUQJ5U5', //the extended public key that can be used to generate receiving addresses for this account
-     keys: [] } 
+     keys: [] }
  }*/
 ```
 
@@ -181,7 +181,7 @@ You can also create a second account with a custom name.
 // let's create another account for hypothetical customer John Doe
 const jdAccount = await wallet.createAccount({name: 'john_doe'});
 console.log(jdAccount);
-/*{ 
+/*{
   wid: 2,
   name: '1',
   network: <Network: testnet>,
@@ -200,7 +200,7 @@ console.log(jdAccount);
   nestedAddress: null,
   accountKey: 'tpubDDZ1r85SUsur9txJF5ziLRD6757E1Q7x6VLfPby4YKqAdNwgmrkXBNDzMowxYJVoAizd7CCLHELY5X2HYzh6YurbH9vMyQJN
 T92n87z22yX',
-  keys: [] 
+  keys: []
 }*/
 
 //Mr. Doe wants to make 10 deposits, let's get him a unique address for each one
@@ -309,7 +309,7 @@ const recoveredWallet = await wdb.create({master: masterKey});
 //we can also recover only the keys for John Doe's first receiving address without recreating the wallet or account
 //this time we'll skip instantiating the account and use the BIP44 path for the second account, first branch, and first index on bitcoin testnet
 const jdRecoveredPrivateKey = masterKey.derivePath("m/44'/1'/1'/0/0");
-const jdKeyRing = new KeyRing(jdRecoveredPrivateKey); 
+const jdKeyRing = new KeyRing(jdRecoveredPrivateKey);
 //our output should be the same as what we logged to the console earlier in this example
 console.log(jdKeyRing.getAddress('string'));
 //muCSbWC6z1tAr2i1M5BKPWEZ8zapzcKfKh
@@ -387,7 +387,7 @@ Without it, we get a 403 Forbidden error.
     at process._tickCallback (internal/process/next_tick.js:109:7)
 ```
 
-However, we can change our token for this wallet as often as we'd like. In a production-like setting, you'd probably want to encrypt the wallet with a passphrase which would also be required for the `retoken` call below. 
+However, we can change our token for this wallet as often as we'd like. In a production-like setting, you'd probably want to encrypt the wallet with a passphrase which would also be required for the `retoken` call below.
 
 ``` bash
 ~$ bcoin wallet retoken --id guide1 --token c88bc2fda2f265bc00c8fd28771c62695dbbddfd05ef2510f9e0afbec14818ba
