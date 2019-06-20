@@ -14,7 +14,7 @@ In most Bitcoin transactions, when a transaction is signed, the entirety of the 
 The `ALL|ANYONECANPAY` flag indicates that a signature is committing all of the outputs and just one input. The suggested use case of this proposed in *Mastering Bitcoin* is a kickstarter-like crowdfunding application. Consider the situation where you have a fundraising goal, say 1BTC. You'd like multiple people to contribute to your goal and you want to prove to them that they won't have to pay *unless* you reach your goal (i.e. the transaction is invalid and won't be accepted by the network if attempted to be sent). This means you'd be committing to one output, the one that sends the funds to the charity or project you'd like to donate to, and only one input, your contribution. This allows multiple users to contribute to the same transaction and that transaction won't be valid until it's fully funded.
 
 Here's how it's explained in *Mastering Bitcoin*:
-> ALL|ANYONECANPAY  
+> ALL|ANYONECANPAY
 This construction can be used to make a "crowdfunding”-style transaction. Someone attempting to raise funds can construct a transaction with a single output. The single output pays the "goal" amount to the fundraiser. Such a transaction is obviously not valid, as it has no inputs. However, others can now amend it by adding an input of their own, as a donation. They sign their own input with ALL|ANYONECANPAY. Unless enough inputs are gathered to reach the value of the output, the transaction is invalid. Each donation is a "pledge," which cannot be collected by the fundraiser until the entire goal amount is raised.
 
 ## The Code
@@ -347,7 +347,7 @@ const composeWalletCrowdfund = async function composeWalletCrowdfund() {
     // Before we do anything we need to get
     // the fee that will be necessary for each funder's input.
     const funderKey = await funder.getWIF(coins[0].address);
-    const funderKeyring = new bcoin.keyring.fromSecret(funderKey.privateKey);
+    const funderKeyring = new bcoin.KeyRing.fromSecret(funderKey.privateKey);
     const feeForInput = Utils.getFeeForInput(coins[0], fundeeAddress.address, funderKeyring, rate);
     amountToFund += feeForInput;
 
@@ -446,7 +446,7 @@ const composeWalletCrowdfund = async function composeWalletCrowdfund() {
     const coinOptions = fundingCoins[funder];
 
     const key = await wallet.getWIF(coinOptions.address);
-    const keyring = new bcoin.keyring.fromSecret(key.privateKey);
+    const keyring = new bcoin.KeyRing.fromSecret(key.privateKey);
 
     // this is the same utility as we used in our other example
     addInput(coinOptions, inputCounter, fundMe, keyring);

@@ -15,16 +15,16 @@ Segwit was first proposed as a [TX malleability][tx-malleability] fix. Miners an
 of relaying or including transaction in blocks could change transaction hash and broadcast a modified version
 without invalidating the transaction. This prevented sidechains and some applications
 to be built on top of bitcoin blockchain (Lightning Network).
-For a full list of malleability sources see [BIP62 (Withdrawn)][BIP62].  
+For a full list of malleability sources see [BIP62 (Withdrawn)][BIP62].
 Segwit solves this by removing validating sigScripts (also known as "witnesses") from the transaction and constructing another merkle tree
 for these scripts. The witnesses are also not counted towards from block size calculations as they
 aren't broadcasted with the block, leaving space for more transactions with the same
 block size limit (which needs a hard fork to implement). In order to make this update a soft fork, and thus safer to deploy, instead of adding the merkle root into the
-block, it's included in coinbase transaction.  
-Another benefit it brings is future possible soft forks for Script updates.  
+block, it's included in coinbase transaction.
+Another benefit it brings is future possible soft forks for Script updates.
 For backwards compatibility, you can nest witness programs in [P2SH][BIP16]. This allows old, unupdated nodes to still see a Segwit transaction as a valid (but ANYONECANSPEND) transaction ensuring it will get propogated in the network.
 
-> Witness - this structure contains data required to check transaction validity but not required to determine transaction effects. In particular, scripts and signatures are moved into this new structure.  
+> Witness - this structure contains data required to check transaction validity but not required to determine transaction effects. In particular, scripts and signatures are moved into this new structure.
 > BIP141
 
 
@@ -33,7 +33,7 @@ You can check details in [Segwit BIP][BIP141], we'll cover them as we go for our
 In segwit addresses/scriptPubKeys, the first byte is the `version byte`, which will be used
 for extending scripts with new functionalities. Currently version `0` is used and supports
 `P2WPKH` (Pay To Witness Public Key Hash) and `P2WSH` (Pay To Witness Script Hash) transactions. After `OP_0` version byte, we expect a hash with a size
-of `20` in the case of `P2WPKH` transactions or `32` in the case of `P2WSH` transactions.  
+of `20` in the case of `P2WPKH` transactions or `32` in the case of `P2WSH` transactions.
 scriptPubKeys:
   - `P2WPKH` scriptPubkey is `OP_0 0x14 {20-byte-hash}`, where `OP_0` is the *version byte*
 *0x14* is the size of the data, and the `{20-byte-hash}` is HASH160(PubKey).
@@ -48,7 +48,7 @@ have done with normal scripts.
 Native Segwit programs also come with a new address format [bech32][BIP173], so `P2WPKH` and `P2WSH` scripts
 will always use `bech32` addresses. Bech32 addresses support error checking and are comprised of 4 parts:
 `human-readable-part(hrp)`, `version number`, `data` and `checksum`. HRP is used for indicating the network:
-`bc` for `mainnet` and `tb` for the `testnet` separated by `1` followed by data and the checksum. 
+`bc` for `mainnet` and `tb` for the `testnet` separated by `1` followed by data and the checksum.
 
 ## Code
 
@@ -63,9 +63,9 @@ most of the ring management is the same so we'll discuss them first.
 The most important part in our examples will be `KeyRing`s. They store and manage keys and also provide
 every method needed to handle scripts and signatures. That's why we've separated `keyring` into a separate
 utils folder which will cache the `privateKey`s in a folder `keys/`. We only expose `.getRings` method,
-which will generate or return from cache `N` number of keys.  
+which will generate or return from cache `N` number of keys.
 After importing we always set `ring.witness = true`, because by default it's false. This
-will tell `KeyRing` to construct P2WPKH addresses instead of P2PKH and vice versa. 
+will tell `KeyRing` to construct P2WPKH addresses instead of P2PKH and vice versa.
 
 *Note: Segwit only uses Compressed public keys.*
 
@@ -73,7 +73,7 @@ The code for this, which should precede all of the following examples, looks lik
 
 ```js
 const network = 'regtest';
-const ring = bcoin.keyring.generate(true, network);
+const ring = bcoin.KeyRing.generate(true, network);
 ring.witness = true;
 ```
 
@@ -82,7 +82,7 @@ ring.witness = true;
 ### Create P2WPKH Address
 
 Getting `P2WPKH` Address is as simple as `ring.getAddress();`. Let's see it
-in action.  
+in action.
 The code below will print the bech32 address and check if bech32 address data
 is Pubkeyhash.
 
@@ -224,7 +224,7 @@ To create and sign transactions "offline"(without going to chain db), we'll need
 `prevTransaction Hash/Id`, `prevTransaction Vout/Index`, `Amount` and `Script`(which
 can be constructed from Address).
 
-### Spend from P2WPKH 
+### Spend from P2WPKH
 When you're spending from P2WPKH you need to put 2 things in the Segwit stack: Signature
 and Public key. Bcoin will handle that for us.
 
@@ -417,7 +417,7 @@ In order to get better understanding how Segwit scripts work check [BIP141][BIP1
 
 ## References
 Activated with segwit:
-  - Segwit - [BIP141][BIP141] 
+  - Segwit - [BIP141][BIP141]
       - P2WPKH [BIP141][BIP141-P2WPKH]
       - P2WPKH nested in P2SH [BIP141][BIP141-NP2WPKH]
       - P2WSH [BIP141][BIP141-P2WSH]
