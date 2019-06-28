@@ -62,7 +62,9 @@ const walletClient = new WalletClient(walletOptions);
 {"success": true}
 ```
 
-Initiates a blockchain rescan for the walletdb. Wallets will be rolled back to the specified height (transactions above this height will be unconfirmed).
+Initiates a blockchain rescan for the walletdb. Wallets will be rolled back to the specified height (transactions above this height will be unconfirmed). For SPV nodes, a wallet
+reascan will be ineffective since there are no blocks stored on disk. Therefore a
+chain [`reset`](#reset-blockchain) must be called instead.
 
 ### Example HTTP Request
 `POST /rescan?height=50`
