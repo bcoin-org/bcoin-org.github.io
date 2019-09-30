@@ -24,7 +24,13 @@ If you're not comfortable with key management, coin selection, and how transacti
 
 ### Version 1 - Manual Key Management
 #### Step 1: Setup
-Let's first start by importing the right tools, setting up some constants, and creating our keychains. (make sure you've installed the latest version of bcoin into your project with `npm install bcoin`).
+Let's first start by importing the right tools, setting up some constants, and creating our keychains. Make sure you've installed the latest version of bcoin first:
+
+```bash
+$ git clone https://github.com/bcoin-org/bcoin
+$ cd bcoin
+$ npm install -g
+```
 
 Note that we're setting the fundingTarget and amountToFund as constants for simplicity, but they could be set based on user input or some other variable circumstances.
 

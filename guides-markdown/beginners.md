@@ -15,38 +15,83 @@ Bcoin is an _alternative_ implementation of the bitcoin protocol, written in nod
 ## Requirements
 
 - Linux, OSX, or Windows (\*) (\*\*)
-- node.js >=v5.0.0
-- npm >=v4.0.0
+- node.js >=v8.14.0
+- npm >=v6.4.1
 - python2 (for node-gyp)
 - gcc/g++ (for leveldb and secp256k1)
-- git (optional, see below)
+- git
 
 (\*): Note that bcoin works best with unix-like OSes, and has not yet been thoroughly tested on windows.
 (\*\*): The BSDs and Solaris have also not been tested yet, but should work in theory.
 
 ## Build & Install
 
-Bcoin is meant to be installed via npm, but for the security conscious, it may be better to clone from github. All tagged commits for release should be signed by @chjj's [PGP key](https://keybase.io/chjj#show-public) (`B4B1F62DBAC084E333F3A04A8962AB9DE6666BBD`). Signed copies of node.js are available from [nodejs.org](https://nodejs.org/dist/v7.5.0/), or from your respective OS's package repositories.
-
-### Installing via NPM
-
-```bash
-$ npm install -g bcoin --production
-```
+Bcoin is meant to be installed via git for security purposes, as there
+are security issues when installing via npm. All tagged commits for
+release should be signed by @chjj's [PGP key][keybase]
+(`B4B1F62DBAC084E333F3A04A8962AB9DE6666BBD`). Signed copies of node.js
+are available from [nodejs.org][node], or from your respective OS's
+package repositories.
 
 ### Installing via Git
 
 ```bash
 $ curl https://keybase.io/chjj/pgp_keys.asc | gpg --import
-$ git clone git://github.com/bcoin-org/bcoin.git
+$ git clone https://github.com/bcoin-org/bcoin.git
 $ cd bcoin
-$ git tag
-...
-v1.0.0-alpha | latest version
-$ git tag -v v1.0.0-alpha | verify signature
-$ git checkout v1.0.0-alpha
-$ npm install -g --production
 ```
+
+For a specific release:
+
+```
+$ git tag
+$ git tag -v <version> # verify signature
+$ git checkout <version>
+```
+
+Install dependencies:
+
+```
+$ npm install
+$ npm install -g # link globally
+```
+
+**Note:** Dependencies are checked for integrity using `package-lock.json`.
+However `npm` _will not_ make these checks with `npm install -g` and it
+will link your installation globally so that `bcoin` is in your
+path _(e.g. $ bcoin)_.
+
+### Installing on Debian/Ubuntu
+
+Install the necessary dependencies in addition to Node.js:
+
+```
+apt-get install build-essential python
+```
+
+### Installing via Docker
+
+Check [bcoin-docker](https://github.com/bcoin-org/bcoin-docker)
+
+### Installing on Windows
+
+Install OpenSSL v1.0.2L 64-Bit:
+
+https://slproweb.com/download/Win64OpenSSL-1_0_2L.exe
+
+As Administrator, open `cmd.exe` and run:
+
+```
+C:\Users\bcoin\bcoin>npm install --global --production windows-build-tools
+```
+
+to install `VCBuild.exe` and `Python 2.7.x` both required by `node-gyp`
+for building native modules.
+
+Then continue [Installing via Git](#installing-via-git)
+
+Note that you need a shell that supports bash scripts, like Git Bash to launch
+bcoin.
 
 ### Troubleshooting
 
@@ -100,7 +145,6 @@ Bcoin CLI is the prepackaged tool for hitting both the REST and RPC api.
 Available in npm as `bclient`.
 
 ```bash
-$ npm install bclient
 $ bcoin-cli info --api-key hunter2
 $ bcoin-cli rpc getblockchaininfo --api-key hunter2
 ```
@@ -121,18 +165,21 @@ Your hidden service must first be configured with `tor`. Once you have the `.oni
 
 ## Target Nodes
 
-It's often desirable to run behind several trusted bitcoin nodes. To select permanent nodes to connect to, the `--nodes` option is available:
+It's often desirable to run behind several trusted bitcoin nodes. To select
+permanent nodes to connect to, the `--nodes` option is available:
 
 ```bash
 $ bcoin --nodes foo.example.com:8333,1.2.3.4:8333,5.6.7.8:8333
 ```
 
-If chosen, bcoin will _always_ try to connect to these nodes as outbound peers. They are top priority and whitelisted (not susceptible to permanent bans, only disconnections).
+If chosen, bcoin will _always_ try to connect to these nodes as outbound
+peers. They are top priority and whitelisted (not susceptible to permanent
+bans, only disconnections).
 
-To _only_ connect to these nodes. `--max-outbound` could be set to 3:
+To _only_ connect to these nodes, use `--only`
 
 ```bash
-$ bcoin --nodes foo.example.com,1.2.3.4,5.6.7.8 --max-outbound 3
+$ bcoin --only foo.example.com,1.2.3.4,5.6.7.8
 ```
 
 ## Disabling Listening
