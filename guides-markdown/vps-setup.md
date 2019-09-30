@@ -233,8 +233,14 @@ $ sudo su -
 ```
 
 ## Install Bcoin
+
+Depending on your server's default software package, you may also need to [install `git`](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
+
+
 ```
-$ npm install -g bcoin --production
+$ git clone https://github.com/bcoin-org/bcoin
+$ cd bcoin
+$ npm install -g
 ```
 
 ### Command Line Interaction

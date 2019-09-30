@@ -15,11 +15,11 @@ Bcoin is an _alternative_ implementation of the bitcoin protocol, written in nod
 ## Requirements
 
 - Linux, OSX, or Windows (\*) (\*\*)
-- node.js >=v5.0.0
-- npm >=v4.0.0
+- node.js >=v8.14.0
+- npm >=v6.4.1
 - python2 (for node-gyp)
 - gcc/g++ (for leveldb and secp256k1)
-- git (optional, see below)
+- git
 
 (\*): Note that bcoin works best with unix-like OSes, and has not yet been thoroughly tested on windows.
 (\*\*): The BSDs and Solaris have also not been tested yet, but should work in theory.
@@ -28,24 +28,12 @@ Bcoin is an _alternative_ implementation of the bitcoin protocol, written in nod
 
 Bcoin is meant to be installed via npm, but for the security conscious, it may be better to clone from github. All tagged commits for release should be signed by @chjj's [PGP key](https://keybase.io/chjj#show-public) (`B4B1F62DBAC084E333F3A04A8962AB9DE6666BBD`). Signed copies of node.js are available from [nodejs.org](https://nodejs.org/dist/v7.5.0/), or from your respective OS's package repositories.
 
-### Installing via NPM
-
-```bash
-$ npm install -g bcoin --production
-```
-
 ### Installing via Git
 
 ```bash
-$ curl https://keybase.io/chjj/pgp_keys.asc | gpg --import
-$ git clone git://github.com/bcoin-org/bcoin.git
+$ git clone https://github.com/bcoin-org/bcoin
 $ cd bcoin
-$ git tag
-...
-v1.0.0-alpha | latest version
-$ git tag -v v1.0.0-alpha | verify signature
-$ git checkout v1.0.0-alpha
-$ npm install -g --production
+$ npm install -g
 ```
 
 ### Troubleshooting
@@ -100,7 +88,7 @@ Bcoin CLI is the prepackaged tool for hitting both the REST and RPC api.
 Available in npm as `bclient`.
 
 ```bash
-$ npm install bclient
+$ npm install -g bclient
 $ bcoin-cli info --api-key hunter2
 $ bcoin-cli rpc getblockchaininfo --api-key hunter2
 ```

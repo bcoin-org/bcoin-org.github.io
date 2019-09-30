@@ -142,7 +142,8 @@ export NODE_PATH=`npm root --quiet -g`
 
 Install bcoin from GitHub master.
 
-* You'll need to install `git` first, then download the bcoin repository
+* You'll need to [install `git` first](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git),
+then download the bcoin repository
 
 ```bash
 sudo apt-get install git

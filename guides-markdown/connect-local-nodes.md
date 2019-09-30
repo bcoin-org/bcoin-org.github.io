@@ -25,7 +25,7 @@ closed.
 We use the library `p-event` which promisifies events in order to `await` for
 connection of the nodes and the reception of the transaction cleanly.
 
-Requirements: `bcoin` (duh), `p-event` (`npm install bcoin p-event`)
+Requirements: `bcoin` (duh), `p-event` (`npm install p-event`)
 
 ```javascript
 // necessary for portability
