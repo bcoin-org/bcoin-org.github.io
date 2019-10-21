@@ -181,6 +181,7 @@ Unsubscribe by calling `unwatch mempool`.
 ```
 
 ```javascript
+const {Address} = require('bcoin');
 const {BloomFilter} = require('bfilter');
 
 const bsock = require('bsock');
@@ -192,11 +193,12 @@ const nodeSocket = bsock.connect('<network node RPC port>');
   // Create new Bloom filter with standard false-positive parameters
   const filter = BloomFilter.fromRate(20000, 0.001, BloomFilter.flags.ALL);
 
-  // Add address to Bloom filter (arguments are similar to `Buffer.from()`)
-  filter.add('2N4Y3oQo6w2rLdsPuYKcsQtMQeXAHnZizeC', 'ascii');
+  // Add address hash to Bloom filter
+  const addr = Address.fromString('2NGZrVvZG92qGYqzTLjCAewvPZ7JE8S8VxE', 'regtest');
+  filter.add(addr.getHash());
 
-  // Send to server. The Bloom filter's `filter` property is type `Buffer`
-  nodeSocket.call('set filter', filter.filter);
+  // Send the entire serialized BloomFilter to server.
+  nodeSocket.call('set filter', filter.toRaw());
 })();
 ```
 
@@ -215,6 +217,7 @@ of transactions returned by the [`block connect`](#code-block-connect-code) even
 ```
 
 ```javascript
+const {Address} = require('bcoin');
 const bsock = require('bsock');
 const nodeSocket = bsock.connect('<network node RPC port>');
 
@@ -222,11 +225,11 @@ const nodeSocket = bsock.connect('<network node RPC port>');
   // Authentication required
   // Bloom filter set required
 
-  // Add address (as a Buffer) to Bloom filter
-  const addrBuffer = Buffer.from('mp33NDe153Umb4AbRgPDFKyKmmkYEVx1fX', 'ascii');
+  // Get address hash
+  const addr = Address.fromString('mp33NDe153Umb4AbRgPDFKyKmmkYEVx1fX', 'regtest');
 
-  // Send to server.
-  nodeSocket.call('add filter', [addrBuffer]);
+  // Send to server to add to filter.
+  nodeSocket.call('add filter', [addr.getHash()]);
 })();
 ```
 
