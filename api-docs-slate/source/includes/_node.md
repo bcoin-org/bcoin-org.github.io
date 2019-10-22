@@ -11,7 +11,8 @@ Command                     |cURL method    | Description
 [`/tx/address/:address`](#get-tx-by-address)              | `GET`   | TX by address
 [`/coin/:hash/:index`](#get-coin-by-outpoint)             | `GET`   | UTXO by txid and index
 [`/block/:block`](#get-block-by-hash-or-height)           | `GET`   | Block by hash or height
-[`/header/:header`](#get-block-header-by-hash-or-height)  | `GET`   | Block header by hash or height
+[`/header/:block`](#get-block-header-by-hash-or-height)   | `GET`   | Block header by hash or height
+[`/filter/:block`](#get-block-filter-by-hash-or-height)   | `GET`   | BIP158 block filter by hash or height
 [`/mempool`](#get-mempool-snapshot)                       | `GET`   | Mempool snapshot
 [`/broadcast`](#broadcast-transaction)                    | `POST`  | Broadcast TX
 [`/fee`](#estimate-fee)                                   | `GET`   | Estimate fee
@@ -328,6 +329,70 @@ Returns block header by block hash or height.
 
 ### HTTP Request
 `GET /header/:blockhashOrHeight`
+
+
+### URL Parameters
+
+Parameter | Description
+--------- | -----------
+:blockhashOrHeight | Hash or Height of block
+
+
+## Get block filter by hash or height
+
+```javascript
+let blockHash, blockHeight;
+```
+
+```shell--vars
+blockHash='6f1003edd05cad861395225415160b5236968cc223fe982796b6e959c9651d44';
+blockHeight='100';
+```
+
+```shell--curl
+curl $url/filter/$blockHash # by hash
+curl $url/filter/$blockHeight # by height
+```
+
+```shell--cli
+bcoin-cli filter $blockHash # by hash
+bcoin-cli filter $blockHeight # by height
+```
+
+```javascript
+const {NodeClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
+
+(async () => {
+  const filterByHeight = await client.getFilter(blockHeight);
+  const filterByHash = await client.getFilter(blockHash);
+  console.log("By height: \n", filterByHeight);
+  console.log("By hash: \n", filterByHash);
+})();
+```
+
+> The above command returns JSON structured like this:
+
+```json
+{
+  "filter": "011ece10",
+  "header": "14940c1a3a7c764a1939300c386ceb378abfa581c243ad2c19bf7e0b52a09a09"
+}
+```
+
+Returns BIP158 block filter by block hash or height.
+
+### HTTP Request
+`GET /filter/:blockhashOrHeight`
 
 
 ### URL Parameters
