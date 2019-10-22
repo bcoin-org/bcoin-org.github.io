@@ -6,26 +6,26 @@
 {
   "name": "default",
   "initialized": true,
-  "witness": false,
+  "witness": true,
   "watchOnly": false,
   "type": "pubkeyhash",
   "m": 1,
   "n": 1,
   "accountIndex": 0,
-  "receiveDepth": 6,
-  "changeDepth": 9,
-  "nestedDepth": 0,
+  "receiveDepth": 152,
+  "changeDepth": 89,
+  "nestedDepth": 2,
   "lookahead": 10,
-  "receiveAddress": "RLY9z6PCB3fggt36mnfA75jESRtvkALKX5",
-  "changeAddress": "RPSppa2YUzTK5jWWZ7k74NfMEJtnNKn4vs",
-  "nestedAddress": null,
-  "accountKey": "rpubKBBuJXusEYaDdxTwH1nPYRXQnd3XgLAFfNYxVhjrtvLAkDAXaps1nURZVmWuFsXK8RBXiDQu7grCBv6fRtQxgPH3FkKe4UQV7F2sfNBK47sA",
+  "receiveAddress": "bcrt1qp3kym2sv7k23ndpqrv4hhcpzcm392l97hq932m",
+  "changeAddress": "bcrt1qkezyz65tq8k5gfyhs5v6jgzeplwsq84cscmczf",
+  "nestedAddress": "2NFQrQQSTWWCG3A9du6UNbDeDw1K3BQqQdu",
+  "accountKey": "tpubDDkzvYzn2iJLqucWgnULe1x3DR5PCaZvWzpg13ZA395sFmbvKNG3XrPp3KpnbFrdE3R3c93w5ZVfU2XWBzde5LLCBR1YRy8XwMibN7sG39o",
   "keys": [],
   "balance": {
-    "tx": 505,
-    "coin": 501,
-    "unconfirmed": 1339989996774,
-    "confirmed": 1339989999000
+    "tx": 157,
+    "coin": 80,
+    "unconfirmed": 102893658385,
+    "confirmed": 102893658385
   }
 }
 ```
@@ -142,26 +142,26 @@ const wallet = walletClient.wallet(id);
 {
   "name": "default",
   "initialized": true,
-  "witness": false,
+  "witness": true,
   "watchOnly": false,
   "type": "pubkeyhash",
   "m": 1,
   "n": 1,
   "accountIndex": 0,
-  "receiveDepth": 6,
-  "changeDepth": 9,
-  "nestedDepth": 0,
+  "receiveDepth": 152,
+  "changeDepth": 89,
+  "nestedDepth": 2,
   "lookahead": 10,
-  "receiveAddress": "RLY9z6PCB3fggt36mnfA75jESRtvkALKX5",
-  "changeAddress": "RPSppa2YUzTK5jWWZ7k74NfMEJtnNKn4vs",
-  "nestedAddress": null,
-  "accountKey": "rpubKBBuJXusEYaDdxTwH1nPYRXQnd3XgLAFfNYxVhjrtvLAkDAXaps1nURZVmWuFsXK8RBXiDQu7grCBv6fRtQxgPH3FkKe4UQV7F2sfNBK47sA",
+  "receiveAddress": "bcrt1qp3kym2sv7k23ndpqrv4hhcpzcm392l97hq932m",
+  "changeAddress": "bcrt1qkezyz65tq8k5gfyhs5v6jgzeplwsq84cscmczf",
+  "nestedAddress": "2NFQrQQSTWWCG3A9du6UNbDeDw1K3BQqQdu",
+  "accountKey": "tpubDDkzvYzn2iJLqucWgnULe1x3DR5PCaZvWzpg13ZA395sFmbvKNG3XrPp3KpnbFrdE3R3c93w5ZVfU2XWBzde5LLCBR1YRy8XwMibN7sG39o",
   "keys": [],
   "balance": {
-    "tx": 505,
-    "coin": 501,
-    "unconfirmed": 1339989996774,
-    "confirmed": 1339989999000
+    "tx": 157,
+    "coin": 80,
+    "unconfirmed": 102893658385,
+    "confirmed": 102893658385
   }
 }
 ```
@@ -224,22 +224,22 @@ const options = {name: name, type: type, passphrase: passphrase}
 
 ```json
 {
-  "name": "menace",
+  "name": "null",
   "initialized": true,
   "witness": false,
   "watchOnly": false,
-  "type": "multisig",
+  "type": "pubkeyhash",
   "m": 1,
   "n": 1,
-  "accountIndex": 1,
+  "accountIndex": 3,
   "receiveDepth": 1,
   "changeDepth": 1,
   "nestedDepth": 0,
   "lookahead": 10,
-  "receiveAddress": "GWzk797i4UCw9iG5uSj9DPQWsgt8nGWDA2",
-  "changeAddress": "GbqDrwBWDfKGgYuu4VvJGEjCpwxS5TiBdM",
+  "receiveAddress": "msciA3DK8mAAzj8u7MN53D8dYwXgHTwM59",
+  "changeAddress": "mkJNMxC1j4BWUmexzBbyM2T4uvnAGCFCV6",
   "nestedAddress": null,
-  "accountKey": "rpubKBBuJXusEYaDe2o6iEVjceYB4r7rGhfQGsHRynZ1pbaNvNB5eyo4GvvT3e6dfttpt6x5tomFjbooFj6vBjwpXMwJZcoFWr8LcmbW3BABQoxJ",
+  "accountKey": "tpubDC8ATY6G4mgAhJE9xRUEW2JNv6T5c1Vni7gKn1oUuwRzBh858H3Vx2baB8BG5Mh8UnLknZiT7nwnX8MHKKhKrUTduJXYdnskp43EJpSWdYB",
   "keys": [],
   "balance": {
     "tx": 0,

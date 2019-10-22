@@ -169,8 +169,8 @@ let blockHash, blockHeight;
 ```
 
 ```shell--vars
-blockHash='4003e57eb1c60f3d1b774d8a281353c35cd30dca0d76b751c8dd862da11c41de';
-blockHeight='94';
+blockHash='78f86c294d1ffc640f1783e2b3cc3dcdfbe1da9fe885f35de286f94db8cfac72';
+blockHeight='50';
 ```
 
 ```shell--curl
@@ -207,22 +207,22 @@ const client = new NodeClient(clientOptions);
 
 ```json
 {
-  "hash": "4003e57eb1c60f3d1b774d8a281353c35cd30dca0d76b751c8dd862da11c41de",
-  "height": 94,
-  "depth": 112,
+  "hash": "78f86c294d1ffc640f1783e2b3cc3dcdfbe1da9fe885f35de286f94db8cfac72",
+  "height": 50,
+  "depth": 484,
   "version": 536870912,
-  "prevBlock": "353cbab0d0ae1583ceb6bd88d90f44a7bb2cb2aec824eac688dbf1832e648962",
-  "merkleRoot": "b23e398ccf2fe2dcf81c6e7b4cc3c710a79c78bf7e8a63dd819acf83952f960f",
-  "time": 1527028558,
+  "prevBlock": "4e186ead55dfe014baee8bab96805c88c03032ba1e92be86709ca9f65ea5003a",
+  "merkleRoot": "5bca36ac149947e8f545d28ae2d34b6f6f170d36dd5289766e08813f5d183678",
+  "time": 1571759960,
   "bits": 545259519,
-  "nonce": 4,
+  "nonce": 0,
   "txs": [
     {
-      "hash": "b23e398ccf2fe2dcf81c6e7b4cc3c710a79c78bf7e8a63dd819acf83952f960f",
-      "witnessHash": "b23e398ccf2fe2dcf81c6e7b4cc3c710a79c78bf7e8a63dd819acf83952f960f",
+      "hash": "5bca36ac149947e8f545d28ae2d34b6f6f170d36dd5289766e08813f5d183678",
+      "witnessHash": "c3401a27680aebb0603f50c0bafbe22c492ec9e65aea754a179f10b3f537d2c6",
       "fee": 0,
       "rate": 0,
-      "mtime": 1527028763,
+      "mtime": 1571762225,
       "index": 0,
       "version": 1,
       "inputs": [
@@ -231,8 +231,8 @@ const client = new NodeClient(clientOptions);
             "hash": "0000000000000000000000000000000000000000000000000000000000000000",
             "index": 4294967295
           },
-          "script": "015e0e6d696e65642062792062636f696e04899fe44e080000000000000000",
-          "witness": "00",
+          "script": "01320e6d696e65642062792062636f696e0431d5f7bf080000000000000000",
+          "witness": "01200000000000000000000000000000000000000000000000000000000000000000",
           "sequence": 4294967295,
           "address": null
         }
@@ -240,12 +240,17 @@ const client = new NodeClient(clientOptions);
       "outputs": [
         {
           "value": 5000000000,
-          "script": "76a91420a060fec9a7dfac723c521e168876909aa37ce588ac",
-          "address": "RCFhpyWXkz5GxskL96q4KtceRXuAMnWUQo"
+          "script": "76a91415f34e5cc7c4d7cc5a896611af8fb242847e003d88ac",
+          "address": "mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh"
+        },
+        {
+          "value": 0,
+          "script": "6a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf9",
+          "address": null
         }
       ],
       "locktime": 0,
-      "hex": "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff1f015e0e6d696e65642062792062636f696e04899fe44e080000000000000000ffffffff0100f2052a010000001976a91420a060fec9a7dfac723c521e168876909aa37ce588ac00000000"
+      "hex": "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff1f01320e6d696e65642062792062636f696e0431d5f7bf080000000000000000ffffffff0200f2052a010000001976a91415f34e5cc7c4d7cc5a896611af8fb242847e003d88ac0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf90120000000000000000000000000000000000000000000000000000000000000000000000000"
     }
   ]
 }

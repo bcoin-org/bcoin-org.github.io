@@ -112,30 +112,53 @@ They are:
 
 ```
 {
-  hash: '8f6492b8fbdf5d71322b32fb0ade956aed7ed761173108791f782001800be8e2',
-  height: -1,
-  block: null,
-  time: 0,
-  mtime: 1536690801,
-  date: '1970-01-01T00:00:00Z',
-  mdate: '2018-09-11T18:33:21Z',
-  size: 225,
-  virtualSize: 225,
-  fee: 4540,
-  rate: 20177,
-  confirmations: 0,
-  inputs: 
-   [ { value: 5000000000,
-       address: 'RQuXE6LxTC7WZTEZkpLxrTV2fX2aioBjrB',
-       path: [Object] } ],
-  outputs: 
-   [ { value: 10000000,
-       address: 'RQuXE6LxTC7WZTEZkpLxrTV2fX2aioBjrB',
-       path: [Object] },
-     { value: 4989995460,
-       address: 'RJBhmLQHUNNiJNpRkcKfSCs8bU47Ew8zgU',
-       path: [Object] } ],
-  tx: '01000000010260ea8f1c4c0609a89a2120654cc7a2bf903dbd408d23b9d42614ef199ff063000000006a473044022036ee7381ad177e140d77123eab15e980535f2ae581c2fe633160d565f153c3e802205d348e0a49b4ed1b87e3c12665a8a61f1477ed40639b883c0190a15011e17a1e0121025ad70d43d5844fec60a406515ff86b96ac5b9c5c8c186ae571198986e23322beffffffff0280969800000000001976a914ab68d8609ddd31698303963d642164f29392e32a88acc4496d29010000001976a91461af6ad7fa4037ec97207944ac220565e98a3ab388ac00000000'
+  "hash": "e0ef577e307b9b798bf98a7aa56ebab431d1918f6c8b29ddd8a89dce5314acca",
+  "height": -1,
+  "block": null,
+  "time": 0,
+  "mtime": 1571774743,
+  "date": "1970-01-01T00:00:00Z",
+  "mdate": "2019-10-22T20:05:43Z",
+  "size": 226,
+  "virtualSize": 226,
+  "fee": 4540,
+  "rate": 20088,
+  "confirmations": 0,
+  "inputs": [
+    {
+      "value": 2500000000,
+      "address": "mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": false,
+        "derivation": "m/0'/0/1"
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "value": 10000000,
+      "address": "msSaQkCXyrEefbSH9TCSWNjnacTwGGc55d",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": false,
+        "derivation": "m/0'/0/4"
+      }
+    },
+    {
+      "value": 2489995460,
+      "address": "mtwN3Z4R7Mjdn1Dt6eDCUwoPdYKNFu6oiX",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": true,
+        "derivation": "m/0'/1/5"
+      }
+    }
+  ],
+  "tx": "0100000001bf932f6585ce47d552c9f18463820bb4064b97b032606a122947aba4e14f77e6000000006b4830450221009aa7abc5bcc058bbb3c85ea53fdc19bae9351a81ad3f6027b6dfc0437fb1010502202e768a07a9e073833fc7039bebfd5b9b4edc373159e93d5917f074c53355187201210336c99e45e00b73c863497a989fe6feb08439ca2d7cf98f55bc261ed70ed28a7bffffffff0280969800000000001976a91482cd93c2cbdd094599a92ce3317d3087a1975e0a88acc4506a94000000001976a9149337719ab611d0da2ec1317dd195844661e3732f88ac00000000"
 }
 ```
 
@@ -156,30 +179,53 @@ Returns tx details of removed double spender.
 
 ```
 {
-  hash: '8f6492b8fbdf5d71322b32fb0ade956aed7ed761173108791f782001800be8e2',
-  height: 114,
-  block: '67e73bd4d08397cbc96f605fa4e3e0bd2d7eeb865309ccfd0cf885fab3d1c966',
-  time: 1536690803,
-  mtime: 1536690801,
-  date: '2018-09-11T18:33:23Z',
-  mdate: '2018-09-11T18:33:21Z',
-  size: 225,
-  virtualSize: 225,
-  fee: 4540,
-  rate: 20177,
-  confirmations: 1,
-  inputs: 
-   [ { value: 5000000000,
-       address: 'RQuXE6LxTC7WZTEZkpLxrTV2fX2aioBjrB',
-       path: [Object] } ],
-  outputs: 
-   [ { value: 10000000,
-       address: 'RQuXE6LxTC7WZTEZkpLxrTV2fX2aioBjrB',
-       path: [Object] },
-     { value: 4989995460,
-       address: 'RJBhmLQHUNNiJNpRkcKfSCs8bU47Ew8zgU',
-       path: [Object] } ],
-  tx: '01000000010260ea8f1c4c0609a89a2120654cc7a2bf903dbd408d23b9d42614ef199ff063000000006a473044022036ee7381ad177e140d77123eab15e980535f2ae581c2fe633160d565f153c3e802205d348e0a49b4ed1b87e3c12665a8a61f1477ed40639b883c0190a15011e17a1e0121025ad70d43d5844fec60a406515ff86b96ac5b9c5c8c186ae571198986e23322beffffffff0280969800000000001976a914ab68d8609ddd31698303963d642164f29392e32a88acc4496d29010000001976a91461af6ad7fa4037ec97207944ac220565e98a3ab388ac00000000'
+  "hash": "e0ef577e307b9b798bf98a7aa56ebab431d1918f6c8b29ddd8a89dce5314acca",
+  "height": 846,
+  "block": "636982487fccf820bc1ca825b2cdd94be1bdd9863e8dec01979b62b45d894e73",
+  "time": 1571774818,
+  "mtime": 1571774743,
+  "date": "2019-10-22T20:06:58Z",
+  "mdate": "2019-10-22T20:05:43Z",
+  "size": 226,
+  "virtualSize": 226,
+  "fee": 4540,
+  "rate": 20088,
+  "confirmations": 1,
+  "inputs": [
+    {
+      "value": 2500000000,
+      "address": "mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": false,
+        "derivation": "m/0'/0/1"
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "value": 10000000,
+      "address": "msSaQkCXyrEefbSH9TCSWNjnacTwGGc55d",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": false,
+        "derivation": "m/0'/0/4"
+      }
+    },
+    {
+      "value": 2489995460,
+      "address": "mtwN3Z4R7Mjdn1Dt6eDCUwoPdYKNFu6oiX",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": true,
+        "derivation": "m/0'/1/5"
+      }
+    }
+  ],
+  "tx": "0100000001bf932f6585ce47d552c9f18463820bb4064b97b032606a122947aba4e14f77e6000000006b4830450221009aa7abc5bcc058bbb3c85ea53fdc19bae9351a81ad3f6027b6dfc0437fb1010502202e768a07a9e073833fc7039bebfd5b9b4edc373159e93d5917f074c53355187201210336c99e45e00b73c863497a989fe6feb08439ca2d7cf98f55bc261ed70ed28a7bffffffff0280969800000000001976a91482cd93c2cbdd094599a92ce3317d3087a1975e0a88acc4506a94000000001976a9149337719ab611d0da2ec1317dd195844661e3732f88ac00000000"
 }
 ```
 
@@ -223,17 +269,17 @@ Returns Balance object.
 ```
 [
   {
-    name: 'default',
-    account: 0,
-    branch: 0,
-    index: 13,
-    witness: false,
-    nested: false,
-    publicKey: '0268bff8723598210c7f8fa52edbfdfaaae1f1b1377fa77bc6ac550f9e5875f844',
-    script: null,
-    program: null,
-    type: 'pubkeyhash',
-    address: 'R9zQNo4U7bUXzT7QJmVxKBrmJfp67wrK7h'
+    "name": "default",
+    "account": 0,
+    "branch": 0,
+    "index": 16,
+    "witness": false,
+    "nested": false,
+    "publicKey": "0370d759cf5170e718ab02fccf844bc69a3c9ad6ece9899be55455930fb85ff674",
+    "script": null,
+    "program": null,
+    "type": "pubkeyhash",
+    "address": "mfzcPvKYNjzULJRjbaAhdR8fEJsTg7SSsV"
   }
 ]
 ```

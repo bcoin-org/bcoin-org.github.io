@@ -182,7 +182,7 @@ None. |
 
 ```javascript
 let tx;
-let options={"changeAddress": "RGexEyDWWeHFMow51GYLYyfcRYzV4dq8CM", "feeRate": 0.00001000};
+let options={"changeAddress": "mfi6TVtSYsNk4ADkXbFT9d6f95kmDMXgKp", "feeRate": 0.00001000};
 ```
 
 ```shell--vars
@@ -190,7 +190,7 @@ tx='0100000000024e61bc00000000001976a914fbdd46898a6d70a682cbd34420ccf0b6bb644937
 ```
 
 ```shell--curl
-options='{"changeAddress": "RGexEyDWWeHFMow51GYLYyfcRYzV4dq8CM", "feeRate": 0.00001000}'
+options='{"changeAddress": "mfi6TVtSYsNk4ADkXbFT9d6f95kmDMXgKp", "feeRate": 0.00001000}'
 
 curl $walletrpcurl \
   -X POST \
@@ -201,7 +201,7 @@ curl $walletrpcurl \
 ```
 
 ```shell--cli
-options='{"changeAddress": "RGexEyDWWeHFMow51GYLYyfcRYzV4dq8CM", "feeRate": 0.00001000}'
+options='{"changeAddress": "mfi6TVtSYsNk4ADkXbFT9d6f95kmDMXgKp", "feeRate": 0.00001000}'
 
 bwallet-cli rpc fundrawtransaction $tx "$options"
 ```
@@ -435,7 +435,7 @@ let address;
 ```
 
 ```shell--vars
-address='RBQUN7J1earPLbu97MyvG4zhW5b8RAQxoG'
+address='msKYwEVXcKBxatPMfFLdVwYug6bz4YS87J'
 ```
 
 ```shell--curl
@@ -472,7 +472,7 @@ const walletClient = new WalletClient(walletOptions);
 > The above command returns JSON "result" like this:
 
 ```
-EPni2gZW3WrTU9sKRL8j73cZEffujYwx81LSvpMATGYavC88QN63
+cNRiqwzRfcUfokNV8nSnDKb3NsKPhfRV2z5kBN11GKFb3GXkk1Hj
 ```
 
 Get the private key (WIF format) corresponding to specified address.
@@ -492,7 +492,7 @@ let path;
 ```
 
 ```shell--vars
-path='/home/user/WalletDump'
+path='/home/user-1/secretfiles/dump1.txt'
 ```
 
 ```shell--curl
@@ -535,13 +535,16 @@ null
 > The contents of the wallet dump file are formatted like this:
 
 ```
-# Wallet Dump created by Bcoin v1.0.0-pre
-# * Created on 2018-07-10T21:03:58Z
-# * Best block at time of backup was 501 (12bd2d79bb2ee31ae109485fcb859c398e5e462bae3243a10c307e07c2a1144f).
-# * File: /home/ec2-user/WalletDump
+# Wallet Dump created by Bcoin 2.0.0-dev
+# * Created on 2019-10-22T18:29:15Z
+# * Best block at time of backup was 845 (72365e9f4b4ed638bb1600116a67e3fa59b6ad6be2a449b675db607a984da4f8).
+# * File: /home/user-1/secretfiles/dump1.txt
 
-EP3HH7RgveJ5CriwhDkZXXv3ZggtJ7ceooMoSBCG2PcaML2CYJ5y 2018-07-10T21:03:58Z label= addr=R9p6pdP7HmS7xYF1BofRWdb5Cgi2B1Xucf
-EMaRiAPcg4KACS4SvkxpxtMaJWkRnk5a1w8bwgX3avuycUJuRcZE 2018-07-10T21:03:58Z change=1 addr=RAyQMPqKdJHgGCD1DtZkjQ7LkhgnkdwhBP
+cNUUoZYmUGoJyodrNaohzfu6LmKy7pBk6yqubJcTeL5WPWw97DQ1 2019-10-22T18:29:15Z label= addr=mg54SV2ZubNQ5urTbd42mUsQ54byPvSg5j
+cNH7YBw6haTB3yWkAndoPhwXRLNibXjWAYpqRQdvqPKLeW7JAj6h 2019-10-22T18:29:15Z change=1 addr=mgj4oGTbvCHxvx4EESYJKPkXWamxh2R6ef
+cNmBeL4kpjLtNZcvjSezftq4ks6ajzZRi1z2AGpuBGy6XjxzytiQ 2019-10-22T18:29:15Z label= addr=mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh
+cUEfRrvPpKCy87QReCmPmd74Hz68kgZEHAErkuvEDFqwJKcCLsMn 2019-10-22T18:29:15Z label= addr=mhcx3M1AitoiwDQS3sz42CQLpVCEVkJLfq
+cP4N8mxe81DhZfrgTz2GoV3croXD2o6Hern4DTB6Gr5jUwoLkT8h 2019-10-22T18:29:15Z change=1 addr=mhpSYq8bnM5XJVbpafdLNUtLZefr2d6xSq
 ...
 
 # End of dump
@@ -660,7 +663,7 @@ const walletClient = new WalletClient(walletOptions);
 > The above command returns JSON "result" like this:
 
 ```
-RAxFD5Ffxs9JuGDiu29DLstK9wfw8TMykU
+bcrt1qp3kym2sv7k23ndpqrv4hhcpzcm392l97hq932m
 ```
 
 Get the current receiving address for specified account.
@@ -679,7 +682,7 @@ let address;
 ```
 
 ```shell--vars
-address='RAxFD5Ffxs9JuGDiu29DLstK9wfw8TMykU'
+address='bcrt1qp3kym2sv7k23ndpqrv4hhcpzcm392l97hq932m'
 ```
 
 ```shell--curl
@@ -773,13 +776,13 @@ const walletClient = new WalletClient(walletOptions);
 
 ```json
 [
-  "RA15R2pAaz7WC3UGyVi5eSZTp77ADXJkih",
-  "RAur4Z6Af2E2YCZBSubFChZsPpWaNoypWE",
-  "RAxFD5Ffxs9JuGDiu29DLstK9wfw8TMykU",
-  "RBsWtxTNH6XFB2exRMTexuztTt6LGxBPw7",
-  "RDRPc4QRsot2Evxjt8HUa4wVsHyWRWDkhS",
-...
-  "RYCio4u5MYETZHa5yiGf1vsUAdeoMhLEoA"
+  "mg54SV2ZubNQ5urTbd42mUsQ54byPvSg5j",
+  "mgj4oGTbvCHxvx4EESYJKPkXWamxh2R6ef",
+  "mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh",
+  "mhcx3M1AitoiwDQS3sz42CQLpVCEVkJLfq",
+  "mhpSYq8bnM5XJVbpafdLNUtLZefr2d6xSq",
+  ...
+  "mjQqy8E7WJLaybxHcpiaWQMppjizi6nG3Y"
 ]
 ```
 
@@ -881,7 +884,7 @@ const walletClient = new WalletClient(walletOptions);
 > The above command returns JSON "result" like this:
 
 ```
-RFkJezDrGMyY6yvpY6PSknM8B2vtCNYcRM
+msSaQkCXyrEefbSH9TCSWNjnacTwGGc55d
 ```
 
 Get the next receiving address from specified account, or `default` account.
@@ -926,7 +929,7 @@ const walletClient = new WalletClient(walletOptions);
 > The above command returns JSON "result" like this:
 
 ```
-RQbTXByrN77yhi232QSUCWc4NUmKtzfkiQ
+moKaYJdRT19YUWSsfhnTQpo68wkVvzkk8y
 ```
 
 Get the next change address from specified account.
@@ -1005,7 +1008,7 @@ let address, minconf;
 ```
 
 ```shell--vars
-address='RHstcGRQWYojDPrrpazjLMjLgcnwd1mvCb'
+address='bcrt1quvydwldtduzjpdz8nm79d30g49nt6u5nurw0dt'
 minconf=6
 ```
 
@@ -1102,25 +1105,25 @@ const walletClient = new WalletClient(walletOptions);
 
 ```json
 {
-  "amount": 50,
-  "blockhash": "0cb30fe6b2e2cb036103a15ad293c086d5f32846033f8d1dc1488bde0af945c1",
-  "blocktime": 1530218983,
-  "txid": "36cbb7ad0cc98ca86640a04c485f164dd741c20339af34516d359ecba2892c21",
+  "amount": 0.00072058,
+  "blockhash": "1134065cc665e4f6df36202307ea1c9ad31287c45a7b9a5196e446885a76fc1c",
+  "blocktime": 1571760038,
+  "txid": "bc8336f7bb88e9613d5d1e81bef73837d8ec1c2bd47b9e19c3c4bf1eeb7e03b8",
   "walletconflicts": [],
-  "time": 1530218983,
-  "timereceived": 1530218983,
+  "time": 1571759979,
+  "timereceived": 1571759979,
   "bip125-replaceable": "no",
   "details": [
     {
       "account": "default",
-      "address": "RHstcGRQWYojDPrrpazjLMjLgcnwd1mvCb",
+      "address": "bcrt1qvjewtg83j8w7halz0h2axlwcn6c2ver4u75avy",
       "category": "receive",
-      "amount": 50,
+      "amount": 0.00072058,
       "label": "default",
-      "vout": 0
+      "vout": 1
     }
   ],
-  "hex": "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff1e510e6d696e65642062792062636f696e048e0e9256080000000000000000ffffffff0100f2052a010000001976a9145e50fb5b7475ebe2f7276ed3f29662e5321d1d7288ac00000000"
+  "hex": "010000000001013384747e0e0d5f7a8dfff4220c5bc25479a4abf674abe9ac5e5b77da7b2973050400000000ffffffff038f8f0000000000001976a9149a006584ab0383ef07ad289395118ed9fba0e45688ac7a1901000000000016001464b2e5a0f191ddebf7e27dd5d37dd89eb0a66475d97249fc0700000016001449f1b89f0b09bbf77f33035ed3d4c30bd90eade90248304502210098989192ba64b6d1008e6137bbffffcfc7c8b7d4d05fb4a03b6906f9ce1e6ed302204bf8c7915ed4b35b6120901fc7459b2dcfe62567f7d6649d451a2136ba15f6700121029bf6c7b020b6e106b8492c6a3d396a265566c6294f553d10557a274d572a0e9e00000000"
 }
 ```
 
@@ -1193,7 +1196,7 @@ let key, label, rescan;
 ```
 
 ```shell--vars
-key='ETHW2rL2CYrXBT57oWRWPvzcjgq79fvDobj2PsF1Y5onqyo4JTCV'
+key='cNH7YBw6haTB3yWkAndoPhwXRLNibXjWAYpqRQdvqPKLeW7JAj6h'
 label='this_is_ignored'
 rescan=false
 ```
@@ -1311,7 +1314,7 @@ let address;
 ```
 
 ```shell--vars
-address='RCFhpyWXkz5GxskL96q4KtceRXuAMnWUQo'
+address='mg54SV2ZubNQ5urTbd42mUsQ54byPvSg5j'
 ```
 
 ```shell--curl
@@ -1326,7 +1329,7 @@ curl $walletrpcurl \
 ```shell--cli
 bwallet-cli rpc importaddress $address
 
-# P2SH example, imports script as address GViEoofSJ7FywQVc1LcXKAbA8TvqDx5Rqv
+# P2SH example, imports script as address 2N57YNxkxUcUR9tXHsdEsvybTaAdsdc4fx
 bwallet-cli rpc importaddress 76a9145e50fb5b7475ebe2f7276ed3f29662e5321d1d7288ac "this_is_ignored" true true
 ```
 
@@ -1860,35 +1863,36 @@ const walletClient = new WalletClient(walletOptions);
 ```json
 [
   {
-    "involvesWatchonly": false,
-    "address": "RCmX71juh4q2CnKGP8U1UhtbSwj8rP92Vi",
-    "account": "hot",
-    "amount": 6.2500454,
-    "confirmations": 1,
-    "label": ""
-  },
-  {
-    "involvesWatchonly": false,
-    "address": "RHstcGRQWYojDPrrpazjLMjLgcnwd1mvCb",
+    "involvesWatchonly": true,
+    "address": "bcrt1ql8ll4v0u83uf3ghafr9f6c5slhnn7dfrxm499g",
     "account": "default",
-    "amount": 50,
-    "confirmations": 503,
+    "amount": 0.00030033,
+    "confirmations": 313,
     "label": ""
   },
   {
-    "involvesWatchonly": false,
-    "address": "RMY3VYzTQibiRZ4FiydqavrF3PdBVKuT4r",
+    "involvesWatchonly": true,
+    "address": "bcrt1qlfeauahf7jdpruxm6f2vax2yu3xsdkkw2z7n9g",
     "account": "default",
-    "amount": 46.87650028,
-    "confirmations": 1,
+    "amount": 0.00015496,
+    "confirmations": 321,
     "label": ""
   },
   {
-    "involvesWatchonly": false,
-    "address": "RYAhEzn27d7P7kcyhWbisFhe9u69SR6ajG",
-    "account": "savings",
-    "amount": 9.37345432,
-    "confirmations": 1,
+    "involvesWatchonly": true,
+    "address": "bcrt1qlaawtlmdcfjdegghxvdh5pqphk5fjhlevsup7s",
+    "account": "default",
+    "amount": 342.97828963,
+    "confirmations": 348,
+    "label": ""
+  },
+  ...
+  {
+    "involvesWatchonly": true,
+    "address": "bcrt1ql797szp8tvdday5r3zpeepc8fjfk4qs09uaq7t",
+    "account": "default",
+    "amount": 0.00091418,
+    "confirmations": 337,
     "label": ""
   }
 ]
@@ -1954,43 +1958,61 @@ const walletClient = new WalletClient(walletOptions);
 {
   "transactions": [
     {
-      "account": "savings",
-      "address": "RYAhEzn27d7P7kcyhWbisFhe9u69SR6ajG",
+      "account": "default",
+      "address": "bcrt1q730jd9qryjjd7wqyc3aw72mu8u3804m3qxz3qe",
       "category": "receive",
-      "amount": 0,
-      "label": "savings",
+      "amount": 0.00036954,
+      "label": "default",
       "vout": 0,
-      "confirmations": 1,
-      "blockhash": "26b5e76dcdfc51b94e8e09ca1cf55b453e6c542b7abb863df0a306c6f00ebc8e",
+      "confirmations": 314,
+      "blockhash": "142abcc5469da7684c84404f93b247b7948dc36933cd438360f611d05f3c62b8",
       "blockindex": -1,
-      "blocktime": 1531503617,
-      "blockheight": 503,
-      "txid": "3962a06342fc62a733700d74c075a5d24c4f44f7108f6d9a318b66e92e3bdc72",
+      "blocktime": 1571760040,
+      "blockheight": 532,
+      "txid": "5f5f496a6095f729755e22eec19484c0e2ea4b144ab266be722e0fe7e5a2ea98",
       "walletconflicts": [],
-      "time": 1531434894,
-      "timereceived": 1531434894,
+      "time": 1571759982,
+      "timereceived": 1571759982,
       "bip125-replaceable": "no"
     },
     {
-      "account": "hot",
-      "address": "RCmX71juh4q2CnKGP8U1UhtbSwj8rP92Vi",
+      "account": "default",
+      "address": "bcrt1qy86kqv3cxfqkemu4e7f6kzxzk2cyt6j6vsxptz",
       "category": "receive",
-      "amount": 6.2500454,
-      "label": "hot",
-      "vout": 0,
-      "confirmations": 1,
-      "blockhash": "26b5e76dcdfc51b94e8e09ca1cf55b453e6c542b7abb863df0a306c6f00ebc8e",
+      "amount": 0.00050209,
+      "label": "default",
+      "vout": 2,
+      "confirmations": 316,
+      "blockhash": "34d0385c667319c5225c7f82e025681bae2fb5df28809cc7cf432b491125c83c",
       "blockindex": -1,
-      "blocktime": 1531503617,
-      "blockheight": 503,
-      "txid": "1c526091b6bdff300cbdf8430e6dca9ea1ab2869d0b5d67e2097f9c9178b34b5",
+      "blocktime": 1571760040,
+      "blockheight": 530,
+      "txid": "9b7899e0800389aa293578ea14d03f9c7d0249faaced52c2120c20cde8f0479b",
       "walletconflicts": [],
-      "time": 1531503618,
-      "timereceived": 1531503618,
+      "time": 1571759982,
+      "timereceived": 1571759982,
+      "bip125-replaceable": "no"
+    },
+    {
+      "account": "default",
+      "address": "bcrt1q8nnvw4h09u6avx4tn8gkrx4t9ayd56v86q7ceg",
+      "category": "receive",
+      "amount": 0.00037547,
+      "label": "default",
+      "vout": 0,
+      "confirmations": 316,
+      "blockhash": "34d0385c667319c5225c7f82e025681bae2fb5df28809cc7cf432b491125c83c",
+      "blockindex": -1,
+      "blocktime": 1571760040,
+      "blockheight": 530,
+      "txid": "77a39583060aa3ff2a705d401fea0c07e77e95d66cc10b744dc95098cad1bee1",
+      "walletconflicts": [],
+      "time": 1571759981,
+      "timereceived": 1571759981,
       "bip125-replaceable": "no"
     }
   ],
-  "lastblock": "26b5e76dcdfc51b94e8e09ca1cf55b453e6c542b7abb863df0a306c6f00ebc8e"
+  "lastblock": "20b062aa8ff8a1611b86016c8ba4f0cec0a6c55b69f1f0431190018bd23d5aec"
 }
 ```
 
@@ -2052,21 +2074,56 @@ const walletClient = new WalletClient(walletOptions);
 ```json
 [
   {
-    "account": "hot",
-    "address": "RCmX71juh4q2CnKGP8U1UhtbSwj8rP92Vi",
+    "account": "default",
+    "address": "bcrt1qpqgnssrdfkfv9pkdj23c7k9w02x8n9ezv4nm3z",
     "category": "receive",
-    "amount": 6.2500454,
-    "label": "hot",
-    "vout": 0,
-    "confirmations": 11,
-    "blockhash": "26b5e76dcdfc51b94e8e09ca1cf55b453e6c542b7abb863df0a306c6f00ebc8e",
+    "amount": 0.00013937,
+    "label": "default",
+    "vout": 1,
+    "confirmations": 406,
+    "blockhash": "2ad44c048bc555d18f06d31065856ab3ea24c9a749d579f036aef102bddeabf9",
     "blockindex": -1,
-    "blocktime": 1531503617,
-    "blockheight": 503,
-    "txid": "1c526091b6bdff300cbdf8430e6dca9ea1ab2869d0b5d67e2097f9c9178b34b5",
+    "blocktime": 1571760025,
+    "blockheight": 440,
+    "txid": "675d4f09e1da5e9d8268de41ecdbb77795d738333caf6a7c86775211c19b6550",
     "walletconflicts": [],
-    "time": 1531503618,
-    "timereceived": 1531503618,
+    "time": 1571759957,
+    "timereceived": 1571759957,
+    "bip125-replaceable": "no"
+  },
+  {
+    "account": "",
+    "address": "bcrt1qh7jclanaex66gpkr5x4duyd45nltxvpppcqnw6",
+    "category": "send",
+    "amount": -0.00125648,
+    "vout": 1,
+    "confirmations": 404,
+    "blockhash": "53441b98c5286ef75e9aa431b2dd44adbef840b04a3b6c07ca79ff6a5e599373",
+    "blockindex": -1,
+    "blocktime": 1571760025,
+    "blockheight": 442,
+    "txid": "725ca556002481e4445110fa4c67fb31d4fdf436e4939bf3c8fa7ff93b1b6c89",
+    "walletconflicts": [],
+    "time": 1571759957,
+    "timereceived": 1571759957,
+    "bip125-replaceable": "no"
+  },
+  {
+    "account": "default",
+    "address": "bcrt1qpc0fu2fl3hdhf0kaheta67gzdfmfe90ga27pr6",
+    "category": "receive",
+    "amount": 0.00044896,
+    "label": "default",
+    "vout": 1,
+    "confirmations": 407,
+    "blockhash": "39e8e1d9f19389a3b92c5e024e5d7070fe48f4ca7bd0d045b119c09a155cebbf",
+    "blockindex": -1,
+    "blocktime": 1571760024,
+    "blockheight": 439,
+    "txid": "e346029655b10a9cd4df74d87d4001b1fd11ee7a6f53ab556cadb27ce160be14",
+    "walletconflicts": [],
+    "time": 1571759957,
+    "timereceived": 1571759957,
     "bip125-replaceable": "no"
   }
 ]
@@ -2089,7 +2146,7 @@ N. | Name | Default |  Description
 
 ```javascript
 let minconf, maxconf, addrs;
-addrs=["RYAhEzn27d7P7kcyhWbisFhe9u69SR6ajG"];
+addrs=["bcrt1qggre40we5qdeenzudq3yz0qxee8qc57s2fqygy"];
 ```
 
 ```shell--vars
@@ -2098,7 +2155,7 @@ maxconf=20
 ```
 
 ```shell--curl
-addrs='["RYAhEzn27d7P7kcyhWbisFhe9u69SR6ajG"]'
+addrs='["bcrt1qggre40we5qdeenzudq3yz0qxee8qc57s2fqygy"]'
 
 
 curl $walletrpcurl \
@@ -2110,7 +2167,7 @@ curl $walletrpcurl \
 ```
 
 ```shell--cli
-addrs='["RYAhEzn27d7P7kcyhWbisFhe9u69SR6ajG"]'
+addrs='["bcrt1qggre40we5qdeenzudq3yz0qxee8qc57s2fqygy"]'
 
 bwallet-cli rpc listunspent $minconf $maxconf $addrs
 ```
@@ -2138,13 +2195,13 @@ const walletClient = new WalletClient(walletOptions);
 ```json
 [
   {
-    "txid": "210e0393071dbfb029336238a5b9aa8f0608e0bb5e03a734d1f9d849d25707f5",
-    "vout": 0,
-    "address": "RYAhEzn27d7P7kcyhWbisFhe9u69SR6ajG",
-    "account": "savings",
-    "scriptPubKey": "76a914fb105362e7419bd437d3648fc926ebcd939ca4d888ac",
-    "amount": 6.25,
-    "confirmations": 12,
+    "txid": "d07a4211a3633bedd737b850378872191c27fc6126dc8131c3b45f62611a7f36",
+    "vout": 1,
+    "address": "bcrt1qggre40we5qdeenzudq3yz0qxee8qc57s2fqygy",
+    "account": "default",
+    "scriptPubKey": "001442079abdd9a01b9ccc5c6822413c06ce4e0c53d0",
+    "amount": 342.96788338,
+    "confirmations": 313,
     "spendable": true,
     "solvable": true
   }
@@ -2177,7 +2234,7 @@ let fromaccount, tobitcoinaddress, amount;
 
 ```shell--vars
 fromaccount='hot'
-tobitcoinaddress='RAxFD5Ffxs9JuGDiu29DLstK9wfw8TMykU'
+tobitcoinaddress='bcrt1qggre40we5qdeenzudq3yz0qxee8qc57s2fqygy'
 amount=0.0195
 ```
 
@@ -2236,7 +2293,7 @@ N. | Name | Default |  Description
 
 ```javascript
 let fromaccount, outputs, minconf, label, subtractFee;
-outputs={"REchKNnZ8ZMmLtWk57pCyLJWC9bUXKRUWW": 0.123, "RSj4jWhPWp6dyFKw8NaCHxWhzfUorfoskT": 0.321}
+outputs={"msSaQkCXyrEefbSH9TCSWNjnacTwGGc55d": 0.123, "moKaYJdRT19YUWSsfhnTQpo68wkVvzkk8y": 0.321}
 ```
 
 ```shell--vars
@@ -2247,7 +2304,7 @@ subtractfee=false
 ```
 
 ```shell--curl
-outputs='{"REchKNnZ8ZMmLtWk57pCyLJWC9bUXKRUWW": 0.123, "RSj4jWhPWp6dyFKw8NaCHxWhzfUorfoskT": 0.321}'
+outputs='{"msSaQkCXyrEefbSH9TCSWNjnacTwGGc55d": 0.123, "moKaYJdRT19YUWSsfhnTQpo68wkVvzkk8y": 0.321}'
 
 curl $walletrpcurl \
   -X POST \
@@ -2258,7 +2315,7 @@ curl $walletrpcurl \
 ```
 
 ```shell--cli
-outputs='{"REchKNnZ8ZMmLtWk57pCyLJWC9bUXKRUWW": 0.123, "RSj4jWhPWp6dyFKw8NaCHxWhzfUorfoskT": 0.321}'
+outputs='{"msSaQkCXyrEefbSH9TCSWNjnacTwGGc55d": 0.123, "moKaYJdRT19YUWSsfhnTQpo68wkVvzkk8y": 0.321}'
 
 bwallet-cli rpc sendmany $fromaccount "$outputs" $minconf $label $subtractfee
 ```
@@ -2307,7 +2364,7 @@ let address, amount, comment, comment_to, subtractFee;
 ```
 
 ```shell--vars
-address='REchKNnZ8ZMmLtWk57pCyLJWC9bUXKRUWW'
+address='moKaYJdRT19YUWSsfhnTQpo68wkVvzkk8y'
 amount=1.01010101
 comment="this_is_ignored"
 comment_to="this_is_ignored"
@@ -2434,7 +2491,7 @@ let address, message;
 ```
 
 ```shell--vars
-address='RFi4gigMWzFCNw774Cj67nomVZCRM6MpPn'
+address='moKaYJdRT19YUWSsfhnTQpo68wkVvzkk8y'
 message='Satoshi'
 ```
 
@@ -2472,7 +2529,7 @@ const walletClient = new WalletClient(walletOptions);
 > The above command returns JSON "result" like this:
 
 ```
-MEUCIQDHeECM3HRwD+FzueXV3iVxdX3ZT3tJurVOAgrRUnQeYgIgRIe1Onn/MrDQBF1nrwCZ2QkyaDWEXwsWo9C36kB4nGY=
+MEUCIQC5Zzr+JoenWHy7m9XxpbDVVeg3DvKvJVQNyYPvLOuB2gIgP/BT3dRItxarNbE8ajEoTI66q3eB4lo+/SLsp7bbP70=
 ```
 
 Sign an arbitrary message with the private key corresponding to a

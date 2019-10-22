@@ -631,7 +631,7 @@ let numblocks, address;
 
 ```shell--vars
 numblocks=2;
-address='RTZJdYScA7uGb5pbQPEczpDmq9HiYLv2fJ';
+address='mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh';
 ```
 
 ```shell--curl
@@ -645,7 +645,6 @@ curl $url \
 ```
 
 ```shell--cli
-# Timeout error
 bcoin-cli rpc generatetoaddress $numblocks $address
 ```
 

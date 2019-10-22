@@ -243,7 +243,7 @@ id='newWallet'
 passphrase='secret456'
 witness=false
 watchOnly=true
-accountKey='rpubKBAoFrCN1HzSEDye7jcQaycA8L7MjFGmJD1uuvUZ21d9srAmAxmB7o1tCZRyXmTRuy5ZDQDV6uxtcxfHAadNFtdK7J6RV9QTcHTCEoY5FtQD'
+accountKey='tpubDDF921KoqbemP3yPiBMBzvkDY5pe4KpirJtXtSaTdRkZ3LyqorrHy1mv1XLNqrmTQQXztdTQiZxDtPxGZ9Lmiqtv8wJYJs5o52J54djLpqC'
 ```
 
 ```shell--curl
@@ -253,7 +253,7 @@ curl $walleturl/$id \
 ```
 
 ```shell--cli
-# watchOnly defaults to true if --key flag is set
+# watch-only defaults to true if --account-key flag is set
 
 bwallet-cli mkwallet $id --witness=$witness --passphrase=$passphrase --watch-only=$watchOnly --account-key=$accountKey
 ```
@@ -288,16 +288,16 @@ const options = {
 ```json
 {
   "network": "regtest",
-  "wid": 2,
+  "wid": 11,
   "id": "newWallet",
   "watchOnly": true,
   "accountDepth": 1,
-  "token": "21b728d8f9e4d909349cf0c8f1e4e74fd45b180103cb7f1885a197d04012ba08",
+  "token": "489d43e398dad34e69653e5edb5cb39b6d55be3364753c07d084d4b3d0292af7",
   "tokenDepth": 0,
   "master": {
     "encrypted": true,
-    "until": 1527181467,
-    "iv": "53effaf192a346b40b08a52dac0658ce",
+    "until": 1571763677,
+    "iv": "4e24f2a5908e20da0b8ba3e88dcda272",
     "algorithm": "pbkdf2",
     "n": 50000,
     "r": 0,
@@ -521,14 +521,13 @@ const wallet = walletClient.wallet(id);
 {
   "encrypted": false,
   "key": {
-    "xprivkey": "tprv8ZgxMBicQKsPe7977psQCjBBjWtLDoJVPiiKog42RCoShJLJATYeSkNTzdwfgpkcqwrPYAmRCeudd6kkVWrs2kH5fnTaxrHhi1TfvgxJsZD",
-    "mnemonic": {
-      "bits": 128,
-      "language": "english",
-      "entropy": "a560ac7eb5c2ed412a4ba0790f73449d",
-      "phrase": "pistol air cabbage high conduct party powder inject jungle knee spell derive",
-      "passphrase": ""
-    }
+    "xprivkey": "tprv8ZgxMBicQKsPfNKy1Wf9EV1cTmz1Cmm6MVrvYdgcR6Hf8sEDUAzhnnoiVbw5jejp4EZWXynQEJhB62oSfANpHRAJqfiZarh1gVMowcJZ2Mn"
+  },
+  "mnemonic": {
+    "bits": 128,
+    "language": "english",
+    "entropy": "e35833c318d677945ec21efff032bb64",
+    "phrase": "today screen valid coyote guess sketch kitchen duck zoo light put siege"
   }
 }
 ```
@@ -632,7 +631,7 @@ id="primary"
 passphrase="secret123"
 rate=0.00001000
 value=0.00020000
-address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+address="mo2L7KZgmH2QNs9QCBAFwQPqBJNSXNhQWV"
 
 bwallet-cli send --id=$id --value=$value --address=$address ---passphrase=$passphrase
 ```
@@ -642,7 +641,7 @@ id="primary"
 passphrase="secret123"
 rate=1000
 value=20000
-address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+address="mo2L7KZgmH2QNs9QCBAFwQPqBJNSXNhQWV"
 
 curl $walleturl/$id/send \
   -X POST \
@@ -661,7 +660,7 @@ id="primary"
 passphrase="secret123"
 rate=1000
 value=20000
-address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+address="mo2L7KZgmH2QNs9QCBAFwQPqBJNSXNhQWV"
 
 const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
@@ -691,13 +690,13 @@ const options = {
 
 ```json
 {
-  "hash": "8fafdf2a6c44fc48dbe01147339a59fa11f2c5a7254d2e6df27ce0a61df29cf7",
+  "hash": "4d44a0285e4e5ae782fc9dee32d2a7b60ec63009a731d72e51374910582f517c",
   "height": -1,
   "block": null,
   "time": 0,
-  "mtime": 1527181979,
+  "mtime": 1571764348,
   "date": "1970-01-01T00:00:00Z",
-  "mdate": "2018-05-24T17:12:59Z",
+  "mdate": "2019-10-22T17:12:28Z",
   "size": 225,
   "virtualSize": 225,
   "fee": 4540,
@@ -705,34 +704,39 @@ const options = {
   "confirmations": 0,
   "inputs": [
     {
-      "value": 5000000000,
-      "address": "R9cS4kuYVWHaDJmRGMpwx7zCNjw97Zm5LL",
+      "value": 2500000000,
+      "address": "mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh",
       "path": {
         "name": "default",
         "account": 0,
         "change": false,
-        "derivation": "m/0'/0/0"
+        "derivation": "m/0'/0/1"
       }
     }
   ],
   "outputs": [
     {
-      "value": 1000,
-      "address": "RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8",
-      "path": null
-    },
-    {
-      "value": 4999994460,
-      "address": "RX3ZPBURVYzjRPR3wYdGepMBa26CGK8VMu",
+      "value": 20000,
+      "address": "mo2L7KZgmH2QNs9QCBAFwQPqBJNSXNhQWV",
       "path": {
         "name": "default",
         "account": 0,
         "change": true,
         "derivation": "m/0'/1/0"
       }
+    },
+    {
+      "value": 2499975460,
+      "address": "mhpSYq8bnM5XJVbpafdLNUtLZefr2d6xSq",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": true,
+        "derivation": "m/0'/1/1"
+      }
     }
   ],
-  "tx": "01000000017a2c5144386ed317c1f2ff484e7e11be718721d7ddab15773d0dd6133fb38a14000000006a4730440220710c42d68bd02789c31e7d351a6795c2a9386749e1d8a6aa61d46d5ba345843e022023d83a31e657f043d08d7e86379b818c98d788bb34bfe71ad2d9fa6dcb44b48b0121036b90b9f76925944b238239115f0c12ecee1b7e060e50850b4884aa0e0daea0c4ffffffff02e8030000000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac5cdc052a010000001976a914eebeba5a5b40bb11ca70f48b71bdb2c2b89f0c5c88ac00000000"
+  "tx": "010000000195c60f9cdf95961f696a83bac71adcab286b4a269bb5bdae71ca95d634fab681000000006a473044022068d00d638a3b4d4d54c76167fff1bad023f34375d3bb05a7cb0c051ac63133ed0220182eba4cd68d27c43c071d6690a60c8b13f4c775fec145a736f6f58781fa2d5a01210336c99e45e00b73c863497a989fe6feb08439ca2d7cf98f55bc261ed70ed28a7bffffffff02204e0000000000001976a91452572750e3cf71b97a58dd084f34c3b7027ec75288ac24990295000000001976a914193ee8a7e5d7d5c299785dea90802bc1906a893788ac00000000"
 }
 ```
 
@@ -768,40 +772,40 @@ address <br> _string_ | destination address for transaction
 
 ## Create a Transaction
 ```shell--cli
-id="multisig1"
-passphrase="multisecret123"
+id="multisig-watch"
 rate=0.00001000
 value=0.05000000
-address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+address="mg54SV2ZubNQ5urTbd42mUsQ54byPvSg5j"
+sign=false
 
-bwallet-cli mktx --id=$id --value=$value --address=$address ---passphrase=$passphrase
+bwallet-cli mktx --id=$id --rate=$rate --value=$value --address=$address ---passphrase=$passphrase --sign=$sign
 ```
 
 ```shell--curl
 id="multisig1"
-passphrase="multisecret123"
 rate=1000
 value=5000000
-address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+address="mg54SV2ZubNQ5urTbd42mUsQ54byPvSg5"
+sign=false
 
 curl $walleturl/$id/create \
   -X POST \
   --data '{
-    "passphrase":"'$passphrase'",
     "rate":'$rate',
     "outputs":[
       {"address":"'$address'", "value":'$value'}
-    ]
+    ],
+    "sign": '$false'
   }'
 ```
 
 ```javascript
-let id, passphrase, rate, value, address;
-id="multisig1"
-passphrase="multisecret123"
+let id, rate, value, address, sign;
+id="multisig-watch"
 rate=1000
 value=5000000
-address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+address="mg54SV2ZubNQ5urTbd42mUsQ54byPvSg5"
+sign=false
 
 const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
@@ -816,9 +820,9 @@ const walletClient = new WalletClient(walletOptions);
 const wallet = walletClient.wallet(id);
 
 const options = {
-  passphrase: passphrase,
   rate: rate,
-  outputs: [{ value: value, address: address }]
+  outputs: [{ value: value, address: address }],
+  sign: sign
 };
 
 (async () => {
@@ -831,45 +835,45 @@ const options = {
 
 ```json
 {
-  "hash": "2c550d94e3de0de48d82199442aec45bbc75e253eaf67c953db4265691cc60ec",
-  "witnessHash": "2c550d94e3de0de48d82199442aec45bbc75e253eaf67c953db4265691cc60ec",
-  "fee": 6800,
-  "rate": 25855,
-  "mtime": 1527182869,
+  "hash": "3f61cbbe01ca9eb7eb0fb8c37f15e92d2fee8c28ea54fef5b7bc89eee219074b",
+  "witnessHash": "3f61cbbe01ca9eb7eb0fb8c37f15e92d2fee8c28ea54fef5b7bc89eee219074b",
+  "fee": 3840,
+  "rate": 30000,
+  "mtime": 1571766790,
   "version": 1,
   "inputs": [
     {
       "prevout": {
-        "hash": "31ebd87739a0e58098d127d76ee80ebfd8b5d923a8fcaf2d0908c16f123043be",
+        "hash": "4e6c7db14b22e39ca800b0eb83d698619849ac3245408cf03ae5dc752e2d884c",
         "index": 0
       },
-      "script": "0000473044022064ac064f8b0e224413cf7e7c3aa2758013dd0cff6b421a273fb6f870894b200f022064da80d0ea08110b1c18817a66b1e576f945f73256407175b0fcc9936644b3320147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652ae",
+      "script": "",
       "witness": "00",
       "sequence": 4294967295,
       "coin": {
         "version": 1,
-        "height": -1,
-        "value": 10000000,
-        "script": "a9143ddf94d382bc20b256748e0ab20b040efc07344c87",
-        "address": "GPV5UXtx3Zbb7CGL7k31kykXkbNUxM6hXW",
-        "coinbase": false
+        "height": 746,
+        "value": 312500000,
+        "script": "00201e669358ab0b70bbdf63ac7abc442ee1b1f6f0fe24b1d67b2e3527ffac664c39",
+        "address": "bcrt1qrenfxk9tpdcthhmr43atc3pwuxcldu87yjcav7ewx5nlltrxfsustr8wj5",
+        "coinbase": true
       }
     }
   ],
   "outputs": [
     {
-      "value": 4993200,
-      "script": "a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887",
-      "address": "GR8dHeLMn8CPVAztoEjkAxHS6eWSgf6Hcr"
+      "value": 5000000,
+      "script": "76a914061270cea3bdd77a5442657d177f4490642e7a2288ac",
+      "address": "mg54SV2ZubNQ5urTbd42mUsQ54byPvSg5j"
     },
     {
-      "value": 5000000,
-      "script": "76a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac",
-      "address": "RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+      "value": 307496160,
+      "script": "0020485f95ef73a1f444cbbfdb7ff1f43c7e34c069d25a823026d3513cfa64cfd677",
+      "address": "bcrt1qfp0etmmn586yfjalmdllrapu0c6vq6wjt2prqfkn2y705ex06ems39f93c"
     }
   ],
   "locktime": 0,
-  "hex": "0100000001be4330126fc108092daffca823d9b5d8bf0ee86ed727d19880e5a03977d8eb3100000000920000473044022064ac064f8b0e224413cf7e7c3aa2758013dd0cff6b421a273fb6f870894b200f022064da80d0ea08110b1c18817a66b1e576f945f73256407175b0fcc9936644b3320147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652aeffffffff02b0304c000000000017a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887404b4c00000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac00000000"
+  "hex": "01000000014c882d2e75dce53af08c404532ac49986198d683ebb000a89ce3224bb17d6c4e0000000000ffffffff02404b4c00000000001976a914061270cea3bdd77a5442657d177f4490642e7a2288ace004541200000000220020485f95ef73a1f444cbbfdb7ff1f43c7e34c069d25a823026d3513cfa64cfd67700000000"
 }
 ```
 
@@ -900,6 +904,7 @@ selection <br> _enum_ - `all`, `random`, `age`, `value`| How to select coins
 depth <br> _int_  | number of confirmation for coins to spend
 value <br> _int_ (or _float_) | Value to send in satoshis (or whole BTC, see warning above)
 address <br> _string_ | destination address for transaction
+sign <br> _bool_ | whether to sign the TX (must be false for watch-only wallets)
 
 
 
@@ -909,9 +914,9 @@ let id, tx, passphrase;
 ```
 
 ```shell--vars
-id="multisig2"
-passphrase="multisecret456"
-tx="0100000001be4330126fc108092daffca823d9b5d8bf0ee86ed727d19880e5a03977d8eb3100000000920000473044022064ac064f8b0e224413cf7e7c3aa2758013dd0cff6b421a273fb6f870894b200f022064da80d0ea08110b1c18817a66b1e576f945f73256407175b0fcc9936644b3320147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652aeffffffff02b0304c000000000017a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887404b4c00000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac00000000"
+id="multisig1"
+passphrase="multisecret123"
+tx="01000000014c882d2e75dce53af08c404532ac49986198d683ebb000a89ce3224bb17d6c4e0000000000ffffffff02404b4c00000000001976a914061270cea3bdd77a5442657d177f4490642e7a2288ace004541200000000220020485f95ef73a1f444cbbfdb7ff1f43c7e34c069d25a823026d3513cfa64cfd67700000000"
 ```
 
 ```shell--cli
@@ -949,45 +954,45 @@ const options = { tx: tx, passphrase: passphrase };
 
 ```json
 {
-  "hash": "a355e0fcfb727c8161f3b2e55e0cda40f4614ea38d4834f82460cfdc9941381a",
-  "witnessHash": "a355e0fcfb727c8161f3b2e55e0cda40f4614ea38d4834f82460cfdc9941381a",
-  "fee": 170,
-  "rate": 507,
-  "mtime": 1527183237,
+  "hash": "3f61cbbe01ca9eb7eb0fb8c37f15e92d2fee8c28ea54fef5b7bc89eee219074b",
+  "witnessHash": "68e9d7a28a571746eb7561ebc107479da26eb1cb2246ad5f05769149f6ec84db",
+  "fee": 3840,
+  "rate": 21942,
+  "mtime": 1571767276,
   "version": 1,
   "inputs": [
     {
       "prevout": {
-        "hash": "31ebd87739a0e58098d127d76ee80ebfd8b5d923a8fcaf2d0908c16f123043be",
+        "hash": "4e6c7db14b22e39ca800b0eb83d698619849ac3245408cf03ae5dc752e2d884c",
         "index": 0
       },
-      "script": "004730440220764ce5fa17f7d6fc8921a85ddd81e3378e88aae92a02ab8ff72646bb9d2ad3c102203075f1c8f97d48626ed22e86495c28c19386c1adb9160d84ab28fb5c7c65b103014830450221008bbc87270043e0c701cb4ba8bb7b0b8014f7bdac66fb8ae104bfe91e0469983f022003734c66e3c1f40293e90b2327fe509f68ada13c44b69bec364c01763a0699940147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652ae",
-      "witness": "00",
+      "script": "",
+      "witness": "050000483045022100a8ba55fb5bdf6a69fc820d44c4430d55ae0356f7dd5cdcf5bb27e8cb24535fb802204a6a23dedc1acff4725e99b51bce9f2692aa08d6063842be51d5728e8f95f76f0100695221027b88633d65cb48667012bb64039afda0b50c51abb2fe11aca975b324b8f0f44c2102f9ae8660d9dc5f3d62a5c347e8cd431ecc9404c17ecbb57ab89aa54b6df68a422103001a9a61d4989e229cfa5bb9acf0fb03fa5f3f1c9785fc1de2d76a8f363c457953ae",
       "sequence": 4294967295,
       "coin": {
         "version": 1,
-        "height": -1,
-        "value": 10000000,
-        "script": "a9143ddf94d382bc20b256748e0ab20b040efc07344c87",
-        "address": "GPV5UXtx3Zbb7CGL7k31kykXkbNUxM6hXW",
-        "coinbase": false
+        "height": 746,
+        "value": 312500000,
+        "script": "00201e669358ab0b70bbdf63ac7abc442ee1b1f6f0fe24b1d67b2e3527ffac664c39",
+        "address": "bcrt1qrenfxk9tpdcthhmr43atc3pwuxcldu87yjcav7ewx5nlltrxfsustr8wj5",
+        "coinbase": true
       }
     }
   ],
   "outputs": [
     {
-      "value": 4999830,
-      "script": "a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887",
-      "address": "GR8dHeLMn8CPVAztoEjkAxHS6eWSgf6Hcr"
+      "value": 5000000,
+      "script": "76a914061270cea3bdd77a5442657d177f4490642e7a2288ac",
+      "address": "mg54SV2ZubNQ5urTbd42mUsQ54byPvSg5j"
     },
     {
-      "value": 5000000,
-      "script": "76a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac",
-      "address": "RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
+      "value": 307496160,
+      "script": "0020485f95ef73a1f444cbbfdb7ff1f43c7e34c069d25a823026d3513cfa64cfd677",
+      "address": "bcrt1qfp0etmmn586yfjalmdllrapu0c6vq6wjt2prqfkn2y705ex06ems39f93c"
     }
   ],
   "locktime": 0,
-  "hex": "0100000001be4330126fc108092daffca823d9b5d8bf0ee86ed727d19880e5a03977d8eb3100000000da004730440220764ce5fa17f7d6fc8921a85ddd81e3378e88aae92a02ab8ff72646bb9d2ad3c102203075f1c8f97d48626ed22e86495c28c19386c1adb9160d84ab28fb5c7c65b103014830450221008bbc87270043e0c701cb4ba8bb7b0b8014f7bdac66fb8ae104bfe91e0469983f022003734c66e3c1f40293e90b2327fe509f68ada13c44b69bec364c01763a0699940147522102fac079263a41252f1602406313cc26caf76029135fda4f2423b997b6c89ce78f210304ea9eddb0c0fe241c89ceb2ee8b15870ede2757dfbd42fee60ba9f63d91290652aeffffffff02964a4c000000000017a9144ff1a73bf41d28a8a60e057a5c4bb0a38c0bbaf887404b4c00000000001976a9149e6a64a9dfdf49bfa72e1402663ac40aa5e30a7188ac00000000"
+  "hex": "010000000001014c882d2e75dce53af08c404532ac49986198d683ebb000a89ce3224bb17d6c4e0000000000ffffffff02404b4c00000000001976a914061270cea3bdd77a5442657d177f4490642e7a2288ace004541200000000220020485f95ef73a1f444cbbfdb7ff1f43c7e34c069d25a823026d3513cfa64cfd677050000483045022100a8ba55fb5bdf6a69fc820d44c4430d55ae0356f7dd5cdcf5bb27e8cb24535fb802204a6a23dedc1acff4725e99b51bce9f2692aa08d6063842be51d5728e8f95f76f0100695221027b88633d65cb48667012bb64039afda0b50c51abb2fe11aca975b324b8f0f44c2102f9ae8660d9dc5f3d62a5c347e8cd431ecc9404c17ecbb57ab89aa54b6df68a422103001a9a61d4989e229cfa5bb9acf0fb03fa5f3f1c9785fc1de2d76a8f363c457953ae00000000"
 }
 ```
 
@@ -1212,8 +1217,8 @@ let id, account, key;
 id='primary'
 watchid='watchonly1'
 account='default'
-pubkey='0215a9110e2a9b293c332c28d69f88081aa2a949fde67e35a13fbe19410994ffd9'
-privkey='EMdDCvF1ZjsCnimTnTQfjw6x8CQmVidtJxKBegCVzPw3g6yRoDkK'
+pubkey='03b28be4fd749be06233452542e9d602f97a9b9c292aed4e4669c3fcc499e366de'
+privkey='cNRiqwzRfcUfokNV8nSnDKb3NsKPhfRV2z5kBN11GKFb3GXkk1Hj'
 ```
 
 ```shell--cli
@@ -1297,7 +1302,7 @@ let id, account, address;
 ```shell--vars
 id='watchonly1'
 account='default'
-address='RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC'
+address='msKYwEVXcKBxatPMfFLdVwYug6bz4YS87J'
 ```
 
 ```shell--cli
@@ -1472,7 +1477,7 @@ let id, key, account;
 ```shell--vars
 id="multisig3"
 account="default"
-key="rpubKBBGCWqgVn4RRVpJTDUvTJnFHYiQuoUNy7s6W57U36KJ3r5inJp7iVRJZHvkFjbgfaGVs9fkvcCQS5ZMmc7BYFCrkADgmGKDCsjYK1vGmoFw"
+key="tpubDDkzvYzn2iJLqucWgnULe1x3DR5PCaZvWzpg13ZA395sFmbvKNG3XrPp3KpnbFrdE3R3c93w5ZVfU2XWBzde5LLCBR1YRy8XwMibN7sG39o"
 ```
 
 ```shell--cli
@@ -1541,7 +1546,7 @@ let id, key;
 ```shell--vars
 id="multisig3"
 account="default"
-key="rpubKBBGCWqgVn4RRVpJTDUvTJnFHYiQuoUNy7s6W57U36KJ3r5inJp7iVRJZHvkFjbgfaGVs9fkvcCQS5ZMmc7BYFCrkADgmGKDCsjYK1vGmoFw"
+key="tpubDDkzvYzn2iJLqucWgnULe1x3DR5PCaZvWzpg13ZA395sFmbvKNG3XrPp3KpnbFrdE3R3c93w5ZVfU2XWBzde5LLCBR1YRy8XwMibN7sG39o"
 ```
 
 ```shell--cli
@@ -1611,7 +1616,7 @@ let id, address;
 
 ```shell--vars
 id="primary"
-address="RM4xYH2GrcHmiptfsDEF7Kqqbm2Humjm2E"
+address="msKYwEVXcKBxatPMfFLdVwYug6bz4YS87J"
 ```
 
 ```shell--cli
@@ -1651,11 +1656,11 @@ const wallet = walletClient.wallet(id);
   "index": 2,
   "witness": false,
   "nested": false,
-  "publicKey": "02548e0a23b90505f1b4017f52cf2beeaa399fce7ff2961e29570c6afdfa9bfc5b",
+  "publicKey": "03b28be4fd749be06233452542e9d602f97a9b9c292aed4e4669c3fcc499e366de",
   "script": null,
   "program": null,
   "type": "pubkeyhash",
-  "address": "RM4xYH2GrcHmiptfsDEF7Kqqbm2Humjm2E"
+  "address": "msKYwEVXcKBxatPMfFLdVwYug6bz4YS87J"
 }
 ```
 
@@ -1678,7 +1683,7 @@ let id, address;
 ```shell--vars
 id='primary'
 passphrase='secret123'
-address='RM4xYH2GrcHmiptfsDEF7Kqqbm2Humjm2E'
+address='msKYwEVXcKBxatPMfFLdVwYug6bz4YS87J'
 ```
 
 ```shell--cli
@@ -1712,7 +1717,7 @@ const wallet = walletClient.wallet(id);
 
 ```json
 {
-  "privateKey": "EPAcwFM5E6CS1sGCv3PDeJ68nXSfUZwViZ8HyrP9T8GcGSF14EsK"
+  "privateKey": "cNRiqwzRfcUfokNV8nSnDKb3NsKPhfRV2z5kBN11GKFb3GXkk1Hj"
 }
 ```
 
@@ -1772,16 +1777,15 @@ const wallet = walletClient.wallet(id);
   "name": "default",
   "account": 0,
   "branch": 0,
-  "index": 5,
+  "index": 3,
   "witness": false,
   "nested": false,
-  "publicKey": "030429c7a7007b9da542c029ea72a21852c2e4dfcce339d626df022068f0149680",
+  "publicKey": "03af169e5a186bbd7b380cb4553c72af243e18f243785b1597f192bbedd4a94fc3",
   "script": null,
   "program": null,
   "type": "pubkeyhash",
-  "address": "RUkNXekA1QcDzNZhn2TqNavPUxmaosCzJC"
+  "address": "n2eoT9D8txT5ZymDvCFPA8PHs2CmTV6oJT"
 }
-
 ```
 
 Derive new receiving address for account.
@@ -1843,16 +1847,15 @@ const wallet = walletClient.wallet(id);
   "name": "default",
   "account": 0,
   "branch": 1,
-  "index": 27,
+  "index": 3,
   "witness": false,
   "nested": false,
-  "publicKey": "02fb03c9c45cbc6436c7c009391bc1410f86da9f6548675e7521856d3b372dfb42",
+  "publicKey": "03853852949194b426608b55074c54bbb78791a80c1eeece1e83343fb8babe6129",
   "script": null,
   "program": null,
   "type": "pubkeyhash",
-  "address": "R9oeK9hgbBEYjmUffYyvPfh7eMw7q4v4XY"
+  "address": "mppKe3yeSqnwX6pSVFqCT1AVGYPbnncKGh"
 }
-[ec
 ```
 Derive new change address for account.
 
@@ -1917,11 +1920,11 @@ const wallet = walletClient.wallet(id);
   "index": 1,
   "witness": true,
   "nested": true,
-  "publicKey": "02d10d018aad643382a77f6f6305bd209879ae450f9d3fdbcc406a666a20b40332",
+  "publicKey": "02d4ac18c8422e1ed65b007bfaef9f6b5b5c2e7070d56806f2928f24e3c92ba04d",
   "script": null,
-  "program": "001421457f563883db273f4cefd519882dfefcb6ba82",
+  "program": "00142248d004cd1afca5fec1d8a92e3ef8de026b395d",
   "type": "scripthash",
-  "address": "GX9yN5m5dUcSqfmNgkfQ7XJAHdyvbTHLhU"
+  "address": "2NFQrQQSTWWCG3A9du6UNbDeDw1K3BQqQdu"
 }
 ```
 
@@ -2043,22 +2046,22 @@ const wallet = walletClient.wallet(id);
 [
   {
     "version": 1,
-    "height": -1,
-    "value": 4999998887,
-    "script": "76a914a2133747754faf7fbacc31bf0f74808f8409c4b388ac",
-    "address": "RQ4AZjpaoyXhEk3mjcWYR74YR8XhxoXGzV",
+    "height": 533,
+    "value": 54145,
+    "script": "0014b36ce46975f794a457ace76acf60e9e729afa9f6",
+    "address": "bcrt1qkdkwg6t47722g4avua4v7c8fuu56l20khg99xp",
     "coinbase": false,
-    "hash": "7c7de4c48744b09b69bd36ffdb354199407321e305c0a4bd366a6168e0ff7244",
+    "hash": "4d970cefa68cc09a4d591b106d551f2ab7ec5588fad34135e8bf0549acf1071f",
     "index": 1
   },
   {
     "version": 1,
-    "height": -1,
-    "value": 4999998887,
-    "script": "76a9149433dbda44a1f23396a1bd231443b0d29eb8cf2888ac",
-    "address": "RNnpD7tGaTpqEuTfBaqrtAqDK1927FLkW2",
+    "height": 533,
+    "value": 34296708683,
+    "script": "001478c6269acab13571f03ec97e6ef81c06a87d8b91",
+    "address": "bcrt1q0rrzdxk2ky6hrup7e9lxa7quq658mzu3yatkz4",
     "coinbase": false,
-    "hash": "a97a9993389ae321b263dffb68ba1312ad0655da83aeca75b2372d5abc70544a",
+    "hash": "af4fc1e2490a01f028e837a9a4cc2deef7760ca7c7373e53e2bf0f4f71a7b808",
     "index": 1
   },
   ...
@@ -2269,8 +2272,8 @@ let id, hash, index;
 
 ```shell--vars
 id="primary"
-hash="52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1"
-index="0"
+hash="d07a4211a3633bedd737b850378872191c27fc6126dc8131c3b45f62611a7f36"
+index="1"
 ```
 
 ```shell--cli
@@ -2307,13 +2310,13 @@ const wallet = walletClient.wallet(id);
 ```json
 {
   "version": 1,
-  "height": 104,
-  "value": 5000000000,
-  "script": "76a91403a394378a680558ea205b604b182566381e116e88ac",
-  "address": "R9cS4kuYVWHaDJmRGMpwx7zCNjw97Zm5LL",
-  "coinbase": true,
-  "hash": "52ada542512ea95be425087ee4b891842d81eb6f9a4e0350f14d0285b5fd40c1",
-  "index": 0
+  "height": 533,
+  "value": 34296788338,
+  "script": "001442079abdd9a01b9ccc5c6822413c06ce4e0c53d0",
+  "address": "bcrt1qggre40we5qdeenzudq3yz0qxee8qc57s2fqygy",
+  "coinbase": false,
+  "hash": "d07a4211a3633bedd737b850378872191c27fc6126dc8131c3b45f62611a7f36",
+  "index": 1
 }
 ```
 

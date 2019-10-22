@@ -50,12 +50,12 @@ const client = new NodeClient(clientOptions);
 ```json
 {
   "version": 1,
-  "height": -1,
-  "value": 30000000,
-  "script": "76a91400ba915c3d18907b79e6cfcd8b9fdf69edc7a7db88ac",
-  "address": "R9M3aUWCcKoiqDPusJvqNkAbjffLgCqYip",
+  "height": 533,
+  "value": 67377,
+  "script": "76a9147356fde8f0a321dd114d947495d1f4b9f3cb050088ac",
+  "address": "mr2pDQvLN7eGv6xinBgSUmQpYSYdTEWyTf",
   "coinbase": false,
-  "hash": "53faa103e8217e1520f5149a4e8c84aeb58e55bdab11164a95e69a8ca50f8fcc",
+  "hash": "c747afe7aea229ae2aed7135eb768fd2dc1d8172cd7463bf3906e8321baa5608",
   "index": 0
 }
 ```

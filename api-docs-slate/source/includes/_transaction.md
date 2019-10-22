@@ -16,7 +16,7 @@ let txhash;
 ```
 
 ```shell--vars
-txhash='4c7846a8ff8415945e96937dea27bdb3144c15d793648d725602784826052586';
+txhash='77a39583060aa3ff2a705d401fea0c07e77e95d66cc10b744dc95098cad1bee1';
 ```
 
 ```shell--curl
@@ -51,50 +51,55 @@ const client = new NodeClient(clientOptions);
 
 ```json
 {
-  "hash": "4c7846a8ff8415945e96937dea27bdb3144c15d793648d725602784826052586",
-  "witnessHash": "4c7846a8ff8415945e96937dea27bdb3144c15d793648d725602784826052586",
-  "fee": 4540,
-  "rate": 20088,
-  "mtime": 1527029380,
-  "height": -1,
-  "block": null,
-  "time": 0,
-  "index": -1,
+  "hash": "77a39583060aa3ff2a705d401fea0c07e77e95d66cc10b744dc95098cad1bee1",
+  "witnessHash": "130bd86dccf06142b6134c7c38997d8babc2104a94d7a84da021d587740ed1c8",
+  "fee": 1740,
+  "rate": 9942,
+  "mtime": 1571763474,
+  "height": 530,
+  "block": "34d0385c667319c5225c7f82e025681bae2fb5df28809cc7cf432b491125c83c",
+  "time": 1571760040,
+  "index": 8,
   "version": 1,
   "inputs": [
     {
       "prevout": {
-        "hash": "a88387ca68a67f7f74e91723de0069154b532bf024c0e4054e36ea2234251181",
-        "index": 0
+        "hash": "9d2330c36814d20ccdba1b6fc5153ed3b294cb34fa99fc8199552014250ea285",
+        "index": 3
       },
-      "script": "4830450221009fcb51c7b5956f4524490ee5f2c446faf29cc159f750d93455a9af393cd5b78d02201c3b8b0388dba8cfe3f5bef52a39e980be581d87e06433390f2b099df3855913012103cb25dc2929ea58675113e60f4c08d084904189ab44a9a142179684c6cdd8d46a",
-      "witness": "00",
+      "script": "",
+      "witness": "02473044022008765f15a62f283c06082dfea6a6f413eae4190dbbfd57efae1813432b66613e0220163b708d4e1ccd6a439da2d222f72e4231bdfd877fcdfb73ac85566e6358c559012103d2d0677a136821cb92361501570173e2c6b0d8b12e584737ffc991d2d1ccf026",
       "sequence": 4294967295,
       "coin": {
         "version": 1,
-        "height": 36,
-        "value": 5000000000,
-        "script": "76a91420a060fec9a7dfac723c521e168876909aa37ce588ac",
-        "address": "RCFhpyWXkz5GxskL96q4KtceRXuAMnWUQo",
-        "coinbase": true
+        "height": 528,
+        "value": 34297185559,
+        "script": "0014268a968f7d4d1d72bbecc0ebca21d890901ba312",
+        "address": "bcrt1qy69fdrmaf5wh9wlvcr4u5gwcjzgphgcjswyuvn",
+        "coinbase": false
       }
     }
   ],
   "outputs": [
     {
-      "value": 87654321,
-      "script": "76a914a4ecde9642f8070241451c5851431be9b658a7fe88ac",
-      "address": "RQKEexR9ZufYP6AKbwhzdv8iuiMFDh4sNZ"
+      "value": 37547,
+      "script": "00143ce6c756ef2f35d61aab99d1619aab2f48da6987",
+      "address": "bcrt1q8nnvw4h09u6avx4tn8gkrx4t9ayd56v86q7ceg"
     },
     {
-      "value": 4912341139,
-      "script": "76a9145bd075f5e3c5ff3e8467d94dee593d410967d93d88ac",
-      "address": "RHefJ5hLW9jyEwwdxhci6r7AH7SAxdpGW3"
+      "value": 50131,
+      "script": "76a914e53103ac18b5d274dcea14e6b0c856182ce7021688ac",
+      "address": "n2QokZQd8Fn6a82vwXtndYy88HeUk3BZio"
+    },
+    {
+      "value": 34297096141,
+      "script": "0014f0ddfca1c6023538c032f6fb46a35703099319fe",
+      "address": "bcrt1q7rwlegwxqg6n3spj7ma5dg6hqvyexx07zmt40j"
     }
   ],
   "locktime": 0,
-  "hex": "01000000018111253422ea364e05e4c024f02b534b156900de2317e9747f7fa668ca8783a8000000006b4830450221009fcb51c7b5956f4524490ee5f2c446faf29cc159f750d93455a9af393cd5b78d02201c3b8b0388dba8cfe3f5bef52a39e980be581d87e06433390f2b099df3855913012103cb25dc2929ea58675113e60f4c08d084904189ab44a9a142179684c6cdd8d46affffffff02b17f3905000000001976a914a4ecde9642f8070241451c5851431be9b658a7fe88ac9360cc24010000001976a9145bd075f5e3c5ff3e8467d94dee593d410967d93d88ac00000000",
-  "confirmations": 207
+  "hex": "0100000000010185a20e251420559981fc99fa34cb94b2d33e15c56f1bbacd0cd21468c330239d0300000000ffffffff03ab920000000000001600143ce6c756ef2f35d61aab99d1619aab2f48da6987d3c30000000000001976a914e53103ac18b5d274dcea14e6b0c856182ce7021688accd2744fc07000000160014f0ddfca1c6023538c032f6fb46a35703099319fe02473044022008765f15a62f283c06082dfea6a6f413eae4190dbbfd57efae1813432b66613e0220163b708d4e1ccd6a439da2d222f72e4231bdfd877fcdfb73ac85566e6358c559012103d2d0677a136821cb92361501570173e2c6b0d8b12e584737ffc991d2d1ccf02600000000",
+  "confirmations": 6
 }
 ```
 
@@ -121,7 +126,7 @@ let address;
 ```
 
 ```shell--vars
-address='RHefJ5hLW9jyEwwdxhci6r7AH7SAxdpGW3';
+address='bcrt1q8nnvw4h09u6avx4tn8gkrx4t9ayd56v86q7ceg';
 ```
 
 ```shell--curl
@@ -157,51 +162,56 @@ const client = new NodeClient(clientOptions);
 ```json
 [
   {
-    "hash": "4c7846a8ff8415945e96937dea27bdb3144c15d793648d725602784826052586",
-    "witnessHash": "4c7846a8ff8415945e96937dea27bdb3144c15d793648d725602784826052586",
-    "fee": 4540,
-    "rate": 20088,
-    "mtime": 1527029380,
-    "height": -1,
-    "block": null,
-    "time": 0,
-    "index": -1,
+    "hash": "77a39583060aa3ff2a705d401fea0c07e77e95d66cc10b744dc95098cad1bee1",
+    "witnessHash": "130bd86dccf06142b6134c7c38997d8babc2104a94d7a84da021d587740ed1c8",
+    "fee": 1740,
+    "rate": 9942,
+    "mtime": 1571763513,
+    "height": 530,
+    "block": "34d0385c667319c5225c7f82e025681bae2fb5df28809cc7cf432b491125c83c",
+    "time": 1571760040,
+    "index": 8,
     "version": 1,
     "inputs": [
       {
         "prevout": {
-          "hash": "a88387ca68a67f7f74e91723de0069154b532bf024c0e4054e36ea2234251181",
-          "index": 0
+          "hash": "9d2330c36814d20ccdba1b6fc5153ed3b294cb34fa99fc8199552014250ea285",
+          "index": 3
         },
-        "script": "4830450221009fcb51c7b5956f4524490ee5f2c446faf29cc159f750d93455a9af393cd5b78d02201c3b8b0388dba8cfe3f5bef52a39e980be581d87e06433390f2b099df3855913012103cb25dc2929ea58675113e60f4c08d084904189ab44a9a142179684c6cdd8d46a",
-        "witness": "00",
+        "script": "",
+        "witness": "02473044022008765f15a62f283c06082dfea6a6f413eae4190dbbfd57efae1813432b66613e0220163b708d4e1ccd6a439da2d222f72e4231bdfd877fcdfb73ac85566e6358c559012103d2d0677a136821cb92361501570173e2c6b0d8b12e584737ffc991d2d1ccf026",
         "sequence": 4294967295,
         "coin": {
           "version": 1,
-          "height": 36,
-          "value": 5000000000,
-          "script": "76a91420a060fec9a7dfac723c521e168876909aa37ce588ac",
-          "address": "RCFhpyWXkz5GxskL96q4KtceRXuAMnWUQo",
-          "coinbase": true
+          "height": 528,
+          "value": 34297185559,
+          "script": "0014268a968f7d4d1d72bbecc0ebca21d890901ba312",
+          "address": "bcrt1qy69fdrmaf5wh9wlvcr4u5gwcjzgphgcjswyuvn",
+          "coinbase": false
         }
       }
     ],
     "outputs": [
       {
-        "value": 87654321,
-        "script": "76a914a4ecde9642f8070241451c5851431be9b658a7fe88ac",
-        "address": "RQKEexR9ZufYP6AKbwhzdv8iuiMFDh4sNZ"
+        "value": 37547,
+        "script": "00143ce6c756ef2f35d61aab99d1619aab2f48da6987",
+        "address": "bcrt1q8nnvw4h09u6avx4tn8gkrx4t9ayd56v86q7ceg"
       },
       {
-        "value": 4912341139,
-        "script": "76a9145bd075f5e3c5ff3e8467d94dee593d410967d93d88ac",
-        "address": "RHefJ5hLW9jyEwwdxhci6r7AH7SAxdpGW3"
+        "value": 50131,
+        "script": "76a914e53103ac18b5d274dcea14e6b0c856182ce7021688ac",
+        "address": "n2QokZQd8Fn6a82vwXtndYy88HeUk3BZio"
+      },
+      {
+        "value": 34297096141,
+        "script": "0014f0ddfca1c6023538c032f6fb46a35703099319fe",
+        "address": "bcrt1q7rwlegwxqg6n3spj7ma5dg6hqvyexx07zmt40j"
       }
     ],
     "locktime": 0,
-    "hex": "01000000018111253422ea364e05e4c024f02b534b156900de2317e9747f7fa668ca8783a8000000006b4830450221009fcb51c7b5956f4524490ee5f2c446faf29cc159f750d93455a9af393cd5b78d02201c3b8b0388dba8cfe3f5bef52a39e980be581d87e06433390f2b099df3855913012103cb25dc2929ea58675113e60f4c08d084904189ab44a9a142179684c6cdd8d46affffffff02b17f3905000000001976a914a4ecde9642f8070241451c5851431be9b658a7fe88ac9360cc24010000001976a9145bd075f5e3c5ff3e8467d94dee593d410967d93d88ac00000000",
-    "confirmations": 207
-  }
+    "hex": "0100000000010185a20e251420559981fc99fa34cb94b2d33e15c56f1bbacd0cd21468c330239d0300000000ffffffff03ab920000000000001600143ce6c756ef2f35d61aab99d1619aab2f48da6987d3c30000000000001976a914e53103ac18b5d274dcea14e6b0c856182ce7021688accd2744fc07000000160014f0ddfca1c6023538c032f6fb46a35703099319fe02473044022008765f15a62f283c06082dfea6a6f413eae4190dbbfd57efae1813432b66613e0220163b708d4e1ccd6a439da2d222f72e4231bdfd877fcdfb73ac85566e6358c559012103d2d0677a136821cb92361501570173e2c6b0d8b12e584737ffc991d2d1ccf02600000000",
+    "confirmations": 6
+  },
   ...
 ]
 ```
