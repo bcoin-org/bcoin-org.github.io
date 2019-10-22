@@ -2,20 +2,20 @@
 
 ## bcoin client requests
 
-Complete list of commands:
+Click a command to see its complete description and usage.
 
-Command                     |cURL method	| Description
+Command                     |cURL method    | Description
 ----------------------------|---------------|------------
-`/`							| `GET`			| get info
-`/tx/:hash`					| `GET`			| TX by hash
-`/tx/address/:address`		| `GET`			| TX by address
-`/coin/:hash/:index`		| `GET`			| UTXO by txid and index
-`/block/:block`				| `GET`			| Block by hash or height
-`/mempool`					| `GET`			| Mempool snapshot
-`/broadcast`				| `POST`		| Broadcast TX
-`/fee`						| `GET`			| Estimate fee
-`/reset`					| `POST`		| Reset chain to specific height
-
+[`/`](#get-server-info)                                   | `GET`   | Get basic info
+[`/tx/:hash`](#get-tx-by-hash)                            | `GET`   | TX by hash
+[`/tx/address/:address`](#get-tx-by-address)              | `GET`   | TX by address
+[`/coin/:hash/:index`](#get-coin-by-outpoint)             | `GET`   | UTXO by txid and index
+[`/block/:block`](#get-block-by-hash-or-height)           | `GET`   | Block by hash or height
+[`/header/:header`](#get-block-header-by-hash-or-height)  | `GET`   | Block header by hash or height
+[`/mempool`](#get-mempool-snapshot)                       | `GET`   | Mempool snapshot
+[`/broadcast`](#broadcast-transaction)                    | `POST`  | Broadcast TX
+[`/fee`](#estimate-fee)                                   | `GET`   | Estimate fee
+[`/reset`](#reset-blockchain)                             | `POST`  | Reset chain to specific height
 
 
 ## Get server info
@@ -51,47 +51,52 @@ const client = new NodeClient(clientOptions);
 
 ```json
 {
-  "version": "v1.0.0-pre",
+  "version": "2.0.0-dev",
   "network": "regtest",
   "chain": {
-    "height": 205,
-    "tip": "38d4ff72bca6737d958e1456be90443c0e09186349f28b952564118ace222331",
-    "progress": 1
+    "height": 208,
+    "tip": "283163d3fdf2591ea79fafe110a34e8c735e69c98046e46eeba795fa65d2a2ab",
+    "progress": 0.9997082948837989
   },
   "indexes": {
     "addr": {
-      "enabled": false,
-      "height": 0
+      "enabled": true,
+      "height": 208
     },
     "tx": {
-      "enabled": false,
-      "height": 0
+      "enabled": true,
+      "height": 208
+    },
+    "filter": {
+      "enabled": true,
+      "height": 208
     }
   },
   "pool": {
-    "host": "18.188.224.12",
+    "host": "100.200.50.10",
     "port": 48444,
-    "agent": "/bcoin:v1.0.0-pre/",
+    "agent": "/bcoin:2.0.0-dev/",
     "services": "1001",
-    "outbound": 1,
-    "inbound": 1
+    "outbound": 0,
+    "inbound": 0
   },
   "mempool": {
     "tx": 0,
-    "size": 0
+    "size": 0,
+    "orphans": 0
   },
   "time": {
-    "uptime": 1744,
-    "system": 1527028546,
-    "adjusted": 1527028546,
+    "uptime": 109,
+    "system": 1571749599,
+    "adjusted": 1571749599,
     "offset": 0
   },
   "memory": {
-    "total": 90,
+    "total": 55,
     "jsHeap": 19,
-    "jsHeapTotal": 26,
-    "nativeHeap": 64,
-    "external": 9
+    "jsHeapTotal": 33,
+    "nativeHeap": 22,
+    "external": 7
   }
 }
 ```
@@ -261,6 +266,76 @@ Parameter | Description
 :blockhashOrHeight | Hash or Height of block
 
 
+## Get block header by hash or height
+
+```javascript
+let blockHash, blockHeight;
+```
+
+```shell--vars
+blockHash='6f1003edd05cad861395225415160b5236968cc223fe982796b6e959c9651d44';
+blockHeight='100';
+```
+
+```shell--curl
+curl $url/header/$blockHash # by hash
+curl $url/header/$blockHeight # by height
+```
+
+```shell--cli
+bcoin-cli header $blockHash # by hash
+bcoin-cli header $blockHeight # by height
+```
+
+```javascript
+const {NodeClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
+
+(async () => {
+  const headerByHeight = await client.getBlockHeader(blockHeight);
+  const headerByHash = await client.getBlockHeader(blockHash);
+  console.log("By height: \n", headerByHeight);
+  console.log("By hash: \n", headerByHash);
+})();
+```
+
+> The above command returns JSON structured like this:
+
+```json
+{
+  "hash": "6f1003edd05cad861395225415160b5236968cc223fe982796b6e959c9651d44",
+  "version": 536870912,
+  "prevBlock": "0c4ea5e675941eca1909275f21903cef755069a03c57c10f4d4dadcdd7146daf",
+  "merkleRoot": "9a249c682aba07943c8a1f9bd774a15d71372fcd7f3f9ee99e8c7aa022ae6aa0",
+  "time": 1571661863,
+  "bits": 545259519,
+  "nonce": 8,
+  "height": 100,
+  "chainwork": "00000000000000000000000000000000000000000000000000000000000000ca"
+}
+```
+
+Returns block header by block hash or height.
+
+### HTTP Request
+`GET /header/:blockhashOrHeight`
+
+
+### URL Parameters
+
+Parameter | Description
+--------- | -----------
+:blockhashOrHeight | Hash or Height of block
+
 
 ## Broadcast transaction
 ```javascript
@@ -319,6 +394,60 @@ Parameter | Description
 --------- | -----------
 tx | transaction hash
 
+
+## Estimate fee
+```javascript
+let blocks;
+```
+
+```shell--vars
+blocks=3
+```
+
+```shell--curl
+curl $url/fee?blocks=$blocks
+```
+
+```shell--cli
+bcoin-cli fee $blocks
+```
+
+```javascript
+const {NodeClient} = require('bclient');
+const {Network} = require('bcoin');
+const network = Network.get('regtest');
+
+const clientOptions = {
+  network: network.type,
+  port: network.rpcPort,
+  apiKey: 'api-key'
+}
+
+const client = new NodeClient(clientOptions);
+
+(async () => {
+  const result = await client.estimateFee(blocks);
+  console.log(result);
+})();
+```
+
+> The above command returns JSON structured like this:
+
+```json
+{
+  "rate": 13795
+}
+```
+
+Estimate the fee required (in Satoshis per kB) for a transaction to be confirmed by the network within a targeted number of blocks (default 1).
+
+### HTTP Request
+`GET /fee`
+
+### GET Parameters
+Parameter | Description
+--------- | -----------
+blocks | Number of blocks to target confirmation
 
 
 ## Reset blockchain
