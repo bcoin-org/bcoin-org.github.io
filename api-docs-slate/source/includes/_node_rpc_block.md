@@ -13,8 +13,7 @@ bcoin-cli rpc getblockchaininfo
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -119,8 +118,7 @@ bcoin-cli rpc getbestblockhash
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -166,8 +164,7 @@ bcoin-cli rpc getblockcount
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -225,8 +222,7 @@ bcoin-cli rpc getblock $blockhash $verbose $details
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -307,8 +303,7 @@ bcoin-cli rpc getblockbyheight $blockheight $verbose $details
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -387,8 +382,7 @@ bcoin-cli rpc getblockhash $blockheight
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -445,8 +439,7 @@ bcoin-cli rpc getblockheader $blockhash $verbose
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -508,8 +501,7 @@ bcoin-cli rpc getchaintips
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -564,8 +556,7 @@ bcoin-cli rpc getdifficulty
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {

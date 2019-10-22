@@ -12,8 +12,7 @@ bcoin-cli rpc stop
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -58,8 +57,7 @@ bcoin-cli rpc getinfo
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -122,8 +120,7 @@ bcoin-cli rpc getmemoryinfo
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -179,8 +176,7 @@ bcoin-cli rpc setloglevel none
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -237,8 +233,7 @@ bcoin-cli rpc validateaddress $address
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -304,8 +299,7 @@ bcoin-cli rpc createmultisig $nrequired '[ "'$pubkey0'", "'$pubkey1'", "'$pubkey
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -365,8 +359,7 @@ bcoin-cli rpc createwitnessaddress $script
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -426,8 +419,7 @@ bcoin-cli rpc signmessagewithprivkey $privkey $message
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -487,8 +479,7 @@ bcoin-cli rpc verifymessage $address $signature "$message"
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -546,8 +537,7 @@ bcoin-cli rpc setmocktime $timestamp
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {

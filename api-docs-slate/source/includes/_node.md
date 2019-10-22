@@ -30,8 +30,7 @@ bcoin-cli info
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -123,8 +122,7 @@ bcoin-cli mempool
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -186,8 +184,7 @@ bcoin-cli block $blockHeight # by height
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -289,8 +286,7 @@ bcoin-cli header $blockHeight # by height
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -360,8 +356,7 @@ bcoin-cli filter $blockHeight # by height
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -423,8 +418,7 @@ bcoin-cli broadcast $tx
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -478,8 +472,7 @@ bcoin-cli fee $blocks
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -536,8 +529,7 @@ bcoin-cli reset $height
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {

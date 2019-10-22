@@ -6,8 +6,7 @@ npm i -g bclient
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -89,8 +88,7 @@ bwallet-cli get --token=$token
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -172,8 +170,7 @@ bwallet-cli get
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -262,8 +259,7 @@ bwallet-cli mkwallet $id --witness=$witness --passphrase=$passphrase --watch-onl
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -364,8 +360,7 @@ curl $walleturl/$id/retoken \
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -420,8 +415,7 @@ bwallet-cli get --id=$id
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -501,8 +495,7 @@ bwallet-cli master --id=$id
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -591,8 +584,7 @@ curl $walleturl/$id/passphrase \
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -671,8 +663,7 @@ rate=1000
 value=20000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -812,8 +803,7 @@ rate=1000
 value=5000000
 address="RPipJ9yeeQxHn6YcBXd9WPy2V6cezzAuY8"
 
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -935,8 +925,7 @@ curl $walleturl/$id/sign \
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1043,8 +1032,7 @@ id="primary"
 account="default"
 age=259200 // 72 hours
 
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1115,8 +1103,7 @@ curl $walleturl/$id/unlock \
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1179,8 +1166,7 @@ curl $walleturl/$id/lock \
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1247,8 +1233,7 @@ curl $walleturl/$watchid/import \
 
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1326,8 +1311,7 @@ curl $walleturl/$id/import \
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1385,8 +1369,7 @@ bwallet-cli blocks --id=$id
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1438,8 +1421,7 @@ curl $walleturl/$id/block/$height
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1504,8 +1486,7 @@ curl $walleturl/$id/shared-key \
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1574,8 +1555,7 @@ curl $walleturl/$id/shared-key \
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1643,8 +1623,7 @@ curl $walleturl/$id/key/$address
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1711,8 +1690,7 @@ curl $walleturl/$id/wif/$address?passphrase=$passphrase
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1769,8 +1747,7 @@ curl $walleturl/$id/address -X POST --data '{"account":"'$account'"}'
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1841,8 +1818,7 @@ curl $walleturl/$id/change -X POST --data '{"account":"'$account'"}'
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1913,8 +1889,7 @@ curl $walleturl/$id/nested -X POST --data '{"account": "'$account'"}'
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -1982,8 +1957,7 @@ curl $walleturl/$id/balance?account=$account
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -2045,8 +2019,7 @@ bwallet-cli --id=$id coins
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -2118,8 +2091,7 @@ curl $walleturl/$id/locked/$hash/$index -X PUT
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -2184,8 +2156,7 @@ curl $walleturl/$id/locked/$hash/$index -X DELETE
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -2249,8 +2220,7 @@ curl $walleturl/$id/locked
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -2314,8 +2284,7 @@ curl $walleturl/$id/coin/$hash/$index
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {

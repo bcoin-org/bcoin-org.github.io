@@ -15,8 +15,7 @@ bcoin-cli rpc getmempoolinfo
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -79,8 +78,7 @@ bcoin-cli rpc getmempoolancestors $txhash $verbose
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -186,8 +184,7 @@ bcoin-cli rpc getmempooldescendants $txhash $verbose
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -290,8 +287,7 @@ bcoin-cli rpc getmempoolentry $txhash
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -364,8 +360,7 @@ bcoin-cli rpc getrawmempool $verbose
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -460,8 +455,7 @@ bcoin-cli rpc prioritisetransaction $txhash $priorityDelta $feeDelta
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -522,8 +516,7 @@ bcoin-cli rpc estimatefee $nblocks
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -579,8 +572,7 @@ bcoin-cli rpc estimatepriority $nblocks
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -636,8 +628,7 @@ bcoin-cli rpc estimatesmartfee $nblocks
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -696,8 +687,7 @@ bcoin-cli rpc estimatesmartpriority $nblocks
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {

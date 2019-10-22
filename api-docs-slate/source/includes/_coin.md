@@ -28,8 +28,7 @@ bcoin-cli coin $hash $index
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {

@@ -20,8 +20,7 @@ curl $walleturl/$id/tx/$hash
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -147,8 +146,7 @@ curl $walleturl/$id/tx/history
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -243,8 +241,7 @@ curl $walleturl/$id/tx/unconfirmed
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -295,8 +292,7 @@ curl $walleturl/$id/tx/range?start=$start'&'end=$end
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {

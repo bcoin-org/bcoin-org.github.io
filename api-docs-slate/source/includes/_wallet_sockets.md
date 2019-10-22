@@ -63,8 +63,7 @@ All wallet events return the `wallet-id` in addition to the JSON data described 
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {

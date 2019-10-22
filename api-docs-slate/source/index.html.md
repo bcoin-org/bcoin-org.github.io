@@ -50,7 +50,11 @@ The default bcoin HTTP server listens on the standard RPC port (`8332` for main,
 <aside class="notice">
 These docs have been updated to latest version of bcoin and bclient as of October 2019 (bcoin version <code>v2.0.0-dev</code>).
 As of this writing the bcoin npm repository has not yet been updated, so it is recommended to install from the latest master branch on github. 
-Installation instructions are available there: <a href="https://github.com/bcoin-org/bcoin">https://github.com/bcoin-org/bcoin</a>
+Installation instructions are available there: <a href="https://github.com/bcoin-org/bcoin">https://github.com/bcoin-org/bcoin</a>.
+<br><br>
+Note that <a href="https://github.com/bcoin-org/bcoin/pull/838">recently</a> the API clients have been moved back in to the <code>bcoin</code> repository.
+<code>bclient</code> is still available on npm and github but may not reflect the latest updates to the API. We therefore recommend using the
+<code>NodeClient</code> and <code>WalletClient</code> objects as defiend in <code>bcoin/lib/client</code>, and as described in these docs.
 </aside>
 
 # Authentication
@@ -75,8 +79,7 @@ bcoin-cli info
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 // network type derived from bcoin object, client object stores API key

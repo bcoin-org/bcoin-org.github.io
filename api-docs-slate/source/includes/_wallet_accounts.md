@@ -58,8 +58,7 @@ bwallet-cli account --id=$id list
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -119,8 +118,7 @@ bwallet-cli --id=$id account get $account
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -203,8 +201,7 @@ curl $walleturl/$id/account/$name \
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
