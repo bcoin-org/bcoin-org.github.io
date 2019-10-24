@@ -12,8 +12,7 @@ bcoin-cli rpc stop
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -58,8 +57,7 @@ bcoin-cli rpc getinfo
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -80,13 +78,13 @@ const client = new NodeClient(clientOptions);
 
 ```json
 {
-  "version": "v1.0.0-pre",
+  "version": "2.0.0-dev",
   "protocolversion": 70015,
   "walletversion": 0,
   "balance": 0,
-  "blocks": 205,
+  "blocks": 533,
   "timeoffset": 0,
-  "connections": 3,
+  "connections": 0,
   "proxy": "",
   "difficulty": 4.6565423739069247e-10,
   "testnet": true,
@@ -122,8 +120,7 @@ bcoin-cli rpc getmemoryinfo
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -179,8 +176,7 @@ bcoin-cli rpc setloglevel none
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -220,7 +216,7 @@ let address;
 ```
 
 ```shell--vars
-address='RQKEexR9ZufYP6AKbwhzdv8iuiMFDh4sNZ';
+address='mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh"';
 ```
 
 ```shell--curl
@@ -237,8 +233,7 @@ bcoin-cli rpc validateaddress $address
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -260,10 +255,10 @@ const client = new NodeClient(clientOptions);
 ```json
 {
   "isvalid": true,
-  "address": "RQKEexR9ZufYP6AKbwhzdv8iuiMFDh4sNZ",
-  "scriptPubKey": "76a914a4ecde9642f8070241451c5851431be9b658a7fe88ac",
-  "ismine": false,
-  "iswatchonly": false
+  "address": "mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh",
+  "scriptPubKey": "76a91415f34e5cc7c4d7cc5a896611af8fb242847e003d88ac",
+  "isscript": false,
+  "iswitness": false
 }
 ```
 
@@ -304,8 +299,7 @@ bcoin-cli rpc createmultisig $nrequired '[ "'$pubkey0'", "'$pubkey1'", "'$pubkey
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -326,7 +320,7 @@ const client = new NodeClient(clientOptions);
 
 ```json
 {
-  "address": "GfNqJAAyrCLr2bVHxn8wjMMYMh1EBPzUNk",
+  "address": "2NEn8sKGW2hZHF5Wyq4mJMAMqoPiGUMf3PB",
   "redeemScript": "522102e3d6bb36b0261628101ee67abd89d678522dc1199912512f814e70803652f39521034bc2280e68d3bdd0ef0664e0ad2949a467344d8e59e435fe2d9be81e39f70f762103d7ded41bb871936bf4d411371b25d706c572f28ef8d2613b45392e9f9c4348a553ae"
 }
 ```
@@ -365,8 +359,7 @@ bcoin-cli rpc createwitnessaddress $script
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -387,7 +380,7 @@ const client = new NodeClient(clientOptions);
 
 ```json
 {
-  "address": "rb1qlfgqame3n0dt2ldjl2m9qjg6n2vut26jw3ezm25hqx9ez4m9wp5qjres8a",
+  "address": "bcrt1qlfgqame3n0dt2ldjl2m9qjg6n2vut26jw3ezm25hqx9ez4m9wp5qer5sas",
   "witnessScript": "0020fa500eef319bdab57db2fab650491a9a99c5ab5274722daa97018b9157657068"
 }
 ```
@@ -408,7 +401,7 @@ let privkey, message;
 ```
 
 ```shell--vars
-privkey='EMyedBwL5mb476uhWZ2wzEsSpu8kZwYgYaw5rGbjJh1kRjXF3M2d';
+privkey='cNmBeL4kpjLtNZcvjSezftq4ks6ajzZRi1z2AGpuBGy6XjxzytiQ';
 message='hello';
 ```
 
@@ -426,8 +419,7 @@ bcoin-cli rpc signmessagewithprivkey $privkey $message
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -447,7 +439,7 @@ const client = new NodeClient(clientOptions);
 > The above command returns JSON "result" like this:
 
 ```json
-"MEUCIQCGLPYuLuSU1XQ7ctRvRzrY4M0dKAxShzEN3fwVoelGvgIgPmQ2RcRpeu0o68YsN42yzykI9VfTPooWHMvsFbIFEkg="
+"MEUCIQCsjaPbo1jOWBFdFGfmQnfQEdmRQP3vTi/wY2gbhxkEKgIgeZIm9+bMqZsiK4Ry5w3IgWycrcmKTzmuBtcvVCEguOM="
 ```
 
 
@@ -468,8 +460,8 @@ let address, signature, message;
 ```
 
 ```shell--vars
-address='RGCudRpNcn299Ja1EaVzgpnPD3YJgfMMiB';
-signature='MEUCIQCGLPYuLuSU1XQ7ctRvRzrY4M0dKAxShzEN3fwVoelGvgIgPmQ2RcRpeu0o68YsN42yzykI9VfTPooWHMvsFbIFEkg=';
+address='mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh';
+signature='MEUCIQCsjaPbo1jOWBFdFGfmQnfQEdmRQP3vTi/wY2gbhxkEKgIgeZIm9+bMqZsiK4Ry5w3IgWycrcmKTzmuBtcvVCEguOM=';
 message='hello';
 ```
 
@@ -487,8 +479,7 @@ bcoin-cli rpc verifymessage $address $signature "$message"
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -546,8 +537,7 @@ bcoin-cli rpc setmocktime $timestamp
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {

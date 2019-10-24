@@ -27,8 +27,7 @@ bcoin-cli rpc getnetworkhashps $blocks $height
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -77,8 +76,7 @@ bcoin-cli rpc getmininginfo
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -143,8 +141,7 @@ bcoin-cli rpc getwork
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -203,8 +200,7 @@ bcoin-cli rpc getworklp
 // Because there is a request timeout set on CLI http requests.
 // without manually adjusting the timeout (or receiving a new transaction on the current
 // network) this call will timeout before the request is complete.
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -259,8 +255,7 @@ bcoin-cli rpc getblocktemplate
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -381,8 +376,7 @@ bcoin-cli rpc submitblock $blockdata
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -431,8 +425,7 @@ bcoin-cli rpc verifyblock $blockdata
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -486,8 +479,7 @@ bcoin-cli rpc setgenerate $mining $proclimit
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -536,8 +528,7 @@ bcoin-cli rpc getgenerate
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -593,8 +584,7 @@ bcoin-cli rpc generate $numblocks
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -641,7 +631,7 @@ let numblocks, address;
 
 ```shell--vars
 numblocks=2;
-address='RTZJdYScA7uGb5pbQPEczpDmq9HiYLv2fJ';
+address='mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh';
 ```
 
 ```shell--curl
@@ -655,13 +645,11 @@ curl $url \
 ```
 
 ```shell--cli
-# Timeout error
 bcoin-cli rpc generatetoaddress $numblocks $address
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {

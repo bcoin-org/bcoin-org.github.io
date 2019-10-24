@@ -16,8 +16,7 @@ bcoin-cli rpc getconnectioncount
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -63,8 +62,7 @@ bcoin-cli rpc ping
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -112,8 +110,7 @@ bcoin-cli rpc getpeerinfo
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -135,26 +132,25 @@ const client = new NodeClient(clientOptions);
 ```json
 [
   {
-    "id": 65,
-    "addr": "127.0.0.1:48444",
-    "addrlocal": "127.0.0.1:42930",
-    "name": "localhost",
-    "services": "00000009",
+    "id": 17,
+    "addr": "67.210.228.203:8333",
+    "addrlocal": "100.200.50.10:52342",
+    "services": "0000000d",
     "relaytxes": true,
-    "lastsend": 1527116003,
-    "lastrecv": 1527116003,
-    "bytessent": 20734,
-    "bytesrecv": 19905,
-    "conntime": 348,
+    "lastsend": 1571762943,
+    "lastrecv": 1571762941,
+    "bytessent": 299812,
+    "bytesrecv": 1149318,
+    "conntime": 2534,
     "timeoffset": 0,
-    "pingtime": 0.001,
-    "minping": 0,
+    "pingtime": 0.054,
+    "minping": 0.051,
     "version": 70015,
-    "subver": "/bcoin:v1.0.0-pre/",
+    "subver": "/Satoshi:0.14.2/",
     "inbound": false,
-    "startingheight": 5456,
-    "besthash": "43bc66d363025c8953d0920d0bdd5d78e88905687dc0321053ce8f4c6ca0319d",
-    "bestheight": 5470,
+    "startingheight": 600551,
+    "besthash": "0000000000000000000425601a59d69922cdce6bad287950004d8308428b0748",
+    "bestheight": 600558,
     "banscore": 0,
     "inflight": [],
     "whitelisted": false
@@ -199,8 +195,7 @@ bcoin-cli rpc addnode $nodeAddr $cmd
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -265,8 +260,7 @@ bcoin-cli rpc disconnectnode $nodeAddr
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -322,8 +316,7 @@ bcoin-cli rpc getaddednodeinfo $nodeAddr
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -382,8 +375,7 @@ bcoin-cli rpc getnettotals
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -435,8 +427,7 @@ bcoin-cli rpc getnetworkinfo
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -457,22 +448,26 @@ const client = new NodeClient(clientOptions);
 > The above command returns JSON "result" like this:
 
 ```json
-{
-  "version": "v1.0.0-pre",
-  "subversion": "/bcoin:v1.0.0-pre/",
+
+  "version": "2.0.0-dev",
+  "subversion": "/bcoin:2.0.0-dev/",
   "protocolversion": 70015,
   "localservices": "00000009",
+  "localservicenames": [
+    "NETWORK",
+    "WITNESS"
+  ],
   "localrelay": true,
   "timeoffset": 0,
   "networkactive": true,
-  "connections": 2,
+  "connections": 8,
   "networks": [],
   "relayfee": 0.00001,
   "incrementalfee": 0,
   "localaddresses": [
     {
-      "address": "18.188.224.12",
-      "port": 48444,
+      "address": "200.100.50.10",
+      "port": 8333,
       "score": 3
     }
   ],
@@ -514,8 +509,7 @@ bcoin-cli rpc setban $nodeAddr $cmd
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -570,8 +564,7 @@ bcoin-cli rpc listbanned
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -626,8 +619,7 @@ bcoin-cli rpc clearbanned
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {

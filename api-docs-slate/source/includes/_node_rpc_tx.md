@@ -7,7 +7,7 @@ let txhash, index, includemempool;
 ```
 
 ```shell--vars
-txhash='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
+txhash='1ddd325274274f8a2a62e96c3f3fd5f7ecbca4a3ba24c039692e3068edd904a7';
 index=0;
 includemempool=1;
 ```
@@ -26,8 +26,7 @@ bcoin-cli rpc gettxout $txhash $index $includemempool
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -48,16 +47,16 @@ const client = new NodeClient(clientOptions);
 
 ```json
 {
-  "bestblock": "0e11d85b2081b84e131ba6692371737e6bb2aa7bc6d16e92954ffb1f9ad762e5",
-  "confirmations": 0,
-  "value": 0.4,
+  "bestblock": "6070a949eb9dcc36c416fe52a499d4cf2c7ad699ddeb2e358a9063a452c72523",
+  "confirmations": 4,
+  "value": 0.00024823,
   "scriptPubKey": {
-    "asm": "OP_DUP OP_HASH160 fe7e0711287688b33b9a5c239336c4700db34e63 OP_EQUALVERIFY OP_CHECKSIG",
-    "hex": "76a914fe7e0711287688b33b9a5c239336c4700db34e6388ac",
+    "asm": "OP_DUP OP_HASH160 94fe559c42b11736d0cab28d550b8972ccfbef3d OP_EQUALVERIFY OP_CHECKSIG",
+    "hex": "76a91494fe559c42b11736d0cab28d550b8972ccfbef3d88ac",
     "type": "PUBKEYHASH",
     "reqSigs": 1,
     "addresses": [
-      "RYUpgnvLvfi5T7q3hGSVvFrUy14kt61FC1"
+      "mu6kyujE3JeyPZYHwdBdBVrv6V5ReWwz6a"
     ]
   },
   "version": 1,
@@ -92,8 +91,7 @@ bcoin-cli rpc gettxoutsetinfo
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -158,8 +156,7 @@ bcoin-cli rpc getrawtransaction $txhash $verbose
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -216,8 +213,7 @@ bcoin-cli rpc decoderawtransaction $rawtx
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -265,7 +261,7 @@ const client = new NodeClient(clientOptions);
         "type": "PUBKEYHASH",
         "reqSigs": 1,
         "addresses": [
-          "RYUpgnvLvfi5T7q3hGSVvFrUy14kt61FC1"
+          "n4iauL838sLmADwTwfRkeejc4jCs8UJsTE"
         ]
       }
     },
@@ -278,7 +274,7 @@ const client = new NodeClient(clientOptions);
         "type": "PUBKEYHASH",
         "reqSigs": 1,
         "addresses": [
-          "RRHY3TejXvTh6B1V5auViS9jVUcNxAUcrj"
+          "mwXJFzrRk86NoH7uKytkSq2rbCkV9tgAgp"
         ]
       }
     }
@@ -323,8 +319,7 @@ bcoin-cli rpc decodescript $script
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -349,9 +344,9 @@ const client = new NodeClient(clientOptions);
   "type": "PUBKEYHASH",
   "reqSigs": 1,
   "addresses": [
-    "RRHY3TejXvTh6B1V5auViS9jVUcNxAUcrj"
+    "mwXJFzrRk86NoH7uKytkSq2rbCkV9tgAgp"
   ],
-  "p2sh": "GYtKY86R5JdPqDGEa3meuhE1tz3f7M45uD"
+  "p2sh": "2N8Hd7HBwFoqq3hHvSLQ1XWEKLgkhVjxisY"
 }
 ```
 
@@ -387,8 +382,7 @@ bcoin-cli rpc sendrawtransaction $rawtx
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -430,7 +424,7 @@ let txhash, txindex, amount, address, data;
 txhash='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
 txindex=1;
 amount=48.99900000;
-address='RStiqGLWA3aSMrWDyJvur4287GQ81AtLh1';
+address='mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh';
 data='';
 ```
 
@@ -453,8 +447,7 @@ bcoin-cli rpc createrawtransaction \
 ```
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -517,7 +510,7 @@ txhash='0e690d6655767c8b388e7403d13dc9ebe49b68e3bd46248c840544f9da87d1e8';
 txindex=1;
 scriptPubKey='76a914af92ad98c7f77559f96430dfef2a6805b87b24f888ac';
 amount=48.99900000;
-privkey='ELvsQiH9X1kgmbzD1j4ESAJnN47whh8qZHVF8B9DpSpecKQDcfX6';
+privkey='cNmBeL4kpjLtNZcvjSezftq4ks6ajzZRi1z2AGpuBGy6XjxzytiQ';
 ```
 
 ```shell--curl
@@ -546,8 +539,7 @@ bcoin-cli rpc signrawtransaction $rawtx \
 
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -624,8 +616,7 @@ bcoin-cli rpc gettxoutproof '[ "'$txid0'", "'$txid1'" ]'
 
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {
@@ -683,8 +674,7 @@ bcoin-cli rpc verifytxoutproof $proof
 
 
 ```javascript
-const {NodeClient} = require('bclient');
-const {Network} = require('bcoin');
+const {NodeClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const clientOptions = {

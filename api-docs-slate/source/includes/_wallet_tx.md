@@ -20,8 +20,7 @@ curl $walleturl/$id/tx/$hash
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -42,43 +41,53 @@ const wallet = walletClient.wallet(id);
 
 ```json
 {
-  "hash": "c7dcd8f8923f8cd0d44d0d980ddd4da80f67290ef872aab0f7be5858210712f7",
-  "height": 501,
-  "block": "05b1fa9da2acc862dd8e329bbcd158f240a844951016d9e9cd1a1bf9f61b9ac9",
-  "time": 1527184717,
-  "mtime": 1527184717,
-  "date": "2018-05-24T17:58:37Z",
-  "mdate": "2018-05-24T17:58:37Z",
-  "size": 200,
-  "virtualSize": 173,
-  "fee": 0,
-  "rate": 0,
-  "confirmations": 1,
+  "hash": "292fbf4fb037a5354465e0a183d664b99477248f1dd14f47493a2a66a66f40b4",
+  "height": -1,
+  "block": null,
+  "time": 0,
+  "mtime": 1571774862,
+  "date": "1970-01-01T00:00:00Z",
+  "mdate": "2019-10-22T20:07:42Z",
+  "size": 226,
+  "virtualSize": 226,
+  "fee": 4540,
+  "rate": 20088,
+  "confirmations": 0,
   "inputs": [
     {
-      "value": 0,
-      "address": null,
-      "path": null
-    }
-  ],
-  "outputs": [
-    {
-      "value": 625009040,
-      "address": "RQCqU5msz7DbNGtti6fYQajEGDY2oabsvN",
+      "value": 2500000000,
+      "address": "mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh",
       "path": {
         "name": "default",
         "account": 0,
         "change": false,
         "derivation": "m/0'/0/1"
       }
-    },
-    {
-      "value": 0,
-      "address": null,
-      "path": null
     }
   ],
-  "tx": "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2002f5010e6d696e65642062792062636f696e04f410f00b080000000000000000ffffffff0290e14025000000001976a914a3b7048d9f72788e1e2e161dc63585322689d01388ac0000000000000000266a24aa21a9ed9dae2d79e9b97a2b1f19bb16dd1c1c633f2fce683fba82eb85248fac3e32f3d90120000000000000000000000000000000000000000000000000000000000000000000000000"
+  "outputs": [
+    {
+      "value": 10000000,
+      "address": "mxbdj9hHDLK2TXD3Cztiy8BLiEuKPcsM5x",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": false,
+        "derivation": "m/0'/0/5"
+      }
+    },
+    {
+      "value": 2489995460,
+      "address": "mjQqy8E7WJLaybxHcpiaWQMppjizi6nG3Y",
+      "path": {
+        "name": "default",
+        "account": 0,
+        "change": true,
+        "derivation": "m/0'/1/6"
+      }
+    }
+  ],
+  "tx": "0100000001a02535c04f1791c7cee4a299d55179d998c23c41c039778ce10d7d3150695b10000000006b483045022100c7ce594aadde910687a6a86ee48a865221066d47b8a2323d10683076d399938e022048844ec1ad29c3733d13ac191a3bc89a1f07abc0f240ae631e5d146acc11f6e901210336c99e45e00b73c863497a989fe6feb08439ca2d7cf98f55bc261ed70ed28a7bffffffff0280969800000000001976a914bb5cb80bfffca7ba777ff3a8f7c33098faf9769188acc4506a94000000001976a9142ab8b9f49d7c3559b4228aa69b1e8cba0a7558d088ac00000000"
 }
 ```
 Get wallet transaction details.
@@ -147,8 +156,7 @@ curl $walleturl/$id/tx/history
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -171,45 +179,54 @@ const account = 'default';
 ```json
 [
   {
-     "wid": 1,
-     "id": "primary",
-     "hash": "f5968051ce275d89b7a6b797eb6e6b081243ecf027872fc6949fae443e21b858",
-     "height": -1,
-     "block": null,
-     "time": 0,
-     "mtime": 1503690544,
-     "date": "2017-08-25T19:49:04Z",
-     "size": 226,
-     "virtualSize": 226,
-     "fee": 0,
-     "rate": 0,
-     "confirmations": 0,
-     "inputs": [
-       {
-         "value": 0,
-         "address": "mp2w1u4oqZnHDd1zDeAvCTX9B3SaFsUFQx",
-         "path": null
-       }
-     ],
-     "outputs": [
-       {
-         "value": 100000,
-         "address": "myCkrhQbJwqM8wKi9YuhyTjN3pukNuWxZ9",
-         "path": {
-           "name": "default",
-           "account": 0,
-           "change": false,
-           "derivation": "m/0'/0/3"
-         }
-       },
-       {
-         "value": 29790920,
-         "address": "mqNm1rSYVqD23Aj6fkupApuSok9DNZAeBk",
-         "path": null
-       }
-     ],
-     "tx": "0100000001ef8a38cc946c57634c2db05fc298bf94f5c88829c5a6e2b0610fcc7b38a9264f010000006b483045022100e98db5ddb92686fe77bb44f86ce8bf6ff693c1a1fb2fb434c6eeed7cf5e7bed4022053dca3980a902ece82fb8e9e5204c26946893388e4663dbb71e78946f49dd0f90121024c4abc2a3683891b35c04e6d40a07ee78e7d86ad9d7a14265fe214fe84513676ffffffff02a0860100000000001976a914c2013ac1a5f6a9ae91f66e71bbfae4cc762c2ca988acc892c601000000001976a9146c2483bf52052e1125fc75dd77dad06d65b70a8288ac00000000"
-   },
+    "hash": "292fbf4fb037a5354465e0a183d664b99477248f1dd14f47493a2a66a66f40b4",
+    "height": -1,
+    "block": null,
+    "time": 0,
+    "mtime": 1571774862,
+    "date": "1970-01-01T00:00:00Z",
+    "mdate": "2019-10-22T20:07:42Z",
+    "size": 226,
+    "virtualSize": 226,
+    "fee": 4540,
+    "rate": 20088,
+    "confirmations": 0,
+    "inputs": [
+      {
+        "value": 2500000000,
+        "address": "mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh",
+        "path": {
+          "name": "default",
+          "account": 0,
+          "change": false,
+          "derivation": "m/0'/0/1"
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "value": 10000000,
+        "address": "mxbdj9hHDLK2TXD3Cztiy8BLiEuKPcsM5x",
+        "path": {
+          "name": "default",
+          "account": 0,
+          "change": false,
+          "derivation": "m/0'/0/5"
+        }
+      },
+      {
+        "value": 2489995460,
+        "address": "mjQqy8E7WJLaybxHcpiaWQMppjizi6nG3Y",
+        "path": {
+          "name": "default",
+          "account": 0,
+          "change": true,
+          "derivation": "m/0'/1/6"
+        }
+      }
+    ],
+    "tx": "0100000001a02535c04f1791c7cee4a299d55179d998c23c41c039778ce10d7d3150695b10000000006b483045022100c7ce594aadde910687a6a86ee48a865221066d47b8a2323d10683076d399938e022048844ec1ad29c3733d13ac191a3bc89a1f07abc0f240ae631e5d146acc11f6e901210336c99e45e00b73c863497a989fe6feb08439ca2d7cf98f55bc261ed70ed28a7bffffffff0280969800000000001976a914bb5cb80bfffca7ba777ff3a8f7c33098faf9769188acc4506a94000000001976a9142ab8b9f49d7c3559b4228aa69b1e8cba0a7558d088ac00000000"
+  },
  ...
 ]
 ```
@@ -243,8 +260,7 @@ curl $walleturl/$id/tx/unconfirmed
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -295,8 +311,7 @@ curl $walleturl/$id/tx/range?start=$start'&'end=$end
 ```
 
 ```javascript
-const {WalletClient} = require('bclient');
-const {Network} = require('bcoin');
+const {WalletClient, Network} = require('bcoin');
 const network = Network.get('regtest');
 
 const walletOptions = {
@@ -318,43 +333,53 @@ const wallet = walletClient.wallet(id);
 ```json
 [
   {
-    "hash": "c7dcd8f8923f8cd0d44d0d980ddd4da80f67290ef872aab0f7be5858210712f7",
-    "height": 501,
-    "block": "05b1fa9da2acc862dd8e329bbcd158f240a844951016d9e9cd1a1bf9f61b9ac9",
-    "time": 1527184717,
-    "mtime": 1527184717,
-    "date": "2018-05-24T17:58:37Z",
-    "mdate": "2018-05-24T17:58:37Z",
-    "size": 200,
-    "virtualSize": 173,
-    "fee": 0,
-    "rate": 0,
-    "confirmations": 1,
+    "hash": "292fbf4fb037a5354465e0a183d664b99477248f1dd14f47493a2a66a66f40b4",
+    "height": -1,
+    "block": null,
+    "time": 0,
+    "mtime": 1571774862,
+    "date": "1970-01-01T00:00:00Z",
+    "mdate": "2019-10-22T20:07:42Z",
+    "size": 226,
+    "virtualSize": 226,
+    "fee": 4540,
+    "rate": 20088,
+    "confirmations": 0,
     "inputs": [
       {
-        "value": 0,
-        "address": null,
-        "path": null
-      }
-    ],
-    "outputs": [
-      {
-        "value": 625009040,
-        "address": "RQCqU5msz7DbNGtti6fYQajEGDY2oabsvN",
+        "value": 2500000000,
+        "address": "mhX1xHbKGzw3r8FoN5bUkmRixHPEDNywxh",
         "path": {
           "name": "default",
           "account": 0,
           "change": false,
           "derivation": "m/0'/0/1"
         }
-      },
-      {
-        "value": 0,
-        "address": null,
-        "path": null
       }
     ],
-    "tx": "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2002f5010e6d696e65642062792062636f696e04f410f00b080000000000000000ffffffff0290e14025000000001976a914a3b7048d9f72788e1e2e161dc63585322689d01388ac0000000000000000266a24aa21a9ed9dae2d79e9b97a2b1f19bb16dd1c1c633f2fce683fba82eb85248fac3e32f3d90120000000000000000000000000000000000000000000000000000000000000000000000000"
+    "outputs": [
+      {
+        "value": 10000000,
+        "address": "mxbdj9hHDLK2TXD3Cztiy8BLiEuKPcsM5x",
+        "path": {
+          "name": "default",
+          "account": 0,
+          "change": false,
+          "derivation": "m/0'/0/5"
+        }
+      },
+      {
+        "value": 2489995460,
+        "address": "mjQqy8E7WJLaybxHcpiaWQMppjizi6nG3Y",
+        "path": {
+          "name": "default",
+          "account": 0,
+          "change": true,
+          "derivation": "m/0'/1/6"
+        }
+      }
+    ],
+    "tx": "0100000001a02535c04f1791c7cee4a299d55179d998c23c41c039778ce10d7d3150695b10000000006b483045022100c7ce594aadde910687a6a86ee48a865221066d47b8a2323d10683076d399938e022048844ec1ad29c3733d13ac191a3bc89a1f07abc0f240ae631e5d146acc11f6e901210336c99e45e00b73c863497a989fe6feb08439ca2d7cf98f55bc261ed70ed28a7bffffffff0280969800000000001976a914bb5cb80bfffca7ba777ff3a8f7c33098faf9769188acc4506a94000000001976a9142ab8b9f49d7c3559b4228aa69b1e8cba0a7558d088ac00000000"
   },
   ...
 ]
