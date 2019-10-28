@@ -9,7 +9,7 @@ Throw a Multisig party for yourself and some friends using simple command line t
 
 ## Introduction
 
-The goal of this guide is demonstrate a multi-signature collaboration between bcoin
+The goal of this guide is to demonstrate a multi-signature collaboration between bcoin
 users who may or may not trust each other. We will use only terminal commands to 
 illustrate the process. For a deeper dive into how multisig transactions are constructed
 in JavaScript with the library, see
@@ -24,11 +24,11 @@ skip over those steps.
 
 We're inviting 5 of our best friends: Alice, Bob, Charlie, David, and Erica.
 Each of them will create a multisig wallet on their own computers, and they'll
-share their
-[master extended keys](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Extended_keys)
-with each other. Once everyone knows everyone else's public key, they will each be
-able to derive multisig receive addresses. After they receive some money, the group be able
-to spend their Bitcoin as long as THREE OF THE FIVE participants agree, and sign.
+share their wallet's default account's
+[extended public key](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Extended_keys)
+with each other. Once everyone knows everyone else's extended public key, they will each be
+able to derive multisig receive addresses. After they receive some money, the group will be able
+to spend their Bitcoin as long as THREE OF THE FIVE participants agree and sign.
 
 ## Creating wallets
 
@@ -44,15 +44,15 @@ $ bcoin --daemon
 Then we'll create Alice's wallet. There are 
 [many options available](https://bcoin.io/api-docs/#create-a-wallet)
 for wallet creation, but all Alice needs to do is set up her wallet as a 3-of-5.
-We'll also specify Segregated Witness, although that option will be a bcoin default
-[very soon.](https://github.com/bcoin-org/bcoin/pull/827)
+We'll also specify Segregated Witness.
 
 ```
 $ bwallet-cli mkwallet --id=Alice --witness=true --m=3 --n=5
 ```
 
 Right away, if Alice checks her wallet's default account, she'll notice it has not
-been initialized yet. That's because it is waiting for more multisig keys:
+been initialized yet. That's because it is waiting for more keys to complete the
+multisig policy:
 
 ```
 bwallet-cli --id=Alice account get default
@@ -84,7 +84,7 @@ bwallet-cli --id=Alice account get default
 }
 ```
 
-Notice how she DOES have an `accountKey` (or "xpub" -- on testnet it's a `tpub`).
+Notice how she DOES have an `accountKey` (or "xpub" -- on networks other than main it's a `tpub`).
 When bcoin created this wallet, it generated entropy and created a
 [BIP44 master private key](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)
 for Alice. That will be the key she uses to sign the multisig transaction if she approves.
@@ -93,8 +93,11 @@ We can repeat the process for the four other friends:
 
 ```
 $ bwallet-cli mkwallet --id=Bob --witness=true --m=3 --n=5
+
 $ bwallet-cli mkwallet --id=Charlie --witness=true  --m=3 --n=5
+
 $ bwallet-cli mkwallet --id=David --witness=true  --m=3 --n=5
+
 $ bwallet-cli mkwallet --id=Erica --witness=true  --m=3 --n=5
 ```
 
@@ -102,17 +105,23 @@ After generating each wallet we can get the `accountKey` from each wallet's defa
 
 
 ```
-$ bwallet-cli --id=Alice account get default | jq .accountKey
-"tpubDDXZKjYarBCHxq9GHQHfRjRVQm8DuVAu33LoigMfHJri1ynqsWVBQbMWQbFU5nT3vabniRrtgJtaDEqnpB9GKQTyac5SbUw4589SvwrYKqQ"
-$ bwallet-cli --id=Bob account get default | jq .accountKey
-"tpubDDpd2qFrbXW35YkebSqvihtEsUW9ynmpy61FeVmquPzYzYmFupmabBnHwhJjJighrt2Cmss2Ndg7SJ1iXLuQvZia8KCRWvPTBEacpx6BARf"
-$ bwallet-cli --id=Charlie account get default | jq .accountKey
-"tpubDDtiGfAVwUAz2wHGh24TCsk6smz8QbHLqr7swEjS8YiEm6BczQPjqRVBuEqPefUCLur1U2VB4P8TUXQg9vXqzQdUx8bynP574sbzuADmRff"
-$ bwallet-cli --id=David account get default | jq .accountKey
-"tpubDDGK1KoY3YQ1xSwz4AyigwWPickr4mFVtRxu7ZZMQz5BDFGNF6SkgJq2kEfTzuudZVgy84rMVZeMv8GDVod2AGxgZSy3fBpWHpYHTEdUkZc"
-$ bwallet-cli --id=Erica account get default | jq .accountKey
-"tpubDCGKejeBy1oMoZ57NvG2u1X7pffLHkKxew1RAohEzaoPxSSXPdy7st8caWdwymqStLSXxsC4cvKcm9FSLS2PNEcS5rFHo5ccL9xCecqkQth"
+$ bwallet-cli --id=Alice account get default | jq -r .accountKey
+tpubDDXZKjYarBCHxq9GHQHfRjRVQm8DuVAu33LoigMfHJri1ynqsWVBQbMWQbFU5nT3vabniRrtgJtaDEqnpB9GKQTyac5SbUw4589SvwrYKqQ
+
+$ bwallet-cli --id=Bob account get default | jq -r .accountKey
+tpubDDpd2qFrbXW35YkebSqvihtEsUW9ynmpy61FeVmquPzYzYmFupmabBnHwhJjJighrt2Cmss2Ndg7SJ1iXLuQvZia8KCRWvPTBEacpx6BARf
+
+$ bwallet-cli --id=Charlie account get default | jq -r .accountKey
+tpubDDtiGfAVwUAz2wHGh24TCsk6smz8QbHLqr7swEjS8YiEm6BczQPjqRVBuEqPefUCLur1U2VB4P8TUXQg9vXqzQdUx8bynP574sbzuADmRff
+
+$ bwallet-cli --id=David account get default | jq -r .accountKey
+tpubDDGK1KoY3YQ1xSwz4AyigwWPickr4mFVtRxu7ZZMQz5BDFGNF6SkgJq2kEfTzuudZVgy84rMVZeMv8GDVod2AGxgZSy3fBpWHpYHTEdUkZc
+
+$ bwallet-cli --id=Erica account get default | jq -r .accountKey
+tpubDCGKejeBy1oMoZ57NvG2u1X7pffLHkKxew1RAohEzaoPxSSXPdy7st8caWdwymqStLSXxsC4cvKcm9FSLS2PNEcS5rFHo5ccL9xCecqkQth
 ```
+
+_(I'm using [jq](https://stedolan.github.io/jq/) here to keep the output minimal, but it's optional)_
 
 Now each friend needs to import everyone else's public keys into their own wallet.
 This will be a bit tedious for us because we have to do it for everybody but
@@ -122,16 +131,19 @@ types:
 ```
 $ bwallet-cli --id=Alice --account=default shared add tpubDDpd2qFrbXW35YkebSqvihtEsUW9ynmpy61FeVmquPzYzYmFupmabBnHwhJjJighrt2Cmss2Ndg7SJ1iXLuQvZia8KCRWvPTBEacpx6BARf
 Added key.
+
 $ bwallet-cli --id=Alice --account=default shared add tpubDDtiGfAVwUAz2wHGh24TCsk6smz8QbHLqr7swEjS8YiEm6BczQPjqRVBuEqPefUCLur1U2VB4P8TUXQg9vXqzQdUx8bynP574sbzuADmRff
 Added key.
+
 $ bwallet-cli --id=Alice --account=default shared add tpubDDGK1KoY3YQ1xSwz4AyigwWPickr4mFVtRxu7ZZMQz5BDFGNF6SkgJq2kEfTzuudZVgy84rMVZeMv8GDVod2AGxgZSy3fBpWHpYHTEdUkZc
 Added key.
+
 $ bwallet-cli --id=Alice --account=default shared add tpubDCGKejeBy1oMoZ57NvG2u1X7pffLHkKxew1RAohEzaoPxSSXPdy7st8caWdwymqStLSXxsC4cvKcm9FSLS2PNEcS5rFHo5ccL9xCecqkQth
 Added key.
 ```
 
-Now Alice's wallet is fully initialized, generating receive addresses and watching
-the blockchain for transactions!
+Now Alice's wallet is fully initialized. She can generate an endless series of receive
+(and change) addresses and watch the blockchain for transactions!
 
 ```
 $ bwallet-cli --id=Alice --account=default account get
@@ -167,23 +179,33 @@ $ bwallet-cli --id=Alice --account=default account get
 }
 ```
 
-Note that even though the status indicates `"watchOnly": false`, Alice can not spend
-from this wallet by herself. She only has one private key (and four public keys)
-per address.
+Note that the status indicates `"watchOnly": false`. Normally in bcoin a "watch-only"
+wallet only has public keys. It can "watch" a set of addresses, but not spend. To
+learn more about this, see our guide
+[Wallets and Accounts and Keys, Oh My!](https://bcoin.io/guides/wallets.html)
+In this case, Alice can not spend from this wallet by herself, despite the wallet
+not being "watch-only". She only has one private key (and four public keys) per address.
 
 Bob, Charlie, David, and Erica all go through the same process of importing the other
 keys. In the end, all five participants will have the same wallet structure, and
-**identical** receive addresses. Assuming each person is running their own bcoin
+**identical** addresses. Assuming each person is running their own bcoin
 full node on their own secure machine, they will now have a totally decentralized
 multi-signature wallet! The participants do not need to trust each other to set
 up or use this scheme. Some participants may even be using a hardware wallet like
-a Ledger, connected to their bcoin full node with the
+a Ledger connected to their bcoin full node with the
 [bledger](https://github.com/bcoin-org/bledger) package.
 
 ## Let's spend some money (as a team!)
 
-So now we have five wallets, each with one unique private key, and four shared
-public keys. All five wallets show the same receive address. Let's fund it!
+So now we have five wallets.
+Each wallet has its own account `xprv` that can generate many private and public
+key pairs. The private keys are used to add the participant's signature to transactions.
+Each wallet also has an account `xpub` from each of the four other participants.
+These can be used to derive the other 4 public keys used in each multisig address.
+This structure allows each participant to generate the same receiving address while
+only being able to add their own unique signature to transactions.
+
+All five wallets show the same `receiveAddress`. Let's fund it!
 The easiest way to do that in regtest mode is by generating blocks:
 
 ```
@@ -219,17 +241,17 @@ need 1.23456789 BTC from the group. This is where it gets interesting:
 This transaction will be created and signed by that first participant. This is often
 called a "proposal" in multisig wallet schemes.
 
-- This transaction with its single signature is NOT valid, and will be rejected
+- This transaction with its single signature is NOT valid and will be rejected
 from the Bitcoin network.
 
 - Because our scheme is 3-of-5, we only need to get two other participants to add
 their signatures before the transaction is valid.
 
-- Although bcoin does not yet currently comply with the proposed standard
+- Although bcoin does not currently comply with the proposed standard
 [BIP174 Partially Signed Bitcoin Transactions](https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki)
 the participants can pass around these blobs in the same way.
 
-Erica is the most responsible friend in the group, she starts off the protocol
+Erica is the most responsible friend in the group. She starts off the protocol
 by creating a transaction to me:
 
 ```
@@ -288,8 +310,11 @@ $ bwallet-cli --id=Erica mktx --address=mpEwzcAKTsuGMM7hV49Mh3Ge7r933S6uYd --val
 
 Notice how the witness in the input of this transaction has several empty placeholders.
 When bcoin creates a multisig transaction, it places null bytes (`0x00`) where each
-signature will eventually go. The signatures must be placed in same order as the public
+signature will eventually go. The signatures must be placed in the same order as the public
 keys in the redeem script, which is why Erica's signature is not the first on the stack.
+This lexicographical ordering of public keys in multi-signature redeem scripts is an
+[accepted standard](https://github.com/bitcoin/bips/blob/master/bip-0067.mediawiki)
+in the Bitcoin development community.
 
 The last item in the witness stack is the redeem script, and we can take a quick
 peek at that like this:
@@ -307,6 +332,8 @@ $ bcoin-cli rpc decodescript 53210242705b9570ec3c193ba67528ff38ee272f37b14ef3356
   "p2sh": "2NGERC5oyjs2NY4HMvPFQXazAj6JRZRFnua"
 }
 ```
+
+_You may notice that the public keys in the redeem script are in lexicographical order!_
 
 Let's say Erica tried to make a unilateral decision here and broadcast this transaction
 with only her signature -- what would happen? The `hex` at the bottom of the JSON
@@ -353,7 +380,7 @@ Notice how the witness stack is filling up!
 ],
 ```
 
-Now David signs, _using the raw hex from Charlie's transaction_:
+Now David signs, **using the raw hex from Charlie's transaction**:
 
 ```
 $  bwallet-cli --id=David sign 010000000001012c62e97d997004c32f00caa7b74f52401c97d40ead2d50fd13acd9a9275a4ca70000000000ffffffff0215cd5b07000000001976a9145fb239be6a09c81b43591a7bbf5857424438052b88ac2f13aa2201000000220020b653b1dda1540084213f4cfa7e089e526f23b749da3dc8de09597ec085eefed6070000483045022100804216dc296b0c0c0f1a1ed54751c60a349518f3d6a558927be0099ecdf10a3a022013cf0e5ddaf99b0d94c00e69c875f43f034ac7fb934b4abfb75f91e2a72b966d0100483045022100a2ea840052c150fe9f260ee9ed27731a11e90722ad10bf2eb175f5b2e8002fad02206d600df6e95ca53cb67640f21c8d6f62f4290b03737d0f9606c8762d21ce63a60100ad53210242705b9570ec3c193ba67528ff38ee272f37b14ef33564e8d1b33812efb3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d738406338776750f86424c2ec303c21036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c28814456455ae00000000
