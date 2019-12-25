@@ -92,8 +92,8 @@ Digital Ocean will provision your server. Now is a good time to grab coffee.
 ### Launch a new instance from the console
 [Console](https://aws.amazon.com/console)
 
-![launch instance](../assets/images/guides/vps-amazon-launch-instance.png "Launch Instance")
-### Choose 'Ubuntu 16.04' and at least 2CPU 4GiB for hardware
+<img src="../assets/images/guides/vps-amazon-launch-instance.png" width=250px alt="Launch Instance"></img><br>
+### Choose 'Ubuntu 18.04' (or latest) and at least 2CPU 4GiB for hardware
 ![choose os](../assets/images/guides/vps-amazon-os.png "Choose OS")
 ### Continue to add storage. Add 500GiB
 ![choose storage](../assets/images/guides/vps-amazon-storage.png "Choose Storage")
@@ -172,64 +172,18 @@ The VPS is setup, from here the intructions will be the same regardless of VPS p
 4. Install build essential
 5. Install python
 
+_Note_: The install command for `nvm` may change over time. Check the official
+repo for `nvm` before proceeding: https://github.com/nvm-sh/nvm. The nodejs
+`LTS` version may change over time as well. At this time, bcoin
+requires nodejs version 10.0 or greater. The current LTS is 12.14.0, which can
+be checked at https://nodejs.org/en/.
+
 ```
-$ curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
+$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash
 $ source ~/.bashrc
-$ nvm install 9.2.1
+$ nvm install --lts
+$ sudo apt-get update
 $ sudo apt-get install build-essential python
-```
-## Create a New User
-It's not ideal to run as the root user. While logged in as root:
-```
-$ addduser test
-root@igave:~# adduser test
-Adding user `test' ...
-Adding new group `test' (1002) ...
-Adding new user `test' (1001) with group `test' ...
-Creating home directory `/home/test' ...
-Copying files from `/etc/skel' ...
-New password:
-BAD PASSWORD: it does not contain enough DIFFERENT characters
-New password:
-Retype new password:
-passwd: password updated successfully
-Changing the user information for test
-Enter the new value, or press ENTER for the default
-	Full Name []:
-	Room Number []:
-	Work Phone []:
-	Home Phone []:
-	Other []:
-Is the information correct? [Y/n]
-```
-
-Sometimes you'll need root access. It's best to manage that with `visudo`
-
-```
-$ apt-get install visudo
-```
-And make the following addition, where `test` is the new user name:
-```
-test   ALL=(ALL:ALL) ALL
-```
-
-Then remove the `#` in front of `%admin` and `sudo` and add the groups to the new user
-```
-$ usermod -aG admin test
-$ usermod -aG sudo test
-```
-
-Now to login to the server you will need to tell SSH to use this username. For Linux/Mac this is automatic if your system username is the same as the username you create.
-
-```
-$ ssh test@fullnode
-```
-
-Once logged in, you can preface commands with `sudo` to run them as the root user or change into the root user
-
-```
-$ sudo apt-get install htop
-$ sudo su -
 ```
 
 ## Install Bcoin
@@ -244,106 +198,99 @@ $ npm install -g
 ```
 
 ### Command Line Interaction
-After bcoin installs we're going to store some configuration info and sensitive daat as environmental variables.
+After bcoin installs we're going to store some configuration info and sensitive data as environmental variables.
 
 ```
 $ export BCOIN_API_KEY=hunter2
 $ export BCOIN_NETWORK=main
-$ export BCOIN_URI=http://localhost:8332
 $ bcoin --index-tx --index-address --daemon
-${PID}
 ```
 
-Alternatively, you can assign http port and network using command line flags:
+Alternatively, you can assign http port and network using command line flags when you launch:
 
 ```
 $ bcoin --index-tx --index-address --http-port=8332 --network=main
 ```
 
-Here, PID is the process ID of bcoin. To stop bcoin you can issue `kill ${PID}` replacing `${PID}` with the number your terminal returns. If you forget the PID you can find it again with `ps -ef | grep bcoin`
-
-You can use the bclient CLI tool out of the box. To view your node's status. First install it with:
+...or insert them in a configuration file at `~/.bcoin/bcoin.conf`:
 
 ```
-npm install -g bclient
+network: main
+api-key: hunter2
+index-tx: true
+index-address: true
 ```
 
-Then use it to query your node
+Learn more about the config options [in the docs.](https://github.com/bcoin-org/bcoin/blob/master/docs/configuration.md)
+
+You can use the bcoin CLI tool out of the box, it is installed globally along with
+the full node.
+
+To view your node's status:
 
 ```
-$ bclient info --api-key=hunter2
+$ bcoin-cli info --api-key=hunter2
 {
-  "version": "v1.0.0-beta.14",
+  "version": "2.0.0-dev",
   "network": "main",
   "chain": {
-    "height": 124767,
-    "tip": "0000000000003ae2272bb2ad89d11b3b3119536690de1bf3b3180d3e0df91d27",
-    "progress": 0.2604341435491337
+    "height": 0,
+    "tip": "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
+    "progress": 0
+  },
+  "indexes": {
+    "addr": {
+      "enabled": true,
+      "height": 0
+    },
+    "tx": {
+      "enabled": true,
+      "height": 0
+    },
+    "filter": {
+      "enabled": false,
+      "height": 0
+    }
   },
   "pool": {
-    "host": "2601:c6:c880:3020:1a5e:fff:febd:ff6",
+    "host": "112.69.132.10",
     "port": 8333,
-    "agent": "/bcoin:v1.0.0-beta.14/",
+    "agent": "/bcoin:2.0.0-dev/",
     "services": "1001",
-    "outbound": 8,
+    "outbound": 3,
     "inbound": 0
   },
   "mempool": {
     "tx": 0,
-    "size": 0
+    "size": 0,
+    "orphans": 0
   },
   "time": {
-    "uptime": 450,
-    "system": 1517778800,
-    "adjusted": 1517778907,
-    "offset": 107
+    "uptime": 6,
+    "system": 1577238664,
+    "adjusted": 1577238664,
+    "offset": 0
   },
   "memory": {
-    "total": 202,
-    "jsHeap": 35,
-    "jsHeapTotal": 70,
-    "nativeHeap": 131,
-    "external": 8
+    "total": 67,
+    "jsHeap": 11,
+    "jsHeapTotal": 29,
+    "nativeHeap": 37,
+    "external": 14
   }
 }
-
 ```
 
 For a complete list of CLI commands, check the [API documentation](https://bcoin.io/api-docs/index.html). The CLI supports node, wallet and has full RPC functionality.
 
-### Using Bcoin as a library
-
-You can use a tool like [forever](https://github.com/foreverjs/forever) to run your scripts that use bcoin as daemons. A benefit of forever is that it will automatically restart your script if it fails. It can detect infinite looping and ultimately stop the script if necessary.
+Stop your node with:
 
 ```
-$ git clone git@github.com:bcoin-org/bcoin.git
-$ cd bcoin
-$ forever start docs/Examples/fullnode.js
-warn:    --minUptime not set. Defaulting to: 1000ms
-warn:    --spinSleepTime not set. Your script will exit if it does not stay up for at least 1000ms
-info:    Forever processing file: docs/Examples/fullnode.js
+bcoin-cli rpc stop
 ```
 
-Check your node with
+Watch your node's debug log with:
 
 ```
-$ bclient info
+tail -f ~/.bcoin/debug.log 
 ```
-
-Reference the [Command Line Interaction](# Command Line Interaction) for interacting with your bcoin process.
-
-To interact with forever here are a few shortcuts.
-
-```
-$ forever list
-$ forever stopall
-$ forever startall
-$ forever
-```
-
-The `forever` command will print a full list of commands.
-
-
-
-
-
