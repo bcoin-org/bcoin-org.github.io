@@ -16,19 +16,8 @@ const generateSidebar = async (pageName, rootDir, relativeToPage=false) => {
   const templateFilePath = path.resolve(rootDir, 'page-templates', `${pageName}-sidebar.html`);
   const template = fs.readFileSync(templateFilePath).toString().split('\n');
 
-  // get file info for installs. Returns an array of objects
+  // get file info for guides. Returns an array of objects
   if (pageName === 'guides') {
-    const installs = await getPostInfo(path.resolve(markdownDir, 'install'));
-
-    // create sidebar list for installs
-    const installsList = [];
-    for (let i=0; i<installs.length; i++) {
-      let fileName = installs[i].fileName.replace(/\.[^/.]+$/, ".html");
-      const title = installs[i].title;
-      if (relativeToPage) fileName = `${pageName}/${fileName}`;
-      installsList.push(generateSidebarListItem(fileName, title));
-    }
-
     // get titles and paths for guides
     const guides = await getPostInfo(markdownDir);
 
@@ -41,15 +30,7 @@ const generateSidebar = async (pageName, rootDir, relativeToPage=false) => {
       guidesList.push(generateSidebarListItem(fileName, title));
     }
 
-    // compose widget for sidebar
-    // TO DO: we can make this smarter where it will make a new category for every
-    // sub-directory, and use the name to create the title of the widget, e.g. install, advanced-guides
-
     const categoriesWidget = ['<div class="widget guide-list">'];
-    categoriesWidget.push('<h6 class="montserrat text-uppercase bottom-line">Install</h6>');
-    categoriesWidget.push('<ul class="icons-list">','<!-- INSTALL-LIST -->');
-    categoriesWidget.push(...installsList, '<!-- /INSTALL-LIST -->');
-    categoriesWidget.push('</ul>','<br>');
 
     categoriesWidget.push('<h6 class="montserrat text-uppercase bottom-line">Guides</h6>');
     categoriesWidget.push('<ul class="icons-list">', '<!-- GUIDES-LIST -->');;

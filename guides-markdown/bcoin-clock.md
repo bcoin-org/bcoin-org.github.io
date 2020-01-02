@@ -102,22 +102,29 @@ uname -a # Linux bpi 4.14.34+ #1110 Mon Apr 16 14:51:42 BST 2018 armv6l GNU/Linu
 
 [Get the latest nodejs for 32-bit ARMv6](https://nodejs.org/en/download/).
 
+_Note:_ As of January 2020, bcoin requires nodejs version 10.0.0 or greater,
+but that should be checked
+[in the docs of the bcoin repository](https://github.com/bcoin-org/bcoin/blob/master/docs/getting-started.md).
+The nodejs `LTS` version may change over time. The current LTS is 12.14.0
+(which can be checked at https://nodejs.org/en/) but nodejs may not continue
+support for 16-bit ARM architecture, which is the CPU of the Raspberry Pi Zero.
+
 ```bash
 cd ~
-wget https://nodejs.org/dist/v8.11.2/node-v8.11.2-linux-armv6l.tar.xz
+wget https://nodejs.org/dist/latest-v10.x/node-v10.18.0-linux-armv6l.tar.xz
 ```
 
 Unpack the archive.
 
 ```bash
-tar -xvf node-v8.11.2-linux-armv6l.tar.xz
+tar -xvf node-v10.18.0-linux-armv6l.tar.xz
 ```
 
 Add node and installed packages to PATH now and for all future sessions.
 
 ```bash
-echo 'export PATH=$PATH:/home/pi/node-v8.11.2-linux-armv6l/bin' >> ~/.bashrc
-export PATH=$PATH:/home/pi/node-v8.11.2-linux-armv6l/bin
+echo 'export PATH=$PATH:/home/pi/node-v10.18.0-linux-armv6l/bin' >> ~/.bashrc
+export PATH=$PATH:/home/pi/node-v10.18.0-linux-armv6l/bin
 ```
 
 Update npm, using npm!
@@ -129,8 +136,8 @@ npm install -g npm
 Check versions.
 
 ```bash
-node --version # v8.11.2 at time of writing
-npm --version  # 6.1.0 at time of writing
+node --version # v10.18.0
+npm --version  # 6.12.0
 ```
 
 Update node path (to global modules) for now and for all future sessions.
