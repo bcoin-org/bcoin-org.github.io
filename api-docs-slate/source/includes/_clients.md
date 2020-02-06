@@ -107,7 +107,7 @@ const wallet = new WalletClient(walletOptions);
 
 You can also use the API with a Javascript library (used by `bcoin-cli`).
 There are two objects: `NodeClient` for general API and `WalletClient` for wallet API.
-`bcoin` also provides an object `Network` and its method `get` which will return the default configuration paramaters for a specified network.
+`bcoin` also provides an object `Network` and its method `get` which will return the default configuration parameters for a specified network.
 Custom port numbers are also configurable by the user.
 
 `NodeClient` and `WalletClient` options:
@@ -115,6 +115,7 @@ Custom port numbers are also configurable by the user.
 Config    | Type                         | Description
 --------- | -----------                  | -----------
 network   | _string_ | Network to use: `main`, `testnet`, `regtest`
-port      | _int_                          | bcoin socket port (specific for each network)
+port      | _int_                          | bcoin socket port (defaults specific for each network)
+host      | _string_ | bcoin API host URI (defaults to 127.0.0.1)
 apiKey    | _string_                       | API secret
 

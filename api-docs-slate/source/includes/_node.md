@@ -456,7 +456,7 @@ Broadcast a transaction by adding it to the node's mempool. If mempool verificat
 ### POST Parameters (JSON)
 Parameter | Description
 --------- | -----------
-tx | transaction hash
+tx | raw transaction in hex
 
 
 ## Estimate fee

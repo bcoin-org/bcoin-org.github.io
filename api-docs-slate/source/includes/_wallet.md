@@ -752,7 +752,7 @@ Watch carefully how values are entered in the examples, all examples send the sa
 
 `POST /wallet/:id/send`
 
-### Post Paramaters
+### Post Parameters
 Parameter | Description
 --------- | ------------------
 outputs <br> _array_ | An array of outputs to send for the transaction
@@ -1080,7 +1080,7 @@ Remove all pending transactions older than a specified age.
 `POST /wallet/:id/zap?age=3600`
 
 ### Post Parameters
-Paramaters | Description
+Parameters | Description
 ----------- | -------------
 account <br> _string_ or _number_ | account to zap from
 age <br> _number_ | age threshold to zap up to (unix time)
@@ -1463,7 +1463,7 @@ Get block info by height.
 
 `GET /wallet/:id/block/:height`
 
-Paramaters | Description
+Parameters | Description
 -----------| -------------
 id <br> _string_ | id of wallet which has tx in the block being queried
 height <br> _int_ | height of block being queried
