@@ -112,7 +112,7 @@ This string could be saved in <code>bcoin.conf</code> to persist over restarts, 
 at launch (for example):<br>
 <code>bcoin --api-key=92ded8555d6f04e440ba540f2221349cbf799c454f7e08d3f16577d3e0127b0e</code><br>
 <br>
-For more information about <code>bcoin.conf</code> and other launch paramaters, see
+For more information about <code>bcoin.conf</code> and other launch parameters, see
 <a href="https://github.com/bcoin-org/bcoin/blob/master/docs/configuration.md">docs/Configuration</a>.
 </aside>
 
