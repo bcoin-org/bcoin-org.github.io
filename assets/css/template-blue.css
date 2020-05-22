@@ -2346,7 +2346,7 @@ body.off-canvas-cart-open:after {
 }
 
 .clients-bordered .client {
-    padding: 70px 10px;
+    padding: 30px 10px;
 }
 
 .clients-bordered .client:not(:last-child) {
