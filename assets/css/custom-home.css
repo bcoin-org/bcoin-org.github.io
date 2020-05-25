@@ -1,0 +1,19 @@
+/****
+Custom CSS for homepage
+*****/
+
+/* Clients */
+
+.clients-bordered .client {
+  padding:20px 10px;
+}
+
+.clients-bordered .client:not(:last-child){
+  border:none;
+}
+
+@media only screen and (min-width: 992px) {
+  .row.text-center-md > div {
+    display:inline-block;float:none;
+  }
+}
