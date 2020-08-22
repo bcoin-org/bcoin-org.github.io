@@ -39,9 +39,17 @@
  * @module protocol/networks
  */
 
-const BN = require('bn.js');
+const BN = require('bcrypto/lib/bn.js');
 
 const network = exports;
+
+/*
+ * Helpers
+ */
+
+function b(hash) {
+  return Buffer.from(hash, 'hex');
+}
 
 /**
  * Network type list.
@@ -81,7 +89,9 @@ main.seeds = [
   'dnsseed.bitcoin.dashjr.org', // Luke Dashjr
   'seed.bitcoinstats.com', // Christian Decker
   'seed.bitcoin.jonasschnelli.ch', // Jonas Schnelli
-  'seed.btc.petertodd.org' // Peter Todd
+  'seed.btc.petertodd.org', // Peter Todd
+  'seed.bitcoin.sprovoost.nl', // Sjors Provoost
+  'dnsseed.emzy.de' // Stephan Oeste
 ];
 
 /**
@@ -106,30 +116,35 @@ main.port = 8333;
  */
 
 main.checkpointMap = {
-  11111: '1d7c6eb2fd42f55925e92efad68b61edd22fba29fde8783df744e26900000000',
-  33333: 'a6d0b5df7d0df069ceb1e736a216ad187a50b07aaa4e78748a58d52d00000000',
-  74000: '201a66b853f9e7814a820e2af5f5dc79c07144e31ce4c9a39339570000000000',
-  105000: '97dc6b1d15fbeef373a744fee0b254b0d2c820a3ae7f0228ce91020000000000',
-  134444: 'feb0d2420d4a18914c81ac30f494a5d4ff34cd15d34cfd2fb105000000000000',
-  168000: '63b703835cb735cb9a89d733cbe66f212f63795e0172ea619e09000000000000',
-  193000: '17138bca83bdc3e6f60f01177c3877a98266de40735f2a459f05000000000000',
-  210000: '2e3471a19b8e22b7f939c63663076603cf692f19837e34958b04000000000000',
-  216116: '4edf231bf170234e6a811460f95c94af9464e41ee833b4f4b401000000000000',
-  225430: '32595730b165f097e7b806a679cf7f3e439040f750433808c101000000000000',
-  250000: '14d2f24d29bed75354f3f88a5fb50022fc064b02291fdf873800000000000000',
-  279000: '407ebde958e44190fa9e810ea1fc3a7ef601c3b0a0728cae0100000000000000',
-  295000: '83a93246c67003105af33ae0b29dd66f689d0f0ff54e9b4d0000000000000000',
-  300255: 'b2f3a0f0de4120c1089d5f5280a263059f9b6e7c520428160000000000000000',
-  319400: '3bf115fd057391587ca39a531c5d4989e1adec9b2e05c6210000000000000000',
-  343185: '548536d48e7678fcfa034202dd45d4a76b1ad061f38b2b070000000000000000',
-  352940: 'ffc9520143e41c94b6e03c2fa3e62bb76b55ba2df45d75100000000000000000',
-  382320: 'b28afdde92b0899715e40362f56afdb20e3d135bedc68d0a0000000000000000',
-  401465: 'eed16cb3e893ed9366f27c39a9ecd95465d02e3ef40e45010000000000000000',
-  420000: 'a1ff746b2d42b834cb7d6b8981b09c265c2cabc016e8cc020000000000000000',
-  440000: '9bf296b8de5f834f7635d5e258a434ad51b4dbbcf7c08c030000000000000000',
-  450000: '0ba2070c62cd9da1f8cef88a0648c661a411d33e728340010000000000000000',
-  460000: '8c25fc7e414d3e868d6ce0ec473c30ad44e7e8bc1b75ef000000000000000000',
-  470000: '89756d1ed75901437300af10d5ab69070a282e729c536c000000000000000000'
+  11111: b('1d7c6eb2fd42f55925e92efad68b61edd22fba29fde8783df744e26900000000'),
+  33333: b('a6d0b5df7d0df069ceb1e736a216ad187a50b07aaa4e78748a58d52d00000000'),
+  74000: b('201a66b853f9e7814a820e2af5f5dc79c07144e31ce4c9a39339570000000000'),
+  105000: b('97dc6b1d15fbeef373a744fee0b254b0d2c820a3ae7f0228ce91020000000000'),
+  134444: b('feb0d2420d4a18914c81ac30f494a5d4ff34cd15d34cfd2fb105000000000000'),
+  168000: b('63b703835cb735cb9a89d733cbe66f212f63795e0172ea619e09000000000000'),
+  193000: b('17138bca83bdc3e6f60f01177c3877a98266de40735f2a459f05000000000000'),
+  210000: b('2e3471a19b8e22b7f939c63663076603cf692f19837e34958b04000000000000'),
+  216116: b('4edf231bf170234e6a811460f95c94af9464e41ee833b4f4b401000000000000'),
+  225430: b('32595730b165f097e7b806a679cf7f3e439040f750433808c101000000000000'),
+  250000: b('14d2f24d29bed75354f3f88a5fb50022fc064b02291fdf873800000000000000'),
+  279000: b('407ebde958e44190fa9e810ea1fc3a7ef601c3b0a0728cae0100000000000000'),
+  295000: b('83a93246c67003105af33ae0b29dd66f689d0f0ff54e9b4d0000000000000000'),
+  300255: b('b2f3a0f0de4120c1089d5f5280a263059f9b6e7c520428160000000000000000'),
+  319400: b('3bf115fd057391587ca39a531c5d4989e1adec9b2e05c6210000000000000000'),
+  343185: b('548536d48e7678fcfa034202dd45d4a76b1ad061f38b2b070000000000000000'),
+  352940: b('ffc9520143e41c94b6e03c2fa3e62bb76b55ba2df45d75100000000000000000'),
+  382320: b('b28afdde92b0899715e40362f56afdb20e3d135bedc68d0a0000000000000000'),
+  401465: b('eed16cb3e893ed9366f27c39a9ecd95465d02e3ef40e45010000000000000000'),
+  420000: b('a1ff746b2d42b834cb7d6b8981b09c265c2cabc016e8cc020000000000000000'),
+  440000: b('9bf296b8de5f834f7635d5e258a434ad51b4dbbcf7c08c030000000000000000'),
+  450000: b('0ba2070c62cd9da1f8cef88a0648c661a411d33e728340010000000000000000'),
+  460000: b('8c25fc7e414d3e868d6ce0ec473c30ad44e7e8bc1b75ef000000000000000000'),
+  470000: b('89756d1ed75901437300af10d5ab69070a282e729c536c000000000000000000'),
+  480000: b('b1a896fd31e639e0c74d1abeb1dbc93f176b767a5d4c02010000000000000000'),
+  490000: b('90dec4d0153f20fbdcb245b1d5fb3d5a8d7bb1379106de000000000000000000'),
+  500000: b('045d94a1c33354c3759cc0512dcc49fd81bf4c3637fb24000000000000000000'),
+  510000: b('297301b8ca28584cb0c31c7e3fed51696bc33ef8782615000000000000000000'),
+  525000: b('1dde8e3fb49bbd5ab66a1b847544d67fff10b108a1fa2f000000000000000000')
 };
 
 /**
@@ -138,7 +153,7 @@ main.checkpointMap = {
  * @default
  */
 
-main.lastCheckpoint = 470000;
+main.lastCheckpoint = 525000;
 
 /**
  * @const {Number}
@@ -154,10 +169,11 @@ main.halvingInterval = 210000;
 
 main.genesis = {
   version: 1,
-  hash: '6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000',
-  prevBlock: '0000000000000000000000000000000000000000000000000000000000000000',
+  hash: b('6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000'),
+  prevBlock:
+    b('0000000000000000000000000000000000000000000000000000000000000000'),
   merkleRoot:
-    '3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a',
+    b('3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a'),
   time: 1231006505,
   bits: 486604799,
   nonce: 2083236893,
@@ -211,7 +227,7 @@ main.pow = {
    */
 
   chainwork: new BN(
-    '00000000000000000000000000000000000000000074093f7ecede98cadd3a32',
+    '00000000000000000000000000000000000000000259c9b7d8c7779d29a1188f',
     'hex'
   ),
 
@@ -275,7 +291,8 @@ main.block = {
    * Hash of the block that activated bip34.
    */
 
-  bip34hash: 'b808089c756add1591b1d17bab44bba3fed9e02f942ab4894b02000000000000',
+  bip34hash:
+    b('b808089c756add1591b1d17bab44bba3fed9e02f942ab4894b02000000000000'),
 
   /**
    * Height at which bip65 was activated.
@@ -287,7 +304,8 @@ main.block = {
    * Hash of the block that activated bip65.
    */
 
-  bip65hash: 'f035476cfaeb9f677c2cdad00fd908c556775ded24b6c2040000000000000000',
+  bip65hash:
+    b('f035476cfaeb9f677c2cdad00fd908c556775ded24b6c2040000000000000000'),
 
   /**
    * Height at which bip66 was activated.
@@ -299,7 +317,8 @@ main.block = {
    * Hash of the block that activated bip66.
    */
 
-  bip66hash: '3109b588941188a9f1c2576aae462d729b8cce9da1ea79030000000000000000',
+  bip66hash:
+    b('3109b588941188a9f1c2576aae462d729b8cce9da1ea79030000000000000000'),
 
   /**
    * Safe height to start pruning.
@@ -337,8 +356,8 @@ main.block = {
  */
 
 main.bip30 = {
-  91842: 'eccae000e3c8e4e093936360431f3b7603c563c1ff6181390a4d0a0000000000',
-  91880: '21d77ccb4c08386a04ac0196ae10f6a1d2c2a377558ca190f143070000000000'
+  91842: b('eccae000e3c8e4e093936360431f3b7603c563c1ff6181390a4d0a0000000000'),
+  91880: b('21d77ccb4c08386a04ac0196ae10f6a1d2c2a377558ca190f143070000000000')
 };
 
 /**
@@ -523,7 +542,8 @@ testnet.seeds = [
   'testnet-seed.bitcoin.jonasschnelli.ch', // Jonas Schnelli
   'seed.tbtc.petertodd.org', // Peter Todd
   'testnet-seed.bluematt.me', // Matt Corallo
-  'testnet-seed.bitcoin.schildbach.de' // Andreas Schildbach
+  'testnet-seed.bitcoin.schildbach.de', // Andreas Schildbach
+  'seed.testnet.bitcoin.sprovoost.nl' // Sjors Provoost
 ];
 
 testnet.magic = 0x0709110b;
@@ -531,21 +551,40 @@ testnet.magic = 0x0709110b;
 testnet.port = 18333;
 
 testnet.checkpointMap = {
-  546: '70cb6af7ebbcb1315d3414029c556c55f3e2fc353c4c9063a76c932a00000000',
-  10000: '02a1b43f52591e53b660069173ac83b675798e12599dbb0442b7580000000000',
-  100000: '1e0a16bbadccde1d80c66597b1939e45f91b570d29f95fc158299e0000000000',
-  170000: '508125560d202b89757889bb0e49c712477be20440058f05db4f0e0000000000',
-  210000: '32365454b5f29a826bff8ad9b0448cad0072fc73d50e482d91a3dece00000000',
-  300000: 'a141bf3972424853f04367b47995e220e0b5a2706e5618766f22000000000000',
-  390000: 'f217e183484fb6d695609cc71fa2ae24c3020943407e0150b298030000000000',
-  420000: 'de9e73a3b91fbb014e036e8583a17d6b638a699aeb2de8573d12580800000000',
-  500000: '06f60922a2aab2757317820fc6ffaf6a470e2cbb0f63a2aac0a7010000000000',
-  630000: 'bbbe117035432a6a4effcb297207a02b031735b43e0d19a9217c000000000000',
-  700000: 'c14d3f6a1e7c7d66fd940951e44f3c3be1273bea4d2ab1786140000000000000',
-  780000: '0381582e34c3755964dc2813e2b33e521e5596367144e1670851050000000000',
-  840000: 'dac1648107bd4394e57e4083c86d42b548b1cfb119665f179ea80a0000000000',
-  900000: '9bd8ac418beeb1a2cf5d68c8b5c6ebaa947a5b766e5524898d6f350000000000',
-  1050000: 'd8190cf0af7f08e179cab51d67db0b44b87951a78f7fdc31b4a01a0000000000'
+  546: b('70cb6af7ebbcb1315d3414029c556c55f3e2fc353c4c9063a76c932a00000000'),
+  10000: b('02a1b43f52591e53b660069173ac83b675798e12599dbb0442b7580000000000'),
+  50000: b('0c6ceabe803cec55ba2831e445956d0a43ba9521743a802cddac7e0700000000'),
+  90000: b('cafc21e17faf90461a5905aa03302c394912651ed9475ae711723e0d00000000'),
+  100000: b('1e0a16bbadccde1d80c66597b1939e45f91b570d29f95fc158299e0000000000'),
+  140000: b('92c0877b54c556889b72175ccbe0c91a1208f6ef7efb2c006101062300000000'),
+  170000: b('508125560d202b89757889bb0e49c712477be20440058f05db4f0e0000000000'),
+  210000: b('32365454b5f29a826bff8ad9b0448cad0072fc73d50e482d91a3dece00000000'),
+  230000: b('b11a447e62643e0b27406eb0fc270cb8126d7b5b70822fb642d9513400000000'),
+  270000: b('1c42b811cf9c163932f6e95ec55bf9b5e2cb5324e7e93001572e000000000000'),
+  300000: b('a141bf3972424853f04367b47995e220e0b5a2706e5618766f22000000000000'),
+  340000: b('67edd4d92e405608109164b15f92b193377d49325b0ed036739c010000000000'),
+  350000: b('592b44bc0f7a4286cf07ead8497114c6952c1c7dea7305193deacf8e00000000'),
+  390000: b('f217e183484fb6d695609cc71fa2ae24c3020943407e0150b298030000000000'),
+  420000: b('de9e73a3b91fbb014e036e8583a17d6b638a699aeb2de8573d12580800000000'),
+  460000: b('2e8baaffc107f15c87aebe01664b63d07476afa53bcbada1281a030000000000'),
+  500000: b('06f60922a2aab2757317820fc6ffaf6a470e2cbb0f63a2aac0a7010000000000'),
+  540000: b('8dd0bebfbc4878f5af09d3e848dcc57827d2c1cebea8ec5d8cbe420500000000'),
+  570000: b('87acbd4cd3c40ec9bd648f8698ed226b31187274c06cc7a9af79030000000000'),
+  600000: b('169a05b3bb04b7d13ad628915630900a5ed2e89f3a9dc6064f62000000000000'),
+  630000: b('bbbe117035432a6a4effcb297207a02b031735b43e0d19a9217c000000000000'),
+  670000: b('080bfe75caed8624fcfdfbc65973c8f962d7bdc495a891f5d16b7d0000000000'),
+  700000: b('c14d3f6a1e7c7d66fd940951e44f3c3be1273bea4d2ab1786140000000000000'),
+  740000: b('b3b423f0462fd78a01e4f1a59a2737a0525b5dbb9bba0b4634f9000000000000'),
+  780000: b('0381582e34c3755964dc2813e2b33e521e5596367144e1670851050000000000'),
+  800000: b('03b5f8ab257e02903f509f5ff2935220eec2e77b1819651d099b200000000000'),
+  840000: b('dac1648107bd4394e57e4083c86d42b548b1cfb119665f179ea80a0000000000'),
+  880000: b('ff90b4bb07eded8e96715bf595c09c7d21dd8c61b8306ff48705d60000000000'),
+  900000: b('9bd8ac418beeb1a2cf5d68c8b5c6ebaa947a5b766e5524898d6f350000000000'),
+  940000: b('c98f1651a475b00d12f8c25eb166ee843affaa90610e36a19d68030000000000'),
+  980000: b('cc8e9774542d044a9698ca2336ae02d5987157e676f1c76aa3877c0000000000'),
+  1010000:
+    b('9d9fb11abc2712d80368229e97b8d827b2a07d27eb5335e5c924000000000000'),
+  1050000: b('d8190cf0af7f08e179cab51d67db0b44b87951a78f7fdc31b4a01a0000000000')
 };
 
 testnet.lastCheckpoint = 1050000;
@@ -554,10 +593,11 @@ testnet.halvingInterval = 210000;
 
 testnet.genesis = {
   version: 1,
-  hash: '43497fd7f826957108f4a30fd9cec3aeba79972084e90ead01ea330900000000',
-  prevBlock: '0000000000000000000000000000000000000000000000000000000000000000',
+  hash: b('43497fd7f826957108f4a30fd9cec3aeba79972084e90ead01ea330900000000'),
+  prevBlock:
+    b('0000000000000000000000000000000000000000000000000000000000000000'),
   merkleRoot:
-    '3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a',
+    b('3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a'),
   time: 1296688602,
   bits: 486604799,
   nonce: 414098458,
@@ -582,7 +622,7 @@ testnet.pow = {
   ),
   bits: 486604799,
   chainwork: new BN(
-    '0000000000000000000000000000000000000000000000286d17360c5492b2c4',
+    '000000000000000000000000000000000000000000000062b7123cfd7d09f7b6',
     'hex'
   ),
   targetTimespan: 14 * 24 * 60 * 60,
@@ -594,11 +634,14 @@ testnet.pow = {
 
 testnet.block = {
   bip34height: 21111,
-  bip34hash: 'f88ecd9912d00d3f5c2a8e0f50417d3e415c75b3abe584346da9b32300000000',
+  bip34hash:
+    b('f88ecd9912d00d3f5c2a8e0f50417d3e415c75b3abe584346da9b32300000000'),
   bip65height: 581885,
-  bip65hash: 'b61e864fbec41dfaf09da05d1d76dc068b0dd82ee7982ff255667f0000000000',
+  bip65hash:
+    b('b61e864fbec41dfaf09da05d1d76dc068b0dd82ee7982ff255667f0000000000'),
   bip66height: 330776,
-  bip66hash: '82a14b9e5ea81d4832b8e2cd3c2a6092b5a3853285a8995ec4c8042100000000',
+  bip66hash:
+    b('82a14b9e5ea81d4832b8e2cd3c2a6092b5a3853285a8995ec4c8042100000000'),
   pruneAfterHeight: 1000,
   keepBlocks: 10000,
   maxTipAge: 24 * 60 * 60,
@@ -702,9 +745,7 @@ const regtest = {};
 
 regtest.type = 'regtest';
 
-regtest.seeds = [
-  '127.0.0.1'
-];
+regtest.seeds = [];
 
 regtest.magic = 0xdab5bffa;
 
@@ -717,10 +758,11 @@ regtest.halvingInterval = 150;
 
 regtest.genesis = {
   version: 1,
-  hash: '06226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f',
-  prevBlock: '0000000000000000000000000000000000000000000000000000000000000000',
+  hash: b('06226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910f'),
+  prevBlock:
+    b('0000000000000000000000000000000000000000000000000000000000000000'),
   merkleRoot:
-    '3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a',
+    b('3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a'),
   time: 1296688602,
   bits: 545259519,
   nonce: 2,
@@ -788,7 +830,7 @@ regtest.deployments = {
   segwit: {
     name: 'segwit',
     bit: 1,
-    startTime: 0,
+    startTime: -1,
     timeout: 0xffffffff,
     threshold: -1,
     window: -1,
@@ -825,20 +867,20 @@ regtest.deploys = [
 ];
 
 regtest.keyPrefix = {
-  privkey: 0x5a,
-  xpubkey: 0xeab4fa05,
-  xprivkey: 0xeab404c7,
-  xpubkey58: 'rpub',
-  xprivkey58: 'rprv',
+  privkey: 0xef,
+  xpubkey: 0x043587cf,
+  xprivkey: 0x04358394,
+  xpubkey58: 'tpub',
+  xprivkey58: 'tprv',
   coinType: 1
 };
 
 regtest.addressPrefix = {
-  pubkeyhash: 0x3c,
-  scripthash: 0x26,
-  witnesspubkeyhash: 0x7a,
-  witnessscripthash: 0x14,
-  bech32: 'rb'
+  pubkeyhash: 0x6f,
+  scripthash: 0xc4,
+  witnesspubkeyhash: 0x03,
+  witnessscripthash: 0x28,
+  bech32: 'bcrt'
 };
 
 regtest.requireStandard = false;
@@ -881,10 +923,12 @@ simnet.halvingInterval = 210000;
 
 simnet.genesis = {
   version: 1,
-  hash: 'f67ad7695d9b662a72ff3d8edbbb2de0bfa67b13974bb9910d116d5cbd863e68',
-  prevBlock: '0000000000000000000000000000000000000000000000000000000000000000',
+  hash:
+    b('f67ad7695d9b662a72ff3d8edbbb2de0bfa67b13974bb9910d116d5cbd863e68'),
+  prevBlock:
+    b('0000000000000000000000000000000000000000000000000000000000000000'),
   merkleRoot:
-    '3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a',
+    b('3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a'),
   time: 1401292357,
   bits: 545259519,
   nonce: 2,
@@ -922,11 +966,14 @@ simnet.pow = {
 
 simnet.block = {
   bip34height: 0,
-  bip34hash: 'f67ad7695d9b662a72ff3d8edbbb2de0bfa67b13974bb9910d116d5cbd863e68',
+  bip34hash:
+    b('f67ad7695d9b662a72ff3d8edbbb2de0bfa67b13974bb9910d116d5cbd863e68'),
   bip65height: 0,
-  bip65hash: 'f67ad7695d9b662a72ff3d8edbbb2de0bfa67b13974bb9910d116d5cbd863e68',
+  bip65hash:
+    b('f67ad7695d9b662a72ff3d8edbbb2de0bfa67b13974bb9910d116d5cbd863e68'),
   bip66height: 0,
-  bip66hash: 'f67ad7695d9b662a72ff3d8edbbb2de0bfa67b13974bb9910d116d5cbd863e68',
+  bip66hash:
+    b('f67ad7695d9b662a72ff3d8edbbb2de0bfa67b13974bb9910d116d5cbd863e68'),
   pruneAfterHeight: 1000,
   keepBlocks: 10000,
   maxTipAge: 0xffffffff,
@@ -1040,13 +1087,13 @@ network.simnet = simnet;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-mining_common.html">mining/common</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-node.html">node</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_plugin.html">wallet/plugin</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="BlockProof.html">BlockProof</a></li><li><a href="CacheUpdate.html">CacheUpdate</a></li><li><a href="ChainFlags.html">ChainFlags</a></li><li><a href="ChainState.html">ChainState</a></li><li><a href="DetailsMember.html">DetailsMember</a></li><li><a href="MerkleTree.html">MerkleTree</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">PrivateKey</a></li><li><a href="module-hd.PublicKey.html">PublicKey</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.Server.html">Server</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.BlockTemplate.html">BlockTemplate</a></li><li><a href="module-mining.CPUMiner.html">CPUMiner</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.AuthDB.html">AuthDB</a></li><li><a href="module-net.BIP150.html">BIP150</a></li><li><a href="module-net.BIP151.html">BIP151</a></li><li><a href="module-net.BIP151Stream.html">BIP151Stream</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.HostListOptions.html">HostListOptions</a></li><li><a href="module-net.LocalAddress.html">LocalAddress</a></li><li><a href="module-net.NetAddress.html">NetAddress</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-AuthChallengePacket.html">AuthChallengePacket</a></li><li><a href="module-net_packets-AuthProposePacket.html">AuthProposePacket</a></li><li><a href="module-net_packets-AuthReplyPacket.html">AuthReplyPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-EncackPacket.html">EncackPacket</a></li><li><a href="module-net_packets-EncinitPacket.html">EncinitPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.NullClient.html">NullClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.ScriptNum.html">ScriptNum</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.HTTP.html">HTTP</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.RPC.html">RPC</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_plugin-Plugin.html">Plugin</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-MapRecord.html">MapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parent.html">Parent</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-CheckInputPacket.html">CheckInputPacket</a></li><li><a href="module-workers_packets-CheckInputResultPacket.html">CheckInputResultPacket</a></li><li><a href="module-workers_packets-CheckPacket.html">CheckPacket</a></li><li><a href="module-workers_packets-CheckResultPacket.html">CheckResultPacket</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-EnvPacket.html">EnvPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="StateCache.html">StateCache</a></li><li><a href="WalletNode.html">WalletNode</a></li></ul><h3>Global</h3><ul><li><a href="global.html#bindExit">bindExit</a></li><li><a href="global.html#checksig">checksig</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#encode">encode</a></li><li><a href="global.html#fromFloat">fromFloat</a></li><li><a href="global.html#insert">insert</a></li><li><a href="global.html#listenExit">listenExit</a></li><li><a href="global.html#remove">remove</a></li><li><a href="global.html#search">search</a></li><li><a href="global.html#toFloat">toFloat</a></li><li><a href="global.html#url">url</a></li><li><a href="global.html#validateKey">validateKey</a></li><li><a href="global.html#validateSignature">validateSignature</a></li><li><a href="global.html#version">version</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bcoin.html">bcoin</a></li><li><a href="module-blockchain.html">blockchain</a></li><li><a href="module-blockchain_common.html">blockchain/common</a></li><li><a href="module-blockstore.html">blockstore</a></li><li><a href="module-blockstore_common.html">blockstore/common</a></li><li><a href="module-blockstore_records.html">blockstore/records</a></li><li><a href="module-btc.html">btc</a></li><li><a href="module-client.html">client</a></li><li><a href="module-coins.html">coins</a></li><li><a href="module-hd.html">hd</a></li><li><a href="module-indexer.html">indexer</a></li><li><a href="module-mempool.html">mempool</a></li><li><a href="module-mining.html">mining</a></li><li><a href="module-mining_common.html">mining/common</a></li><li><a href="module-net.html">net</a></li><li><a href="module-net_bip152.html">net/bip152</a></li><li><a href="module-net_common.html">net/common</a></li><li><a href="module-net_packets.html">net/packets</a></li><li><a href="module-node.html">node</a></li><li><a href="module-primitives.html">primitives</a></li><li><a href="module-protocol.html">protocol</a></li><li><a href="module-protocol_consensus.html">protocol/consensus</a></li><li><a href="module-protocol_errors.html">protocol/errors</a></li><li><a href="module-protocol_networks.html">protocol/networks</a></li><li><a href="module-protocol_policy.html">protocol/policy</a></li><li><a href="module-script.html">script</a></li><li><a href="module-script_common.html">script/common</a></li><li><a href="module-utils.html">utils</a></li><li><a href="module-utils_message.html">utils/message</a></li><li><a href="module-utils_util.html">utils/util</a></li><li><a href="module-wallet.html">wallet</a></li><li><a href="module-wallet_common.html">wallet/common</a></li><li><a href="module-wallet_plugin.html">wallet/plugin</a></li><li><a href="module-wallet_records.html">wallet/records</a></li><li><a href="module-workers.html">workers</a></li><li><a href="module-workers_jobs.html">workers/jobs</a></li><li><a href="module-workers_packets.html">workers/packets</a></li></ul><h3>Classes</h3><ul><li><a href="BlockMeta.html">BlockMeta</a></li><li><a href="BlockProof.html">BlockProof</a></li><li><a href="BlockRecord.html">BlockRecord</a></li><li><a href="ChainFlags.html">ChainFlags</a></li><li><a href="ChainState.html">ChainState</a></li><li><a href="Count.html">Count</a></li><li><a href="DetailsMember.html">DetailsMember</a></li><li><a href="IndexOptions.html">IndexOptions</a></li><li><a href="MerkleTree.html">MerkleTree</a></li><li><a href="module-blockchain.Chain.html">Chain</a></li><li><a href="module-blockchain.ChainDB.html">ChainDB</a></li><li><a href="module-blockchain.ChainEntry.html">ChainEntry</a></li><li><a href="module-blockchain.ChainOptions.html">ChainOptions</a></li><li><a href="module-blockchain.DeploymentState.html">DeploymentState</a></li><li><a href="module-blockstore.AbstractBlockStore.html">AbstractBlockStore</a></li><li><a href="module-blockstore_records-BlockRecord.html">BlockRecord</a></li><li><a href="module-blockstore_records-FileRecord.html">FileRecord</a></li><li><a href="module-blockstore_FileBlockStore.html">FileBlockStore</a></li><li><a href="module-blockstore_LevelBlockStore.html">LevelBlockStore</a></li><li><a href="module-btc.Amount.html">Amount</a></li><li><a href="module-btc.URI.html">URI</a></li><li><a href="module-coins.CoinEntry.html">CoinEntry</a></li><li><a href="module-coins.Coins.html">Coins</a></li><li><a href="module-coins.CoinView.html">CoinView</a></li><li><a href="module-coins.UndoCoins.html">UndoCoins</a></li><li><a href="module-golomb.Golomb.html">Golomb</a></li><li><a href="module-hd.Mnemonic.html">Mnemonic</a></li><li><a href="module-hd.PrivateKey.html">HDPrivateKey</a></li><li><a href="module-hd.PublicKey.html">HDPublicKey</a></li><li><a href="module-http.HTTPOptions.html">HTTPOptions</a></li><li><a href="module-http.RPC.html">RPC</a></li><li><a href="module-http.Server.html">HTTP</a></li><li><a href="module-indexer.AddrIndexer.html">AddrIndexer</a></li><li><a href="module-indexer.FilterIndexer.html">FilterIndexer</a></li><li><a href="module-indexer.Indexer.html">Indexer</a></li><li><a href="module-indexer.TXIndexer.html">TXIndexer</a></li><li><a href="module-mempool.ConfirmStats.html">ConfirmStats</a></li><li><a href="module-mempool.Mempool.html">Mempool</a></li><li><a href="module-mempool.MempoolEntry.html">MempoolEntry</a></li><li><a href="module-mempool.MempoolOptions.html">MempoolOptions</a></li><li><a href="module-mempool.PolicyEstimator.html">PolicyEstimator</a></li><li><a href="module-mining.BlockEntry.html">BlockEntry</a></li><li><a href="module-mining.BlockTemplate.html">BlockTemplate</a></li><li><a href="module-mining.CPUMiner.html">CPUMiner</a></li><li><a href="module-mining.Miner.html">Miner</a></li><li><a href="module-mining.MinerOptions.html">MinerOptions</a></li><li><a href="module-net.BroadcastItem.html">BroadcastItem</a></li><li><a href="module-net.Framer.html">Framer</a></li><li><a href="module-net.HostEntry.html">HostEntry</a></li><li><a href="module-net.HostList.html">HostList</a></li><li><a href="module-net.HostListOptions.html">HostListOptions</a></li><li><a href="module-net.LocalAddress.html">LocalAddress</a></li><li><a href="module-net.NetAddress.html">NetAddress</a></li><li><a href="module-net.Parser.html">Parser</a></li><li><a href="module-net.Peer.html">Peer</a></li><li><a href="module-net.PeerList.html">PeerList</a></li><li><a href="module-net.PeerOptions.html">PeerOptions</a></li><li><a href="module-net.Pool.html">Pool</a></li><li><a href="module-net.PoolOptions.html">PoolOptions</a></li><li><a href="module-net_bip152-CompactBlock.html">CompactBlock</a></li><li><a href="module-net_bip152-TXRequest.html">TXRequest</a></li><li><a href="module-net_bip152-TXResponse.html">TXResponse</a></li><li><a href="module-net_packets-AddrPacket.html">AddrPacket</a></li><li><a href="module-net_packets-BlockPacket.html">BlockPacket</a></li><li><a href="module-net_packets-BlockTxnPacket.html">BlockTxnPacket</a></li><li><a href="module-net_packets-CmpctBlockPacket.html">CmpctBlockPacket</a></li><li><a href="module-net_packets-FeeFilterPacket.html">FeeFilterPacket</a></li><li><a href="module-net_packets-FilterAddPacket.html">FilterAddPacket</a></li><li><a href="module-net_packets-FilterClearPacket.html">FilterClearPacket</a></li><li><a href="module-net_packets-FilterLoadPacket.html">FilterLoadPacket</a></li><li><a href="module-net_packets-GetAddrPacket.html">GetAddrPacket</a></li><li><a href="module-net_packets-GetBlocksPacket.html">GetBlocksPacket</a></li><li><a href="module-net_packets-GetBlockTxnPacket.html">GetBlockTxnPacket</a></li><li><a href="module-net_packets-GetDataPacket.html">GetDataPacket</a></li><li><a href="module-net_packets-GetHeadersPacket.html">GetHeadersPacket</a></li><li><a href="module-net_packets-HeadersPacket.html">HeadersPacket</a></li><li><a href="module-net_packets-InvPacket.html">InvPacket</a></li><li><a href="module-net_packets-MempoolPacket.html">MempoolPacket</a></li><li><a href="module-net_packets-MerkleBlockPacket.html">MerkleBlockPacket</a></li><li><a href="module-net_packets-NotFoundPacket.html">NotFoundPacket</a></li><li><a href="module-net_packets-Packet.html">Packet</a></li><li><a href="module-net_packets-PingPacket.html">PingPacket</a></li><li><a href="module-net_packets-PongPacket.html">PongPacket</a></li><li><a href="module-net_packets-RejectPacket.html">RejectPacket</a></li><li><a href="module-net_packets-SendCmpctPacket.html">SendCmpctPacket</a></li><li><a href="module-net_packets-SendHeadersPacket.html">SendHeadersPacket</a></li><li><a href="module-net_packets-TXPacket.html">TXPacket</a></li><li><a href="module-net_packets-UnknownPacket.html">UnknownPacket</a></li><li><a href="module-net_packets-VerackPacket.html">VerackPacket</a></li><li><a href="module-net_packets-VersionPacket.html">VersionPacket</a></li><li><a href="module-node.FullNode.html">FullNode</a></li><li><a href="module-node.Node.html">Node</a></li><li><a href="module-node.NodeClient.html">NodeClient</a></li><li><a href="module-node.NullClient.html">NullClient</a></li><li><a href="module-node.SPVNode.html">SPVNode</a></li><li><a href="module-primitives.AbstractBlock.html">AbstractBlock</a></li><li><a href="module-primitives.Address.html">Address</a></li><li><a href="module-primitives.Block.html">Block</a></li><li><a href="module-primitives.Coin.html">Coin</a></li><li><a href="module-primitives.CoinSelector.html">CoinSelector</a></li><li><a href="module-primitives.Filter.html">Filter</a></li><li><a href="module-primitives.Headers.html">Headers</a></li><li><a href="module-primitives.Input.html">Input</a></li><li><a href="module-primitives.InvItem.html">InvItem</a></li><li><a href="module-primitives.KeyRing.html">KeyRing</a></li><li><a href="module-primitives.MemBlock.html">MemBlock</a></li><li><a href="module-primitives.MerkleBlock.html">MerkleBlock</a></li><li><a href="module-primitives.MTX.html">MTX</a></li><li><a href="module-primitives.Outpoint.html">Outpoint</a></li><li><a href="module-primitives.Output.html">Output</a></li><li><a href="module-primitives.TX.html">TX</a></li><li><a href="module-primitives.TXMeta.html">TXMeta</a></li><li><a href="module-protocol.Network.html">Network</a></li><li><a href="module-protocol.TimeData.html">TimeData</a></li><li><a href="module-protocol_errors-VerifyError.html">VerifyError</a></li><li><a href="module-script.Opcode.html">Opcode</a></li><li><a href="module-script.Program.html">Program</a></li><li><a href="module-script.Script.html">Script</a></li><li><a href="module-script.ScriptError.html">ScriptError</a></li><li><a href="module-script.ScriptNum.html">ScriptNum</a></li><li><a href="module-script.SigCache.html">SigCache</a></li><li><a href="module-script.Stack.html">Stack</a></li><li><a href="module-script.Witness.html">Witness</a></li><li><a href="module-wallet.Account.html">Account</a></li><li><a href="module-wallet.Balance.html">Balance</a></li><li><a href="module-wallet.BlockRecord.html">BlockRecord</a></li><li><a href="module-wallet.Credit.html">Credit</a></li><li><a href="module-wallet.Details.html">Details</a></li><li><a href="module-wallet.HTTP.html">HTTP</a></li><li><a href="module-wallet.MasterKey.html">MasterKey</a></li><li><a href="module-wallet.Path.html">Path</a></li><li><a href="module-wallet.RPC.html">RPC</a></li><li><a href="module-wallet.TXDB.html">TXDB</a></li><li><a href="module-wallet.Wallet.html">Wallet</a></li><li><a href="module-wallet.WalletDB.html">WalletDB</a></li><li><a href="module-wallet.WalletKey.html">WalletKey</a></li><li><a href="module-wallet.WalletOptions.html">WalletOptions</a></li><li><a href="module-wallet_plugin-Plugin.html">Plugin</a></li><li><a href="module-wallet_records-BlockMeta.html">BlockMeta</a></li><li><a href="module-wallet_records-ChainState.html">ChainState</a></li><li><a href="module-wallet_records-MapRecord.html">MapRecord</a></li><li><a href="module-wallet_records-TXRecord.html">TXRecord</a></li><li><a href="module-workers.Framer.html">Framer</a></li><li><a href="module-workers.Master.html">Master</a></li><li><a href="module-workers.Parent.html">Parent</a></li><li><a href="module-workers.Parser.html">Parser</a></li><li><a href="module-workers.Worker.html">Worker</a></li><li><a href="module-workers.WorkerPool.html">WorkerPool</a></li><li><a href="module-workers_packets-CheckInputPacket.html">CheckInputPacket</a></li><li><a href="module-workers_packets-CheckInputResultPacket.html">CheckInputResultPacket</a></li><li><a href="module-workers_packets-CheckPacket.html">CheckPacket</a></li><li><a href="module-workers_packets-CheckResultPacket.html">CheckResultPacket</a></li><li><a href="module-workers_packets-ECSignPacket.html">ECSignPacket</a></li><li><a href="module-workers_packets-ECSignResultPacket.html">ECSignResultPacket</a></li><li><a href="module-workers_packets-ECVerifyPacket.html">ECVerifyPacket</a></li><li><a href="module-workers_packets-ECVerifyResultPacket.html">ECVerifyResultPacket</a></li><li><a href="module-workers_packets-EnvPacket.html">EnvPacket</a></li><li><a href="module-workers_packets-ErrorPacket.html">ErrorPacket</a></li><li><a href="module-workers_packets-ErrorResultPacket.html">ErrorResultPacket</a></li><li><a href="module-workers_packets-EventPacket.html">EventPacket</a></li><li><a href="module-workers_packets-LogPacket.html">LogPacket</a></li><li><a href="module-workers_packets-MinePacket.html">MinePacket</a></li><li><a href="module-workers_packets-MineResultPacket.html">MineResultPacket</a></li><li><a href="module-workers_packets-Packet.html">Packet</a></li><li><a href="module-workers_packets-ScryptPacket.html">ScryptPacket</a></li><li><a href="module-workers_packets-ScryptResultPacket.html">ScryptResultPacket</a></li><li><a href="module-workers_packets-SignInputPacket.html">SignInputPacket</a></li><li><a href="module-workers_packets-SignInputResultPacket.html">SignInputResultPacket</a></li><li><a href="module-workers_packets-SignPacket.html">SignPacket</a></li><li><a href="module-workers_packets-SignResultPacket.html">SignResultPacket</a></li><li><a href="NodeClient.html">NodeClient</a></li><li><a href="StateCache.html">StateCache</a></li><li><a href="TxRecord.html">TxRecord</a></li><li><a href="Wallet.html">Wallet</a></li><li><a href="WalletClient.html">WalletClient</a></li><li><a href="WalletNode.html">WalletNode</a></li></ul><h3>Global</h3><ul><li><a href="global.html#bindExit">bindExit</a></li><li><a href="global.html#checksig">checksig</a></li><li><a href="global.html#decode">decode</a></li><li><a href="global.html#encode">encode</a></li><li><a href="global.html#fromFloat">fromFloat</a></li><li><a href="global.html#insert">insert</a></li><li><a href="global.html#listenExit">listenExit</a></li><li><a href="global.html#remove">remove</a></li><li><a href="global.html#search">search</a></li><li><a href="global.html#toFloat">toFloat</a></li><li><a href="global.html#validateKey">validateKey</a></li><li><a href="global.html#validateSignature">validateSignature</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Fri Mar 30 2018 12:32:05 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.5</a> on Sat Aug 22 2020 11:26:38 GMT-0400 (Eastern Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
