@@ -118,4 +118,5 @@ network   | _string_ | Network to use: `main`, `testnet`, `regtest`
 port      | _int_                          | bcoin socket port (defaults specific for each network)
 host      | _string_ | bcoin API host URI (defaults to 127.0.0.1)
 apiKey    | _string_                       | API secret
+ssl       | _boolean_                      | TLS (defaults to false: `http`, unless url has `https`)
 
