@@ -1,4 +1,7 @@
 #!/bin/sh
+
+set -e
+
 cd ./api-docs-slate
 
 gem install bundler
