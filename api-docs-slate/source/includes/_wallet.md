@@ -596,7 +596,7 @@ const walletClient = new WalletClient(walletOptions);
 const wallet = walletClient.wallet(id);
 
 (async () => {
-  const result = await wallet.setPassphrase(oldPass, newPass);
+  const result = await wallet.setPassphrase(newPass, oldPass);
   console.log(result);
 })();
 ```
