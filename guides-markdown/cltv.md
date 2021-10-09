@@ -33,7 +33,7 @@ In the vast majority of Bitcoin and other cryptocurrency transactions,
 you prove ownership by signing a transaction input with the private key
 (basically a password that is stored in your wallet) that corresponds to
 the address that the source output was sent to. I.e. The UTXO is locked
-by the requirement that some signaturemust match a public key or public key
+by the requirement that some signature must match a public key or public key
 hash that is on the execution stack.
 
 An output that is locked with CLTV works more or less the same way but adds another
@@ -208,7 +208,7 @@ const locktime = '100';
 keyring.witness = true;
 keyring2.witness = true;
 
-// 2) Get hash and save it to keyring
+// 2) Get hash, generate the locking script and save it to keyring
 const pkh = keyring.getKeyHash();
 const script = createScript(locktime, pkh);
 keyring.script = script;
@@ -259,7 +259,7 @@ mtx.addOutput(receiveAddr, receiveValue);
 console.log('mtx:', mtx);
 ```
 
-### Script and Sign the Inputs
+### Input Script and Sign the Inputs
 We're going to create two custom methods to handle this part
 since we can use it for the live transactions as well. The `MTX`
 primitive in bcoin has its own version of these (see the code
@@ -282,18 +282,15 @@ The actual method has more checks in it to see what kind of input,
  * the `MTX` class
  * @param {MTX} mtx with unscripted input
  * @param {Number} index - index of input to script
- * @param {Coin} coin- UTXO we are spending
  * @param {KeyRing} ring - keyring we are signing with
  * @returns {MTX}
 */
-function scriptInput(mtx, index, coin, ring) {
+function scriptInput(mtx, index, ring) {
   const input = mtx.inputs[index];
-  const prev = coin.script;
-  const wsh = prev.getWitnessScripthash();
   assert(ring instanceof KeyRing, 'Must pass a KeyRing to scriptInput');
+  
   // this is the redeem script used to verify the p2wsh hash
-  wredeem = ring.getRedeem(wsh);
-
+  const wredeem = ring.getRedeem(wsh);
   assert(wredeem, 'keyring has no redeem script');
 
   const vector = new Stack();
@@ -349,7 +346,7 @@ function signInput(mtx, index, coin, ring) {
   const sig =
     mtx.signature(
       index,
-      wredeem,
+      redeem,
       coin.value,
       ring.privateKey,
       null,
@@ -371,14 +368,14 @@ a transaction with an nLocktime later than the current block height
 or time, will be rejected as invalid.
 
 ```javascript
-mtx = scriptInput(mtx, 0, coin, keyring);
-mtx = signInput(mtx, 0, coin, keyring);
-
 // Now set the locktime
 // You can test if the CLTV script is working or not
 // by changing this to a value less than what our script requires
 // which will cause the `mtx.verify` call to fail below
 mtx.setLocktime(parseInt(locktime));
+mtx = scriptInput(mtx, 0, keyring);
+mtx = signInput(mtx, 0, coin, keyring);
+
 
 // if you console log the input being signed,
 // you'll notice it now has a witness stack and redeem script
@@ -397,6 +394,8 @@ console.log('Transaction verified!');
 ## A Live CLTV Transaction
 Let's test this on a regtest network that way we can easily
 mine our own blocks to verify whether or not everything is working.
+If the coin being sent to the CLTV address was originated from mining,
+remember it requires at least 100 confirmations to be spent.
 
 Some of the key differences doing this live:
 
@@ -567,7 +566,7 @@ async function lockAndRedeemCLTV(walletId) {
 
       // 4) Script and sign the input
       // Note that we can use the same methods as in the mock transaction
-      mtx = scriptInput(mtx, index, coin, ring);
+      mtx = scriptInput(mtx, index, ring);
       mtx = signInput(mtx, index, coin, ring);
 
       // 5) Verify and broadcast the tx
