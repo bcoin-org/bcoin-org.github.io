@@ -282,11 +282,14 @@ The actual method has more checks in it to see what kind of input,
  * the `MTX` class
  * @param {MTX} mtx with unscripted input
  * @param {Number} index - index of input to script
+ * @param {Coin} coin - UTXO we are spending
  * @param {KeyRing} ring - keyring we are signing with
  * @returns {MTX}
 */
-function scriptInput(mtx, index, ring) {
+function scriptInput(mtx, index, coin, ring) {
   const input = mtx.inputs[index];
+  const prev = coin.script;
+  const wsh = prev.getWitnessScripthash();
   assert(ring instanceof KeyRing, 'Must pass a KeyRing to scriptInput');
   
   // this is the redeem script used to verify the p2wsh hash
@@ -373,7 +376,7 @@ or time, will be rejected as invalid.
 // by changing this to a value less than what our script requires
 // which will cause the `mtx.verify` call to fail below
 mtx.setLocktime(parseInt(locktime));
-mtx = scriptInput(mtx, 0, keyring);
+mtx = scriptInput(mtx, 0, coin, keyring);
 mtx = signInput(mtx, 0, coin, keyring);
 
 
@@ -566,7 +569,7 @@ async function lockAndRedeemCLTV(walletId) {
 
       // 4) Script and sign the input
       // Note that we can use the same methods as in the mock transaction
-      mtx = scriptInput(mtx, index, ring);
+      mtx = scriptInput(mtx, index, coin, ring);
       mtx = signInput(mtx, index, coin, ring);
 
       // 5) Verify and broadcast the tx
