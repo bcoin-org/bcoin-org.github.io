@@ -9,6 +9,8 @@ The bcoin JavaScript library can be easily formatted to run in a web browser lik
 Using a proxy server, we can connect the web client to the actual live Bitcoin network.
 ```
 
+> :warning: **Currently this feature is not working**
+
 ## Introduction
 
 Because bcoin is written in JavaScript, the entire codebase can be interpreted by
