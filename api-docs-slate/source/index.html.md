@@ -9,7 +9,7 @@ language_tabs: # must be one of https://git.io/vQNgJ
   - javascript
 
 toc_footers:
-  - <a href='https://bcoin.io/slack-signup.html'>Join us on Slack</a>
+  - <a href='https://t.me/bcoinorg'>Join us on Telegram</a>
   - <a href='https://github.com/bcoin-org/bcoin'>See the code on GitHub</a>
   - <a href='https://bcoin.io/guides.html'>Browse the guides</a>
   - <a href='https://bcoin.io/docs/index.html'>Full API Documentation</a>

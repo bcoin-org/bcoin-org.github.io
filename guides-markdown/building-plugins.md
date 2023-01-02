@@ -136,6 +136,6 @@ To learn more about the bindex plugin, checkout the repo:
 
 So, go ahead and write your first bcoin plugin!
 
-Reach out to us at bcoin slack
-[https://bcoin-dev.slack.com/](https://bcoin-dev.slack.com/) or IRC freenode
+Reach out to us on telegram
+[telegram-app.svg](telegram-app.svg) or IRC
 #bcoin with your feedback!

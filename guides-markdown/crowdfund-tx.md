@@ -18,7 +18,7 @@ Here's how it's explained in *Mastering Bitcoin*:
 This construction can be used to make a "crowdfunding”-style transaction. Someone attempting to raise funds can construct a transaction with a single output. The single output pays the "goal" amount to the fundraiser. Such a transaction is obviously not valid, as it has no inputs. However, others can now amend it by adding an input of their own, as a donation. They sign their own input with ALL|ANYONECANPAY. Unless enough inputs are gathered to reach the value of the output, the transaction is invalid. Each donation is a "pledge," which cannot be collected by the fundraiser until the entire goal amount is raised.
 
 ## The Code
-We'll walk through the steps of creating the transaction first without any wallet database or node running. Then we'll do the same thing using bcoin's walletdb to manage the keys to see how it would work in a more realistic application (skip to [Version 2](#version-2-using-the-bcoin-wallet-system)) further in the guide to check it out). At the end, we'll put out some ideas of how these can be built upon for a more robust, production ready application. (If this is something you'd be interested in building, [get in touch](https://bcoin.io/slack-signup.html)!). If you want to see the code, checkout the [repo on github](https://github.com/Bucko13/bitcoin-fundraise).
+We'll walk through the steps of creating the transaction first without any wallet database or node running. Then we'll do the same thing using bcoin's walletdb to manage the keys to see how it would work in a more realistic application (skip to [Version 2](#version-2-using-the-bcoin-wallet-system)) further in the guide to check it out). At the end, we'll put out some ideas of how these can be built upon for a more robust, production ready application. (If this is something you'd be interested in building, [get in touch](https://t.me/bcoinorg)!). If you want to see the code, checkout the [repo on github](https://github.com/Bucko13/bitcoin-fundraise).
 
 If you're not comfortable with key management, coin selection, and how transactions are constructed, checkout the tutorial on [working with transactions](https://bcoin.io/guides/working-with-txs.html) first.
 
@@ -500,6 +500,6 @@ These examples are obviously pretty basic, but they should give you an idea of h
 - Add a fund matching scheme where someone can say they will match future contributions
 - Currently the examples split transactions to make a coin available that equals the target contribution amount. This is expensive since you have to broadcast multiple transactions. An interface to choose to donate from available available coins might help to make this more efficient.
 
-Make sure to get in touch with us on Twitter or Slack if you build out any of these ideas!
+Make sure to get in touch with us on Twitter or Telegram if you build out any of these ideas!
 
 Again, for a working example of the code (without all the text and explanations), check out [the repo on github](https://github.com/Bucko13/bitcoin-fundraise).

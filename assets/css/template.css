@@ -229,7 +229,7 @@ Dark Blue BG for Parallax Docs Callout*/
 
 .community-links .slack-icon h3:before {
     content:'';
-    background-image: url('../images/Slack_Mark_Monochrome_Black.svg');
+    background-image: url('../images/telegram-app.svg');
     background-repeat: no-repeat;
     background-size: contain;
     width: 44px;
