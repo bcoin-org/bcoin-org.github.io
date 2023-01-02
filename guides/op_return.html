@@ -146,11 +146,11 @@
 				<div class="inner-header pull-right hide-me">
 					<div class="menu-extras clearfix">
 
-						<!-- SLACK LINK -->
+						<!-- TELEGRAM LINK -->
 						<div class="menu-item">
 							<div class="">
-								<a href="../slack-signup.html" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Slack!">
-									<img src="../assets/images/slack_icon.svg" width="18" height="18"/>
+								<a href="https://t.me/bcoinorg" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Telegram!">
+									<img src="../assets/images/telegram-app.svg" width="18" height="18"/>
 									<span class=""></span>
 								</a>
                             </div>
@@ -249,54 +249,6 @@
 			<div class="container">
 
 				<div class="row">
-
-					<!-- START SIDEBAR -->
-<div class="col-sm-3 sidebar">
-  <!-- CATEGORIES WIDGET -->
-<div class="widget guide-list">
-<h6 class="montserrat text-uppercase bottom-line">Install</h6>
-<ul class="icons-list">
-<!-- INSTALL-LIST -->
-<li><a href="install-windows.html">Install on Windows (Video)</a></li>
-<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
-<li><a href="install-linux.html">Install on Linux (Video)</a></li>
-<!-- /INSTALL-LIST -->
-</ul>
-<br>
-<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
-<ul class="icons-list">
-<!-- GUIDES-LIST -->
-<li><a href="working-with-txs.html">Working with transactions</a></li>
-<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
-<li><a href="vps-setup.html">Full Node VPS Setup</a></li>
-<li><a href="segwit.html">Segwit and Bcoin</a></li>
-<li><a href="scripting.html">Intro to Scripting</a></li>
-<li><a href="op_return.html">Store Data on the Blockchain</a></li>
-<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
-<li><a href="generate-address.html">Generate an Address</a></li>
-<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
-<li><a href="beginners.html">Beginners Guide to Getting Started</a></li>
-<!-- /GUIDES-LIST -->
-</ul>
-</div>
-  <!-- END CATEGORIES WIDGET -->
-
-  <!-- TEXT WIDGET -->
-  <div class="widget">
-    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
-    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
-  </div>
-  <!-- END TEXT WIDGET -->
-
-  <!-- TEXT WIDGET -->
-  <div class="widget">
-    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
-    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="../slack-signup.html"> Slack.</a></p>
-    <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
-  </div>
-  <!-- END TEXT WIDGET -->
-</div>
-					<!-- END SIDEBAR -->
 					<!-- START OF ARTICLE CONTAINER -->
 					<div class="col-sm-9 blog-content post-thumbnail">
 						<!-- POST IMAGE -->
@@ -321,20 +273,21 @@ Note that outputs associated with a null data script are lost forever, so make
 sure you use a zero value output!</p>
 <p>This example creates a transaction with output containing a null data script
 with our data:</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token punctuation">{</span>WalletClient<span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bclient'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> network <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Network<span class="token punctuation">.</span><span class="token keyword">get</span><span class="token punctuation">(</span><span class="token string">'regtest'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 <span class="token keyword">let</span> id<span class="token punctuation">,</span> passphrase<span class="token punctuation">,</span> rate<span class="token punctuation">,</span> script<span class="token punctuation">,</span> output<span class="token punctuation">;</span>
 id<span class="token operator">=</span><span class="token string">"primary"</span>
 passphrase<span class="token operator">=</span><span class="token string">"pass"</span>
 rate<span class="token operator">=</span><span class="token number">5000</span>
-script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>script<span class="token punctuation">.</span><span class="token function">fromNulldata</span><span class="token punctuation">(</span>Buffer<span class="token punctuation">.</span><span class="token keyword">from</span><span class="token punctuation">(</span><span class="token string">"with ❤︎ from bcoin"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-output <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>output<span class="token punctuation">.</span><span class="token function">fromScript</span><span class="token punctuation">(</span>script<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
+script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Script<span class="token punctuation">.</span><span class="token function">fromNulldata</span><span class="token punctuation">(</span>Buffer<span class="token punctuation">.</span><span class="token keyword">from</span><span class="token punctuation">(</span><span class="token string">"with ❤︎ from bcoin"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+output <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Output<span class="token punctuation">.</span><span class="token function">fromScript</span><span class="token punctuation">(</span>script<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
 
-<span class="token keyword">const</span> httpWallet <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>http<span class="token punctuation">.</span><span class="token function">Wallet</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
-    id<span class="token punctuation">:</span> id<span class="token punctuation">,</span>
-    network<span class="token punctuation">:</span> <span class="token string">'testnet'</span>
+<span class="token keyword">const</span> wallet <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">WalletClient</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  port<span class="token punctuation">:</span> network<span class="token punctuation">.</span>walletPort<span class="token punctuation">,</span>
+  apiKey<span class="token punctuation">:</span> <span class="token string">'foo'</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-
 
 <span class="token keyword">const</span> options <span class="token operator">=</span> <span class="token punctuation">{</span>
   rate<span class="token punctuation">:</span> rate<span class="token punctuation">,</span>
@@ -343,7 +296,7 @@ output <span class="token operator">=</span> bcoin<span class="token punctuation
 <span class="token punctuation">}</span><span class="token punctuation">;</span>
 
 <span class="token punctuation">(</span><span class="token keyword">async</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
-  <span class="token keyword">const</span> tx <span class="token operator">=</span> <span class="token keyword">await</span> httpWallet<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span>options<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token keyword">const</span> tx <span class="token operator">=</span> <span class="token keyword">await</span> wallet<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token string">'primary'</span><span class="token punctuation">,</span> options<span class="token punctuation">)</span><span class="token punctuation">;</span>
   console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>tx<span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>As an example, here is a transaction created on testnet using the above script: 3bfced561161ce4378132fabe72dd2a1fb8654ceed3d4ceb554f2bb7420b86e7</p>
 <p>One can verify this by fetching the transaction and converting its output signature script to ascii string.</p>
@@ -360,7 +313,62 @@ output <span class="token operator">=</span> bcoin<span class="token punctuation
 					</div>
 					<!-- END BLOG CONTENT -->
 
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Installation</h6>
+      <p>
+        <a href="https://github.com/bcoin-org/bcoin/blob/master/docs/getting-started.md">
+          See the "Getting Started" guide in the repository documents directory.
+        </a>
+      </p>
+  </div>
+  <!-- END TEXT WIDGET -->
 
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="webapp.html">Building web applications with the bcoin library</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="swaps.html">Cross-Chain Atomic Swaps</a></li>
+<li><a href="segwit.html">Segwit and Bcoin</a></li>
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
+<li><a href="multisig-cli.html">Multisig on the command line</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="events.html">Events and Sockets</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="connect-local-nodes.html">Connect two local nodes</a></li>
+<li><a href="cltv.html">Time Locked Bitcoin Transactions w/ CLTV</a></li>
+<li><a href="building-plugins.html">Building Awesome bcoin Plugins</a></li>
+<li><a href="browser.html">Run a bcoin full node in a web browser</a></li>
+<li><a href="bcoin-clock.html">Make your own Bcoin Block Clock!</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="https://t.me/bcoinorg"> Telegram.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
+
+					<!-- END SIDEBAR -->
 
 				</div><!-- .row -->
 
@@ -403,7 +411,7 @@ output <span class="token operator">=</span> bcoin<span class="token punctuation
 							<li><a href="https://github.com/bcoin-org/bcoin"><i class="fa fa-github"></i></a></li>
 
 
-							<li><a href="../slack-signup.html" target="_blank"><i class="fa fa-slack"></i></a></li>
+							<li><a href="https://t.me/bcoinorg" target="_blank"><img src="assets/images/telegram-app.svg"></a></li>
 						</ul>
 					</div>
 				</div>

@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Throw a Multisig party for yourself and some friends using simple command line tools.">
+	<meta name="author" content="Matthew Zipkin">
+
+	<title>Bcoin Guide | Multisig on the command line</title>
+
+	<!-- Favicons -->
+	<!-- old
+	<link rel="shortcut icon" href="../assets/images/bcoin-ico.png">-->
+
+	<!-- generated from http://www.favicon-generator.org/ -->
+	<link rel="apple-touch-icon" sizes="57x57" href="../assets/images/apple-icon-57x57.png">
+	<link rel="apple-touch-icon" sizes="60x60" href="../assets/images/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="../assets/images/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="76x76" href="../assets/images/apple-icon-76x76.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="../assets/images/apple-icon-114x114.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="../assets/images/apple-icon-120x120.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="../assets/images/apple-icon-144x144.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="../assets/images/apple-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="../assets/images/apple-icon-180x180.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="../assets/images/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="../assets/images/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="../assets/images/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="../assets/images/favicon-16x16.png">
+	<link rel="manifest" href="../assets/images/manifest.json">
+	<meta name="msapplication-TileColor" content="#ffffff">
+	<meta name="msapplication-TileImage" content="../assets/images/ms-icon-144x144.png">
+	<meta name="theme-color" content="#ffffff">
+
+	<!-- Web Fonts -->
+	<link href='https://fonts.googleapis.com/css?family=Open+Sans:300,400italic,400,600,700' rel='stylesheet'>
+	<link href='https://fonts.googleapis.com/css?family=Montserrat:700' rel='stylesheet' type='text/css'>
+
+	<!-- Bootstrap core CSS -->
+	<link href="../assets/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+	<!-- Code Snippet CSS -->
+	<link href="../assets/css/prism.css" rel="stylesheet">
+
+	<link href="../assets/css/custom.css" rel="stylesheet">
+
+	<!-- Icon Fonts -->
+	<link href="../assets/css/font-awesome.min.css" rel="stylesheet">
+	<link href="../assets/css/simple-line-icons.css" rel="stylesheet">
+
+	<!-- Plugins -->
+	<link href="../assets/css/magnific-popup.css" rel="stylesheet">
+	<link href="../assets/css/owl.carousel.css" rel="stylesheet">
+	<link href="../assets/css/flexslider.css" rel="stylesheet">
+	<link href="../assets/css/animate.min.css" rel="stylesheet">
+
+	<!-- Template core CSS -->
+	<link href="../assets/css/vertical.min.css" rel="stylesheet">
+	<link href="../assets/css/template.css" rel="stylesheet">
+
+	<!-- Google Analytics Tracking -->
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+        ga('create', 'UA-96446060-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+</head>
+<body>
+
+	<!-- PRELOADER -->
+	<div class="page-loader">
+		<div class="img-loader">Loading...
+			<!-- Bcoin logo in SVG -->
+			<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+				viewBox="0 0 200 56" style="enable-background:new 0 0 200 56;" xml:space="preserve">
+			<g id="XMLID_108_">
+				<g id="XMLID_123_">
+					<path id="XMLID_124_" d="M8.4,51.8H3.2V4.2h5.2v19.2h0.8c1.2-2,2.8-3.6,4.8-4.7c2-1.1,4.3-1.6,6.7-1.6c2,0,4,0.4,5.8,1.2
+						c1.8,0.8,3.4,1.9,4.8,3.3c1.4,1.5,2.5,3.2,3.3,5.4s1.2,4.6,1.2,7.3v1.4c0,2.8-0.4,5.2-1.2,7.4c-0.8,2.1-1.9,3.9-3.3,5.4
+						c-1.4,1.5-3,2.6-4.9,3.3s-3.8,1.1-5.9,1.1c-1.1,0-2.2-0.1-3.3-0.4c-1.1-0.3-2.2-0.6-3.2-1.2c-1-0.5-1.9-1.2-2.8-1.9
+						c-0.8-0.7-1.6-1.6-2.1-2.7H8.4V51.8z M19.4,47.7c1.6,0,3.1-0.3,4.4-0.9c1.3-0.6,2.5-1.4,3.5-2.4c1-1,1.8-2.3,2.3-3.8
+						c0.6-1.5,0.8-3.2,0.8-5v-1.4c0-1.8-0.3-3.5-0.8-4.9c-0.6-1.5-1.3-2.7-2.3-3.8c-1-1.1-2.2-1.9-3.5-2.5c-1.4-0.6-2.8-0.9-4.4-0.9
+						c-1.6,0-3,0.3-4.3,0.9c-1.3,0.6-2.5,1.5-3.5,2.6c-1,1.1-1.8,2.4-2.4,3.9c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1
+						c0.6,1.5,1.4,2.8,2.4,3.9s2.2,1.9,3.5,2.5C16.4,47.4,17.9,47.7,19.4,47.7z"/>
+				</g>
+				<g id="XMLID_120_">
+					<path id="XMLID_121_" d="M76.1,39.8c-0.4,1.9-1,3.6-1.8,5.2c-0.9,1.6-2,3-3.3,4.1s-2.9,2.1-4.7,2.7c-1.8,0.6-3.8,1-5.9,1
+						c-2.3,0-4.5-0.4-6.6-1.2c-2.1-0.8-3.9-1.9-5.4-3.4c-1.6-1.5-2.8-3.3-3.7-5.4c-0.9-2.1-1.4-4.6-1.4-7.4v-0.8c0-2.7,0.5-5.2,1.4-7.4
+						c0.9-2.2,2.1-4,3.7-5.5c1.6-1.5,3.4-2.7,5.4-3.5c2.1-0.8,4.3-1.2,6.6-1.2c2.1,0,4,0.3,5.8,1c1.8,0.6,3.3,1.5,4.7,2.7
+						c1.4,1.2,2.5,2.5,3.3,4.1c0.9,1.6,1.5,3.3,1.8,5.2l-5.2,1.2c-0.1-1.2-0.5-2.3-1-3.4c-0.5-1.1-1.2-2.1-2.1-2.9
+						c-0.9-0.8-1.9-1.5-3.2-2c-1.2-0.5-2.7-0.7-4.3-0.7c-1.6,0-3.1,0.3-4.5,0.9c-1.4,0.6-2.6,1.5-3.7,2.6c-1.1,1.1-1.9,2.4-2.5,4
+						c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1c0.6,1.5,1.4,2.8,2.5,3.8c1.1,1,2.3,1.8,3.7,2.4c1.4,0.6,3,0.9,4.6,0.9
+						s3.1-0.3,4.3-0.8c1.2-0.5,2.3-1.2,3.1-2c0.9-0.8,1.6-1.8,2.1-2.9c0.5-1.1,0.9-2.2,1-3.4L76.1,39.8z"/>
+				</g>
+				<g id="XMLID_116_">
+					<path id="XMLID_117_" d="M117.2,35.4c0,2.8-0.5,5.3-1.4,7.5c-0.9,2.2-2.1,4-3.6,5.4c-1.5,1.5-3.3,2.6-5.3,3.4
+						c-2,0.8-4.1,1.2-6.3,1.2c-2.2,0-4.3-0.4-6.3-1.2c-2-0.8-3.8-1.9-5.3-3.4c-1.5-1.5-2.7-3.3-3.6-5.4c-0.9-2.2-1.4-4.6-1.4-7.5v-0.8
+						c0-2.8,0.5-5.2,1.4-7.4c0.9-2.2,2.1-4,3.7-5.5c1.5-1.5,3.3-2.6,5.3-3.4c2-0.8,4.1-1.2,6.3-1.2c2.2,0,4.3,0.4,6.3,1.2
+						c2,0.8,3.8,1.9,5.3,3.4c1.5,1.5,2.8,3.3,3.7,5.5c0.9,2.2,1.4,4.6,1.4,7.4V35.4z M100.6,47.7c1.6,0,3.1-0.3,4.4-0.9
+						c1.4-0.6,2.5-1.4,3.6-2.5c1-1.1,1.8-2.4,2.4-3.9c0.6-1.5,0.9-3.2,0.9-5.1v-0.8c0-1.8-0.3-3.5-0.9-5c-0.6-1.5-1.4-2.8-2.4-3.9
+						c-1-1.1-2.2-1.9-3.6-2.6c-1.4-0.6-2.8-0.9-4.4-0.9c-1.6,0-3,0.3-4.4,0.9c-1.4,0.6-2.6,1.5-3.6,2.6c-1,1.1-1.8,2.4-2.4,3.9
+						c-0.6,1.5-0.9,3.2-0.9,5v0.8c0,1.9,0.3,3.6,0.9,5.1c0.6,1.5,1.4,2.8,2.4,3.9c1,1.1,2.2,1.9,3.6,2.5C97.5,47.5,99,47.7,100.6,47.7z
+						"/>
+				</g>
+				<g id="XMLID_112_">
+					<path id="XMLID_113_" d="M127.6,46.9h11.6V23h-10.4v-4.9h15.6v28.9h10.8v4.9h-27.6V46.9z M137.1,8c0-1.3,0.5-2.4,1.4-3.4
+						c0.9-0.9,2-1.4,3.3-1.4c1.3,0,2.4,0.5,3.3,1.4c0.9,0.9,1.4,2.1,1.4,3.4c0,1.3-0.5,2.4-1.4,3.4c-0.9,0.9-2,1.4-3.3,1.4
+						c-1.3,0-2.4-0.5-3.3-1.4C137.5,10.4,137.1,9.3,137.1,8z"/>
+				</g>
+				<g id="XMLID_109_">
+					<path id="XMLID_110_" d="M172.8,51.8h-5.2V18.1h5.2v5.7h0.8c2-4.4,5.6-6.7,10.7-6.7c3.8,0,6.9,1.2,9.1,3.6
+						c2.3,2.4,3.4,6.1,3.4,10.9v20.2h-5.2V32.8c0-3.5-0.8-6.2-2.3-8c-1.6-1.8-3.7-2.7-6.3-2.7c-3.2,0-5.6,1.1-7.4,3.3s-2.7,5.1-2.7,8.8
+						V51.8z"/>
+				</g>
+			</g>
+			</svg>
+
+
+		</div>
+	</div>
+	<!-- END PRELOADER -->
+
+	<!-- HEADER -->
+	<header class="header js-stick">
+			<div class="container">
+				<!-- YOUR LOGO HERE -->
+				<div class="inner-header">
+					<a class="inner-brand" href="../index.html">
+						<img class="brand-light" src="../assets/images/logo-light.png" width="100" alt="">
+						<img class="brand-dark" src="../assets/images/logo-dark.png" width="100" alt="">
+					</a>
+				</div>
+
+				<!-- OPEN MOBILE MENU -->
+				<div class="main-nav-toggle">
+					<div class="nav-icon-toggle" data-toggle="collapse" data-target="#custom-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</div>
+				</div>
+
+				<!-- WIDGETS MENU -->
+				<div class="inner-header pull-right hide-me">
+					<div class="menu-extras clearfix">
+
+						<!-- TELEGRAM LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://t.me/bcoinorg" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Telegram!">
+									<img src="../assets/images/telegram-app.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<!-- STACK EXCHANGE LINK -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://bitcoin.stackexchange.com/questions/tagged/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Questions! Checkout Stack Exchange.">
+									<img src="../assets/images/stack-exchange-icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<!-- GITHUB STUFF -->
+						<div class="menu-item">
+							<div class="">
+								<a href="https://github.com/bcoin-org/bcoin" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Visit bcoin on GitHub to see the code!">
+									<img src="../assets/images/github_icon.svg" width="18" height="18"/>
+									<span class=""></span>
+								</a>
+                            </div>
+						</div>
+
+						<div class="menu-item">
+                            <div class="ghbuttons">
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin" data-icon="octicon-star" data-count-href="/bcoin-org/bcoin/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star bcoin-org/bcoin on GitHub">Star</a>
+                                <a class="github-button" href="https://github.com/bcoin-org/bcoin/fork" data-icon="octicon-repo-forked" data-count-href="/bcoin-org/bcoin/network" data-show-count="true" data-count-aria-label="# forks on GitHub" aria-label="Fork bcoin-org/bcoin on GitHub">Fork</a>
+                            </div>
+                        </div>
+
+
+
+
+					</div>
+				</div>
+
+				<!-- MAIN MENU -->
+				<nav id="custom-collapse" class="main-nav collapse clearfix">
+					<ul class="inner-nav pull-right">
+
+						<!-- HOME -->
+						<li><a href="../index.html">Home</a></li>
+						<!-- END HOME -->
+
+						<!-- FEATURES -->
+						<li><a href="../index.html#features">What is Bcoin</a></li>
+						<!-- END FEATURES -->
+
+						<!-- GUIDES -->
+						<li><a href="../guides.html">Guides</a></li>
+						<!-- GUIDES -->
+
+						<!-- API REFERENCE - newer, how to interact once you're setup -->
+						<li><a href="../api-docs/index.html">API Docs</a></li>
+						<!-- END API -->
+
+						<!-- FULL DOCS - older, full reference
+						<li><a href="https://bcoin.io/docs/index.html">Docs</a></li> -->
+						<!-- END DOCS -->
+
+						<!-- DIVIDER
+						<li><a>&nbsp;</a></li>
+
+						<li><a href="#">All Demos</a></li>-->
+
+					</ul>
+				</nav>
+
+			</div>
+		</header>
+	<!-- END HEADER -->
+
+	<!-- WRAPPER -->
+	<div class="wrapper">
+
+		<!-- PAGE TITLE -->
+		<section class="module-sm bg-white-dark" data-background="../assets/images/bg-header.jpg">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12 text-center">
+
+						<h2 class="montserrat text-uppercase m-b-10"><span class="text-highlight-black" style="line-height: 1.5;">&nbsp;Guides &nbsp;and &nbsp;Videos&nbsp;</span></h2>
+
+					</div>
+				</div>
+
+			</div>
+		</section>
+		<!-- END PAGE TITLE -->
+
+		<!-- GUIDES/TUTORIALS -->
+		<section class="module" style="padding-top:70px !important;">
+			<div class="container">
+
+				<div class="row">
+					<!-- START OF ARTICLE CONTAINER -->
+					<div class="col-sm-9 blog-content post-thumbnail">
+						<!-- POST IMAGE -->
+						<article class="post format-image">
+							<div class="row">
+								<!--<div class="col-sm-5">
+									<div class="post-preview">
+										<a href="#"><img src="../assets/images/guides/get-started.png" alt=""></a>
+									</div>
+								</div>-->
+
+								<!-- after re-enabling the above code, change the col-sm below to col-sm-7 -->
+								<div class="panel-group">
+									<div class="col-sm-12 panel panel-default">
+										<div class="post-content" style="color:#000;">
+					<!-- START OF GUIDE -->
+<h2 class="post-title panel-title" id="multisig-on-the-command-line">Multisig on the command line</h2><ul class="post-meta"><li class="author">By Matthew Zipkin</li></ul><h2 id="introduction">Introduction</h2><p>The goal of this guide is to demonstrate a multi-signature collaboration between bcoin
+users who may or may not trust each other. We will use only terminal commands to 
+illustrate the process. For a deeper dive into how multisig transactions are constructed
+in JavaScript with the library, see
+<a href="https://bcoin.io/guides/multisig-tx.html">Creating Multi-signature Transactions</a>.
+All the commands in this guide (and so many others!) are described in the
+<a href="https://bcoin.io/api-docs">API docs</a>. There are important details in those docs
+regarding API keys, wallet tokens, and other security measures that are essential
+for using bcoin on mainnet. For this guide, we will just play in regtest mode and
+skip over those steps.</p>
+<h2 id="let#39;s-throw-a-party">Let&#39;s throw a party</h2><p>We&#39;re inviting 5 of our best friends: Alice, Bob, Charlie, David, and Erica.
+Each of them will create a multisig wallet on their own computers, and they&#39;ll
+share their wallet&#39;s default account&#39;s
+<a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Extended_keys">extended public key</a>
+with each other. Once everyone knows everyone else&#39;s extended public key, they will each be
+able to derive multisig receive addresses. After they receive some money, the group will be able
+to spend their Bitcoin as long as THREE OF THE FIVE participants agree and sign.</p>
+<h2 id="creating-wallets">Creating wallets</h2><p>Start by launching <code>bcoin</code> in <code>regtest</code> mode. We&#39;ll use 
+<a href="https://github.com/bcoin-org/bcoin/blob/master/docs/configuration.md">environment variables</a>
+so we don&#39;t have to type the network parameter each time.</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ <span class="token function">export</span> BCOIN_NETWORK<span class="token operator">=</span>regtest
+$ bcoin --daemon</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Then we&#39;ll create Alice&#39;s wallet. There are 
+<a href="https://bcoin.io/api-docs/#create-a-wallet">many options available</a>
+for wallet creation, but all Alice needs to do is set up her wallet as a 3-of-5.
+We&#39;ll also specify Segregated Witness.</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bwallet-cli mkwallet --id<span class="token operator">=</span>Alice --witness<span class="token operator">=</span>true --m<span class="token operator">=</span>3 --n<span class="token operator">=</span>5</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Right away, if Alice checks her wallet&#39;s default account, she&#39;ll notice it has not
+been initialized yet. That&#39;s because it is waiting for more keys to complete the
+multisig policy:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">bwallet-cli --id<span class="token operator">=</span>Alice account get default
+
+<span class="token punctuation">{</span>
+  <span class="token string">"name"</span><span class="token keyword">:</span> <span class="token string">"default"</span>,
+  <span class="token string">"initialized"</span><span class="token keyword">:</span> false,
+  <span class="token string">"witness"</span><span class="token keyword">:</span> true,
+  <span class="token string">"watchOnly"</span><span class="token keyword">:</span> false,
+  <span class="token string">"type"</span><span class="token keyword">:</span> <span class="token string">"multisig"</span>,
+  <span class="token string">"m"</span><span class="token keyword">:</span> 3,
+  <span class="token string">"n"</span><span class="token keyword">:</span> 5,
+  <span class="token string">"accountIndex"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"receiveDepth"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"changeDepth"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"nestedDepth"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"lookahead"</span><span class="token keyword">:</span> 10,
+  <span class="token string">"receiveAddress"</span><span class="token keyword">:</span> null,
+  <span class="token string">"changeAddress"</span><span class="token keyword">:</span> null,
+  <span class="token string">"nestedAddress"</span><span class="token keyword">:</span> null,
+  <span class="token string">"accountKey"</span><span class="token keyword">:</span> <span class="token string">"tpubDDXZKjYarBCHxq9GHQHfRjRVQm8DuVAu33LoigMfHJri1ynqsWVBQbMWQbFU5nT3vabniRrtgJtaDEqnpB9GKQTyac5SbUw4589SvwrYKqQ"</span>,
+  <span class="token string">"keys"</span><span class="token keyword">:</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>,
+  <span class="token string">"balance"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"tx"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"coin"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"unconfirmed"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"confirmed"</span><span class="token keyword">:</span> 0
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Notice how she DOES have an <code>accountKey</code> (or &quot;xpub&quot; -- on networks other than main it&#39;s a <code>tpub</code>).
+When bcoin created this wallet, it generated entropy and created a
+<a href="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki">BIP44 master private key</a>
+for Alice. That will be the key she uses to sign the multisig transaction if she approves.</p>
+<p>We can repeat the process for the four other friends:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bwallet-cli mkwallet --id<span class="token operator">=</span>Bob --witness<span class="token operator">=</span>true --m<span class="token operator">=</span>3 --n<span class="token operator">=</span>5
+
+$ bwallet-cli mkwallet --id<span class="token operator">=</span>Charlie --witness<span class="token operator">=</span>true  --m<span class="token operator">=</span>3 --n<span class="token operator">=</span>5
+
+$ bwallet-cli mkwallet --id<span class="token operator">=</span>David --witness<span class="token operator">=</span>true  --m<span class="token operator">=</span>3 --n<span class="token operator">=</span>5
+
+$ bwallet-cli mkwallet --id<span class="token operator">=</span>Erica --witness<span class="token operator">=</span>true  --m<span class="token operator">=</span>3 --n<span class="token operator">=</span>5</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>After generating each wallet we can get the <code>accountKey</code> from each wallet&#39;s default account:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bwallet-cli --id<span class="token operator">=</span>Alice account get default <span class="token operator">|</span> jq -r .accountKey
+tpubDDXZKjYarBCHxq9GHQHfRjRVQm8DuVAu33LoigMfHJri1ynqsWVBQbMWQbFU5nT3vabniRrtgJtaDEqnpB9GKQTyac5SbUw4589SvwrYKqQ
+
+$ bwallet-cli --id<span class="token operator">=</span>Bob account get default <span class="token operator">|</span> jq -r .accountKey
+tpubDDpd2qFrbXW35YkebSqvihtEsUW9ynmpy61FeVmquPzYzYmFupmabBnHwhJjJighrt2Cmss2Ndg7SJ1iXLuQvZia8KCRWvPTBEacpx6BARf
+
+$ bwallet-cli --id<span class="token operator">=</span>Charlie account get default <span class="token operator">|</span> jq -r .accountKey
+tpubDDtiGfAVwUAz2wHGh24TCsk6smz8QbHLqr7swEjS8YiEm6BczQPjqRVBuEqPefUCLur1U2VB4P8TUXQg9vXqzQdUx8bynP574sbzuADmRff
+
+$ bwallet-cli --id<span class="token operator">=</span>David account get default <span class="token operator">|</span> jq -r .accountKey
+tpubDDGK1KoY3YQ1xSwz4AyigwWPickr4mFVtRxu7ZZMQz5BDFGNF6SkgJq2kEfTzuudZVgy84rMVZeMv8GDVod2AGxgZSy3fBpWHpYHTEdUkZc
+
+$ bwallet-cli --id<span class="token operator">=</span>Erica account get default <span class="token operator">|</span> jq -r .accountKey
+tpubDCGKejeBy1oMoZ57NvG2u1X7pffLHkKxew1RAohEzaoPxSSXPdy7st8caWdwymqStLSXxsC4cvKcm9FSLS2PNEcS5rFHo5ccL9xCecqkQth</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p><em>(I&#39;m using <a href="https://stedolan.github.io/jq/">jq</a> here to keep the output minimal, but it&#39;s optional)</em></p>
+<p>Now each friend needs to import everyone else&#39;s public keys into their own wallet.
+This will be a bit tedious for us because we have to do it for everybody but
+remember in practice, each participant only needs to do this once. Here&#39;s what Alice
+types:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bwallet-cli --id<span class="token operator">=</span>Alice --account<span class="token operator">=</span>default shared add tpubDDpd2qFrbXW35YkebSqvihtEsUW9ynmpy61FeVmquPzYzYmFupmabBnHwhJjJighrt2Cmss2Ndg7SJ1iXLuQvZia8KCRWvPTBEacpx6BARf
+Added key.
+
+$ bwallet-cli --id<span class="token operator">=</span>Alice --account<span class="token operator">=</span>default shared add tpubDDtiGfAVwUAz2wHGh24TCsk6smz8QbHLqr7swEjS8YiEm6BczQPjqRVBuEqPefUCLur1U2VB4P8TUXQg9vXqzQdUx8bynP574sbzuADmRff
+Added key.
+
+$ bwallet-cli --id<span class="token operator">=</span>Alice --account<span class="token operator">=</span>default shared add tpubDDGK1KoY3YQ1xSwz4AyigwWPickr4mFVtRxu7ZZMQz5BDFGNF6SkgJq2kEfTzuudZVgy84rMVZeMv8GDVod2AGxgZSy3fBpWHpYHTEdUkZc
+Added key.
+
+$ bwallet-cli --id<span class="token operator">=</span>Alice --account<span class="token operator">=</span>default shared add tpubDCGKejeBy1oMoZ57NvG2u1X7pffLHkKxew1RAohEzaoPxSSXPdy7st8caWdwymqStLSXxsC4cvKcm9FSLS2PNEcS5rFHo5ccL9xCecqkQth
+Added key.</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Now Alice&#39;s wallet is fully initialized. She can generate an endless series of receive
+(and change) addresses and watch the blockchain for transactions!</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bwallet-cli --id<span class="token operator">=</span>Alice --account<span class="token operator">=</span>default account get
+<span class="token punctuation">{</span>
+  <span class="token string">"name"</span><span class="token keyword">:</span> <span class="token string">"default"</span>,
+  <span class="token string">"initialized"</span><span class="token keyword">:</span> true,
+  <span class="token string">"witness"</span><span class="token keyword">:</span> true,
+  <span class="token string">"watchOnly"</span><span class="token keyword">:</span> false,
+  <span class="token string">"type"</span><span class="token keyword">:</span> <span class="token string">"multisig"</span>,
+  <span class="token string">"m"</span><span class="token keyword">:</span> 3,
+  <span class="token string">"n"</span><span class="token keyword">:</span> 5,
+  <span class="token string">"accountIndex"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"receiveDepth"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"changeDepth"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"nestedDepth"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"lookahead"</span><span class="token keyword">:</span> 10,
+  <span class="token string">"receiveAddress"</span><span class="token keyword">:</span> <span class="token string">"bcrt1q59779rsw4267cfts6f0q2nhth49casntju7gnf6n52uj75ttzwys3zph8r"</span>,
+  <span class="token string">"changeAddress"</span><span class="token keyword">:</span> <span class="token string">"bcrt1qkefmrhdp2sqgggflfna8uzy72fhj8d6fmg7u3hsft9lvpp0wlmtq7uvkml"</span>,
+  <span class="token string">"nestedAddress"</span><span class="token keyword">:</span> <span class="token string">"2MvGMq49SBDaH7C9wg89aEDZrjBxj9eqTDH"</span>,
+  <span class="token string">"accountKey"</span><span class="token keyword">:</span> <span class="token string">"tpubDDXZKjYarBCHxq9GHQHfRjRVQm8DuVAu33LoigMfHJri1ynqsWVBQbMWQbFU5nT3vabniRrtgJtaDEqnpB9GKQTyac5SbUw4589SvwrYKqQ"</span>,
+  <span class="token string">"keys"</span><span class="token keyword">:</span> <span class="token punctuation">[</span>
+    <span class="token string">"tpubDCGKejeBy1oMoZ57NvG2u1X7pffLHkKxew1RAohEzaoPxSSXPdy7st8caWdwymqStLSXxsC4cvKcm9FSLS2PNEcS5rFHo5ccL9xCecqkQth"</span>,
+    <span class="token string">"tpubDDGK1KoY3YQ1xSwz4AyigwWPickr4mFVtRxu7ZZMQz5BDFGNF6SkgJq2kEfTzuudZVgy84rMVZeMv8GDVod2AGxgZSy3fBpWHpYHTEdUkZc"</span>,
+    <span class="token string">"tpubDDpd2qFrbXW35YkebSqvihtEsUW9ynmpy61FeVmquPzYzYmFupmabBnHwhJjJighrt2Cmss2Ndg7SJ1iXLuQvZia8KCRWvPTBEacpx6BARf"</span>,
+    <span class="token string">"tpubDDtiGfAVwUAz2wHGh24TCsk6smz8QbHLqr7swEjS8YiEm6BczQPjqRVBuEqPefUCLur1U2VB4P8TUXQg9vXqzQdUx8bynP574sbzuADmRff"</span>
+  <span class="token punctuation">]</span>,
+  <span class="token string">"balance"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"tx"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"coin"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"unconfirmed"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"confirmed"</span><span class="token keyword">:</span> 0
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Note that the status indicates <code>&quot;watchOnly&quot;: false</code>. Normally in bcoin a &quot;watch-only&quot;
+wallet only has public keys. It can &quot;watch&quot; a set of addresses, but not spend. To
+learn more about this, see our guide
+<a href="https://bcoin.io/guides/wallets.html">Wallets and Accounts and Keys, Oh My!</a>
+In this case, Alice can not spend from this wallet by herself, despite the wallet
+not being &quot;watch-only&quot;. She only has one private key (and four public keys) per address.</p>
+<p>Bob, Charlie, David, and Erica all go through the same process of importing the other
+keys. In the end, all five participants will have the same wallet structure, and
+<strong>identical</strong> addresses. Assuming each person is running their own bcoin
+full node on their own secure machine, they will now have a totally decentralized
+multi-signature wallet! The participants do not need to trust each other to set
+up or use this scheme. Some participants may even be using a hardware wallet like
+a Ledger connected to their bcoin full node with the
+<a href="https://github.com/bcoin-org/bledger">bledger</a> package.</p>
+<h2 id="let#39;s-spend-some-money">Let&#39;s spend some money (as a team!)</h2><p>So now we have five wallets.
+Each wallet has its own account <code>xprv</code> that can generate many private and public
+key pairs. The private keys are used to add the participant&#39;s signature to transactions.
+Each wallet also has an account <code>xpub</code> from each of the four other participants.
+These can be used to derive the other 4 public keys used in each multisig address.
+This structure allows each participant to generate the same receiving address while
+only being able to add their own unique signature to transactions.</p>
+<p>All five wallets show the same <code>receiveAddress</code>. Let&#39;s fund it!
+The easiest way to do that in regtest mode is by generating blocks:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bcoin-cli rpc generatetoaddress 100 bcrt1q59779rsw4267cfts6f0q2nhth49casntju7gnf6n52uj75ttzwys3zph8r</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>All five wallets will now show the same balance. Here&#39;s Bob &amp; Charlie as examples:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bwallet-cli --id<span class="token operator">=</span>Bob balance
+<span class="token punctuation">{</span>
+  <span class="token string">"account"</span><span class="token keyword">:</span> -1,
+  <span class="token string">"tx"</span><span class="token keyword">:</span> 100,
+  <span class="token string">"coin"</span><span class="token keyword">:</span> 100,
+  <span class="token string">"unconfirmed"</span><span class="token keyword">:</span> 500000000000,
+  <span class="token string">"confirmed"</span><span class="token keyword">:</span> 500000000000
+<span class="token punctuation">}</span>
+$ bwallet-cli --id<span class="token operator">=</span>Charlie balance
+<span class="token punctuation">{</span>
+  <span class="token string">"account"</span><span class="token keyword">:</span> -1,
+  <span class="token string">"tx"</span><span class="token keyword">:</span> 100,
+  <span class="token string">"coin"</span><span class="token keyword">:</span> 100,
+  <span class="token string">"unconfirmed"</span><span class="token keyword">:</span> 500000000000,
+  <span class="token string">"confirmed"</span><span class="token keyword">:</span> 500000000000
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>So, I am the host of this party and I need everyone to chip in for the pizza.
+Here&#39;s my personal wallet address: <code>mpEwzcAKTsuGMM7hV49Mh3Ge7r933S6uYd</code>, and I
+need 1.23456789 BTC from the group. This is where it gets interesting:</p>
+<ul>
+<li><p>ANY single participant can create a transaction spending from the multisig address.
+This transaction will be created and signed by that first participant. This is often
+called a &quot;proposal&quot; in multisig wallet schemes.</p>
+</li>
+<li><p>This transaction with its single signature is NOT valid and will be rejected
+from the Bitcoin network.</p>
+</li>
+<li><p>Because our scheme is 3-of-5, we only need to get two other participants to add
+their signatures before the transaction is valid.</p>
+</li>
+<li><p>Although bcoin does not currently comply with the proposed standard
+<a href="https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki">BIP174 Partially Signed Bitcoin Transactions</a>
+the participants can pass around these blobs in the same way.</p>
+</li>
+</ul>
+<p>Erica is the most responsible friend in the group. She starts off the protocol
+by creating a transaction to me:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bwallet-cli --id<span class="token operator">=</span>Erica mktx --address<span class="token operator">=</span>mpEwzcAKTsuGMM7hV49Mh3Ge7r933S6uYd --value<span class="token operator">=</span>1.23456789
+
+<span class="token punctuation">{</span>
+  <span class="token string">"hash"</span><span class="token keyword">:</span> <span class="token string">"659800f1c5a8780ec2215afebd4e3f285ca999027ee3a789ad5655786fd04ead"</span>,
+  <span class="token string">"witnessHash"</span><span class="token keyword">:</span> <span class="token string">"3c96d96668caf81c1b797863aeda9d6bd843e461da4511db18e4961f4507c8c2"</span>,
+  <span class="token string">"fee"</span><span class="token keyword">:</span> 4540,
+  <span class="token string">"rate"</span><span class="token keyword">:</span> 23645,
+  <span class="token string">"mtime"</span><span class="token keyword">:</span> 1572014394,
+  <span class="token string">"version"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"inputs"</span><span class="token keyword">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span>
+      <span class="token string">"prevout"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+        <span class="token string">"hash"</span><span class="token keyword">:</span> <span class="token string">"a74c5a27a9d9ac13fd502dad0ed4971c40524fb7a7ca002fc30470997de9622c"</span>,
+        <span class="token string">"index"</span><span class="token keyword">:</span> 0
+      <span class="token punctuation">}</span>,
+      <span class="token string">"script"</span><span class="token keyword">:</span> <span class="token string">""</span>,
+      <span class="token string">"witness"</span><span class="token keyword">:</span> <span class="token punctuation">[</span>
+        <span class="token string">""</span>,
+        <span class="token string">""</span>,
+        <span class="token string">"3045022100804216dc296b0c0c0f1a1ed54751c60a349518f3d6a558927be0099ecdf10a3a022013cf0e5ddaf99b0d94c00e69c875f43f034ac7fb934b4abfb75f91e2a72b966d01"</span>,
+        <span class="token string">""</span>,
+        <span class="token string">""</span>,
+        <span class="token string">""</span>,
+        <span class="token string">"53210242705b9570ec3c193ba67528ff38ee272f37b14ef33564e8d1b33812efb3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d738406338776750f86424c2ec303c21036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c28814456455ae"</span>
+      <span class="token punctuation">]</span>,
+      <span class="token string">"sequence"</span><span class="token keyword">:</span> 4294967295,
+      <span class="token string">"coin"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+        <span class="token string">"version"</span><span class="token keyword">:</span> 1,
+        <span class="token string">"height"</span><span class="token keyword">:</span> 1,
+        <span class="token string">"value"</span><span class="token keyword">:</span> 5000000000,
+        <span class="token string">"script"</span><span class="token keyword">:</span> <span class="token string">"0020a17de28e0eaab5ec2570d25e054eebbd4b8ec26b973c89a753a2b92f516b1389"</span>,
+        <span class="token string">"address"</span><span class="token keyword">:</span> <span class="token string">"bcrt1q59779rsw4267cfts6f0q2nhth49casntju7gnf6n52uj75ttzwys3zph8r"</span>,
+        <span class="token string">"coinbase"</span><span class="token keyword">:</span> <span class="token boolean">true</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">]</span>,
+  <span class="token string">"outputs"</span><span class="token keyword">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span>
+      <span class="token string">"value"</span><span class="token keyword">:</span> 123456789,
+      <span class="token string">"script"</span><span class="token keyword">:</span> <span class="token string">"76a9145fb239be6a09c81b43591a7bbf5857424438052b88ac"</span>,
+      <span class="token string">"address"</span><span class="token keyword">:</span> <span class="token string">"mpEwzcAKTsuGMM7hV49Mh3Ge7r933S6uYd"</span>
+    <span class="token punctuation">}</span>,
+    <span class="token punctuation">{</span>
+      <span class="token string">"value"</span><span class="token keyword">:</span> 4876538671,
+      <span class="token string">"script"</span><span class="token keyword">:</span> <span class="token string">"0020b653b1dda1540084213f4cfa7e089e526f23b749da3dc8de09597ec085eefed6"</span>,
+      <span class="token string">"address"</span><span class="token keyword">:</span> <span class="token string">"bcrt1qkefmrhdp2sqgggflfna8uzy72fhj8d6fmg7u3hsft9lvpp0wlmtq7uvkml"</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">]</span>,
+  <span class="token string">"locktime"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"hex"</span><span class="token keyword">:</span> <span class="token string">"010000000001012c62e97d997004c32f00caa7b74f52401c97d40ead2d50fd13acd9a9275a4ca70000000000ffffffff0215cd5b07000000001976a9145fb239be6a09c81b43591a7bbf5857424438052b88ac2f13aa2201000000220020b653b1dda1540084213f4cfa7e089e526f23b749da3dc8de09597ec085eefed6070000483045022100804216dc296b0c0c0f1a1ed54751c60a349518f3d6a558927be0099ecdf10a3a022013cf0e5ddaf99b0d94c00e69c875f43f034ac7fb934b4abfb75f91e2a72b966d01000000ad53210242705b9570ec3c193ba67528ff38ee272f37b14ef33564e8d1b33812efb3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d738406338776750f86424c2ec303c21036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c28814456455ae00000000"</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Notice how the witness in the input of this transaction has several empty placeholders.
+When bcoin creates a multisig transaction, it places null bytes (<code>0x00</code>) where each
+signature will eventually go. The signatures must be placed in the same order as the public
+keys in the redeem script, which is why Erica&#39;s signature is not the first on the stack.
+This lexicographical ordering of public keys in multi-signature redeem scripts is an
+<a href="https://github.com/bitcoin/bips/blob/master/bip-0067.mediawiki">accepted standard</a>
+in the Bitcoin development community.</p>
+<p>The last item in the witness stack is the redeem script, and we can take a quick
+peek at that like this:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bcoin-cli rpc decodescript 53210242705b9570ec3c193ba67528ff38ee272f37b14ef33564e8d1b33812efb3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d738406338776750f86424c2ec303c21036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c28814456455ae
+
+<span class="token punctuation">{</span>
+  <span class="token string">"asm"</span><span class="token keyword">:</span> <span class="token string">"OP_3 0242705b9570ec3c193ba67528ff38ee272f37b14ef33564e8d1b33812efb3ad81 02bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c 02d9f1f9f3214b64b31ef82c16376283e438d738406338776750f86424c2ec303c 036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a 039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c288144564 OP_5 OP_CHECKMULTISIG"</span>,
+  <span class="token string">"type"</span><span class="token keyword">:</span> <span class="token string">"MULTISIG"</span>,
+  <span class="token string">"reqSigs"</span><span class="token keyword">:</span> 3,
+  <span class="token string">"addresses"</span><span class="token keyword">:</span> <span class="token punctuation">[</span>
+    <span class="token string">"2NGERC5oyjs2NY4HMvPFQXazAj6JRZRFnua"</span>
+  <span class="token punctuation">]</span>,
+  <span class="token string">"p2sh"</span><span class="token keyword">:</span> <span class="token string">"2NGERC5oyjs2NY4HMvPFQXazAj6JRZRFnua"</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p><em>You may notice that the public keys in the redeem script are in lexicographical order!</em></p>
+<p>Let&#39;s say Erica tried to make a unilateral decision here and broadcast this transaction
+with only her signature -- what would happen? The <code>hex</code> at the bottom of the JSON
+result above is the serialized transaction in its raw form, let&#39;s try to send it
+to the network:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bcoin-cli broadcast 010000000001012c62e97d997004c32f00caa7b74f52401c97d40ead2d50fd13acd9a9275a4ca70000000000ffffffff0215cd5b07000000001976a9145fb239be6a0
+9c81b43591a7bbf5857424438052b88ac2f13aa2201000000220020b653b1dda1540084213f4cfa7e089e526f23b749da3dc8de09597ec085eefed6070000483045022100804216dc296b0c0c0f1a
+1ed54751c60a349518f3d6a558927be0099ecdf10a3a022013cf0e5ddaf99b0d94c00e69c875f43f034ac7fb934b4abfb75f91e2a72b966d01000000ad53210242705b9570ec3c193ba67528ff38e
+e272f37b14ef33564e8d1b33812efb3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d738406338776750
+f86424c2ec303c21036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c28814456455ae000
+00000
+
+<span class="token punctuation">[</span>error<span class="token punctuation">]</span> <span class="token punctuation">(</span>node<span class="token punctuation">)</span> Verification failure: non-mandatory-script-verify-flag <span class="token punctuation">(</span>code<span class="token operator">=</span>nonstandard score<span class="token operator">=</span>0 hash<span class="token operator">=</span>659800f1c5a8780ec2215afebd4e3f285ca999027ee3a789ad5655786fd04ead<span class="token punctuation">)</span>
+<span class="token punctuation">[</span>warning<span class="token punctuation">]</span> <span class="token punctuation">(</span>node<span class="token punctuation">)</span> Verification failed <span class="token keyword">for</span> tx: 659800f1c5a8780ec2215afebd4e3f285ca999027ee3a789ad5655786fd04ead.</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Ok then! Let&#39;s get a few more signatures. Maybe Alice and Bob are busy engaging in
+some other cryptography demonstration (they always are) how about Charlie and David?</p>
+<p>Charlie signs first, using the raw hex from Alice&#39;s transaction:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bwallet-cli --id<span class="token operator">=</span>Charlie sign 010000000001012c62e97d997004c32f00caa7b74f52401c97d40ead2d50fd13acd9a9275a4ca70000000000ffffffff0215cd5b07000000001976a9145
+fb239be6a09c81b43591a7bbf5857424438052b88ac2f13aa2201000000220020b653b1dda1540084213f4cfa7e089e526f23b749da3dc8de09597ec085eefed6070000483045022100804216dc29
+6b0c0c0f1a1ed54751c60a349518f3d6a558927be0099ecdf10a3a022013cf0e5ddaf99b0d94c00e69c875f43f034ac7fb934b4abfb75f91e2a72b966d01000000ad53210242705b9570ec3c193ba
+67528ff38ee272f37b14ef33564e8d1b33812efb3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d73840
+6338776750f86424c2ec303c21036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c288144
+56455ae00000000</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Notice how the witness stack is filling up!</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash"><span class="token string">"witness"</span><span class="token keyword">:</span> <span class="token punctuation">[</span>
+  <span class="token string">""</span>,
+  <span class="token string">""</span>,
+  <span class="token string">"3045022100804216dc296b0c0c0f1a1ed54751c60a349518f3d6a558927be0099ecdf10a3a022013cf0e5ddaf99b0d94c00e69c875f43f034ac7fb934b4abfb75f91e2a72b966d01"</span>,
+  <span class="token string">""</span>,
+  <span class="token string">"3045022100a2ea840052c150fe9f260ee9ed27731a11e90722ad10bf2eb175f5b2e8002fad02206d600df6e95ca53cb67640f21c8d6f62f4290b03737d0f9606c8762d21ce63a601"</span>,
+  <span class="token string">""</span>,
+  <span class="token string">"53210242705b9570ec3c193ba67528ff38ee272f37b14ef33564e8d1b33812efb3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d738406338776750f86424c2ec303c21036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c28814456455ae"</span>
+<span class="token punctuation">]</span>,</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Now David signs, <strong>using the raw hex from Charlie&#39;s transaction</strong>:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$  bwallet-cli --id<span class="token operator">=</span>David sign 010000000001012c62e97d997004c32f00caa7b74f52401c97d40ead2d50fd13acd9a9275a4ca70000000000ffffffff0215cd5b07000000001976a9145fb239be6a09c81b43591a7bbf5857424438052b88ac2f13aa2201000000220020b653b1dda1540084213f4cfa7e089e526f23b749da3dc8de09597ec085eefed6070000483045022100804216dc296b0c0c0f1a1ed54751c60a349518f3d6a558927be0099ecdf10a3a022013cf0e5ddaf99b0d94c00e69c875f43f034ac7fb934b4abfb75f91e2a72b966d0100483045022100a2ea840052c150fe9f260ee9ed27731a11e90722ad10bf2eb175f5b2e8002fad02206d600df6e95ca53cb67640f21c8d6f62f4290b03737d0f9606c8762d21ce63a60100ad53210242705b9570ec3c193ba67528ff38ee272f37b14ef33564e8d1b33812efb3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d738406338776750f86424c2ec303c21036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c28814456455ae00000000
+
+<span class="token punctuation">{</span>
+  <span class="token string">"hash"</span><span class="token keyword">:</span> <span class="token string">"659800f1c5a8780ec2215afebd4e3f285ca999027ee3a789ad5655786fd04ead"</span>,
+  <span class="token string">"witnessHash"</span><span class="token keyword">:</span> <span class="token string">"b4fde487440e4f6dae04e664d6ab21a53c7bdbaea8e32298ea2578a818eea45f"</span>,
+  <span class="token string">"fee"</span><span class="token keyword">:</span> 4540,
+  <span class="token string">"rate"</span><span class="token keyword">:</span> 19912,
+  <span class="token string">"mtime"</span><span class="token keyword">:</span> 1572014872,
+  <span class="token string">"version"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"inputs"</span><span class="token keyword">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span>
+      <span class="token string">"prevout"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+        <span class="token string">"hash"</span><span class="token keyword">:</span> <span class="token string">"a74c5a27a9d9ac13fd502dad0ed4971c40524fb7a7ca002fc30470997de9622c"</span>,
+        <span class="token string">"index"</span><span class="token keyword">:</span> 0
+      <span class="token punctuation">}</span>,
+      <span class="token string">"script"</span><span class="token keyword">:</span> <span class="token string">""</span>,
+      <span class="token string">"witness"</span><span class="token keyword">:</span> <span class="token punctuation">[</span>
+        <span class="token string">""</span>,
+        <span class="token string">"3045022100804216dc296b0c0c0f1a1ed54751c60a349518f3d6a558927be0099ecdf10a3a022013cf0e5ddaf99b0d94c00e69c875f43f034ac7fb934b4abfb75f91e2a72b966d01"</span>,
+        <span class="token string">"3045022100f8bd1afdbd090166eb62905c48d05b3d7dbbced6fcb11820b17e7c19fb580aa402203f2b12929ec996611ac16ab39678309d8d3b750bc292835f4eb9e89affe7028a01"</span>,
+        <span class="token string">"3045022100a2ea840052c150fe9f260ee9ed27731a11e90722ad10bf2eb175f5b2e8002fad02206d600df6e95ca53cb67640f21c8d6f62f4290b03737d0f9606c8762d21ce63a601"</span>,
+        <span class="token string">"53210242705b9570ec3c193ba67528ff38ee272f37b14ef33564e8d1b33812efb3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d738406338776750f86424c2ec303c21036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c28814456455ae"</span>
+      <span class="token punctuation">]</span>,
+      <span class="token string">"sequence"</span><span class="token keyword">:</span> 4294967295,
+      <span class="token string">"coin"</span><span class="token keyword">:</span> <span class="token punctuation">{</span>
+        <span class="token string">"version"</span><span class="token keyword">:</span> 1,
+        <span class="token string">"height"</span><span class="token keyword">:</span> 1,
+        <span class="token string">"value"</span><span class="token keyword">:</span> 5000000000,
+        <span class="token string">"script"</span><span class="token keyword">:</span> <span class="token string">"0020a17de28e0eaab5ec2570d25e054eebbd4b8ec26b973c89a753a2b92f516b1389"</span>,
+        <span class="token string">"address"</span><span class="token keyword">:</span> <span class="token string">"bcrt1q59779rsw4267cfts6f0q2nhth49casntju7gnf6n52uj75ttzwys3zph8r"</span>,
+        <span class="token string">"coinbase"</span><span class="token keyword">:</span> <span class="token boolean">true</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">]</span>,
+  <span class="token string">"outputs"</span><span class="token keyword">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span>
+      <span class="token string">"value"</span><span class="token keyword">:</span> 123456789,
+      <span class="token string">"script"</span><span class="token keyword">:</span> <span class="token string">"76a9145fb239be6a09c81b43591a7bbf5857424438052b88ac"</span>,
+      <span class="token string">"address"</span><span class="token keyword">:</span> <span class="token string">"mpEwzcAKTsuGMM7hV49Mh3Ge7r933S6uYd"</span>
+    <span class="token punctuation">}</span>,
+    <span class="token punctuation">{</span>
+      <span class="token string">"value"</span><span class="token keyword">:</span> 4876538671,
+      <span class="token string">"script"</span><span class="token keyword">:</span> <span class="token string">"0020b653b1dda1540084213f4cfa7e089e526f23b749da3dc8de09597ec085eefed6"</span>,
+      <span class="token string">"address"</span><span class="token keyword">:</span> <span class="token string">"bcrt1qkefmrhdp2sqgggflfna8uzy72fhj8d6fmg7u3hsft9lvpp0wlmtq7uvkml"</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">]</span>,
+  <span class="token string">"locktime"</span><span class="token keyword">:</span> 0,
+  <span class="token string">"hex"</span><span class="token keyword">:</span> <span class="token string">"010000000001012c62e97d997004c32f00caa7b74f52401c97d40ead2d50fd13acd9a9275a4ca70000000000ffffffff0215cd5b07000000001976a9145fb239be6a09c81b43591a7bbf5857424438052b88ac2f13aa2201000000220020b653b1dda1540084213f4cfa7e089e526f23b749da3dc8de09597ec085eefed60500483045022100804216dc296b0c0c0f1a1ed54751c60a349518f3d6a558927be0099ecdf10a3a022013cf0e5ddaf99b0d94c00e69c875f43f034ac7fb934b4abfb75f91e2a72b966d01483045022100f8bd1afdbd090166eb62905c48d05b3d7dbbced6fcb11820b17e7c19fb580aa402203f2b12929ec996611ac16ab39678309d8d3b750bc292835f4eb9e89affe7028a01483045022100a2ea840052c150fe9f260ee9ed27731a11e90722ad10bf2eb175f5b2e8002fad02206d600df6e95ca53cb67640f21c8d6f62f4290b03737d0f9606c8762d21ce63a601ad53210242705b9570ec3c193ba67528ff38ee272f37b14ef33564e8d1b33812efb3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d738406338776750f86424c2ec303c21036427eda147982560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c28814456455ae00000000"</span>
+<span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>So, now we have a transaction with 3 signatures. Take a look at the witness, it
+looks a lot different from Alice&#39;s first transaction. The number of stack items has
+gone from 7 to 5. Why? Because bcoin has detected that the multisig policy has
+been completed, and removed the 2 extra placeholders. Why is there still an empty
+stack item on top? Well for that, you&#39;d need to
+<a href="https://github.com/bitcoin/bitcoin/blob/48cb468ce3f52195dfc64c6df88b8af36b77dbb0/src/script/interpreter.cpp#L1042-L1052">ask Satoshi Nakamoto</a>.</p>
+<p>We&#39;re done. David added the final signature and now holds a valid Bitcoin transaction.
+Let&#39;s send it to the network!</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$  bcoin-cli broadcast 010000000001012c62e97d997004c32f00caa7b74f52401c97d40ead2d50fd13acd9a9275a4ca70000000000ffffffff0215cd5b07000000001976a9145fb239be6a0
+9c81b43591a7bbf5857424438052b88ac2f13aa2201000000220020b653b1dda1540084213f4cfa7e089e526f23b749da3dc8de09597ec085eefed60500483045022100804216dc296b0c0c0f1a1e
+d54751c60a349518f3d6a558927be0099ecdf10a3a022013cf0e5ddaf99b0d94c00e69c875f43f034ac7fb934b4abfb75f91e2a72b966d01483045022100f8bd1afdbd090166eb62905c48d05b3d7
+dbbced6fcb11820b17e7c19fb580aa402203f2b12929ec996611ac16ab39678309d8d3b750bc292835f4eb9e89affe7028a01483045022100a2ea840052c150fe9f260ee9ed27731a11e90722ad10
+bf2eb175f5b2e8002fad02206d600df6e95ca53cb67640f21c8d6f62f4290b03737d0f9606c8762d21ce63a601ad53210242705b9570ec3c193ba67528ff38ee272f37b14ef33564e8d1b33812efb
+3ad812102bcb81bd3451ed30559473940b58e4272765f272dc17855e1be2b21a05945d23c2102d9f1f9f3214b64b31ef82c16376283e438d738406338776750f86424c2ec303c21036427eda14798
+2560d066449070c457697cf22ff3bbe2d0ecd5ba070d52d9434a21039c6a894d0067c32997f2390c2ecffaa0376ac34c8c0a4ebfa6d738c28814456455ae00000000</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Did I get paid? Let&#39;s check my personal wallet&#39;s default account:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ bwallet-cli balance
+
+<span class="token punctuation">{</span>
+  <span class="token string">"account"</span><span class="token keyword">:</span> -1,
+  <span class="token string">"tx"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"coin"</span><span class="token keyword">:</span> 1,
+  <span class="token string">"unconfirmed"</span><span class="token keyword">:</span> 123456789,
+  <span class="token string">"confirmed"</span><span class="token keyword">:</span> 0
+<span class="token punctuation">}</span>
+
+$ bwallet-cli rpc listunspent default
+
+<span class="token punctuation">[</span>
+  <span class="token punctuation">{</span>
+    <span class="token string">"txid"</span><span class="token keyword">:</span> <span class="token string">"659800f1c5a8780ec2215afebd4e3f285ca999027ee3a789ad5655786fd04ead"</span>,
+    <span class="token string">"vout"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"address"</span><span class="token keyword">:</span> <span class="token string">"mpEwzcAKTsuGMM7hV49Mh3Ge7r933S6uYd"</span>,
+    <span class="token string">"account"</span><span class="token keyword">:</span> <span class="token string">"default"</span>,
+    <span class="token string">"scriptPubKey"</span><span class="token keyword">:</span> <span class="token string">"76a9145fb239be6a09c81b43591a7bbf5857424438052b88ac"</span>,
+    <span class="token string">"amount"</span><span class="token keyword">:</span> 1.23456789,
+    <span class="token string">"confirmations"</span><span class="token keyword">:</span> 0,
+    <span class="token string">"spendable"</span><span class="token keyword">:</span> true,
+    <span class="token string">"solvable"</span><span class="token keyword">:</span> <span class="token boolean">true</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">]</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="thanks-everybody">Thanks everybody!</h3><p>Next time I promise the pizza won&#39;t be so expensive 🍕🍕🍕</p>
+
+
+					<!-- END OF GUIDE -->
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<!-- END OF ARTICLE CONTAINER -->
+
+					</div>
+					<!-- END BLOG CONTENT -->
+
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Installation</h6>
+      <p>
+        <a href="https://github.com/bcoin-org/bcoin/blob/master/docs/getting-started.md">
+          See the "Getting Started" guide in the repository documents directory.
+        </a>
+      </p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="webapp.html">Building web applications with the bcoin library</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="swaps.html">Cross-Chain Atomic Swaps</a></li>
+<li><a href="segwit.html">Segwit and Bcoin</a></li>
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
+<li><a href="multisig-cli.html">Multisig on the command line</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="events.html">Events and Sockets</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="connect-local-nodes.html">Connect two local nodes</a></li>
+<li><a href="cltv.html">Time Locked Bitcoin Transactions w/ CLTV</a></li>
+<li><a href="building-plugins.html">Building Awesome bcoin Plugins</a></li>
+<li><a href="browser.html">Run a bcoin full node in a web browser</a></li>
+<li><a href="bcoin-clock.html">Make your own Bcoin Block Clock!</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="https://t.me/bcoinorg"> Telegram.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
+
+					<!-- END SIDEBAR -->
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END NEW BLOGS -->
+
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END BLOGS -->
+
+
+		<!-- PARALLAX DOCS CTA -->
+		<section class="module bg-white-alfa-30 parallax color-white" data-background="../assets/images/bg-header.jpg">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12">
+						<div class="text-center">
+							<h2 class="montserrat text-uppercase m-b-30">Ready to start building? Read the docs!</h2>
+							<a href="https://bcoin.io/docs/index.html" target="_blank" class="btn btn-lg btn-purple">Documentation</a>
+						</div>
+					</div>
+				</div><!-- .row -->
+
+			</div>
+		</section>
+		<!-- END PARALLAX DOCS CTA -->
+
+		<!-- FOOTER -->
+		<footer id="footer" class="footer-minimal">
+			<div class="container">
+
+				<div class="row">
+					<div class="col-sm-12">
+						<ul class="social-icons social-icons-circle text-center m-b-35">
+							<li><a href="https://twitter.com/bcoin"><i class="fa fa-twitter"></i></a></li>
+							<li><a href="https://github.com/bcoin-org/bcoin"><i class="fa fa-github"></i></a></li>
+
+
+							<li><a href="https://t.me/bcoinorg" target="_blank"><img src="assets/images/telegram-app.svg"></a></li>
+						</ul>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-12 text-center m-b-35">
+						<img class="m-b-35 QR-code" src="../assets/images/donation_QR.png"/>
+						<p class="m-0"><strong>Bcoin Development Donation Address:</strong><br />3Bi9H1hzCHWJoFEjc4xzVzEMywi35dyvsV</p>
+
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-12 text-center">
+						<p class="m-0">Copyright <a href="#">bcoin.io, Purse</a>, 2018, All Rights Reserved.</p>
+
+					</div>
+				</div>
+
+			</div>
+		</footer>
+		<!-- END FOOTER -->
+
+	</div>
+	<!-- /WRAPPER -->
+
+	<!-- JAVASCRIPT FILES -->
+
+	<script src="../assets/js/jquery-2.2.3.min.js"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?v=3"></script>
+	<script src="../assets/bootstrap/js/bootstrap.min.js"></script>
+	<script src="../assets/js/plugins.min.js"></script>
+	<script src="../assets/js/stickyfill.min.js"></script>
+	<script src="../assets/js/custom.min.js"></script>
+	<script src="../assets/js/clipboard.min.js"></script>
+	<script async defer src="../assets/js/prism.js"></script>
+	<script>
+		var copyCode = new Clipboard('.copy-button', {
+		    target: function(trigger) {
+		        return trigger.previousElementSibling;
+		    }
+		});
+
+		copyCode.on('success', function(event) {
+		    event.trigger.classList.add('success');
+		    event.clearSelection();
+		    // event.trigger.textContent = 'Copied!';
+		    window.setTimeout(function() {
+		        event.trigger.classList.remove('success');
+		    }, 2000);
+		});
+	</script>
+
+  <!-- github button js -->
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+
+</body>
+</html>

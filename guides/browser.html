@@ -3,10 +3,11 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="description" content="Scripts are array-like objects with some helper functions. Learn the basics here.">
-	<meta name="author" content="Christopher Jeffrey">
+	<meta name="description" content="The bcoin JavaScript library can be easily formatted to run in a web browser like Chrome.
+Using a proxy server, we can connect the web client to the actual live Bitcoin network.">
+	<meta name="author" content="Matthew Zipkin">
 
-	<title>Bcoin Guide | Intro to Scripting</title>
+	<title>Bcoin Guide | Run a bcoin full node in a web browser</title>
 
 	<!-- Favicons -->
 	<!-- old
@@ -265,48 +266,125 @@
 									<div class="col-sm-12 panel panel-default">
 										<div class="post-content" style="color:#000;">
 					<!-- START OF GUIDE -->
-<h2 class="post-title panel-title" id="intro-to-scripting">Intro to Scripting</h2><ul class="post-meta"><li class="author">By Christopher Jeffrey</li></ul><p>Scripts are array-like objects with some helper functions.</p>
-<pre class="snippet line-numbers language-js "><code class="line-numbers language-js"><span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token keyword">const</span> assert <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'assert'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token keyword">const</span> Script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Script<span class="token punctuation">;</span>
-<span class="token keyword">const</span> Witness <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Witness<span class="token punctuation">;</span>
-<span class="token keyword">const</span> Stack <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Stack<span class="token punctuation">;</span>
+<h2 class="post-title panel-title" id="run-a-bcoin-full-node-in-a-web-browser">Run a bcoin full node in a web browser</h2><ul class="post-meta"><li class="author">By Matthew Zipkin</li></ul><h2 id="introduction">Introduction</h2><p>Because bcoin is written in JavaScript, the entire codebase can be interpreted by
+a standard web browser like Chrome or Firefox. We use <code>webpack</code> to compile the library.
+This process resolves all the <code>require()</code> statements that a NodeJS server can follow
+but a browser can not. Webpack is also configured to use <code>-browser</code> versions of
+some modules for things like databases and cryptography. Finally, it compresses
+the code by renaming functions and variables, and removing as much whitespace as possible.
+The entire bcoin codebase compresses down to around 1.5 MB!</p>
+<p>The second magic trick is connecting the web browser to the actual Bitcoin
+peer-to-peer network. <a href="https://en.wikipedia.org/wiki/Same-origin_policy">For security reasons, web browsers do not allow scripts
+to create TCP connections to any server besides the one they are loaded
+from.</a>
+To get around this, we will need to run a proxy server that makes TCP connections
+on behalf of the web client, and forwards all the data through a websocket back
+to the browser.</p>
+<h3 id="step-1-prepare-the-code-for-the-browser">Step 1: Prepare the code for the browser</h3><p>First, install bcoin from the GitHub repository like usual:</p>
+<pre class="snippet line-numbers language-bash command-line"><code class="line-numbers language-bash"><span class="token function">git</span> clone https://github.com/bcoin-org/bcoin
+<span class="token function">cd</span> bcoin
+npm <span class="token function">install</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Next, we&#39;ll need to install <code>webpack</code> to format the code for the browser:</p>
+<pre class="snippet line-numbers language-bash command-line"><code class="line-numbers language-bash">npm <span class="token function">install</span> webpack</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>The first time you run webpack, it might prompt you to install <code>webpack-cli</code>, enter yes.</p>
+<div class="terminal">One CLI for webpack must be installed. These are recommended choices, delivered as separate packages:
+ - webpack-cli (https://github.com/webpack/webpack-cli)
+   The original webpack full-featured CLI.
+We will use "npm" to install the CLI via "npm install -D".
+Do you want to install 'webpack-cli' (yes/no):
+</div>
 
-<span class="token keyword">const</span> output <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Script</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-output<span class="token punctuation">.</span><span class="token function">pushSym</span><span class="token punctuation">(</span><span class="token string">'OP_DROP'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-output<span class="token punctuation">.</span><span class="token function">pushSym</span><span class="token punctuation">(</span><span class="token string">'OP_ADD'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-output<span class="token punctuation">.</span><span class="token function">pushInt</span><span class="token punctuation">(</span><span class="token number">7</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-output<span class="token punctuation">.</span><span class="token function">pushSym</span><span class="token punctuation">(</span><span class="token string">'OP_NUMEQUAL'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token comment">// Compile the script to its binary representation</span>
-<span class="token comment">// (you must do this if you change something!).</span>
-<span class="token function">assert</span><span class="token punctuation">(</span>output<span class="token punctuation">.</span><span class="token function">getSmall</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">===</span> <span class="token number">7</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// compiled as OP_7</span>
-output<span class="token punctuation">.</span><span class="token function">compile</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<br>
 
-<span class="token keyword">const</span> input <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Script</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-input<span class="token punctuation">.</span><span class="token function">setString</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token string">'hello world'</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment">// add some metadata</span>
-input<span class="token punctuation">.</span><span class="token function">pushInt</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-input<span class="token punctuation">.</span><span class="token function">pushInt</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-input<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>input<span class="token punctuation">.</span><span class="token function">shift</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token function">assert</span><span class="token punctuation">(</span>input<span class="token punctuation">.</span><span class="token function">getString</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">===</span> <span class="token string">'hello world'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-input<span class="token punctuation">.</span><span class="token function">compile</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<p>Now use webpack to &quot;browserify&quot; the code. There is already a command for this in
+the <code>package.json</code> file in the bcoin repository. You may notice that webapck config
+files are also stored in the root directory. The config file for this task is <code>webpack.app.js</code>.
+It will be loaded automatically when you run the command:</p>
+<pre class="snippet line-numbers language-bash command-line"><code class="line-numbers language-bash">npm run webpack-app</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>This command creates two new files in the <code>/browser</code> directory:
+<code>app.js</code> and <code>worker.js</code>.</p>
+<p><code>app.js</code> contains the entire bcoin library plus the basic
+functions of the actual web interface. <code>worker.js</code> is a script that allows the main
+thread to spawn sub-processes to handle some tasks in parallel.</p>
+<div class="aside">
+  <span> Note:</span>
+  `bcoin` and the logging package `blgr` have been recently updated, make sure you have installed
+updated versions with these patches merged: [blgr PR#1](https://github.com/bcoin-org/blgr/pull/1),
+[bcoin PR#622](https://github.com/bcoin-org/bcoin/pull/622)
+</div>
 
-<span class="token comment">// A stack is another array-like object which contains</span>
-<span class="token comment">// only Buffers (whereas scripts contain Opcode objects).</span>
-<span class="token keyword">const</span> stack <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Stack</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-input<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span>stack<span class="token punctuation">)</span><span class="token punctuation">;</span>
-output<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span>stack<span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token comment">// Verify the script was successful in its execution:</span>
-<span class="token function">assert</span><span class="token punctuation">(</span>stack<span class="token punctuation">.</span>length <span class="token operator">===</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token function">assert</span><span class="token punctuation">(</span>stack<span class="token punctuation">.</span><span class="token function">getBool</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">===</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Using a witness would be similar, but witnesses do not get executed, they
-simply <em>become</em> the stack. The witness object itself is very similar to the
-Stack object (an array-like object containing Buffers).</p>
-<pre class="snippet line-numbers language-js "><code class="line-numbers language-js"><span class="token keyword">const</span> witness <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Witness</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-witness<span class="token punctuation">.</span><span class="token function">pushInt</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-witness<span class="token punctuation">.</span><span class="token function">pushInt</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-witness<span class="token punctuation">.</span><span class="token function">pushString</span><span class="token punctuation">(</span><span class="token string">'hello world'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<h3 id="step-2-run-the-proxy-server-locally">Step 2: Run the proxy server locally</h3><p>The <code>/browser</code> directory in the bcoin repository contains a <code>server.js</code> script which
+serves two functions. It serves the browser-compatible bcoin package in a simple
+web interface, and it also runs the proxy server <code>wsproxy.js</code>.</p>
+<p>Start the server with the command:</p>
+<pre class="snippet line-numbers language-bash command-line"><code class="line-numbers language-bash">node browser/server.js</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>...then navigate a web browser to <a href="http://localhost:8080">http://localhost:8080</a></p>
+<p>Did it work?</p>
+<p><img src="../assets/images/guides/browser.png" alt="bcoin in the browser" title="bcoin in the browser"></p>
+<h4 id="wow-what-is-going-on?!">Wow! What is going on?!</h4><p>The bcoin full node in the browser package has been configured like this:</p>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token comment">// browser/src/app.js</span>
 
-<span class="token keyword">const</span> stack <span class="token operator">=</span> witness<span class="token punctuation">.</span><span class="token function">toStack</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-output<span class="token punctuation">.</span><span class="token function">execute</span><span class="token punctuation">(</span>stack<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre>
+<span class="token keyword">const</span> ProxySocket <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'./proxysocket'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> node <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FullNode</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  hash<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  query<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  prune<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  network<span class="token punctuation">:</span> <span class="token string">'main'</span><span class="token punctuation">,</span>
+  memory<span class="token punctuation">:</span> <span class="token boolean">false</span><span class="token punctuation">,</span>
+  coinCache<span class="token punctuation">:</span> <span class="token number">30</span><span class="token punctuation">,</span>
+  logConsole<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  workers<span class="token punctuation">:</span> <span class="token boolean">true</span><span class="token punctuation">,</span>
+  workerFile<span class="token punctuation">:</span> <span class="token string">'/worker.js'</span><span class="token punctuation">,</span>
+  createSocket<span class="token punctuation">:</span> <span class="token punctuation">(</span>port<span class="token punctuation">,</span> host<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
+    <span class="token keyword">const</span> proto <span class="token operator">=</span> global<span class="token punctuation">.</span>location<span class="token punctuation">.</span>protocol <span class="token operator">===</span> <span class="token string">'https:'</span> <span class="token operator">?</span> <span class="token string">'wss'</span> <span class="token punctuation">:</span> <span class="token string">'ws'</span><span class="token punctuation">;</span>
+    <span class="token keyword">const</span> hostname <span class="token operator">=</span> global<span class="token punctuation">.</span>location<span class="token punctuation">.</span>host<span class="token punctuation">;</span>
+    <span class="token keyword">return</span> ProxySocket<span class="token punctuation">.</span><span class="token function">connect</span><span class="token punctuation">(</span><span class="token template-string"><span class="token string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>proto<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">://</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">${</span>hostname<span class="token interpolation-punctuation punctuation">}</span></span><span class="token string">`</span></span><span class="token punctuation">,</span> port<span class="token punctuation">,</span> host<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  logger<span class="token punctuation">:</span> logger<span class="token punctuation">,</span>
+  plugins<span class="token punctuation">:</span> <span class="token punctuation">[</span>plugin<span class="token punctuation">]</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Note especially the <code>createSocket</code> option. bcoin was designed with the flexibility
+to completely replace the network connectivity method with any arbitrary function.
+In this case, we are configuring bcoin to make all TCP connections and data requests
+through an object called <code>ProxySocket</code>.</p>
+<p><code>proxysocket.js</code> runs in the browser and establishes websocket connections with
+<code>wsproxy.js</code> which runs on the server. All requests for Bitcoin data
+(transactions, blocks, SPV filters, peer data, etc.) are routed through this
+websocket connection. <code>wsproxy.js</code> makes the actual TCP connections to peers on
+the live Bitcoin network, and simply forwards the raw data back to the browser.</p>
+<p>The full node running in the browser &quot;has no idea&quot; that it&#39;s not actually connected
+directly to the Bitcoin network.</p>
+<p>There is even a text input field for executing RPC commands. Try entering &quot;getinfo&quot;
+there and hitting enter. The responding pop-up window can be closed by clicking
+anywhere else on the web page.</p>
+<h3 id="step-3-run-the-web-and-proxy-server-remotely">Step 3: Run the web and proxy server remotely</h3><p>So far we are running both server and client on the same machine. If we wanted to
+host a bcoin-in-a-browser website like the one at <a href="https://bcoin.io/browser">https://bcoin.io/browser</a>
+we just need to tweak a few parameters in <code>browser/server.js</code>. Note the web server
+configuration happening here:</p>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token comment">// browser/server.js</span>
+
+<span class="token keyword">const</span> server <span class="token operator">=</span> bweb<span class="token punctuation">.</span><span class="token function">server</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  port<span class="token punctuation">:</span> <span class="token function">Number</span><span class="token punctuation">(</span>process<span class="token punctuation">.</span>argv<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token number">8080</span><span class="token punctuation">,</span>
+  sockets<span class="token punctuation">:</span> <span class="token boolean">false</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>It turns out that when we ran the command to start the web server we could also
+have added a port argument. If your server only has certain ports open you may
+need to add that argument to the command:</p>
+<pre class="snippet line-numbers language-bash command-line"><code class="line-numbers language-bash">node browser/server.js 5000</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>In addition, <a href="https://github.com/bcoin-org/bweb">the default behavior for a <code>bweb</code> server</a>
+is only to serve locally (on <code>127.0.0.1</code> or <code>localhost</code>). To open your server to
+the internet like we have at <a href="https://bcoin.io/browser">https://bcoin.io/browser</a>,
+you need to add a specific <code>host</code> option to the configuration like so:</p>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token comment">// browser/server.js</span>
+
+<span class="token keyword">const</span> server <span class="token operator">=</span> bweb<span class="token punctuation">.</span><span class="token function">server</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+  host<span class="token punctuation">:</span> <span class="token string">'0.0.0.0'</span><span class="token punctuation">,</span>
+  port<span class="token punctuation">:</span> <span class="token function">Number</span><span class="token punctuation">(</span>process<span class="token punctuation">.</span>argv<span class="token punctuation">[</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span> <span class="token operator">||</span> <span class="token number">8080</span><span class="token punctuation">,</span>
+  sockets<span class="token punctuation">:</span> <span class="token boolean">false</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="step-4-what&#39;s-next?">Step 4: What&#39;s next?</h3><p>A cryptic note from the mysterious creator of bcoin was left behind in the
+original code repository:</p>
+<div class="terminal">This is a simple proof-of-concept. It's not a pretty interface. I hope to see
+others doing something far more interesting. A browser extension may be better:
+the chrome extension API exposes raw TCP access.</div>
+
+<br>
+
+<p>Also be sure to check out <a href="https://bpanel.org">bpanel</a>, the web-based user interface for bcoin. The browser package we just built could be installed into a bpanel plugin -- creating a totally self-contained, extensible, fully validating Bitcoin web applicaiton. </p>
+
 
 					<!-- END OF GUIDE -->
 									</div>

@@ -146,11 +146,11 @@
 				<div class="inner-header pull-right hide-me">
 					<div class="menu-extras clearfix">
 
-						<!-- SLACK LINK -->
+						<!-- TELEGRAM LINK -->
 						<div class="menu-item">
 							<div class="">
-								<a href="../slack-signup.html" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Slack!">
-									<img src="../assets/images/slack_icon.svg" width="18" height="18"/>
+								<a href="https://t.me/bcoinorg" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Telegram!">
+									<img src="../assets/images/telegram-app.svg" width="18" height="18"/>
 									<span class=""></span>
 								</a>
                             </div>
@@ -249,54 +249,6 @@
 			<div class="container">
 
 				<div class="row">
-
-					<!-- START SIDEBAR -->
-<div class="col-sm-3 sidebar">
-  <!-- CATEGORIES WIDGET -->
-<div class="widget guide-list">
-<h6 class="montserrat text-uppercase bottom-line">Install</h6>
-<ul class="icons-list">
-<!-- INSTALL-LIST -->
-<li><a href="install-windows.html">Install on Windows (Video)</a></li>
-<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
-<li><a href="install-linux.html">Install on Linux (Video)</a></li>
-<!-- /INSTALL-LIST -->
-</ul>
-<br>
-<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
-<ul class="icons-list">
-<!-- GUIDES-LIST -->
-<li><a href="working-with-txs.html">Working with transactions</a></li>
-<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
-<li><a href="vps-setup.html">Full Node VPS Setup</a></li>
-<li><a href="segwit.html">Segwit and Bcoin</a></li>
-<li><a href="scripting.html">Intro to Scripting</a></li>
-<li><a href="op_return.html">Store Data on the Blockchain</a></li>
-<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
-<li><a href="generate-address.html">Generate an Address</a></li>
-<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
-<li><a href="beginners.html">Beginners Guide to Getting Started</a></li>
-<!-- /GUIDES-LIST -->
-</ul>
-</div>
-  <!-- END CATEGORIES WIDGET -->
-
-  <!-- TEXT WIDGET -->
-  <div class="widget">
-    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
-    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
-  </div>
-  <!-- END TEXT WIDGET -->
-
-  <!-- TEXT WIDGET -->
-  <div class="widget">
-    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
-    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="../slack-signup.html"> Slack.</a></p>
-    <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
-  </div>
-  <!-- END TEXT WIDGET -->
-</div>
-					<!-- END SIDEBAR -->
 					<!-- START OF ARTICLE CONTAINER -->
 					<div class="col-sm-9 blog-content post-thumbnail">
 						<!-- POST IMAGE -->
@@ -318,86 +270,86 @@ bunch of consensus and policy checking methods. A lot of it is for internal use
 and pretty boring for users of this library.</p>
 <p>Bcoin also offers a mutable transaction object (MTX). Mutable transactions
 inherit from the TX object, but can also be signed and modified.</p>
-<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
+<pre class="snippet line-numbers language-js "><code class="line-numbers language-js"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
 
 <span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">const</span> assert <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'assert'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token keyword">const</span> Keyring <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>keyring<span class="token punctuation">;</span>
-<span class="token keyword">const</span> MTX <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>mtx<span class="token punctuation">;</span>
-<span class="token keyword">const</span> Outpoint <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>outpoint<span class="token punctuation">;</span>
-<span class="token keyword">const</span> Script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>script<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Keyring <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>wallet<span class="token punctuation">.</span>WalletKey<span class="token punctuation">;</span>
+<span class="token keyword">const</span> MTX <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>MTX<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Outpoint <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Outpoint<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Script<span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Create an HD master keypair.</span>
+<span class="token comment">// Create an HD master keypair.</span>
 <span class="token keyword">const</span> master <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>hd<span class="token punctuation">.</span><span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Derive another private hd key (we don't want to use our master key!).</span>
+<span class="token comment">// Derive another private hd key (we don't want to use our master key!).</span>
 <span class="token keyword">const</span> key <span class="token operator">=</span> master<span class="token punctuation">.</span><span class="token function">derivePath</span><span class="token punctuation">(</span><span class="token string">'m/44/0/0/0/0'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Create a "keyring" object. A keyring object is basically a key manager that</span>
-<span class="token comment" spellcheck="true">// is also able to tell you info such as: your redeem script, your scripthash,</span>
-<span class="token comment" spellcheck="true">// your program hash, your pubkey hash, your scripthash program hash, etc.</span>
-<span class="token comment" spellcheck="true">// In this case, we'll make it simple and just add one key for a</span>
-<span class="token comment" spellcheck="true">// pubkeyhash address. `getPublicKey` returns the non-hd public key.</span>
+<span class="token comment">// Create a "keyring" object. A keyring object is basically a key manager that</span>
+<span class="token comment">// is also able to tell you info such as: your redeem script, your scripthash,</span>
+<span class="token comment">// your program hash, your pubkey hash, your scripthash program hash, etc.</span>
+<span class="token comment">// In this case, we'll make it simple and just add one key for a</span>
+<span class="token comment">// pubkeyhash address. `getPublicKey` returns the non-hd public key.</span>
 <span class="token keyword">const</span> keyring <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Keyring</span><span class="token punctuation">(</span>key<span class="token punctuation">.</span>privateKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>keyring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Create a fake coinbase for our funding.</span>
+<span class="token comment">// Create a fake coinbase for our funding.</span>
 <span class="token keyword">const</span> cb <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Add a typical coinbase input</span>
+<span class="token comment">// Add a typical coinbase input</span>
 cb<span class="token punctuation">.</span><span class="token function">addInput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
   prevout<span class="token punctuation">:</span> <span class="token keyword">new</span> <span class="token class-name">Outpoint</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
   script<span class="token punctuation">:</span> <span class="token keyword">new</span> <span class="token class-name">Script</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
   sequence<span class="token punctuation">:</span> <span class="token number">0xffffffff</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Send 50,000 satoshis to ourself.</span>
+<span class="token comment">// Send 50,000 satoshis to ourself.</span>
 cb<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
   address<span class="token punctuation">:</span> keyring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
   value<span class="token punctuation">:</span> <span class="token number">50000</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Create our redeeming transaction.</span>
+<span class="token comment">// Create our redeeming transaction.</span>
 <span class="token keyword">const</span> mtx <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Add output 0 from our coinbase as an input.</span>
+<span class="token comment">// Add output 0 from our coinbase as an input.</span>
 mtx<span class="token punctuation">.</span><span class="token function">addTX</span><span class="token punctuation">(</span>cb<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Send 10,000 satoshis to ourself,</span>
-<span class="token comment" spellcheck="true">// creating a fee of 40,000 satoshis.</span>
+<span class="token comment">// Send 10,000 satoshis to ourself,</span>
+<span class="token comment">// creating a fee of 40,000 satoshis.</span>
 mtx<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
   address<span class="token punctuation">:</span> keyring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
   value<span class="token punctuation">:</span> <span class="token number">10000</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Sign input 0: pass in our keyring.</span>
+<span class="token comment">// Sign input 0: pass in our keyring.</span>
 mtx<span class="token punctuation">.</span><span class="token function">sign</span><span class="token punctuation">(</span>keyring<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// The transaction should now verify.</span>
+<span class="token comment">// The transaction should now verify.</span>
 <span class="token function">assert</span><span class="token punctuation">(</span>mtx<span class="token punctuation">.</span><span class="token function">verify</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token function">assert</span><span class="token punctuation">(</span>mtx<span class="token punctuation">.</span><span class="token function">getFee</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">===</span> <span class="token number">40000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Commit our transaction and make it immutable.</span>
-<span class="token comment" spellcheck="true">// This turns it from an MTX into a TX object.</span>
+<span class="token comment">// Commit our transaction and make it immutable.</span>
+<span class="token comment">// This turns it from an MTX into a TX object.</span>
 <span class="token keyword">const</span> tx <span class="token operator">=</span> mtx<span class="token punctuation">.</span><span class="token function">toTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// The transaction should still verify.</span>
-<span class="token comment" spellcheck="true">// Regular transactions require a coin</span>
-<span class="token comment" spellcheck="true">// viewpoint to be passed in.</span>
+<span class="token comment">// The transaction should still verify.</span>
+<span class="token comment">// Regular transactions require a coin</span>
+<span class="token comment">// viewpoint to be passed in.</span>
 <span class="token function">assert</span><span class="token punctuation">(</span>tx<span class="token punctuation">.</span><span class="token function">verify</span><span class="token punctuation">(</span>mtx<span class="token punctuation">.</span>view<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token function">assert</span><span class="token punctuation">(</span>tx<span class="token punctuation">.</span><span class="token function">getFee</span><span class="token punctuation">(</span>mtx<span class="token punctuation">.</span>view<span class="token punctuation">)</span> <span class="token operator">===</span> <span class="token number">40000</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h3 id="coin-selection">Coin Selection</h3><p>The above method works, but is pretty contrived. In reality, you probably
 wouldn&#39;t select inputs and calculate the fee by hand. You would want a
 change output added. Bcoin has a nice method of dealing with this.</p>
 <p>Let&#39;s try it more realistically:</p>
-<pre class="snippet line-numbers language-js"><code class="line-numbers language-js"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
+<pre class="snippet line-numbers language-js "><code class="line-numbers language-js"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
 
 <span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">const</span> assert <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'assert'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
-<span class="token keyword">const</span> Keyring <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>keyring<span class="token punctuation">;</span>
-<span class="token keyword">const</span> MTX <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>mtx<span class="token punctuation">;</span>
-<span class="token keyword">const</span> Outpoint <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>outpoint<span class="token punctuation">;</span>
-<span class="token keyword">const</span> Script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>script<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Keyring <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>wallet<span class="token punctuation">.</span>WalletKey<span class="token punctuation">;</span>
+<span class="token keyword">const</span> MTX <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>MTX<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Outpoint <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Outpoint<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Script<span class="token punctuation">;</span>
 
 <span class="token keyword">const</span> master <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>hd<span class="token punctuation">.</span><span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">const</span> key <span class="token operator">=</span> master<span class="token punctuation">.</span><span class="token function">derivePath</span><span class="token punctuation">(</span><span class="token string">'m/44/0/0/0/0'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -410,58 +362,58 @@ cb<span class="token punctuation">.</span><span class="token function">addInput<
   sequence<span class="token punctuation">:</span> <span class="token number">0xffffffff</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Send 50,000 satoshis to ourselves.</span>
+<span class="token comment">// Send 50,000 satoshis to ourselves.</span>
 cb<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
   address<span class="token punctuation">:</span> keyring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
   value<span class="token punctuation">:</span> <span class="token number">50000</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Our available coins.</span>
+<span class="token comment">// Our available coins.</span>
 <span class="token keyword">const</span> coins <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Convert the coinbase output to a Coin</span>
-<span class="token comment" spellcheck="true">// object and add it to our available coins.</span>
-<span class="token comment" spellcheck="true">// In reality you might get these coins from a wallet.</span>
+<span class="token comment">// Convert the coinbase output to a Coin</span>
+<span class="token comment">// object and add it to our available coins.</span>
+<span class="token comment">// In reality you might get these coins from a wallet.</span>
 <span class="token keyword">const</span> coin <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>coin<span class="token punctuation">.</span><span class="token function">fromTX</span><span class="token punctuation">(</span>cb<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 coins<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>coin<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Create our redeeming transaction.</span>
+<span class="token comment">// Create our redeeming transaction.</span>
 <span class="token keyword">const</span> mtx <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Send 10,000 satoshis to ourself.</span>
+<span class="token comment">// Send 10,000 satoshis to ourself.</span>
 mtx<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
   address<span class="token punctuation">:</span> keyring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
   value<span class="token punctuation">:</span> <span class="token number">10000</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Now that we've created the output, we can do some coin selection (the output</span>
-<span class="token comment" spellcheck="true">// must be added first so we know how much money is needed and also so we can</span>
-<span class="token comment" spellcheck="true">// accurately estimate the size for fee calculation).</span>
+<span class="token comment">// Now that we've created the output, we can do some coin selection (the output</span>
+<span class="token comment">// must be added first so we know how much money is needed and also so we can</span>
+<span class="token comment">// accurately estimate the size for fee calculation).</span>
 
-<span class="token comment" spellcheck="true">// Select coins from our array and add inputs.</span>
-<span class="token comment" spellcheck="true">// Calculate fee and add a change output.</span>
+<span class="token comment">// Select coins from our array and add inputs.</span>
+<span class="token comment">// Calculate fee and add a change output.</span>
 mtx<span class="token punctuation">.</span><span class="token function">fund</span><span class="token punctuation">(</span>coins<span class="token punctuation">,</span> <span class="token punctuation">{</span>
-  <span class="token comment" spellcheck="true">// Use a rate of 10,000 satoshis per kb.</span>
-  <span class="token comment" spellcheck="true">// With the `fullnode` object, you can</span>
-  <span class="token comment" spellcheck="true">// use the fee estimator for this instead</span>
-  <span class="token comment" spellcheck="true">// of blindly guessing.</span>
+  <span class="token comment">// Use a rate of 10,000 satoshis per kb.</span>
+  <span class="token comment">// With the `fullnode` object, you can</span>
+  <span class="token comment">// use the fee estimator for this instead</span>
+  <span class="token comment">// of blindly guessing.</span>
   rate<span class="token punctuation">:</span> <span class="token number">10000</span><span class="token punctuation">,</span>
-  <span class="token comment" spellcheck="true">// Send the change back to ourselves.</span>
+  <span class="token comment">// Send the change back to ourselves.</span>
   changeAddress<span class="token punctuation">:</span> keyring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">then</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
-  <span class="token comment" spellcheck="true">// Sign input 0</span>
+  <span class="token comment">// Sign input 0</span>
   mtx<span class="token punctuation">.</span><span class="token function">sign</span><span class="token punctuation">(</span>keyring<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// The transaction should now verify.</span>
+  <span class="token comment">// The transaction should now verify.</span>
   <span class="token function">assert</span><span class="token punctuation">(</span>mtx<span class="token punctuation">.</span><span class="token function">verify</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// Commit our transaction and make it immutable.</span>
-  <span class="token comment" spellcheck="true">// This turns it from an MTX into a TX.</span>
+  <span class="token comment">// Commit our transaction and make it immutable.</span>
+  <span class="token comment">// This turns it from an MTX into a TX.</span>
   <span class="token keyword">const</span> tx <span class="token operator">=</span> mtx<span class="token punctuation">.</span><span class="token function">toTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// The transaction should still verify.</span>
-  <span class="token comment" spellcheck="true">// Regular transactions require a coin</span>
-  <span class="token comment" spellcheck="true">// viewpoint to be passed in.</span>
+  <span class="token comment">// The transaction should still verify.</span>
+  <span class="token comment">// Regular transactions require a coin</span>
+  <span class="token comment">// viewpoint to be passed in.</span>
   <span class="token function">assert</span><span class="token punctuation">(</span>tx<span class="token punctuation">.</span><span class="token function">verify</span><span class="token punctuation">(</span>mtx<span class="token punctuation">.</span>view<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre>
 
@@ -476,7 +428,62 @@ mtx<span class="token punctuation">.</span><span class="token function">fund</sp
 					</div>
 					<!-- END BLOG CONTENT -->
 
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Installation</h6>
+      <p>
+        <a href="https://github.com/bcoin-org/bcoin/blob/master/docs/getting-started.md">
+          See the "Getting Started" guide in the repository documents directory.
+        </a>
+      </p>
+  </div>
+  <!-- END TEXT WIDGET -->
 
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="webapp.html">Building web applications with the bcoin library</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="swaps.html">Cross-Chain Atomic Swaps</a></li>
+<li><a href="segwit.html">Segwit and Bcoin</a></li>
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
+<li><a href="multisig-cli.html">Multisig on the command line</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="events.html">Events and Sockets</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="connect-local-nodes.html">Connect two local nodes</a></li>
+<li><a href="cltv.html">Time Locked Bitcoin Transactions w/ CLTV</a></li>
+<li><a href="building-plugins.html">Building Awesome bcoin Plugins</a></li>
+<li><a href="browser.html">Run a bcoin full node in a web browser</a></li>
+<li><a href="bcoin-clock.html">Make your own Bcoin Block Clock!</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="https://t.me/bcoinorg"> Telegram.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
+
+					<!-- END SIDEBAR -->
 
 				</div><!-- .row -->
 
@@ -519,7 +526,7 @@ mtx<span class="token punctuation">.</span><span class="token function">fund</sp
 							<li><a href="https://github.com/bcoin-org/bcoin"><i class="fa fa-github"></i></a></li>
 
 
-							<li><a href="../slack-signup.html" target="_blank"><i class="fa fa-slack"></i></a></li>
+							<li><a href="https://t.me/bcoinorg" target="_blank"><img src="assets/images/telegram-app.svg"></a></li>
 						</ul>
 					</div>
 				</div>

@@ -3,10 +3,10 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="description" content="">
-	<meta name="author" content="HeKaz">
+	<meta name="description" content="Extending functionality by building plugins for bcoin.">
+	<meta name="author" content="Javed Khan">
 
-	<title>Bcoin Guide | <i class="fa fa-windows"></i>Install on Windows (Video)</title>
+	<title>Bcoin Guide | Building Awesome bcoin Plugins</title>
 
 	<!-- Favicons -->
 	<!-- old
@@ -146,11 +146,11 @@
 				<div class="inner-header pull-right hide-me">
 					<div class="menu-extras clearfix">
 
-						<!-- SLACK LINK -->
+						<!-- TELEGRAM LINK -->
 						<div class="menu-item">
 							<div class="">
-								<a href="../slack-signup.html" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Slack!">
-									<img src="../assets/images/slack_icon.svg" width="18" height="18"/>
+								<a href="https://t.me/bcoinorg" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Telegram!">
+									<img src="../assets/images/telegram-app.svg" width="18" height="18"/>
 									<span class=""></span>
 								</a>
                             </div>
@@ -249,54 +249,6 @@
 			<div class="container">
 
 				<div class="row">
-
-					<!-- START SIDEBAR -->
-<div class="col-sm-3 sidebar">
-  <!-- CATEGORIES WIDGET -->
-<div class="widget guide-list">
-<h6 class="montserrat text-uppercase bottom-line">Install</h6>
-<ul class="icons-list">
-<!-- INSTALL-LIST -->
-<li><a href="install-windows.html">Install on Windows (Video)</a></li>
-<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
-<li><a href="install-linux.html">Install on Linux (Video)</a></li>
-<!-- /INSTALL-LIST -->
-</ul>
-<br>
-<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
-<ul class="icons-list">
-<!-- GUIDES-LIST -->
-<li><a href="working-with-txs.html">Working with transactions</a></li>
-<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
-<li><a href="vps-setup.html">Full Node VPS Setup</a></li>
-<li><a href="segwit.html">Segwit and Bcoin</a></li>
-<li><a href="scripting.html">Intro to Scripting</a></li>
-<li><a href="op_return.html">Store Data on the Blockchain</a></li>
-<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
-<li><a href="generate-address.html">Generate an Address</a></li>
-<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
-<li><a href="beginners.html">Beginners Guide to Getting Started</a></li>
-<!-- /GUIDES-LIST -->
-</ul>
-</div>
-  <!-- END CATEGORIES WIDGET -->
-
-  <!-- TEXT WIDGET -->
-  <div class="widget">
-    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
-    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
-  </div>
-  <!-- END TEXT WIDGET -->
-
-  <!-- TEXT WIDGET -->
-  <div class="widget">
-    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
-    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="../slack-signup.html"> Slack.</a></p>
-    <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
-  </div>
-  <!-- END TEXT WIDGET -->
-</div>
-					<!-- END SIDEBAR -->
 					<!-- START OF ARTICLE CONTAINER -->
 					<div class="col-sm-9 blog-content post-thumbnail">
 						<!-- POST IMAGE -->
@@ -313,15 +265,94 @@
 									<div class="col-sm-12 panel panel-default">
 										<div class="post-content" style="color:#000;">
 					<!-- START OF GUIDE -->
-<h2 class="post-title panel-title" id="install-on-windows"><i class="fa fa-windows"></i>Install on Windows (Video)</h2><ul class="post-meta"><li class="author">By HeKaz</li></ul><p>A quick step-by-step video to learn the basics of running a bcoin fullnode on a Windows.</p>
-<div class="post-video">
-  <iframe width="100%" height="315" src="https://www.youtube.com/embed/H6T72CJ50M8" frameborder="0" allowfullscreen></iframe>
-</div>
+<h2 class="post-title panel-title" id="building-awesome-bcoin-plugins">Building Awesome bcoin Plugins</h2><ul class="post-meta"><li class="author">By Javed Khan</li></ul><h4 id="introduction">Introduction</h4><p>bcoin has an extensible interface for writing plugins of all sizes . For
+example, did you know that the bcoin wallet is actually a plugin?</p>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript">    <span class="token comment">// file: https://github.com/bcoin-org/bcoin/blob/master/bin/node #48</span>
 
-<h6 id="source-install">Source Install (Requires: Node &gt;= 7.6)</h6><pre class="snippet line-numbers language-bash"><code class="line-numbers language-bash"><span class="token function">git</span> clone https://github.com/bcoin-org/bcoin.git
-<span class="token function">cd</span> bcoin
-npm <span class="token function">install</span>
-bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre>
+    <span class="token keyword">const</span> plugin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'../lib/wallet/plugin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    node<span class="token punctuation">.</span><span class="token function">use</span><span class="token punctuation">(</span>plugin<span class="token punctuation">)</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>For a plugin to be usable by bcoin, all it needs is an <code>init</code> function which
+accepts a <code>node</code>. Plugins can use <code>node</code> to access objects like <code>mempool</code>,
+<code>chain</code> or <code>pool</code>.</p>
+<h4 id="hello-world">Hello World</h4><p>For example, <code>hello.js</code> might look like</p>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> plugin <span class="token operator">=</span> exports<span class="token punctuation">;</span>
+
+<span class="token keyword">class</span> <span class="token class-name">Plugin</span> <span class="token punctuation">{</span>
+  <span class="token function">constructor</span><span class="token punctuation">(</span>node<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'connecting to: %s'</span><span class="token punctuation">,</span> node<span class="token punctuation">.</span>network<span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+plugin<span class="token punctuation">.</span>init <span class="token operator">=</span> <span class="token keyword">function</span> <span class="token function">init</span><span class="token punctuation">(</span>node<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">Plugin</span><span class="token punctuation">(</span>node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Running <code>bcoin --testnet --plugins=${PWD}/hello</code> should start with</p>
+<p><code>connecting to: testnet</code></p>
+<p>Optionally plugins may have a unique <code>id</code> string as an identifier, along with
+functions <code>open()</code> and <code>close()</code> which can be used to hook into the startup and
+shutdown processes of the node, respectively.</p>
+<p>Note:  Some identifiers are reserved by bcoin, so you’ll need to use something
+other than <code>chain fees mempool miner pool rpc http</code>.</p>
+<p>If the plugin needs to maintain any persistent data, it may write to it’s own
+database, using <code>open</code> and <code>close</code> to load and unload connections and handles
+for example.</p>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript">    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+    <span class="token keyword">class</span> <span class="token class-name">Plugin</span> <span class="token punctuation">{</span>
+      <span class="token function">constructor</span><span class="token punctuation">(</span>node<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token punctuation">}</span>
+
+    <span class="token keyword">async</span> <span class="token function">open</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">await</span> <span class="token keyword">this</span><span class="token punctuation">.</span>db<span class="token punctuation">.</span><span class="token function">open</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'db opened'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+
+    <span class="token keyword">async</span> <span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">await</span> <span class="token keyword">this</span><span class="token punctuation">.</span>db<span class="token punctuation">.</span><span class="token function">close</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'db closed'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span><span class="token punctuation">;</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p><code>bcoin</code> is thoroughly event driven, which means that most of the time, you just
+need to listen to the appropriate  event and add a hook for your handler.
+Depending on the level of granularity required, you can choose which object to
+listen for the events. For example, <code>fullnode</code> emits <code>tx</code>, <code>block</code> events which
+may be sufficient level of detail for your plugin, but you can also dig into the
+<code>mempool</code> or <code>chain</code> for finer details, if required.</p>
+<p>Multiple plugins can be enabled by passing an array of modules to the<code>plugins</code>
+configuration option for example:<code>plugins=plugin1,plugin2</code>.</p>
+<h4 id="peers-plugin">Peers Plugin</h4><p>Example: <code>peers.js</code> plugin to announce connected peers</p>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript">    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+    <span class="token keyword">class</span> <span class="token class-name">Plugin</span> <span class="token punctuation">{</span>
+      <span class="token function">constructor</span><span class="token punctuation">(</span>node<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>node <span class="token operator">=</span> node<span class="token punctuation">;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>node<span class="token punctuation">.</span>pool<span class="token punctuation">.</span><span class="token function">on</span><span class="token punctuation">(</span><span class="token string">'peer open'</span><span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">.</span>peerOpen<span class="token punctuation">)</span>
+      <span class="token punctuation">}</span>
+
+      <span class="token keyword">async</span> <span class="token function">peerOpen</span><span class="token punctuation">(</span>peer<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'connected to peer %s'</span><span class="token punctuation">,</span> peer<span class="token punctuation">.</span><span class="token function">hostname</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+      <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+
+    plugin<span class="token punctuation">.</span>id <span class="token operator">=</span> <span class="token string">'peers'</span><span class="token punctuation">;</span>
+    <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>You can find official bcoin plugins under the bcoin-org github:</p>
+<p><a href="https://github.com/bcoin-org">https://github.com/bcoin-org</a></p>
+<h4 id="bindex">bindex</h4><p>To showcase some advanced features of the bcoin plugin system, let’s talk about
+a new official plugin which is currently being developed.</p>
+<p>bindex is a plugin that creates an index database for transactions and
+addresses, and soon for generating BIP 158 filters to add support for Neutrino
+light clients. This functionality can be extended even further to support
+custom indexes, for example for your own colored coins.</p>
+<p>In order to persist the indexes, bindex also maintains its own database.  This
+also allows it to add indexing retroactively without needing to resync the
+whole chain.</p>
+<p>Important events that bindex would need to listen to are <code>chain: connect</code> for
+new blocks and <code>chain: disconnect</code> for disconnected blocks (due to re-org)</p>
+<p>To learn more about the bindex plugin, checkout the repo:</p>
+<p><a href="https://github.com/bcoin-org/bindex">https://github.com/bcoin-org/bindex</a></p>
+<p>So, go ahead and write your first bcoin plugin!</p>
+<p>Reach out to us on telegram
+<a href="telegram-app.svg">telegram-app.svg</a> or IRC
+#bcoin with your feedback!</p>
+
 
 					<!-- END OF GUIDE -->
 									</div>
@@ -334,7 +365,62 @@ bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code><butt
 					</div>
 					<!-- END BLOG CONTENT -->
 
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Installation</h6>
+      <p>
+        <a href="https://github.com/bcoin-org/bcoin/blob/master/docs/getting-started.md">
+          See the "Getting Started" guide in the repository documents directory.
+        </a>
+      </p>
+  </div>
+  <!-- END TEXT WIDGET -->
 
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="webapp.html">Building web applications with the bcoin library</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="swaps.html">Cross-Chain Atomic Swaps</a></li>
+<li><a href="segwit.html">Segwit and Bcoin</a></li>
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
+<li><a href="multisig-cli.html">Multisig on the command line</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="events.html">Events and Sockets</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="connect-local-nodes.html">Connect two local nodes</a></li>
+<li><a href="cltv.html">Time Locked Bitcoin Transactions w/ CLTV</a></li>
+<li><a href="building-plugins.html">Building Awesome bcoin Plugins</a></li>
+<li><a href="browser.html">Run a bcoin full node in a web browser</a></li>
+<li><a href="bcoin-clock.html">Make your own Bcoin Block Clock!</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="https://t.me/bcoinorg"> Telegram.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
+
+					<!-- END SIDEBAR -->
 
 				</div><!-- .row -->
 
@@ -377,7 +463,7 @@ bin/bcoin  <span class="token comment" spellcheck="true">#run</span></code><butt
 							<li><a href="https://github.com/bcoin-org/bcoin"><i class="fa fa-github"></i></a></li>
 
 
-							<li><a href="../slack-signup.html" target="_blank"><i class="fa fa-slack"></i></a></li>
+							<li><a href="https://t.me/bcoinorg" target="_blank"><img src="assets/images/telegram-app.svg"></a></li>
 						</ul>
 					</div>
 				</div>

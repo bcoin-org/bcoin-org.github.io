@@ -146,11 +146,11 @@
 				<div class="inner-header pull-right hide-me">
 					<div class="menu-extras clearfix">
 
-						<!-- SLACK LINK -->
+						<!-- TELEGRAM LINK -->
 						<div class="menu-item">
 							<div class="">
-								<a href="../slack-signup.html" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Slack!">
-									<img src="../assets/images/slack_icon.svg" width="18" height="18"/>
+								<a href="https://t.me/bcoinorg" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Telegram!">
+									<img src="../assets/images/telegram-app.svg" width="18" height="18"/>
 									<span class=""></span>
 								</a>
                             </div>
@@ -249,54 +249,6 @@
 			<div class="container">
 
 				<div class="row">
-
-					<!-- START SIDEBAR -->
-<div class="col-sm-3 sidebar">
-  <!-- CATEGORIES WIDGET -->
-<div class="widget guide-list">
-<h6 class="montserrat text-uppercase bottom-line">Install</h6>
-<ul class="icons-list">
-<!-- INSTALL-LIST -->
-<li><a href="install-windows.html">Install on Windows (Video)</a></li>
-<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
-<li><a href="install-linux.html">Install on Linux (Video)</a></li>
-<!-- /INSTALL-LIST -->
-</ul>
-<br>
-<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
-<ul class="icons-list">
-<!-- GUIDES-LIST -->
-<li><a href="working-with-txs.html">Working with transactions</a></li>
-<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
-<li><a href="vps-setup.html">Full Node VPS Setup</a></li>
-<li><a href="segwit.html">Segwit and Bcoin</a></li>
-<li><a href="scripting.html">Intro to Scripting</a></li>
-<li><a href="op_return.html">Store Data on the Blockchain</a></li>
-<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
-<li><a href="generate-address.html">Generate an Address</a></li>
-<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
-<li><a href="beginners.html">Beginners Guide to Getting Started</a></li>
-<!-- /GUIDES-LIST -->
-</ul>
-</div>
-  <!-- END CATEGORIES WIDGET -->
-
-  <!-- TEXT WIDGET -->
-  <div class="widget">
-    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
-    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
-  </div>
-  <!-- END TEXT WIDGET -->
-
-  <!-- TEXT WIDGET -->
-  <div class="widget">
-    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
-    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="../slack-signup.html"> Slack.</a></p>
-    <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
-  </div>
-  <!-- END TEXT WIDGET -->
-</div>
-					<!-- END SIDEBAR -->
 					<!-- START OF ARTICLE CONTAINER -->
 					<div class="col-sm-9 blog-content post-thumbnail">
 						<!-- POST IMAGE -->
@@ -315,40 +267,41 @@
 					<!-- START OF GUIDE -->
 <h2 class="post-title panel-title" id="generate-an-address">Generate an Address</h2><ul class="post-meta"><li class="author">By Javed Khan</li></ul><p>Follow along with the steps below to build a transaction from scratch using built-in bcoin utilities. These steps are based on those outlined in the <a href="https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses">Bitcoin Wiki</a>.</p>
 <p>Of course, if you&#39;re using the bcoin wallet module, it will do these steps for you automatically when you <a href="../api-docs/index.html#generate-receiving-address">generate an address</a>!</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token comment">// https://en.bitcoin.it/wiki/Technical_background_of_version_1_Bitcoin_addresses</span>
 
-secp256k1 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/crypto/secp256k1"</span><span class="token punctuation">)</span>
-crypto <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/crypto"</span><span class="token punctuation">)</span>
-base58 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">"bcoin/lib/utils/base58"</span><span class="token punctuation">)</span>
+<span class="token keyword">const</span> secp256k1 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcrypto/lib/secp256k1'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> ripemd160 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcrypto/lib/ripemd160'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> sha256 <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcrypto/lib/sha256'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token punctuation">{</span>base58<span class="token punctuation">}</span> <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bstring'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// 0 - Having a private ECDSA key</span>
-privkey <span class="token operator">=</span> buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token keyword">from</span><span class="token punctuation">(</span><span class="token string">"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725"</span><span class="token punctuation">,</span> <span class="token string">"hex"</span><span class="token punctuation">)</span>
+<span class="token comment">// 0 - Having a private ECDSA key</span>
+privkey <span class="token operator">=</span> Buffer<span class="token punctuation">.</span><span class="token keyword">from</span><span class="token punctuation">(</span><span class="token string">"18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725"</span><span class="token punctuation">,</span> <span class="token string">"hex"</span><span class="token punctuation">)</span>
 
-<span class="token comment" spellcheck="true">// 1 - Take the corresponding public key generated with it (65 bytes, 1 byte 0x04, 32 bytes corresponding to X coordinate, 32 bytes corresponding to Y coordinate)</span>
+<span class="token comment">// 1 - Take the corresponding public key generated with it (65 bytes, 1 byte 0x04, 32 bytes corresponding to X coordinate, 32 bytes corresponding to Y coordinate)</span>
 pubkey <span class="token operator">=</span> secp256k1<span class="token punctuation">.</span><span class="token function">publicKeyCreate</span><span class="token punctuation">(</span>privkey<span class="token punctuation">,</span> <span class="token boolean">false</span><span class="token punctuation">)</span>
 
-<span class="token comment" spellcheck="true">// 2 - Perform SHA-256 hashing on the public key</span>
-step2 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">sha256</span><span class="token punctuation">(</span>pubkey<span class="token punctuation">)</span>
+<span class="token comment">// 2 - Perform SHA-256 hashing on the public key</span>
+step2 <span class="token operator">=</span> sha256<span class="token punctuation">.</span><span class="token function">digest</span><span class="token punctuation">(</span>pubkey<span class="token punctuation">)</span>
 
-<span class="token comment" spellcheck="true">// 3 - Perform RIPEMD-160 hashing on the result of SHA-256</span>
-step3 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">ripemd160</span><span class="token punctuation">(</span>step2<span class="token punctuation">)</span>
+<span class="token comment">// 3 - Perform RIPEMD-160 hashing on the result of SHA-256</span>
+step3 <span class="token operator">=</span> ripemd160<span class="token punctuation">.</span><span class="token function">digest</span><span class="token punctuation">(</span>step2<span class="token punctuation">)</span>
 
-<span class="token comment" spellcheck="true">// 4 - Add version byte in front of RIPEMD-160 hash (0x00 for Main Network)</span>
-step4 <span class="token operator">=</span> buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span><span class="token punctuation">[</span>buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token function">alloc</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> step3<span class="token punctuation">]</span><span class="token punctuation">)</span>
+<span class="token comment">// 4 - Add version byte in front of RIPEMD-160 hash (0x00 for Main Network)</span>
+step4 <span class="token operator">=</span> Buffer<span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span><span class="token punctuation">[</span>buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token function">alloc</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> step3<span class="token punctuation">]</span><span class="token punctuation">)</span>
 
-<span class="token comment" spellcheck="true">// 5 - Perform SHA-256 hash on the extended RIPEMD-160 result</span>
-step5 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">sha256</span><span class="token punctuation">(</span>step4<span class="token punctuation">)</span>
+<span class="token comment">// 5 - Perform SHA-256 hash on the extended RIPEMD-160 result</span>
+step5 <span class="token operator">=</span> sha256<span class="token punctuation">.</span><span class="token function">digest</span><span class="token punctuation">(</span>step4<span class="token punctuation">)</span>
 
-<span class="token comment" spellcheck="true">// 6 - Perform SHA-256 hash on the result of the previous SHA-256 hash</span>
-step6 <span class="token operator">=</span> crypto<span class="token punctuation">.</span><span class="token function">sha256</span><span class="token punctuation">(</span>step5<span class="token punctuation">)</span>
+<span class="token comment">// 6 - Perform SHA-256 hash on the result of the previous SHA-256 hash</span>
+step6 <span class="token operator">=</span> sha256<span class="token punctuation">.</span><span class="token function">digest</span><span class="token punctuation">(</span>step5<span class="token punctuation">)</span>
 
-<span class="token comment" spellcheck="true">// 7 - Take the first 4 bytes of the second SHA-256 hash. This is the address checksum</span>
+<span class="token comment">// 7 - Take the first 4 bytes of the second SHA-256 hash. This is the address checksum</span>
 step7 <span class="token operator">=</span> step6<span class="token punctuation">.</span><span class="token function">slice</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">)</span>
 
-<span class="token comment" spellcheck="true">// 8 - Add the 4 checksum bytes from stage 7 at the end of extended RIPEMD-160 hash from stage 4. This is the 25-byte binary Bitcoin Address.</span>
-step8 <span class="token operator">=</span> buffer<span class="token punctuation">.</span>Buffer<span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span><span class="token punctuation">[</span>step4<span class="token punctuation">,</span> step7<span class="token punctuation">]</span><span class="token punctuation">)</span>
+<span class="token comment">// 8 - Add the 4 checksum bytes from stage 7 at the end of extended RIPEMD-160 hash from stage 4. This is the 25-byte binary Bitcoin Address.</span>
+step8 <span class="token operator">=</span> Buffer<span class="token punctuation">.</span><span class="token function">concat</span><span class="token punctuation">(</span><span class="token punctuation">[</span>step4<span class="token punctuation">,</span> step7<span class="token punctuation">]</span><span class="token punctuation">)</span>
 
-<span class="token comment" spellcheck="true">// 9 - Convert the result from a byte string into a base58 string using Base58Check encoding. This is the most commonly used Bitcoin Address format</span>
+<span class="token comment">// 9 - Convert the result from a byte string into a base58 string using Base58Check encoding. This is the most commonly used Bitcoin Address format</span>
 addr <span class="token operator">=</span> base58<span class="token punctuation">.</span><span class="token function">encode</span><span class="token punctuation">(</span>step8<span class="token punctuation">)</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre>
 
 					<!-- END OF GUIDE -->
@@ -362,7 +315,62 @@ addr <span class="token operator">=</span> base58<span class="token punctuation"
 					</div>
 					<!-- END BLOG CONTENT -->
 
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Installation</h6>
+      <p>
+        <a href="https://github.com/bcoin-org/bcoin/blob/master/docs/getting-started.md">
+          See the "Getting Started" guide in the repository documents directory.
+        </a>
+      </p>
+  </div>
+  <!-- END TEXT WIDGET -->
 
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="webapp.html">Building web applications with the bcoin library</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="swaps.html">Cross-Chain Atomic Swaps</a></li>
+<li><a href="segwit.html">Segwit and Bcoin</a></li>
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
+<li><a href="multisig-cli.html">Multisig on the command line</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="events.html">Events and Sockets</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="connect-local-nodes.html">Connect two local nodes</a></li>
+<li><a href="cltv.html">Time Locked Bitcoin Transactions w/ CLTV</a></li>
+<li><a href="building-plugins.html">Building Awesome bcoin Plugins</a></li>
+<li><a href="browser.html">Run a bcoin full node in a web browser</a></li>
+<li><a href="bcoin-clock.html">Make your own Bcoin Block Clock!</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="https://t.me/bcoinorg"> Telegram.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
+
+					<!-- END SIDEBAR -->
 
 				</div><!-- .row -->
 
@@ -405,7 +413,7 @@ addr <span class="token operator">=</span> base58<span class="token punctuation"
 							<li><a href="https://github.com/bcoin-org/bcoin"><i class="fa fa-github"></i></a></li>
 
 
-							<li><a href="../slack-signup.html" target="_blank"><i class="fa fa-slack"></i></a></li>
+							<li><a href="https://t.me/bcoinorg" target="_blank"><img src="assets/images/telegram-app.svg"></a></li>
 						</ul>
 					</div>
 				</div>

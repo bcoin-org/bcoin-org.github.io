@@ -146,11 +146,11 @@
 				<div class="inner-header pull-right hide-me">
 					<div class="menu-extras clearfix">
 
-						<!-- SLACK LINK -->
+						<!-- TELEGRAM LINK -->
 						<div class="menu-item">
 							<div class="">
-								<a href="../slack-signup.html" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Slack!">
-									<img src="../assets/images/slack_icon.svg" width="18" height="18"/>
+								<a href="https://t.me/bcoinorg" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Telegram!">
+									<img src="../assets/images/telegram-app.svg" width="18" height="18"/>
 									<span class=""></span>
 								</a>
                             </div>
@@ -249,54 +249,6 @@
 			<div class="container">
 
 				<div class="row">
-
-					<!-- START SIDEBAR -->
-<div class="col-sm-3 sidebar">
-  <!-- CATEGORIES WIDGET -->
-<div class="widget guide-list">
-<h6 class="montserrat text-uppercase bottom-line">Install</h6>
-<ul class="icons-list">
-<!-- INSTALL-LIST -->
-<li><a href="install-windows.html">Install on Windows (Video)</a></li>
-<li><a href="install-mac.html">Install on Mac OS (Video)</a></li>
-<li><a href="install-linux.html">Install on Linux (Video)</a></li>
-<!-- /INSTALL-LIST -->
-</ul>
-<br>
-<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
-<ul class="icons-list">
-<!-- GUIDES-LIST -->
-<li><a href="working-with-txs.html">Working with transactions</a></li>
-<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
-<li><a href="vps-setup.html">Full Node VPS Setup</a></li>
-<li><a href="segwit.html">Segwit and Bcoin</a></li>
-<li><a href="scripting.html">Intro to Scripting</a></li>
-<li><a href="op_return.html">Store Data on the Blockchain</a></li>
-<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
-<li><a href="generate-address.html">Generate an Address</a></li>
-<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
-<li><a href="beginners.html">Beginners Guide to Getting Started</a></li>
-<!-- /GUIDES-LIST -->
-</ul>
-</div>
-  <!-- END CATEGORIES WIDGET -->
-
-  <!-- TEXT WIDGET -->
-  <div class="widget">
-    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
-    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
-  </div>
-  <!-- END TEXT WIDGET -->
-
-  <!-- TEXT WIDGET -->
-  <div class="widget">
-    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
-    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="../slack-signup.html"> Slack.</a></p>
-    <p>Want to join the team?<a href="https://angel.co/purse/jobs/90956-bitcoin-protocol-engineer-bcoin"> We’re hiring.</a></p>
-  </div>
-  <!-- END TEXT WIDGET -->
-</div>
-					<!-- END SIDEBAR -->
 					<!-- START OF ARTICLE CONTAINER -->
 					<div class="col-sm-9 blog-content post-thumbnail">
 						<!-- POST IMAGE -->
@@ -317,27 +269,30 @@
 <h2 id="how-it-works">How it Works</h2><p>The <code>ALL|ANYONECANPAY</code> flag indicates that a signature is committing all of the outputs and just one input. The suggested use case of this proposed in <em>Mastering Bitcoin</em> is a kickstarter-like crowdfunding application. Consider the situation where you have a fundraising goal, say 1BTC. You&#39;d like multiple people to contribute to your goal and you want to prove to them that they won&#39;t have to pay <em>unless</em> you reach your goal (i.e. the transaction is invalid and won&#39;t be accepted by the network if attempted to be sent). This means you&#39;d be committing to one output, the one that sends the funds to the charity or project you&#39;d like to donate to, and only one input, your contribution. This allows multiple users to contribute to the same transaction and that transaction won&#39;t be valid until it&#39;s fully funded.</p>
 <p>Here&#39;s how it&#39;s explained in <em>Mastering Bitcoin</em>:</p>
 <blockquote>
-<p>ALL|ANYONECANPAY<br>This construction can be used to make a &quot;crowdfunding”-style transaction. Someone attempting to raise funds can construct a transaction with a single output. The single output pays the &quot;goal&quot; amount to the fundraiser. Such a transaction is obviously not valid, as it has no inputs. However, others can now amend it by adding an input of their own, as a donation. They sign their own input with ALL|ANYONECANPAY. Unless enough inputs are gathered to reach the value of the output, the transaction is invalid. Each donation is a &quot;pledge,&quot; which cannot be collected by the fundraiser until the entire goal amount is raised.</p>
+<p>ALL|ANYONECANPAY
+This construction can be used to make a &quot;crowdfunding”-style transaction. Someone attempting to raise funds can construct a transaction with a single output. The single output pays the &quot;goal&quot; amount to the fundraiser. Such a transaction is obviously not valid, as it has no inputs. However, others can now amend it by adding an input of their own, as a donation. They sign their own input with ALL|ANYONECANPAY. Unless enough inputs are gathered to reach the value of the output, the transaction is invalid. Each donation is a &quot;pledge,&quot; which cannot be collected by the fundraiser until the entire goal amount is raised.</p>
 </blockquote>
-<h2 id="the-code">The Code</h2><p>We&#39;ll walk through the steps of creating the transaction first without any wallet database or node running. Then we&#39;ll do the same thing using bcoin&#39;s walletdb to manage the keys to see how it would work in a more realistic application (skip to <a href="#version-2-using-the-bcoin-wallet-system">Version 2</a>) further in the guide to check it out). At the end, we&#39;ll put out some ideas of how these can be built upon for a more robust, production ready application. (If this is something you&#39;d be interested in building, <a href="https://bcoin.io/slack-signup.html">get in touch</a>!). If you want to see the code, checkout the <a href="https://github.com/Bucko13/bitcoin-fundraise">repo on github</a>.</p>
+<h2 id="the-code">The Code</h2><p>We&#39;ll walk through the steps of creating the transaction first without any wallet database or node running. Then we&#39;ll do the same thing using bcoin&#39;s walletdb to manage the keys to see how it would work in a more realistic application (skip to <a href="#version-2-using-the-bcoin-wallet-system">Version 2</a>) further in the guide to check it out). At the end, we&#39;ll put out some ideas of how these can be built upon for a more robust, production ready application. (If this is something you&#39;d be interested in building, <a href="https://t.me/bcoinorg">get in touch</a>!). If you want to see the code, checkout the <a href="https://github.com/Bucko13/bitcoin-fundraise">repo on github</a>.</p>
 <p>If you&#39;re not comfortable with key management, coin selection, and how transactions are constructed, checkout the tutorial on <a href="https://bcoin.io/guides/working-with-txs.html">working with transactions</a> first.</p>
-<h3 id="version-1--manual-key-management">Version 1 - Manual Key Management</h3><h4 id="step-1-setup">Step 1: Setup</h4><p>Let&#39;s first start by importing the right tools, setting up some constants, and creating our keychains. (make sure you&#39;ve installed the latest version of bcoin into your project with <code>npm install bcoin</code>).</p>
-<p>Note that we&#39;re setting the fundingTarget and amountToFund as constants for simplicity, but they could be set based on user input or some other variable circumstances.</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
+<h3 id="version-1--manual-key-management">Version 1 - Manual Key Management</h3><h4 id="step-1-setup">Step 1: Setup</h4><p>Let&#39;s first start by importing the right tools, setting up some constants, and creating our keychains. Make sure you&#39;ve installed the latest version of bcoin first:</p>
+<pre class="snippet line-numbers language-bash "><code class="line-numbers language-bash">$ <span class="token function">git</span> clone https://github.com/bcoin-org/bcoin
+$ <span class="token function">cd</span> bcoin
+$ npm <span class="token function">install</span> -g</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Note that we&#39;re setting the fundingTarget and amountToFund as constants for simplicity, but they could be set based on user input or some other variable circumstances.</p>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token string">'use strict'</span><span class="token punctuation">;</span>
 
 <span class="token keyword">const</span> assert <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'assert'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">const</span> bcoin <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'bcoin'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token keyword">const</span> MTX <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>mtx<span class="token punctuation">;</span>
-<span class="token keyword">const</span> Keyring <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>keyring<span class="token punctuation">;</span>
-<span class="token keyword">const</span> Outpoint <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>outpoint<span class="token punctuation">;</span>
-<span class="token keyword">const</span> Script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>script<span class="token punctuation">;</span>
-<span class="token keyword">const</span> Coin <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>coin<span class="token punctuation">;</span>
+<span class="token keyword">const</span> MTX <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>MTX<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Keyring <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>wallet<span class="token punctuation">.</span>WalletKey<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Outpoint <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Outpoint<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Script <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Script<span class="token punctuation">;</span>
+<span class="token keyword">const</span> Coin <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>Coin<span class="token punctuation">;</span>
 <span class="token keyword">const</span> policy <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>protocol<span class="token punctuation">.</span>policy
 
-<span class="token keyword">const</span> fundingTarget <span class="token operator">=</span> <span class="token number">100000000</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// 1 BTC</span>
-<span class="token keyword">const</span> amountToFund <span class="token operator">=</span> <span class="token number">50000000</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// .5 BTC</span>
-<span class="token keyword">const</span> txRate <span class="token operator">=</span> <span class="token number">10000</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// 10000 satoshis/kb</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Let&#39;s derive private hd key for fundee and two funders and create a &quot;keyring&quot; object for each (much of this is borrowed from the <em>Working with Transactions</em> guide).</p>
+<span class="token keyword">const</span> fundingTarget <span class="token operator">=</span> <span class="token number">100000000</span><span class="token punctuation">;</span> <span class="token comment">// 1 BTC</span>
+<span class="token keyword">const</span> amountToFund <span class="token operator">=</span> <span class="token number">50000000</span><span class="token punctuation">;</span> <span class="token comment">// .5 BTC</span>
+<span class="token keyword">const</span> txRate <span class="token operator">=</span> <span class="token number">10000</span><span class="token punctuation">;</span> <span class="token comment">// 10000 satoshis/kb</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Let&#39;s derive private hd key for fundee and two funders and create a &quot;keyring&quot; object for each (much of this is borrowed from the <em>Working with Transactions</em> guide).</p>
 <p>A keyring object is basically a key manager that is also able to tell you info such as:</p>
 <ul>
 <li>your redeem script</li>
@@ -346,14 +301,14 @@
 <li>your pubkey hash</li>
 <li>your scripthash program hash</li>
 </ul>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// Create an HD master keypair.</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token comment">// Create an HD master keypair.</span>
 <span class="token keyword">const</span> master <span class="token operator">=</span> bcoin<span class="token punctuation">.</span>hd<span class="token punctuation">.</span><span class="token function">generate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
 <span class="token keyword">const</span> fundeeKey <span class="token operator">=</span> master<span class="token punctuation">.</span><span class="token function">derive</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">const</span> fundeeKeyring <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Keyring</span><span class="token punctuation">(</span>fundeeKey<span class="token punctuation">.</span>privateKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">const</span> fundeeAddress <span class="token operator">=</span> fundeeKeyring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token comment" spellcheck="true">// Derive 2 more private hd keys and keyrings for funders</span>
+<span class="token comment">// Derive 2 more private hd keys and keyrings for funders</span>
 <span class="token keyword">const</span> funder1Key <span class="token operator">=</span> master<span class="token punctuation">.</span><span class="token function">derive</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token keyword">const</span> funder1Keyring <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Keyring</span><span class="token punctuation">(</span>funder1Key<span class="token punctuation">.</span>privateKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
@@ -362,13 +317,13 @@
 
 <span class="token keyword">const</span> funders <span class="token operator">=</span> <span class="token punctuation">[</span>funder1Keyring<span class="token punctuation">,</span> funder2Keyring<span class="token punctuation">]</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h4 id="step-2-fund-the-keyrings">Step 2: Fund the Keyrings</h4><p>This example is working in an isolated environment, so it won&#39;t work on the actual network (main, test, or otherwise), but we also don&#39;t have to earn or send ourselves coins or wait for confirmation times. That means that we can &quot;spawn&quot; coins for our funder wallets that they can use to spend on the crowdfunding platform.</p>
 <p>Let&#39;s create some coinbase transactions to give our keyrings some coins that they can spend.</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token comment" spellcheck="true">// create some coinbase transactions to fund our wallets</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token comment">// create some coinbase transactions to fund our wallets</span>
 <span class="token keyword">const</span> coins <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
 
 <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">let</span> i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> funders<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">const</span> cb <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// Add a typical coinbase input</span>
+  <span class="token comment">// Add a typical coinbase input</span>
   cb<span class="token punctuation">.</span><span class="token function">addInput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
     prevout<span class="token punctuation">:</span> <span class="token keyword">new</span> <span class="token class-name">Outpoint</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
     script<span class="token punctuation">:</span> <span class="token keyword">new</span> <span class="token class-name">Script</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
@@ -376,17 +331,17 @@
 
   cb<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
     address<span class="token punctuation">:</span> funders<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
-    value<span class="token punctuation">:</span> <span class="token number">500000000</span> <span class="token comment" spellcheck="true">// give the funder 5BTC</span>
+    value<span class="token punctuation">:</span> <span class="token number">500000000</span> <span class="token comment">// give the funder 5BTC</span>
   <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
   <span class="token function">assert</span><span class="token punctuation">(</span>cb<span class="token punctuation">.</span>inputs<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token function">isCoinbase</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// Convert the coinbase output to a Coin</span>
-  <span class="token comment" spellcheck="true">// object and add it to the available coins for that keyring.</span>
-  <span class="token comment" spellcheck="true">// In reality you might get these coins from a wallet.</span>
+  <span class="token comment">// Convert the coinbase output to a Coin</span>
+  <span class="token comment">// object and add it to the available coins for that keyring.</span>
+  <span class="token comment">// In reality you might get these coins from a wallet.</span>
   coins<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">[</span>Coin<span class="token punctuation">.</span><span class="token function">fromTX</span><span class="token punctuation">(</span>cb<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>The coins object you&#39;ve created above should look something like this:</p>
-<pre class="snippet line-numbers language-json"><code class="line-numbers language-json"><span class="token punctuation">{</span>
+<pre class="snippet line-numbers language-json "><code class="line-numbers language-json"><span class="token punctuation">{</span>
   <span class="token property">"0"</span><span class="token operator">:</span>
       <span class="token punctuation">[</span>
         <span class="token punctuation">{</span>
@@ -407,7 +362,7 @@
 <p>The first thing we need to do make this work is calculate what the input will be. In our examples we are assuming that the funders cover the fee. Since different keyrings can be using different transaction types of different sizes (p2sh, multisig, etc.), we need a utility to calculate how much the fee should be for that input and add that to the amount to fund with.</p>
 <h5 id="utility-functions">Utility functions</h5><p>We&#39;ll need some utility functions to help us out. It&#39;s nice to split these out separate from our main operations since we&#39;ll actually be reusing some of the functionality.</p>
 <p>Before we build out the tools to calculate fees and split coins, we&#39;ll need a utility for composing the inputs for txs that we&#39;ll use for our mock transactions in the fee calculator and later for templating our real transaction</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> addInput <span class="token operator">=</span> <span class="token keyword">function</span> <span class="token function">addInput</span><span class="token punctuation">(</span>coin<span class="token punctuation">,</span> inputIndex<span class="token punctuation">,</span> mtx<span class="token punctuation">,</span> keyring<span class="token punctuation">,</span> hashType<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token keyword">const</span> addInput <span class="token operator">=</span> <span class="token keyword">function</span> <span class="token function">addInput</span><span class="token punctuation">(</span>coin<span class="token punctuation">,</span> inputIndex<span class="token punctuation">,</span> mtx<span class="token punctuation">,</span> keyring<span class="token punctuation">,</span> hashType<span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">const</span> sampleCoin <span class="token operator">=</span> coin <span class="token keyword">instanceof</span> <span class="token class-name">Coin</span> <span class="token operator">?</span> coin <span class="token punctuation">:</span> Coin<span class="token punctuation">.</span><span class="token function">fromJSON</span><span class="token punctuation">(</span>coin<span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span>hashType<span class="token punctuation">)</span> hashType <span class="token operator">=</span> Script<span class="token punctuation">.</span>hashType<span class="token punctuation">.</span>ANYONECANPAY <span class="token operator">|</span> Script<span class="token punctuation">.</span>hashType<span class="token punctuation">.</span>ALL<span class="token punctuation">;</span>
 
@@ -416,39 +371,39 @@
   mtx<span class="token punctuation">.</span><span class="token function">signInput</span><span class="token punctuation">(</span>inputIndex<span class="token punctuation">,</span> sampleCoin<span class="token punctuation">,</span> keyring<span class="token punctuation">,</span> hashType<span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token function">assert</span><span class="token punctuation">(</span>mtx<span class="token punctuation">.</span><span class="token function">isSigned</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">'Input was not signed properly'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Now let&#39;s build the utility for calculating the fee for a single input of unknown type or size</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> getFeeForInput <span class="token operator">=</span> <span class="token keyword">function</span> <span class="token function">getFeeForInput</span><span class="token punctuation">(</span>coin<span class="token punctuation">,</span> address<span class="token punctuation">,</span> keyring<span class="token punctuation">,</span> rate<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  <span class="token keyword">const</span> fundingTarget <span class="token operator">=</span> <span class="token number">100000000</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// 1 BTC (arbitrary for purposes of this function)</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token keyword">const</span> getFeeForInput <span class="token operator">=</span> <span class="token keyword">function</span> <span class="token function">getFeeForInput</span><span class="token punctuation">(</span>coin<span class="token punctuation">,</span> address<span class="token punctuation">,</span> keyring<span class="token punctuation">,</span> rate<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">const</span> fundingTarget <span class="token operator">=</span> <span class="token number">100000000</span><span class="token punctuation">;</span> <span class="token comment">// 1 BTC (arbitrary for purposes of this function)</span>
   <span class="token keyword">const</span> testMTX <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// we're not actually going to use this tx for anything other than calculate what fee should be</span>
+  <span class="token comment">// we're not actually going to use this tx for anything other than calculate what fee should be</span>
   <span class="token function">addInput</span><span class="token punctuation">(</span>coin<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> testMTX<span class="token punctuation">,</span> keyring<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
   <span class="token keyword">return</span> testMTX<span class="token punctuation">.</span><span class="token function">getMinFee</span><span class="token punctuation">(</span><span class="token keyword">null</span><span class="token punctuation">,</span> rate<span class="token punctuation">)</span><span class="token punctuation">;</span>
 <span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Our last utility is an asyncronous function to help us split the coinbases we created in the previous step (we use the <code>fund</code> method on the <code>MTX</code> primitive to do this, which is asynchronous).</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> splitCoinbase <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">splitCoinbase</span><span class="token punctuation">(</span>funderKeyring<span class="token punctuation">,</span> coin<span class="token punctuation">,</span> targetAmount<span class="token punctuation">,</span> txRate<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  <span class="token comment" spellcheck="true">// loop through each coinbase coin to split</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token keyword">const</span> splitCoinbase <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">splitCoinbase</span><span class="token punctuation">(</span>funderKeyring<span class="token punctuation">,</span> coin<span class="token punctuation">,</span> targetAmount<span class="token punctuation">,</span> txRate<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token comment">// loop through each coinbase coin to split</span>
   <span class="token keyword">let</span> coins <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
 
   <span class="token keyword">const</span> mtx <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
   <span class="token function">assert</span><span class="token punctuation">(</span>coin<span class="token punctuation">.</span>value <span class="token operator">></span> targetAmount<span class="token punctuation">,</span> <span class="token string">'coin value is not enough!'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// creating a transaction that will have an output equal to what we want to fund</span>
+  <span class="token comment">// creating a transaction that will have an output equal to what we want to fund</span>
   mtx<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
     address<span class="token punctuation">:</span> funderKeyring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
     value<span class="token punctuation">:</span> targetAmount
   <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// the fund method will automatically split</span>
-  <span class="token comment" spellcheck="true">// the remaining funds to the change address</span>
-  <span class="token comment" spellcheck="true">// Note that in a real application these splitting transactions will also</span>
-  <span class="token comment" spellcheck="true">// have to be broadcast to the network</span>
+  <span class="token comment">// the fund method will automatically split</span>
+  <span class="token comment">// the remaining funds to the change address</span>
+  <span class="token comment">// Note that in a real application these splitting transactions will also</span>
+  <span class="token comment">// have to be broadcast to the network</span>
   <span class="token keyword">await</span> mtx<span class="token punctuation">.</span><span class="token function">fund</span><span class="token punctuation">(</span><span class="token punctuation">[</span>coin<span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token punctuation">{</span>
     rate<span class="token punctuation">:</span> txRate<span class="token punctuation">,</span>
-    <span class="token comment" spellcheck="true">// send change back to an address belonging to the funder</span>
+    <span class="token comment">// send change back to an address belonging to the funder</span>
     changeAddress<span class="token punctuation">:</span> funderKeyring<span class="token punctuation">.</span><span class="token function">getAddress</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
   <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">then</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
-    <span class="token comment" spellcheck="true">// sign the mtx to finalize split</span>
+    <span class="token comment">// sign the mtx to finalize split</span>
     mtx<span class="token punctuation">.</span><span class="token function">sign</span><span class="token punctuation">(</span>funderKeyring<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">assert</span><span class="token punctuation">(</span>mtx<span class="token punctuation">.</span><span class="token function">verify</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
@@ -457,7 +412,7 @@
 
     <span class="token keyword">const</span> outputs <span class="token operator">=</span> tx<span class="token punctuation">.</span>outputs<span class="token punctuation">;</span>
 
-    <span class="token comment" spellcheck="true">// get coins from tx</span>
+    <span class="token comment">// get coins from tx</span>
     outputs<span class="token punctuation">.</span><span class="token function">forEach</span><span class="token punctuation">(</span><span class="token punctuation">(</span>outputs<span class="token punctuation">,</span> index<span class="token punctuation">)</span> <span class="token operator">=</span><span class="token operator">></span> <span class="token punctuation">{</span>
       coins<span class="token punctuation">.</span><span class="token function">push</span><span class="token punctuation">(</span>Coin<span class="token punctuation">.</span><span class="token function">fromTX</span><span class="token punctuation">(</span>tx<span class="token punctuation">,</span> index<span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
@@ -465,28 +420,29 @@
   <span class="token punctuation">.</span><span class="token keyword">catch</span><span class="token punctuation">(</span>e <span class="token operator">=</span><span class="token operator">></span> console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'There was an error: '</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
   <span class="token keyword">return</span> coins<span class="token punctuation">;</span>
-<span class="token punctuation">}</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Because of the async methods being used, in order to take advantage of the async/await structure, the rest of the code will be enclosed in an async function.</p>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>Because of the async methods being used, in order to take advantage of the async/await structure, the rest of the code will be enclosed in an async function.</p>
 <p>The first thing we&#39;ll do is split the coinbase coins we created earlier using the utility function we just built (we&#39;ll also have to calculate the fee and add it to the funding amount in order to get an output of the right value).</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> composeCrowdfund <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">composeCrowdfund</span><span class="token punctuation">(</span>coins<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token keyword">const</span> composeCrowdfund <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">composeCrowdfund</span><span class="token punctuation">(</span>coins<span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">const</span> funderCoins <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
-  <span class="token comment" spellcheck="true">// Loop through each coinbase</span>
+  <span class="token comment">// Loop through each coinbase</span>
   <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">let</span> index <span class="token keyword">in</span> coins<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">const</span> coinbase <span class="token operator">=</span> coins<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
-    <span class="token comment" spellcheck="true">// estimate fee for each coin (assuming their split coins will use same tx type)</span>
+    <span class="token comment">// estimate fee for each coin (assuming their split coins will use same tx type)</span>
     <span class="token keyword">const</span> estimatedFee <span class="token operator">=</span> <span class="token function">getFeeForInput</span><span class="token punctuation">(</span>coinbase<span class="token punctuation">,</span> fundeeAddress<span class="token punctuation">,</span> funders<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">,</span> txRate<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">const</span> targetPlusFee <span class="token operator">=</span> amountToFund <span class="token operator">+</span> estimatedFee<span class="token punctuation">;</span>
 
-    <span class="token comment" spellcheck="true">// split the coinbase with targetAmount plus estimated fee</span>
+    <span class="token comment">// split the coinbase with targetAmount plus estimated fee</span>
     <span class="token keyword">const</span> splitCoins <span class="token operator">=</span> <span class="token keyword">await</span> Utils<span class="token punctuation">.</span><span class="token function">splitCoinbase</span><span class="token punctuation">(</span>funders<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">,</span> coinbase<span class="token punctuation">,</span> targetPlusFee<span class="token punctuation">,</span> txRate<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token comment" spellcheck="true">// add to funderCoins object with returned coins from splitCoinbase being value,</span>
-    <span class="token comment" spellcheck="true">// and index being the key</span>
+    <span class="token comment">// add to funderCoins object with returned coins from splitCoinbase being value,</span>
+    <span class="token comment">// and index being the key</span>
     funderCoins<span class="token punctuation">[</span>index<span class="token punctuation">]</span> <span class="token operator">=</span> splitCoins<span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
-  <span class="token comment" spellcheck="true">// ... we'll keep filling out the rest of the code here</span>
+  <span class="token comment">// ... we'll keep filling out the rest of the code here</span>
 <span class="token punctuation">}</span><span class="token punctuation">;</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p><code>funderCoins</code> should return x number of coin arrays, where X is the number of coinbases we created earlier (should be 2) with each array having a coin equal to the amount we want to donate.</p>
 <p>For example...</p>
-<pre class="snippet line-numbers language-json"><code class="line-numbers language-json"><span class="token punctuation">{</span>
+<pre class="snippet line-numbers language-json "><code class="line-numbers language-json"><span class="token punctuation">{</span>
   <span class="token property">"0"</span><span class="token operator">:</span>
      <span class="token punctuation">[</span>
       <span class="token punctuation">{</span>
@@ -504,25 +460,25 @@
       <span class="token punctuation">]</span><span class="token punctuation">,</span>
   <span class="token property">"1"</span><span class="token operator">:</span> <span class="token punctuation">[</span>...<span class="token punctuation">]</span>
 <span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h4 id="step-4-construct-the-transaction">Step 4: Construct the Transaction</h4><p>Now that we&#39;ve got our tools and coins ready, we can start to build the transaction!</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> composeCrowdfund <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">composeCrowdfund</span><span class="token punctuation">(</span>coins<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  <span class="token comment" spellcheck="true">//...</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token keyword">const</span> composeCrowdfund <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">composeCrowdfund</span><span class="token punctuation">(</span>coins<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token comment">//...</span>
 
   <span class="token keyword">const</span> fundMe <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// add an output with the target funding amount</span>
+  <span class="token comment">// add an output with the target funding amount</span>
 
   fundMe<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span><span class="token punctuation">{</span> value<span class="token punctuation">:</span> fundingTarget<span class="token punctuation">,</span> address<span class="token punctuation">:</span> fundeeAddress <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// fund with first funder</span>
+  <span class="token comment">// fund with first funder</span>
   <span class="token keyword">let</span> fundingCoin <span class="token operator">=</span> funderCoins<span class="token punctuation">[</span><span class="token string">'0'</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
   <span class="token function">addInput</span><span class="token punctuation">(</span>fundingCoin<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> fundMe<span class="token punctuation">,</span> funder1Keyring<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// fund with second funder</span>
+  <span class="token comment">// fund with second funder</span>
   fundingCoin <span class="token operator">=</span> funderCoins<span class="token punctuation">[</span><span class="token string">'1'</span><span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
   <span class="token function">addInput</span><span class="token punctuation">(</span>fundingCoin<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> fundMe<span class="token punctuation">,</span> funder2Keyring<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// We want to confirm that total value of inputs covers the funding goal</span>
-  <span class="token comment" spellcheck="true">// NOTE: the difference goes to the miner in the form of fees</span>
+  <span class="token comment">// We want to confirm that total value of inputs covers the funding goal</span>
+  <span class="token comment">// NOTE: the difference goes to the miner in the form of fees</span>
   <span class="token function">assert</span><span class="token punctuation">(</span>fundMe<span class="token punctuation">.</span><span class="token function">getInputValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">>=</span> fundMe<span class="token punctuation">.</span>outputs<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>value<span class="token punctuation">,</span> <span class="token string">'Total inputs not enough to fund'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token function">assert</span><span class="token punctuation">(</span>fundMe<span class="token punctuation">.</span><span class="token function">verify</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">'The mtx is malformed'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
@@ -539,59 +495,59 @@
 <h3 id="version-2-using-the-bcoin-wallet-system">Version 2: Using the Bcoin Wallet System</h3><p>Since trying to manage your own keys is pretty tedious, not to mention impractical especially if you want to let other people contribute to your campaign, let&#39;s use the bcoin wallet system to take care of that part of the process. For the this example, we&#39;re going to interact via the wallet client, but you could also do something similar within a bcoin node (using the wallet and walletdb directly) which would also be more secure.</p>
 <p>Note that this is a little more tedious to test since you need to have funded wallets in order to actually fund your campaign. You can find a bitcoin testnet faucet to get some funds to play with or, as we will do in this example, create your own simnet or regtest network where you mine your own blocks to fund yourself.</p>
 <h4 id="step-1-setup-our-wallets">Step 1: Setup Our Wallets</h4><p>We&#39;ll skip the setup of constants import modules since we can use the same from the previous example. Since there are a lot of asynchronous operations here now that we&#39;re using the client, we&#39;ll also put this in an async function and will continue to build out the contents of the function throughout this guide. We&#39;ll also be using some of the same <a href="#utility-functions">utility functions that we created in the last example</a>.</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> network <span class="token operator">=</span> <span class="token string">'regtest'</span><span class="token punctuation">;</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token keyword">const</span> network <span class="token operator">=</span> <span class="token string">'regtest'</span><span class="token punctuation">;</span>
 <span class="token keyword">const</span> composeWalletCrowdfund <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">composeWalletCrowdfund</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">const</span> client <span class="token operator">=</span> <span class="token keyword">await</span> <span class="token keyword">new</span> <span class="token class-name">bcoin<span class="token punctuation">.</span>http<span class="token punctuation">.</span>Client</span><span class="token punctuation">(</span><span class="token punctuation">{</span> network <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// Step 1: Setup our wallets and funding targets</span>
+  <span class="token comment">// Step 1: Setup our wallets and funding targets</span>
   <span class="token keyword">const</span> fundeeWallet <span class="token operator">=</span> <span class="token keyword">await</span> <span class="token keyword">new</span> <span class="token class-name">httpWallet</span><span class="token punctuation">(</span><span class="token punctuation">{</span> id<span class="token punctuation">:</span> <span class="token string">'fundee'</span><span class="token punctuation">,</span> network <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token keyword">const</span> fundeeAddress <span class="token operator">=</span> <span class="token keyword">await</span> fundeeWallet<span class="token punctuation">.</span><span class="token function">createAddress</span><span class="token punctuation">(</span><span class="token string">'default'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token keyword">const</span> funders <span class="token operator">=</span> <span class="token punctuation">{</span>
     <span class="token string">'funder1'</span><span class="token punctuation">:</span> <span class="token keyword">await</span> <span class="token keyword">new</span> <span class="token class-name">httpWallet</span><span class="token punctuation">(</span><span class="token punctuation">{</span> id<span class="token punctuation">:</span> <span class="token string">'funder1'</span><span class="token punctuation">,</span> network <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
     <span class="token string">'funder2'</span><span class="token punctuation">:</span> <span class="token keyword">await</span> <span class="token keyword">new</span> <span class="token class-name">httpWallet</span><span class="token punctuation">(</span><span class="token punctuation">{</span> id<span class="token punctuation">:</span> <span class="token string">'funder2'</span><span class="token punctuation">,</span> network <span class="token punctuation">}</span><span class="token punctuation">)</span>
   <span class="token punctuation">}</span><span class="token punctuation">;</span>
-  <span class="token comment" spellcheck="true">//...</span>
+  <span class="token comment">//...</span>
 <span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h4 id="step-2-prepare-your-coins">Step 2: Prepare Your Coins</h4><p>We have the same issue to deal with here as in step 2 in the previous example: we need to have &quot;exact change&quot; coins available for funding. The process of splitting is a little different with the wallet system though so let&#39;s walk through this version.</p>
 <p>Note that the way that we&#39;re retrieving the keyring information is pretty insecure as we are sending private keys unencrypted across the network, but we&#39;ll leave for the sake of the example. <strong>DON&#39;T USE THIS IN PRODUCTION</strong>.</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> composeWalletCrowdfund <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">composeWalletCrowdfund</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  <span class="token comment" spellcheck="true">//...</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token keyword">const</span> composeWalletCrowdfund <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">composeWalletCrowdfund</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token comment">//...</span>
 
   <span class="token keyword">const</span> fundingCoins <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// go through each funding wallet to prepare coins</span>
+  <span class="token comment">// go through each funding wallet to prepare coins</span>
   <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">let</span> id <span class="token keyword">in</span> funders<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">const</span> funder <span class="token operator">=</span> funders<span class="token punctuation">[</span>id<span class="token punctuation">]</span><span class="token punctuation">;</span>
 
     <span class="token keyword">const</span> coins <span class="token operator">=</span> <span class="token keyword">await</span> funder<span class="token punctuation">.</span><span class="token function">getCoins</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">const</span> funderInfo <span class="token operator">=</span> <span class="token keyword">await</span> funder<span class="token punctuation">.</span><span class="token function">getInfo</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token comment" spellcheck="true">// Before we do anything we need to get</span>
-    <span class="token comment" spellcheck="true">// the fee that will be necessary for each funder's input.</span>
+    <span class="token comment">// Before we do anything we need to get</span>
+    <span class="token comment">// the fee that will be necessary for each funder's input.</span>
     <span class="token keyword">const</span> funderKey <span class="token operator">=</span> <span class="token keyword">await</span> funder<span class="token punctuation">.</span><span class="token function">getWIF</span><span class="token punctuation">(</span>coins<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>address<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token keyword">const</span> funderKeyring <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">bcoin<span class="token punctuation">.</span>keyring<span class="token punctuation">.</span>fromSecret</span><span class="token punctuation">(</span>funderKey<span class="token punctuation">.</span>privateKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">const</span> funderKeyring <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">bcoin<span class="token punctuation">.</span>KeyRing<span class="token punctuation">.</span>fromSecret</span><span class="token punctuation">(</span>funderKey<span class="token punctuation">.</span>privateKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">const</span> feeForInput <span class="token operator">=</span> Utils<span class="token punctuation">.</span><span class="token function">getFeeForInput</span><span class="token punctuation">(</span>coins<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> fundeeAddress<span class="token punctuation">.</span>address<span class="token punctuation">,</span> funderKeyring<span class="token punctuation">,</span> rate<span class="token punctuation">)</span><span class="token punctuation">;</span>
     amountToFund <span class="token operator">+</span><span class="token operator">=</span> feeForInput<span class="token punctuation">;</span>
 
-    <span class="token comment" spellcheck="true">// Next, go through available coins</span>
-    <span class="token comment" spellcheck="true">// to find a coin equal to or greater than value to fund</span>
+    <span class="token comment">// Next, go through available coins</span>
+    <span class="token comment">// to find a coin equal to or greater than value to fund</span>
 
-    <span class="token comment" spellcheck="true">// We didn't do this before because we knew what coins were available. But if we have one already in our wallets, then we can just use that!</span>
+    <span class="token comment">// We didn't do this before because we knew what coins were available. But if we have one already in our wallets, then we can just use that!</span>
     <span class="token keyword">let</span> fundingCoin <span class="token operator">=</span> <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">;</span>
     <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">let</span> coin <span class="token keyword">of</span> coins<span class="token punctuation">)</span> <span class="token punctuation">{</span>
       <span class="token keyword">if</span> <span class="token punctuation">(</span>coin<span class="token punctuation">.</span>value <span class="token operator">===</span> amountToFund<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-        <span class="token comment" spellcheck="true">// if we already have a coin of the right value we can use that</span>
+        <span class="token comment">// if we already have a coin of the right value we can use that</span>
         fundingCoin <span class="token operator">=</span> coin<span class="token punctuation">;</span>
         <span class="token keyword">break</span><span class="token punctuation">;</span>
       <span class="token punctuation">}</span>
     <span class="token punctuation">}</span>
 
     <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>Object<span class="token punctuation">.</span><span class="token function">keys</span><span class="token punctuation">(</span>fundingCoin<span class="token punctuation">)</span><span class="token punctuation">.</span>length<span class="token punctuation">)</span> <span class="token punctuation">{</span>
-      <span class="token comment" spellcheck="true">// if we don't have a coin of the right amount to fund with</span>
-      <span class="token comment" spellcheck="true">// we need to create one by sending the funder wallet</span>
-      <span class="token comment" spellcheck="true">// a tx that includes an output of the right amount</span>
+      <span class="token comment">// if we don't have a coin of the right amount to fund with</span>
+      <span class="token comment">// we need to create one by sending the funder wallet</span>
+      <span class="token comment">// a tx that includes an output of the right amount</span>
 
-      <span class="token comment" spellcheck="true">// this is similar to what we did in the manual version</span>
-      <span class="token keyword">const</span> receiveAddress <span class="token operator">=</span> <span class="token keyword">await</span> funder<span class="token punctuation">.</span><span class="token function">createAddress</span><span class="token punctuation">(</span><span class="token string">'default'</span><span class="token punctuation">)</span> <span class="token comment" spellcheck="true">// send it back to the funder</span>
+      <span class="token comment">// this is similar to what we did in the manual version</span>
+      <span class="token keyword">const</span> receiveAddress <span class="token operator">=</span> <span class="token keyword">await</span> funder<span class="token punctuation">.</span><span class="token function">createAddress</span><span class="token punctuation">(</span><span class="token string">'default'</span><span class="token punctuation">)</span> <span class="token comment">// send it back to the funder</span>
       <span class="token keyword">const</span> tx <span class="token operator">=</span> <span class="token keyword">await</span> funder<span class="token punctuation">.</span><span class="token function">send</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
         rate<span class="token punctuation">,</span>
         outputs<span class="token punctuation">:</span> <span class="token punctuation">[</span><span class="token punctuation">{</span>
@@ -600,7 +556,7 @@
         <span class="token punctuation">}</span><span class="token punctuation">]</span>
       <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-      <span class="token comment" spellcheck="true">// get index of ouput for fundingCoin</span>
+      <span class="token comment">// get index of ouput for fundingCoin</span>
       <span class="token keyword">let</span> coinIndex<span class="token punctuation">;</span>
       <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">let</span> i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> tx<span class="token punctuation">.</span>outputs<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
         <span class="token keyword">if</span> <span class="token punctuation">(</span>tx<span class="token punctuation">.</span>outputs<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>value <span class="token operator">===</span> amountToFund<span class="token punctuation">)</span> <span class="token punctuation">{</span>
@@ -611,14 +567,14 @@
 
       <span class="token function">assert</span><span class="token punctuation">(</span>tx<span class="token punctuation">.</span>outputs<span class="token punctuation">[</span>coinIndex<span class="token punctuation">]</span><span class="token punctuation">.</span>value <span class="token operator">===</span> amountToFund<span class="token punctuation">,</span> <span class="token string">'value of output at index not correct'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-      <span class="token comment" spellcheck="true">// first argument is for the account</span>
-      <span class="token comment" spellcheck="true">// default is being used for all examples</span>
+      <span class="token comment">// first argument is for the account</span>
+      <span class="token comment">// default is being used for all examples</span>
       fundingCoin <span class="token operator">=</span> <span class="token keyword">await</span> funder<span class="token punctuation">.</span><span class="token function">getCoin</span><span class="token punctuation">(</span><span class="token string">'default'</span><span class="token punctuation">,</span> tx<span class="token punctuation">.</span>hash<span class="token punctuation">,</span> coinIndex<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token punctuation">}</span>
     fundingCoins<span class="token punctuation">[</span>funder<span class="token punctuation">.</span>id<span class="token punctuation">]</span> <span class="token operator">=</span> fundingCoin<span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><p>We now should have an object available that has the information of the coins we will be using to fund our transaction with mapped to the name of each wallet (so we can retrieve the wallet information later). It should look something like this (note that the values are larger than our funding amount due to the fee):</p>
-<pre class="snippet line-numbers language-json"><code class="line-numbers language-json"><span class="token punctuation">{</span>
+<pre class="snippet line-numbers language-json "><code class="line-numbers language-json"><span class="token punctuation">{</span>
   <span class="token property">"funder1"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
     <span class="token property">"version"</span><span class="token operator">:</span> <span class="token number">1</span><span class="token punctuation">,</span>
     <span class="token property">"height"</span><span class="token operator">:</span> -<span class="token number">1</span><span class="token punctuation">,</span>
@@ -641,45 +597,45 @@
   <span class="token punctuation">}</span>
 <span class="token punctuation">}</span></code><button class="copy-button"><img src="../assets/images/clippy.svg" alt="Copy to clipboard"></button></pre><h4 id="step-3-create-our-crowdfund-tx">Step 3: Create our Crowdfund Tx</h4><p>Now that we have our coins ready we can start to template the transaction!</p>
 <p>Please note again that the way we are funding the transactions is by sending our private keys unencrypted across the network so don&#39;t use this in production.</p>
-<pre class="snippet line-numbers language-javascript"><code class="line-numbers language-javascript"><span class="token keyword">const</span> composeWalletCrowdfund <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">composeWalletCrowdfund</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
-  <span class="token comment" spellcheck="true">//...</span>
+<pre class="snippet line-numbers language-javascript "><code class="line-numbers language-javascript"><span class="token keyword">const</span> composeWalletCrowdfund <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token keyword">function</span> <span class="token function">composeWalletCrowdfund</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token comment">//...</span>
   <span class="token keyword">const</span> fundMe <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// Use the maxFee to calculate output value for transaction</span>
+  <span class="token comment">// Use the maxFee to calculate output value for transaction</span>
   fundMe<span class="token punctuation">.</span><span class="token function">addOutput</span><span class="token punctuation">(</span><span class="token punctuation">{</span>value<span class="token punctuation">:</span> fundingTarget<span class="token punctuation">,</span> address<span class="token punctuation">:</span> fundeeAddress<span class="token punctuation">.</span>address <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// go through our coins and add each as an input in our transaction</span>
+  <span class="token comment">// go through our coins and add each as an input in our transaction</span>
   <span class="token keyword">let</span> inputCounter <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
   <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">let</span> funder <span class="token keyword">in</span> fundingCoins<span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token keyword">const</span> wallet <span class="token operator">=</span> funders<span class="token punctuation">[</span>funder<span class="token punctuation">]</span><span class="token punctuation">;</span>
     <span class="token keyword">const</span> coinOptions <span class="token operator">=</span> fundingCoins<span class="token punctuation">[</span>funder<span class="token punctuation">]</span><span class="token punctuation">;</span>
 
     <span class="token keyword">const</span> key <span class="token operator">=</span> <span class="token keyword">await</span> wallet<span class="token punctuation">.</span><span class="token function">getWIF</span><span class="token punctuation">(</span>coinOptions<span class="token punctuation">.</span>address<span class="token punctuation">)</span><span class="token punctuation">;</span>
-    <span class="token keyword">const</span> keyring <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">bcoin<span class="token punctuation">.</span>keyring<span class="token punctuation">.</span>fromSecret</span><span class="token punctuation">(</span>key<span class="token punctuation">.</span>privateKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">const</span> keyring <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">bcoin<span class="token punctuation">.</span>KeyRing<span class="token punctuation">.</span>fromSecret</span><span class="token punctuation">(</span>key<span class="token punctuation">.</span>privateKey<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    <span class="token comment" spellcheck="true">// this is the same utility as we used in our other example</span>
+    <span class="token comment">// this is the same utility as we used in our other example</span>
     <span class="token function">addInput</span><span class="token punctuation">(</span>coinOptions<span class="token punctuation">,</span> inputCounter<span class="token punctuation">,</span> fundMe<span class="token punctuation">,</span> keyring<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token function">assert</span><span class="token punctuation">(</span>fundMe<span class="token punctuation">.</span><span class="token function">isSigned</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">'Input has not been signed correctly'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
     inputCounter<span class="token operator">++</span><span class="token punctuation">;</span>
   <span class="token punctuation">}</span>
 
-  <span class="token comment" spellcheck="true">// confirm that the transaction has been properly templated and signed</span>
+  <span class="token comment">// confirm that the transaction has been properly templated and signed</span>
   <span class="token function">assert</span><span class="token punctuation">(</span>
     fundMe<span class="token punctuation">.</span>inputs<span class="token punctuation">.</span>length <span class="token operator">===</span> Object<span class="token punctuation">.</span><span class="token function">keys</span><span class="token punctuation">(</span>funders<span class="token punctuation">)</span><span class="token punctuation">.</span>length<span class="token punctuation">,</span>
     <span class="token string">'Number of inputs in MTX is incorrect'</span>
   <span class="token punctuation">)</span><span class="token punctuation">;</span>
   <span class="token function">assert</span><span class="token punctuation">(</span>fundMe<span class="token punctuation">.</span><span class="token function">verify</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">'MTX is malformed'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// make our transaction immutable so we can send it to th enetwork</span>
+  <span class="token comment">// make our transaction immutable so we can send it to th enetwork</span>
   <span class="token keyword">const</span> tx <span class="token operator">=</span> fundMe<span class="token punctuation">.</span><span class="token function">toTX</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
   <span class="token function">assert</span><span class="token punctuation">(</span>tx<span class="token punctuation">.</span><span class="token function">verify</span><span class="token punctuation">(</span>fundMe<span class="token punctuation">.</span>view<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token string">'TX is malformed. Fix before broadcasting'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// check the value of our inputs just to confirm what the fees are</span>
+  <span class="token comment">// check the value of our inputs just to confirm what the fees are</span>
   console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Total value of inputs: '</span><span class="token punctuation">,</span> fundMe<span class="token punctuation">.</span><span class="token function">getInputValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">)</span><span class="token punctuation">;</span>
   console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">'Fee to go to miners: '</span><span class="token punctuation">,</span> fundMe<span class="token punctuation">.</span><span class="token function">getInputValue</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> fundingTarget<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-  <span class="token comment" spellcheck="true">// Finally, broadcast tx</span>
+  <span class="token comment">// Finally, broadcast tx</span>
   <span class="token keyword">try</span> <span class="token punctuation">{</span>
     <span class="token keyword">const</span> broadcastStatus <span class="token operator">=</span> <span class="token keyword">await</span> client<span class="token punctuation">.</span><span class="token function">broadcast</span><span class="token punctuation">(</span>tx<span class="token punctuation">)</span><span class="token punctuation">;</span>
     <span class="token keyword">return</span> tx<span class="token punctuation">;</span>
@@ -698,7 +654,7 @@
 <li>Add a fund matching scheme where someone can say they will match future contributions</li>
 <li>Currently the examples split transactions to make a coin available that equals the target contribution amount. This is expensive since you have to broadcast multiple transactions. An interface to choose to donate from available available coins might help to make this more efficient.</li>
 </ul>
-<p>Make sure to get in touch with us on Twitter or Slack if you build out any of these ideas!</p>
+<p>Make sure to get in touch with us on Twitter or Telegram if you build out any of these ideas!</p>
 <p>Again, for a working example of the code (without all the text and explanations), check out <a href="https://github.com/Bucko13/bitcoin-fundraise">the repo on github</a>.</p>
 
 
@@ -713,7 +669,62 @@
 					</div>
 					<!-- END BLOG CONTENT -->
 
+					<!-- START SIDEBAR -->
+<div class="col-sm-3 sidebar">
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Installation</h6>
+      <p>
+        <a href="https://github.com/bcoin-org/bcoin/blob/master/docs/getting-started.md">
+          See the "Getting Started" guide in the repository documents directory.
+        </a>
+      </p>
+  </div>
+  <!-- END TEXT WIDGET -->
 
+  <!-- CATEGORIES WIDGET -->
+<div class="widget guide-list">
+<h6 class="montserrat text-uppercase bottom-line">Guides</h6>
+<ul class="icons-list">
+<!-- GUIDES-LIST -->
+<li><a href="working-with-txs.html">Working with transactions</a></li>
+<li><a href="webapp.html">Building web applications with the bcoin library</a></li>
+<li><a href="wallets.html">Wallets and Accounts and Keys, Oh My!</a></li>
+<li><a href="swaps.html">Cross-Chain Atomic Swaps</a></li>
+<li><a href="segwit.html">Segwit and Bcoin</a></li>
+<li><a href="scripting.html">Intro to Scripting</a></li>
+<li><a href="op_return.html">Store Data on the Blockchain</a></li>
+<li><a href="multisig-tx.html">Creating Multisignature Transactions</a></li>
+<li><a href="multisig-cli.html">Multisig on the command line</a></li>
+<li><a href="generate-address.html">Generate an Address</a></li>
+<li><a href="events.html">Events and Sockets</a></li>
+<li><a href="crowdfund-tx.html">Create a Crowdfunding Transaction</a></li>
+<li><a href="connect-local-nodes.html">Connect two local nodes</a></li>
+<li><a href="cltv.html">Time Locked Bitcoin Transactions w/ CLTV</a></li>
+<li><a href="building-plugins.html">Building Awesome bcoin Plugins</a></li>
+<li><a href="browser.html">Run a bcoin full node in a web browser</a></li>
+<li><a href="bcoin-clock.html">Make your own Bcoin Block Clock!</a></li>
+<!-- /GUIDES-LIST -->
+</ul>
+</div>
+  <!-- END CATEGORIES WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Looking for Docs?</h6>
+    <p>Checkout our <a href="../api-docs/index.html">API Docs</a> or the <a href="https://bcoin.io/docs/index.html">Full Documentation</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+
+  <!-- TEXT WIDGET -->
+  <div class="widget">
+    <h6 class="montserrat text-uppercase bottom-line">Get Involved</h6>
+    <p>If you think you've got what it takes to make your own bcoin guides and tutorials, head on over to our <a href="https://github.com/bcoin-org/bcoin-org.github.io">GitHub repo</a> to see how you can make a request or contribute your own and earn bounties! You can also reach out to us on <a href="https://t.me/bcoinorg"> Telegram.</a></p>
+  </div>
+  <!-- END TEXT WIDGET -->
+</div>
+
+					<!-- END SIDEBAR -->
 
 				</div><!-- .row -->
 
@@ -756,7 +767,7 @@
 							<li><a href="https://github.com/bcoin-org/bcoin"><i class="fa fa-github"></i></a></li>
 
 
-							<li><a href="../slack-signup.html" target="_blank"><i class="fa fa-slack"></i></a></li>
+							<li><a href="https://t.me/bcoinorg" target="_blank"><img src="assets/images/telegram-app.svg"></a></li>
 						</ul>
 					</div>
 				</div>
