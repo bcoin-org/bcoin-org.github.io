@@ -14,6 +14,10 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: 18.x
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: 3.0
+        bundler-cache: true
 
     - name: Guides
       run: |
@@ -21,12 +25,12 @@ jobs:
         npm run clear-guides
         npm run convert-markdown -- --all
 
-      # - name: API docs
-      #   uses: ruby/setup-ruby@v1
-      #   with:
-      #     ruby-version: 3.0
-      #     bundler-cache: true
-      #   run: ./build-api.sh
+    - name: API docs
+      working-directory: ./api-docs-slate
+      run: |
+        gem install bundler
+        bundle install
+        bundle exec middleman build --clean --build-dir=../api-docs
 
     - name: Deploy
       if: github.ref == 'refs/heads/staging'
