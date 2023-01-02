@@ -5,21 +5,32 @@ on:
   pull_request:
     branches: [staging]
 jobs:
-  build-api-docs:
-    name: Build API docs
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - uses: ruby/setup-ruby@v1
+    - uses: actions/setup-node@v3
       with:
-        ruby-version: 2.0
-        bundler-cache: true
-    - run: ./build-api.sh
-    # - name: Deploy
-    #   if: github.ref == 'refs/heads/staging'
-    #   uses: peaceiris/actions-gh-pages@v3
-    #   with:
-    #     github_token: ${{ secrets.GITHUB_TOKEN }}
-    #     publish_dir: ./build
-    #     cname: bcoin.io
+        node-version: 18.x
+
+    - name: Guides
+      run: |
+        npm install
+        npm run clear-guides
+        npm run convert-markdown -- --all
+
+      # - name: API docs
+      #   uses: ruby/setup-ruby@v1
+      #   with:
+      #     ruby-version: 3.0
+      #     bundler-cache: true
+      #   run: ./build-api.sh
+
+    - name: Deploy
+      if: github.ref == 'refs/heads/staging'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: .
