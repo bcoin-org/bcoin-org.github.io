@@ -142,11 +142,11 @@
 				<div class="inner-header pull-right hide-me">
 					<div class="menu-extras clearfix">
 			
-						<!-- SLACK LINK -->
+						<!-- TELEGRAM LINK -->
 						<div class="menu-item">
 							<div class="">
-								<a href="slack-signup.html" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Slack!">
-									<img src="assets/images/slack_icon.svg" width="18" height="18"/>
+								<a href="https://t.me/bcoinorg" target="_blank" id="" data-toggle="tooltip" title="" data-placement="bottom" data-original-title="Join us on Telegram!">
+									<img src="assets/images/telegram-app.svg" width="18" height="18"/>
 									<span class=""></span>
 								</a>
                             </div>
@@ -254,25 +254,11 @@
         <!-- slackin integration -->
         <div class="splash">
 
-            <h5>Join us on the bcoin development Slack!</h5>
-				<input type="text" name="email" placeholder="satoshi@bcoin.io" autofocus="true" class="form-item">
-				<button id="ajax" type="submit">Request an Invite</button>
-			<p class="signin">or <a href="https://bcoin-dev.slack.com" target="_top">sign in</a>.</p>
-			<h5><div id="msg" class="capitalize slack-returntext" style=""></div></h5>
-            <div class="slack-sponsor">sponsored by <a href="https://purse.io/" target="_blank">Purse.io</a></div>      
-
+            <a href="https://t.me/bcoinorg"><h5>Join us on the bcoin Telegram Channel!<br>https://t.me/bcoinorg</h5></a>
 
         </div>
-        <!-- END slackin integration -->
-		<div class="slack-footer">
-			<div class="row">
-				<div class="col-sm-12 text-center">
-					<img width="" src="assets/images/bcoin-slack-signup.png" alt="">
-				</div>
-			</div>
-		</div>
 
-
+</div>
 
 		<!-- FOOTER 
 		<section id="footer" class="footer-minimal" data-background="assets/images/bg-header2.jpg" style="background-image: url(assets/images/bg-header2.jpg); background-attachment: scroll; background-size: auto;" data-jarallax-original-styles="background-image: url(&quot;assets/images/bg-header2.jpg&quot;);">
@@ -294,23 +280,6 @@
 	
 	<!-- JAVASCRIPT FILES -->
 	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-	<script>
-		$('#ajax').click(function() {
-		$('#msg').text("loading...");
-		$.ajax({
-			url: 'https://slackin.purse.io',
-			data: {email: $('input').val()},
-			method: "POST",
-			complete: function(resp, status) {
-			var msg = resp.responseText;
-			try {
-				msg = JSON.parse(resp.responseText).error;
-			} catch(e) {}
-			$('#msg').text(msg);
-			},
-		});
-		});
-	</script>
 
 
 

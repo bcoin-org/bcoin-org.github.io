@@ -363,6 +363,6 @@ to your bcoin node via websockets!
 
 Whatever you build, be sure to let us know! We want to hear from you on
 [Twitter](https://twitter.com/Bcoin), [GitHub](https://github.com/bcoin-org/bcoin)
-or [Slack](http://bcoin.io/slack-signup.html).
+or [Telegram](https://t.me/bcoinorg).
 
 
