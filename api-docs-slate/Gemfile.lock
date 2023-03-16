@@ -91,6 +91,8 @@ GEM
     minitest (5.17.0)
     nokogiri (1.13.10-arm64-darwin)
       racc (~> 1.4)
+    nokogiri (1.13.10-x86_64-linux)
+      racc (~> 1.4)
     padrino-helpers (0.15.2)
       i18n (>= 0.6.7, < 2)
       padrino-support (= 0.15.2)
@@ -100,7 +102,7 @@ GEM
     parslet (2.0.0)
     public_suffix (5.0.1)
     racc (1.6.2)
-    rack (2.2.5)
+    rack (2.2.6.4)
     rack-livereload (0.3.17)
       rack
     rb-fsevent (0.11.2)
@@ -128,6 +130,7 @@ GEM
 
 PLATFORMS
   arm64-darwin-21
+  x86_64-linux
 
 DEPENDENCIES
   middleman (~> 4.4.2)
